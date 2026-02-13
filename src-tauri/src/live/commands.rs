@@ -711,3 +711,15 @@ pub async fn set_monitored_skills(
         .await;
     Ok(())
 }
+
+
+/// Enables/disables shadow on the buff monitor window.
+#[tauri::command]
+#[specta::specta]
+pub fn toggle_buff_monitor_shadow(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
+    let w = app
+        .get_webview_window(crate::WINDOW_BUFF_MONITOR_LABEL)
+        .ok_or_else(|| "buff-monitor window not found".to_string())?;
+
+    w.set_shadow(enabled).map_err(|e| e.to_string())
+}
