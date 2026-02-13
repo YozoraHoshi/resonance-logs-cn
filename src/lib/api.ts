@@ -55,6 +55,7 @@ export type PlayersWindow = {
 };
 
 export type SkillRow = {
+  skillId: number;
   name: string;
   totalDmg: number;
   dps: number;
@@ -70,6 +71,43 @@ export type SkillRow = {
 export type SkillsWindow = {
   currPlayer: PlayerRow[];
   skillRows: SkillRow[]
+};
+
+export type SkillCdState = {
+  skillLevelId: number;
+  beginTime: number;
+  duration: number;
+  skillCdType: number;
+  validCdTime: number;
+  receivedAt: number;
+  calculatedDuration: number;
+  cdAccelerateRate: number;
+};
+
+export type SkillCdUpdatePayload = {
+  skillCds: SkillCdState[];
+};
+
+export type FightResourceState = {
+  values: number[];
+  receivedAt: number;
+};
+
+export type FightResourceUpdatePayload = {
+  fightRes: FightResourceState;
+};
+
+export type BuffUpdateState = {
+  buffUuid: number;
+  baseId: number;
+  layer: number;
+  durationMs: number;
+  createTimeMs: number;
+  sourceConfigId: number;
+};
+
+export type BuffUpdatePayload = {
+  buffs: BuffUpdateState[];
 };
 
 export type EncounterUpdatePayload = {
@@ -171,6 +209,20 @@ export const onResetPlayerMetrics = (handler: (event: Event<PlayerMetricsResetPa
 
 export const onPauseEncounter = (handler: (event: Event<boolean>) => void): Promise<UnlistenFn> =>
   listen<boolean>("pause-encounter", handler);
+
+export const onSkillCdUpdate = (
+  handler: (event: Event<SkillCdUpdatePayload>) => void
+): Promise<UnlistenFn> =>
+  listen<SkillCdUpdatePayload>("skill-cd-update", handler);
+
+export const onFightResUpdate = (
+  handler: (event: Event<FightResourceUpdatePayload>) => void
+): Promise<UnlistenFn> =>
+  listen<FightResourceUpdatePayload>("fight-res-update", handler);
+
+export const onBuffUpdate = (
+  handler: (event: Event<BuffUpdatePayload>) => void
+): Promise<UnlistenFn> => listen<BuffUpdatePayload>("buff-update", handler);
 
 // Command wrappers (still using generated bindings)
 

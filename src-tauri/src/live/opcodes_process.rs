@@ -4,20 +4,59 @@ use crate::live::attempt_detector::{
     AttemptConfig, check_hp_rollback_condition, check_wipe_condition, get_boss_hp_percentage,
     split_attempt, track_party_member, update_boss_hp_tracking,
 };
-use crate::live::buff_names;
 use crate::live::dungeon_log::{self, DungeonLogRuntime};
 use crate::live::opcodes_models::class::{
     ClassSpec, get_class_id_from_spec, get_class_spec_from_skill_id,
 };
-use crate::live::opcodes_models::{
-    AttrType, AttrValue, BuffEvent, Encounter, Entity, Skill, attr_type,
-};
+use crate::live::opcodes_models::{AttrType, AttrValue, Encounter, Entity, Skill, attr_type};
+use crate::live::recount_names;
 use crate::packets::utils::BinaryReader;
 use blueprotobuf_lib::blueprotobuf;
 use blueprotobuf_lib::blueprotobuf::{Attr, EDamageType, EEntityType};
 use log::info;
-use std::collections::HashMap;
+// use std::collections::HashMap;
+use bytes::Buf;
 use std::default::Default;
+
+/// Parses packed varints from ATTR_FIGHT_RESOURCES (50002) raw data.
+/// The raw data is expected to be a protobuf message with field 1 containing packed varints.
+/// Format: Tag (0x0A) | Length | Varint1 | Varint2 | ...
+pub fn parse_fight_resources(raw_data: &[u8]) -> Option<Vec<i64>> {
+    let mut buf = raw_data;
+
+    // Attempt to decode the tag. Expect Field 1, WireType 2 (Length Delimited) -> (1 << 3) | 2 = 0x0A (10)
+    if let Ok(tag) = prost::encoding::decode_varint(&mut buf) {
+        if tag != 0x0A {
+            return None;
+        }
+    } else {
+        return None;
+    }
+
+    // Decode length of the packed field
+    let len = match prost::encoding::decode_varint(&mut buf) {
+        Ok(l) => l as usize,
+        Err(_) => return None,
+    };
+
+    if buf.remaining() < len {
+        return None;
+    }
+
+    // Take the slice containing the packed varints
+    let mut packed_buf = buf.copy_to_bytes(len);
+    let mut values = Vec::new();
+
+    // Decode all varints in the slice
+    while packed_buf.has_remaining() {
+        match prost::encoding::decode_varint(&mut packed_buf) {
+            Ok(val) => values.push(val as i64),
+            Err(_) => break,
+        }
+    }
+
+    Some(values)
+}
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Record a death event into the encounter and enqueue a DB task.
@@ -142,7 +181,7 @@ fn did_target_die(
 
 /// Serialize entity attributes HashMap to JSON string for database storage.
 /// Converts AttrType keys to string representation for JSON compatibility.
-fn serialize_attributes(entity: &Entity) -> Option<String> {
+pub(crate) fn serialize_attributes(entity: &Entity) -> Option<String> {
     if entity.attributes.is_empty() {
         return None;
     }
@@ -458,72 +497,6 @@ pub fn process_aoi_sync_delta(
     //                     "BuffInfoSync (from AoiSyncDelta, target_uid={}, JSON failed: {}): {:?}",
     //                     target_uid, e, buff_info_sync
     //                 );
-    // Process BuffInfoSync if present - track buff applications (absolute times)
-    if let Some(ref buff_info_sync) = aoi_sync_delta.buff_infos {
-        if !buff_info_sync.buff_infos.is_empty() {
-            let now = now_ms();
-            let mut buff_events_guard = encounter.buff_events.write();
-
-            for buff_info in &buff_info_sync.buff_infos {
-                // Extract buff data
-                let buff_id = match buff_info.base_id {
-                    Some(id) => id,
-                    None => continue,
-                };
-
-                // Only track buffs that we consider valid (have proper names for display/persistence).
-                if !buff_names::is_valid(buff_id) {
-                    continue;
-                }
-
-                let duration = buff_info.duration.unwrap_or(0);
-                let stack_count = buff_info.layer.unwrap_or(1);
-                let create_time = buff_info.create_time.unwrap_or(now);
-
-                let start = create_time;
-                let end = start + (duration as i64);
-
-                let key = (target_uid, buff_id);
-                let events = buff_events_guard.entry(key).or_insert_with(Vec::new);
-
-                // Check if we already have this exact buff instance (same start time).
-                let mut found = false;
-                // Check in reverse since the latest buff is most likely to be updated.
-                for existing in events.iter_mut().rev().take(5) {
-                    if (existing.start - start).abs() < 5 {
-                        existing.end = end;
-                        existing.duration = duration;
-                        existing.stack_count = stack_count;
-                        found = true;
-                        break;
-                    }
-                }
-
-                if found {
-                    continue;
-                }
-
-                // This is a new buff instance. Close any ongoing one that this new instance replaces.
-                // Buffs are mostly appended in chronological order so we check the last one.
-                if let Some(last) = events.last_mut() {
-                    if last.end > start {
-                        let adjusted_duration = start.saturating_sub(last.start);
-                        last.end = start;
-                        last.duration = adjusted_duration.min(i32::MAX as i64) as i32;
-                    }
-                }
-
-                // Record the new buff event
-                events.push(BuffEvent {
-                    start,
-                    end,
-                    duration,
-                    stack_count,
-                });
-            }
-        }
-    }
-
     let Some(skill_effect) = aoi_sync_delta.skill_effects else {
         return Some(()); // return ok since this variable usually doesn't exist
     };
@@ -552,7 +525,14 @@ pub fn process_aoi_sync_delta(
         let attacker_uid = attacker_uuid >> 16;
 
         // Local copies of fields needed later (avoid holding map borrows across operations)
-        let skill_uid = sync_damage_info.owner_id?;
+        let owner_id = sync_damage_info.owner_id?;
+        let damage_id = recount_names::compute_damage_id(
+            sync_damage_info.damage_source,
+            owner_id,
+            sync_damage_info.owner_level,
+            sync_damage_info.hit_event_id,
+        );
+        let skill_key = recount_names::resolve_skill_key(damage_id);
         let flag = sync_damage_info.type_flag.unwrap_or_default();
         // Pre-calculate whether this target is recognized as a boss and local player id
         let is_boss_target = encounter
@@ -560,6 +540,17 @@ pub fn process_aoi_sync_delta(
             .get(&target_uid)
             .map(|e| e.is_boss())
             .unwrap_or(false);
+
+        let target_name_opt = encounter
+            .entity_uid_to_entity
+            .get(&target_uid)
+            .and_then(|e| {
+                if e.name.is_empty() {
+                    None
+                } else {
+                    Some(e.name.clone())
+                }
+            });
 
         // First update attacker-side state in its own scope (single mutable borrow)
         let (is_crit, is_lucky, attacker_entity_type_copy, was_heal_event) = {
@@ -571,7 +562,7 @@ pub fn process_aoi_sync_delta(
                     ..Default::default()
                 });
 
-            let determined_spec = get_class_spec_from_skill_id(skill_uid);
+            let determined_spec = get_class_spec_from_skill_id(owner_id);
             if determined_spec != ClassSpec::Unknown {
                 attacker_entity.class_id = get_class_id_from_spec(determined_spec);
                 attacker_entity.class_spec = determined_spec;
@@ -585,7 +576,7 @@ pub fn process_aoi_sync_delta(
             if is_heal {
                 let skill = attacker_entity
                     .skill_uid_to_heal_skill
-                    .entry(skill_uid)
+                    .entry(skill_key)
                     .or_insert_with(|| Skill::default());
                 if is_crit_local {
                     attacker_entity.crit_hits_heal += 1;
@@ -605,35 +596,22 @@ pub fn process_aoi_sync_delta(
                 skill.hits += 1;
                 skill.total_value += actual_value;
 
-                // Persist attacker
-                if matches!(attacker_entity.entity_type, EEntityType::EntChar) {
-                    enqueue(DbTask::UpsertEntity {
-                        entity_id: attacker_uid,
-                        name: if attacker_entity.name.is_empty() {
-                            None
-                        } else {
-                            Some(attacker_entity.name.clone())
-                        },
-                        class_id: Some(attacker_entity.class_id),
-                        class_spec: Some(attacker_entity.class_spec as i32),
-                        ability_score: Some(attacker_entity.ability_score),
-                        level: Some(attacker_entity.level),
-                        seen_at_ms: timestamp_ms_i64,
-                        attributes: serialize_attributes(attacker_entity),
-                    });
-                }
+                // Track per-skill per-target stats for healing
+                let key = (skill_key, target_uid);
+                let stats = attacker_entity.skill_heal_to_target.entry(key).or_default();
 
-                // Insert heal event
-                enqueue(DbTask::InsertHealEvent {
-                    timestamp_ms: timestamp_ms_i64,
-                    healer_id: attacker_uid,
-                    target_id: Some(target_uid),
-                    skill_id: Some(skill_uid),
-                    value: actual_value as i64,
-                    is_crit: is_crit_local,
-                    is_lucky: is_lucky_local,
-                    attempt_index: Some(encounter.current_attempt_index),
-                });
+                stats.hits += 1;
+                stats.total_value += actual_value;
+                if is_crit_local {
+                    stats.crit_hits += 1;
+                    stats.crit_total += actual_value;
+                }
+                if is_lucky_local {
+                    stats.lucky_hits += 1;
+                    stats.lucky_total += actual_value;
+                }
+                stats.hp_loss_total = 0;
+                stats.shield_loss_total = 0;
 
                 (
                     is_crit_local,
@@ -644,7 +622,7 @@ pub fn process_aoi_sync_delta(
             } else {
                 let skill = attacker_entity
                     .skill_uid_to_dmg_skill
-                    .entry(skill_uid)
+                    .entry(skill_key)
                     .or_insert_with(|| Skill::default());
                 if is_crit_local {
                     attacker_entity.crit_hits_dmg += 1;
@@ -668,7 +646,7 @@ pub fn process_aoi_sync_delta(
                 if is_boss_target {
                     let skill_boss_only = attacker_entity
                         .skill_uid_to_dmg_skill_boss_only
-                        .entry(skill_uid)
+                        .entry(skill_key)
                         .or_insert_with(|| Skill::default());
                     if is_crit_local {
                         attacker_entity.crit_hits_dmg_boss_only += 1;
@@ -699,35 +677,30 @@ pub fn process_aoi_sync_delta(
                         e.insert(actual_value);
                     }
                 }
-                let per_skill = attacker_entity
-                    .skill_dmg_to_target
-                    .entry(skill_uid)
-                    .or_insert_with(HashMap::new);
-                match per_skill.entry(target_uid) {
-                    Entry::Occupied(mut e) => {
-                        *e.get_mut() += actual_value;
-                    }
-                    Entry::Vacant(e) => {
-                        e.insert(actual_value);
-                    }
+
+                // Track per-skill per-target stats
+                let key = (skill_key, target_uid);
+                let stats = attacker_entity.skill_dmg_to_target.entry(key).or_default();
+
+                stats.hits += 1;
+                stats.total_value += actual_value;
+                if is_crit_local {
+                    stats.crit_hits += 1;
+                    stats.crit_total += actual_value;
+                }
+                if is_lucky_local {
+                    stats.lucky_hits += 1;
+                    stats.lucky_total += actual_value;
                 }
 
-                // Persist attacker
-                if matches!(attacker_entity.entity_type, EEntityType::EntChar) {
-                    enqueue(DbTask::UpsertEntity {
-                        entity_id: attacker_uid,
-                        name: if attacker_entity.name.is_empty() {
-                            None
-                        } else {
-                            Some(attacker_entity.name.clone())
-                        },
-                        class_id: Some(attacker_entity.class_id),
-                        class_spec: Some(attacker_entity.class_spec as i32),
-                        ability_score: Some(attacker_entity.ability_score),
-                        level: Some(attacker_entity.level),
-                        seen_at_ms: timestamp_ms_i64,
-                        attributes: serialize_attributes(attacker_entity),
-                    });
+                let hp_loss_val = sync_damage_info.hp_lessen_value.unwrap_or(0).max(0) as u128;
+                let shield_loss_val =
+                    sync_damage_info.shield_lessen_value.unwrap_or(0).max(0) as u128;
+                stats.hp_loss_total += hp_loss_val;
+                stats.shield_loss_total += shield_loss_val;
+
+                if stats.monster_name.is_none() {
+                    stats.monster_name = target_name_opt.clone();
                 }
 
                 (
@@ -776,64 +749,15 @@ pub fn process_aoi_sync_delta(
                 max_hp_opt,
             );
 
-            // Persist defender
-            if matches!(defender_entity.entity_type, EEntityType::EntChar) {
-                enqueue(DbTask::UpsertEntity {
-                    entity_id: target_uid,
-                    name: if defender_entity.name.is_empty() {
-                        None
-                    } else {
-                        Some(defender_entity.name.clone())
-                    },
-                    class_id: Some(defender_entity.class_id),
-                    class_spec: Some(defender_entity.class_spec as i32),
-                    ability_score: Some(defender_entity.ability_score),
-                    level: Some(defender_entity.level),
-                    seen_at_ms: timestamp_ms_i64,
-                    attributes: serialize_attributes(defender_entity),
-                });
-            }
-
             // Only record damage/taken stats if this event is not a heal
             if !was_heal_event {
                 // Insert damage event
-                let is_boss = defender_entity.is_boss();
-                let monster_name_for_event =
-                    if matches!(defender_entity.entity_type, EEntityType::EntMonster) {
-                        defender_entity.monster_name_packet.clone().or_else(|| {
-                            if defender_entity.name.is_empty() {
-                                None
-                            } else {
-                                Some(defender_entity.name.clone())
-                            }
-                        })
-                    } else {
-                        None
-                    };
-                enqueue(DbTask::InsertDamageEvent {
-                    timestamp_ms: timestamp_ms_i64,
-                    attacker_id: attacker_uid,
-                    defender_id: Some(target_uid),
-                    monster_name: monster_name_for_event,
-                    skill_id: Some(skill_uid),
-                    value: effective_value as i64,
-                    is_crit,
-                    is_lucky,
-                    hp_loss: hp_loss as i64,
-                    shield_loss: shield_loss as i64,
-                    defender_max_hp: defender_entity
-                        .attributes
-                        .get(&AttrType::MaxHp)
-                        .and_then(|v| v.as_int()),
-                    is_boss,
-                    attempt_index: Some(encounter.current_attempt_index),
-                });
 
                 // Taken stats (only when attacker is not a player)
                 if attacker_entity_type_copy != EEntityType::EntChar {
                     let taken_skill = defender_entity
                         .skill_uid_to_taken_skill
-                        .entry(skill_uid)
+                        .entry(skill_key)
                         .or_insert_with(|| Skill::default());
                     if is_crit {
                         defender_entity.crit_hits_taken += 1;
@@ -858,7 +782,7 @@ pub fn process_aoi_sync_delta(
                 Some((
                     target_uid,
                     Some(attacker_uid),
-                    Some(skill_uid),
+                    Some(owner_id),
                     timestamp_ms_i64,
                 ))
             } else {
@@ -996,28 +920,6 @@ pub fn process_aoi_sync_delta(
     if encounter.time_fight_start_ms == Default::default() {
         encounter.time_fight_start_ms = timestamp_ms;
         let fight_start_i64 = timestamp_ms.min(i64::MAX as u128) as i64;
-
-        // Clamp any pre-existing buff events to the fight start and recompute durations
-        let buff_events_arc = encounter.buff_events.clone();
-        let mut buff_events = buff_events_arc.write();
-        for events in buff_events.values_mut() {
-            // Drop events that end before fight start
-            events.retain(|event| event.end >= fight_start_i64);
-
-            for event in events.iter_mut() {
-                if event.start < fight_start_i64 {
-                    event.start = fight_start_i64;
-                }
-
-                if event.end < event.start {
-                    event.end = event.start;
-                    event.duration = 0;
-                } else {
-                    let dur_i64 = (event.end - event.start).min(i32::MAX as i64);
-                    event.duration = dur_i64 as i32;
-                }
-            }
-        }
 
         // Only persist encounters to the database for non-overworld scenes.
         // Scene ID 5000 is the overworld; we still track and display the encounter
@@ -1340,12 +1242,20 @@ fn process_player_attrs(player_entity: &mut Entity, target_uid: i64, attrs: Vec<
                 }
                 Err(e) => log::warn!("Failed to decode ATTR_ELEMENTAL_RES_3: {:?}", e),
             },
-            attr_type::ATTR_BUFF_SLOT => match prost::encoding::decode_varint(&mut buf) {
-                Ok(value) => {
-                    player_entity.set_attr(AttrType::BuffSlot, AttrValue::Int(value as i64));
+            attr_type::ATTR_FIGHT_RESOURCES => {
+                if let Some(values) = parse_fight_resources(&raw_bytes) {
+                    log::debug!(
+                        "Decoded ATTR_FIGHT_RESOURCES for UID {}: {:?}",
+                        target_uid,
+                        values
+                    );
+                } else {
+                    log::warn!(
+                        "Failed to decode ATTR_FIGHT_RESOURCES for UID {}",
+                        target_uid
+                    );
                 }
-                Err(e) => log::warn!("Failed to decode ATTR_BUFF_SLOT: {:?}", e),
-            },
+            }
             attr_type::ATTR_GUILD_ID => match prost::encoding::decode_varint(&mut buf) {
                 Ok(value) => {
                     player_entity.set_attr(AttrType::GuildId, AttrValue::Int(value as i64));

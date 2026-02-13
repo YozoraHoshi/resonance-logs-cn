@@ -2268,9 +2268,6 @@ impl serde::Serialize for AoiSyncDelta {
         if self.passive_skill_end_infos.is_some() {
             len += 1;
         }
-        if self.buff_infos.is_some() {
-            len += 1;
-        }
         if self.buff_effect.is_some() {
             len += 1;
         }
@@ -2310,9 +2307,6 @@ impl serde::Serialize for AoiSyncDelta {
         if let Some(v) = self.passive_skill_end_infos.as_ref() {
             struct_ser.serialize_field("PassiveSkillEndInfos", v)?;
         }
-        if let Some(v) = self.buff_infos.as_ref() {
-            struct_ser.serialize_field("BuffInfos", v)?;
-        }
         if let Some(v) = self.buff_effect.as_ref() {
             struct_ser.serialize_field("BuffEffect", v)?;
         }
@@ -2341,7 +2335,6 @@ impl<'de> serde::Deserialize<'de> for AoiSyncDelta {
             "SkillEffects",
             "PassiveSkillInfos",
             "PassiveSkillEndInfos",
-            "BuffInfos",
             "BuffEffect",
             "FakeBullets",
             "MagneticRideQueueChangeInfoList",
@@ -2358,7 +2351,6 @@ impl<'de> serde::Deserialize<'de> for AoiSyncDelta {
             SkillEffects,
             PassiveSkillInfos,
             PassiveSkillEndInfos,
-            BuffInfos,
             BuffEffect,
             FakeBullets,
             MagneticRideQueueChangeInfoList,
@@ -2392,7 +2384,6 @@ impl<'de> serde::Deserialize<'de> for AoiSyncDelta {
                             "SkillEffects" => Ok(GeneratedField::SkillEffects),
                             "PassiveSkillInfos" => Ok(GeneratedField::PassiveSkillInfos),
                             "PassiveSkillEndInfos" => Ok(GeneratedField::PassiveSkillEndInfos),
-                            "BuffInfos" => Ok(GeneratedField::BuffInfos),
                             "BuffEffect" => Ok(GeneratedField::BuffEffect),
                             "FakeBullets" => Ok(GeneratedField::FakeBullets),
                             "MagneticRideQueueChangeInfoList" => Ok(GeneratedField::MagneticRideQueueChangeInfoList),
@@ -2424,7 +2415,6 @@ impl<'de> serde::Deserialize<'de> for AoiSyncDelta {
                 let mut skill_effects__ = None;
                 let mut passive_skill_infos__ = None;
                 let mut passive_skill_end_infos__ = None;
-                let mut buff_infos__ = None;
                 let mut buff_effect__ = None;
                 let mut fake_bullets__ = None;
                 let mut magnetic_ride_queue_change_info_list__ = None;
@@ -2486,12 +2476,6 @@ impl<'de> serde::Deserialize<'de> for AoiSyncDelta {
                             }
                             passive_skill_end_infos__ = map_.next_value()?;
                         }
-                        GeneratedField::BuffInfos => {
-                            if buff_infos__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("BuffInfos"));
-                            }
-                            buff_infos__ = map_.next_value()?;
-                        }
                         GeneratedField::BuffEffect => {
                             if buff_effect__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("BuffEffect"));
@@ -2522,7 +2506,6 @@ impl<'de> serde::Deserialize<'de> for AoiSyncDelta {
                     skill_effects: skill_effects__,
                     passive_skill_infos: passive_skill_infos__,
                     passive_skill_end_infos: passive_skill_end_infos__,
-                    buff_infos: buff_infos__,
                     buff_effect: buff_effect__,
                     fake_bullets: fake_bullets__.unwrap_or_default(),
                     magnetic_ride_queue_change_info_list: magnetic_ride_queue_change_info_list__.unwrap_or_default(),
@@ -24540,6 +24523,8 @@ impl serde::Serialize for EBuffEffectLogicPbType {
             Self::BuffEffectStopAll => "BuffEffectStopAll",
             Self::BuffEffectLayerChange => "BuffEffectLayerChange",
             Self::Tension => "Tension",
+            Self::BuffEffectAddBuff => "BuffEffectAddBuff",
+            Self::BuffEffectBuffChange => "BuffEffectBuffChange",
         };
         serializer.serialize_str(variant)
     }
@@ -24567,6 +24552,8 @@ impl<'de> serde::Deserialize<'de> for EBuffEffectLogicPbType {
             "BuffEffectStopAll",
             "BuffEffectLayerChange",
             "Tension",
+            "BuffEffectAddBuff",
+            "BuffEffectBuffChange",
         ];
 
         struct GeneratedVisitor;
@@ -24623,6 +24610,8 @@ impl<'de> serde::Deserialize<'de> for EBuffEffectLogicPbType {
                     "BuffEffectStopAll" => Ok(EBuffEffectLogicPbType::BuffEffectStopAll),
                     "BuffEffectLayerChange" => Ok(EBuffEffectLogicPbType::BuffEffectLayerChange),
                     "Tension" => Ok(EBuffEffectLogicPbType::Tension),
+                    "BuffEffectAddBuff" => Ok(EBuffEffectLogicPbType::BuffEffectAddBuff),
+                    "BuffEffectBuffChange" => Ok(EBuffEffectLogicPbType::BuffEffectBuffChange),
                     _ => Err(serde::de::Error::unknown_variant(value, FIELDS)),
                 }
             }

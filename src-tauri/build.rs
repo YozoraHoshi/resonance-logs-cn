@@ -210,7 +210,7 @@ fn compile_cuda(cpp_dir: &PathBuf, out_dir: &PathBuf) -> Option<PathBuf> {
     // Create a temporary batch file to handle environment setup and compilation
     let bat_file = out_dir.join("compile_cuda.bat");
     let nvcc_cmd = format!(
-        r#"nvcc -c "{}" -o "{}" -std=c++17 --compiler-options "/O2,/std:c++17,/EHsc,/MD" --use_fast_math -I"{}" -gencode=arch=compute_75,code=sm_75 -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_89,code=sm_89 -gencode=arch=compute_120,code=sm_120"#,
+        r#"nvcc -c "{}" -o "{}" -std=c++17 --compiler-options "/O2,/std:c++17,/EHsc,/MD,/utf-8" --use_fast_math -I"{}" -gencode=arch=compute_75,code=sm_75 -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_89,code=sm_89 -gencode=arch=compute_120,code=sm_120"#,
         cuda_file.display(),
         obj_file.display(),
         cuda_home.join("include").display()

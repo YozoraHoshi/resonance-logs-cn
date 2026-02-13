@@ -1,25 +1,11 @@
 use crate::live::opcodes_models::class::ClassSpec;
+use crate::live::recount_names;
 use crate::live::skill_names;
 use blueprotobuf_lib::blueprotobuf::{EEntityType, SyncContainerData};
-use parking_lot::RwLock as PlRwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::sync::{Arc, LazyLock};
+use std::sync::LazyLock;
 use tokio::sync::RwLock;
-
-/// Represents a single buff application event for JSON serialization.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BuffEvent {
-    /// Timestamp when the buff was applied (ms since fight start).
-    pub start: i64,
-    /// Timestamp when the buff expired (ms since fight start).
-    /// May be calculated from start + duration or updated when buff is removed.
-    pub end: i64,
-    /// Duration of the buff in milliseconds.
-    pub duration: i32,
-    /// Number of stacks/layers of the buff.
-    pub stack_count: i32,
-}
 
 #[derive(Debug, Default, Clone)]
 pub struct Encounter {
@@ -54,10 +40,6 @@ pub struct Encounter {
     pub waiting_for_next_boss: bool,
     // Track the last active segment type to detect transitions for meter resets
     pub last_active_segment_type: Option<String>, // "boss" or "trash"
-    // Buff tracking: key is (entity_uid, buff_id), value is list of buff events
-    // Wrapped in Arc<RwLock> to make Encounter cloning cheap (shallow copy of the lock handle)
-    // This prevents the UI update loop from stalling when cloning heavy encounter state.
-    pub buff_events: Arc<PlRwLock<HashMap<(i64, i32), Vec<BuffEvent>>>>,
 }
 
 // Use an async-aware RwLock so readers don't block the tokio runtime threads.
@@ -203,8 +185,8 @@ impl AttrType {
             attr_type::ATTR_ELEMENT_FLAG => Some(AttrType::ElementFlag),
             attr_type::ATTR_ENERGY_FLAG => Some(AttrType::EnergyFlag),
             attr_type::ATTR_REDUCTION_LEVEL => Some(AttrType::ReductionLevel),
-            attr_type::ATTR_BUFF_SLOT => Some(AttrType::BuffSlot),
             attr_type::ATTR_BUFF_SLOT_2 => Some(AttrType::BuffSlot2),
+            attr_type::ATTR_FIGHT_RESOURCES => Some(AttrType::BuffSlot),
             _ => None,
         }
     }
@@ -270,7 +252,7 @@ impl AttrType {
             AttrType::ElementFlag => attr_type::ATTR_ELEMENT_FLAG,
             AttrType::EnergyFlag => attr_type::ATTR_ENERGY_FLAG,
             AttrType::ReductionLevel => attr_type::ATTR_REDUCTION_LEVEL,
-            AttrType::BuffSlot => attr_type::ATTR_BUFF_SLOT,
+            AttrType::BuffSlot => attr_type::ATTR_FIGHT_RESOURCES,
             AttrType::BuffSlot2 => attr_type::ATTR_BUFF_SLOT_2,
             AttrType::Unknown(id) => id,
         }
@@ -351,7 +333,7 @@ pub struct Entity {
     pub lucky_total_dmg: u128,
     pub lucky_hits_dmg: u128,
     pub hits_dmg: u128,
-    pub skill_uid_to_dmg_skill: HashMap<i32, Skill>,
+    pub skill_uid_to_dmg_skill: HashMap<i64, Skill>,
     // Boss-only damage
     pub total_dmg_boss_only: u128,
     pub crit_total_dmg_boss_only: u128,
@@ -359,7 +341,7 @@ pub struct Entity {
     pub lucky_total_dmg_boss_only: u128,
     pub lucky_hits_dmg_boss_only: u128,
     pub hits_dmg_boss_only: u128,
-    pub skill_uid_to_dmg_skill_boss_only: HashMap<i32, Skill>,
+    pub skill_uid_to_dmg_skill_boss_only: HashMap<i64, Skill>,
     /// Accumulated active damage time in milliseconds for True DPS.
     pub active_dmg_time_ms: u128,
     /// Timestamp of the last damage event used to compute active time.
@@ -371,7 +353,7 @@ pub struct Entity {
     pub lucky_total_heal: u128,
     pub lucky_hits_heal: u128,
     pub hits_heal: u128,
-    pub skill_uid_to_heal_skill: HashMap<i32, Skill>,
+    pub skill_uid_to_heal_skill: HashMap<i64, Skill>,
     // Tanked/Taken (damage received)
     pub total_taken: u128,
     pub crit_total_taken: u128,
@@ -379,12 +361,26 @@ pub struct Entity {
     pub lucky_total_taken: u128,
     pub lucky_hits_taken: u128,
     pub hits_taken: u128,
-    pub skill_uid_to_taken_skill: HashMap<i32, Skill>,
+    pub skill_uid_to_taken_skill: HashMap<i64, Skill>,
 
     // Monster metadata and per-target aggregates (for boss-only filtering)
     pub monster_type_id: Option<i32>,
     pub dmg_to_target: HashMap<i64, u128>,
-    pub skill_dmg_to_target: HashMap<i32, HashMap<i64, u128>>,
+    pub skill_dmg_to_target: HashMap<(i64, i64), SkillTargetStats>,
+    pub skill_heal_to_target: HashMap<(i64, i64), SkillTargetStats>,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct SkillTargetStats {
+    pub hits: u128,
+    pub total_value: u128,
+    pub crit_hits: u128,
+    pub lucky_hits: u128,
+    pub crit_total: u128,
+    pub lucky_total: u128,
+    pub hp_loss_total: u128,
+    pub shield_loss_total: u128,
+    pub monster_name: Option<String>,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -417,14 +413,16 @@ static BOSS_EXCLUSION_NAMES: LazyLock<HashSet<String>> = LazyLock::new(|| {
 });
 
 impl Skill {
-    pub fn get_skill_name(skill_uid: i32) -> String {
-        if skill_uid <= 0 {
-            return String::from("Unknown Skill");
+    pub fn get_skill_name(skill_uid: i64) -> String {
+        if let Some(name) = recount_names::lookup_name(skill_uid) {
+            return name;
         }
 
-        skill_names::lookup(skill_uid)
+        i32::try_from(skill_uid)
+            .ok()
+            .and_then(skill_names::lookup)
             .map(|name| format!("{name} ({skill_uid})"))
-            .unwrap_or_else(|| format!("Unknown Skill ({skill_uid})"))
+            .unwrap_or_else(|| skill_uid.to_string())
     }
 }
 
@@ -474,6 +472,7 @@ impl Encounter {
             entity.lucky_hits_heal = 0;
             entity.hits_heal = 0;
             entity.skill_uid_to_heal_skill.clear();
+            entity.skill_heal_to_target.clear();
 
             // Taken
             entity.total_taken = 0;
@@ -498,8 +497,6 @@ impl Encounter {
         self.waiting_for_next_boss = false;
         self.last_active_segment_type = None;
 
-        // Clear buff tracking for fresh encounter
-        self.buff_events.write().clear();
     }
     pub fn reset_segment_metrics(&mut self) {
         // Reset encounter-level combat totals (but NOT timestamps - caller preserves those)
@@ -532,6 +529,7 @@ impl Encounter {
             entity.lucky_hits_heal = 0;
             entity.hits_heal = 0;
             entity.skill_uid_to_heal_skill.clear();
+            entity.skill_heal_to_target.clear();
 
             // Taken
             entity.total_taken = 0;
@@ -598,6 +596,9 @@ pub mod attr_type {
     pub const ATTR_MAX_ENERGY: i32 = 0x2c43; // Maximum energy value
     pub const ATTR_ENERGY_REGEN: i32 = 0x2c46; // Energy regeneration rate
     pub const ATTR_HASTE: i32 = 0x2b84;
+    pub const ATTR_SKILL_CD: i32 = 0x2de6; // 11750, AttrSkillCD
+    pub const ATTR_SKILL_CD_PCT: i32 = 0x2df0; // 11760, AttrSkillCDPCT
+    pub const ATTR_CD_ACCELERATE_PCT: i32 = 0x2eb8; // 11960, AttrCdAcceleratePct
     pub const ATTR_MASTERY: i32 = 0x2b8e;
     pub const ATTR_PHYSICAL_PENETRATION: i32 = 0x2dc8; // Physical armor penetration
     pub const ATTR_MAGIC_PENETRATION: i32 = 0x2dd2; // Magic resistance penetration
@@ -607,7 +608,7 @@ pub mod attr_type {
     pub const ATTR_ELEMENT_FLAG: i32 = 0x646d6c;
     pub const ATTR_REDUCTION_LEVEL: i32 = 0x64696d;
     pub const ATTR_REDUCTION_ID: i32 = 0x6f6c65;
-    pub const ATTR_BUFF_SLOT: i32 = 0xc352; // Active buff/consumable slot
+    pub const ATTR_FIGHT_RESOURCES: i32 = 0xc352; // Active buff/consumable slot
     pub const ATTR_BUFF_SLOT_2: i32 = 0xea92; // Active buff/consumable slot (type 2)
     pub const ATTR_ENERGY_FLAG: i32 = 0x543cd3c6;
 }

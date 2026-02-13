@@ -23,8 +23,20 @@
 
   function updateMin(idx: number, field: "attrId" | "value", val: number | null) {
     const next = [...minRequirements];
-    next[idx] = { ...next[idx], [field]: val };
+    const current = next[idx];
+    if (field === "attrId") {
+      next[idx] = { attrId: val, value: current.value };
+    } else {
+      next[idx] = { attrId: current.attrId, value: val };
+    }
     minRequirements = next;
+  }
+
+  function parseNullableNumber(raw: string): number | null {
+    const trimmed = raw.trim();
+    if (trimmed === "") return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
   function addMin() {
@@ -77,8 +89,8 @@
           <select
             class="h-9 rounded-md border border-border bg-background px-2 text-sm"
             value={req.attrId ?? ""}
-            on:change={(e) =>
-              updateMin(idx, "attrId", Number((e.target as HTMLSelectElement).value) || null)}
+            onchange={(e) =>
+              updateMin(idx, "attrId", parseNullableNumber((e.target as HTMLSelectElement).value))}
           >
             <option value="">选择属性</option>
             {#each attributeOptions as opt}
@@ -90,8 +102,8 @@
             min="0"
             class="w-24"
             value={req.value ?? ""}
-            on:change={(e) =>
-              updateMin(idx, "value", Number((e.target as HTMLInputElement).value) || null)}
+            onchange={(e) =>
+              updateMin(idx, "value", parseNullableNumber((e.target as HTMLInputElement).value))}
           />
           <Button size="sm" variant="ghost" onclick={() => removeMin(idx)}>移除</Button>
         </div>

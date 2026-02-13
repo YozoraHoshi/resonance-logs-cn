@@ -78,6 +78,24 @@ export const DEFAULT_LIVE_SORT_SETTINGS = {
 
 export type ShortcutSettingId = keyof typeof DEFAULT_SETTINGS.shortcuts;
 
+export type SkillMonitorProfile = {
+  name: string;
+  selectedClass: string;
+  monitoredSkillIds: number[];
+  monitoredBuffIds: number[];
+};
+
+export function createDefaultSkillMonitorProfile(
+  name = "默认方案",
+): SkillMonitorProfile {
+  return {
+    name,
+    selectedClass: "wind_knight",
+    monitoredSkillIds: [],
+    monitoredBuffIds: [],
+  };
+}
+
 const DEFAULT_GENERAL_SETTINGS = {
   showYourName: "Show Your Name",
   showOthersName: "Show Others' Name",
@@ -299,6 +317,11 @@ const DEFAULT_SETTINGS = {
     autoUpload: true,
     marketUpload: true,
   },
+  skillMonitor: {
+    enabled: false,
+    activeProfileIndex: 0,
+    profiles: [createDefaultSkillMonitorProfile()] as SkillMonitorProfile[],
+  },
   live: {
     general: { ...DEFAULT_GENERAL_SETTINGS },
     dpsPlayers: { ...DEFAULT_STATS },
@@ -377,6 +400,11 @@ export const SETTINGS = {
   moduleSync: new RuneStore(
     'moduleSync',
     DEFAULT_SETTINGS.moduleSync,
+    RUNE_STORE_OPTIONS
+  ),
+  skillMonitor: new RuneStore(
+    'skillMonitor',
+    DEFAULT_SETTINGS.skillMonitor,
     RUNE_STORE_OPTIONS
   ),
   live: {
@@ -508,6 +536,7 @@ export const settings = {
     accessibility: SETTINGS.accessibility.state,
     shortcuts: SETTINGS.shortcuts.state,
     moduleSync: SETTINGS.moduleSync.state,
+    skillMonitor: SETTINGS.skillMonitor.state,
     live: {
       general: SETTINGS.live.general.state,
       dps: {

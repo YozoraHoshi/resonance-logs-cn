@@ -474,6 +474,90 @@ fn run_migrations_with_retry(
     }
 }
 
+/// Aggregated stats for a single actor in an encounter (for batch insertion).
+#[derive(Debug, Clone)]
+pub struct ActorAggData {
+    pub actor_id: i64,
+    pub name: Option<String>,
+    pub class_id: Option<i32>,
+    pub class_spec: Option<i32>,
+    pub ability_score: Option<i32>,
+    pub level: Option<i32>,
+    pub is_player: bool,
+    pub is_local_player: bool,
+    pub attributes: Option<String>,
+    // Damage stats
+    pub damage_dealt: i64,
+    pub hits_dealt: i64,
+    pub crit_hits_dealt: i64,
+    pub lucky_hits_dealt: i64,
+    pub crit_total_dealt: i64,
+    pub lucky_total_dealt: i64,
+    // Boss damage
+    pub boss_damage_dealt: i64,
+    pub boss_hits_dealt: i64,
+    pub boss_crit_hits_dealt: i64,
+    pub boss_lucky_hits_dealt: i64,
+    pub boss_crit_total_dealt: i64,
+    pub boss_lucky_total_dealt: i64,
+    // Healing stats
+    pub heal_dealt: i64,
+    pub hits_heal: i64,
+    pub crit_hits_heal: i64,
+    pub lucky_hits_heal: i64,
+    pub crit_total_heal: i64,
+    pub lucky_total_heal: i64,
+    // Taken stats
+    pub damage_taken: i64,
+    pub hits_taken: i64,
+    pub crit_hits_taken: i64,
+    pub lucky_hits_taken: i64,
+    pub crit_total_taken: i64,
+    pub lucky_total_taken: i64,
+    // Activity
+    pub active_dmg_time_ms: i64,
+    pub revives: i64,
+}
+
+/// Aggregated stats for a skill (damage or healing).
+#[derive(Debug, Clone)]
+pub struct SkillAggData {
+    pub actor_id: i64,
+    pub target_id: Option<i64>,
+    pub skill_id: i64,
+    pub monster_name: Option<String>,
+    pub hits: i32,
+    pub total_value: i64,
+    pub crit_hits: i32,
+    pub lucky_hits: i32,
+    pub crit_total: i64,
+    pub lucky_total: i64,
+    pub hp_loss_total: i64,      // damage only
+    pub shield_loss_total: i64,  // damage only
+}
+
+/// Aggregated stats for a boss.
+#[derive(Debug, Clone)]
+pub struct BossAggData {
+    pub monster_name: String,
+    pub hits: i32,
+    pub total_damage: i64,
+    pub max_hp: Option<i64>,
+    pub is_defeated: bool,
+}
+
+/// Aggregated data for an entire encounter to be written in one batch.
+#[derive(Debug, Clone, Default)]
+pub struct EncounterAggData {
+    pub total_dmg: i64,
+    pub total_heal: i64,
+    pub combat_duration_ms: i64,
+    pub actors: Vec<ActorAggData>,
+    pub damage_skills: Vec<SkillAggData>,
+    pub heal_skills: Vec<SkillAggData>,
+    pub bosses: Vec<BossAggData>,
+}
+
 /// An enumeration of possible database tasks.
 #[derive(Debug, Clone)]
 pub enum DbTask {
@@ -490,8 +574,8 @@ pub enum DbTask {
         defeated_bosses: Option<Vec<String>>,
         /// Whether this encounter was manually reset by the user.
         is_manually_reset: bool,
-        /// Per-player active damage time (ms) used for True DPS calculations.
-        player_active_times: Vec<(i64, i64)>,
+        /// Batch aggregated data to be written at encounter end.
+        encounter_data: Option<EncounterAggData>,
     },
 
     /// A task to end any encounters that never received an explicit end.
@@ -592,11 +676,6 @@ pub enum DbTask {
         hit_count: i64,
     },
 
-    /// A task to save buff data for the current encounter.
-    SaveBuffs {
-        /// Map of (entity_id, buff_id) -> JSON-serialized events array.
-        buffs: Vec<(i64, i32, String)>,
-    },
 }
 
 /// Enqueues a database task to be processed by the background writer thread.
@@ -657,7 +736,7 @@ fn finalize_encounter(
     ended_at_ms: i64,
     defeated_bosses: Option<Vec<String>>,
     is_manually_reset: bool,
-    player_active_times: Vec<(i64, i64)>,
+    encounter_data: Option<EncounterAggData>,
 ) -> Result<(), String> {
     use sch::encounters::dsl as e;
 
@@ -669,33 +748,44 @@ fn finalize_encounter(
         .execute(conn)
         .map_err(|er| er.to_string())?;
 
+    // If aggregated data is provided (batch mode), write it now
+    if let Some(data) = encounter_data.as_ref() {
+        batch_insert_actor_stats(conn, encounter_id, &data.actors)?;
+        batch_insert_damage_skills(conn, encounter_id, &data.damage_skills)?;
+        batch_insert_heal_skills(conn, encounter_id, &data.heal_skills)?;
+        batch_insert_bosses(conn, encounter_id, &data.bosses)?;
+
+        // Update encounter totals
+        diesel::update(e::encounters.filter(e::id.eq(encounter_id)))
+            .set((
+                e::total_dmg.eq(data.total_dmg),
+                e::total_heal.eq(data.total_heal),
+            ))
+            .execute(conn)
+            .map_err(|er| er.to_string())?;
+    }
+
     let started_at_ms: i64 = e::encounters
         .filter(e::id.eq(encounter_id))
         .select(e::started_at_ms)
         .first::<i64>(conn)
         .map_err(|er| er.to_string())?;
 
-    let mut duration_secs = 1.0_f64;
-    if ended_at_ms > started_at_ms {
-        let computed = ((ended_at_ms - started_at_ms) as f64) / 1000.0;
-        if computed > 1.0 {
-            duration_secs = computed;
-        }
+    let mut duration_secs = encounter_data
+        .as_ref()
+        .and_then(|data| {
+            if data.combat_duration_ms > 0 {
+                Some((data.combat_duration_ms as f64) / 1000.0)
+            } else {
+                None
+            }
+        })
+        .unwrap_or(1.0_f64);
+    if duration_secs <= 0.0 && ended_at_ms > started_at_ms {
+        duration_secs = ((ended_at_ms - started_at_ms) as f64) / 1000.0;
     }
-
-    if !player_active_times.is_empty() {
-        for (actor_id, active_ms) in player_active_times {
-            diesel::sql_query(
-                "UPDATE actor_encounter_stats
-                 SET active_dmg_time_ms = ?3
-                 WHERE encounter_id = ?1 AND actor_id = ?2",
-            )
-            .bind::<diesel::sql_types::Integer, _>(encounter_id)
-            .bind::<diesel::sql_types::BigInt, _>(actor_id)
-            .bind::<diesel::sql_types::BigInt, _>(active_ms)
-            .execute(conn)
-            .ok();
-        }
+    if duration_secs < 1.0 {
+        duration_secs = 1.0;
     }
 
     diesel::sql_query(
@@ -826,7 +916,7 @@ fn handle_task(
             ended_at_ms,
             defeated_bosses,
             is_manually_reset,
-            player_active_times,
+            encounter_data,
         } => {
             if let Some(id) = current_encounter_id.take() {
                 finalize_encounter(
@@ -835,7 +925,7 @@ fn handle_task(
                     ended_at_ms,
                     defeated_bosses,
                     is_manually_reset,
-                    player_active_times,
+                    encounter_data,
                 )?;
             }
             *current_encounter_start_ms = None;
@@ -849,7 +939,7 @@ fn handle_task(
                 .map_err(|er| er.to_string())?;
 
             for encounter_id in open_encounters {
-                finalize_encounter(conn, encounter_id, ended_at_ms, None, false, Vec::new())?;
+                finalize_encounter(conn, encounter_id, ended_at_ms, None, false, None)?;
             }
 
             *current_encounter_id = None;
@@ -950,183 +1040,13 @@ fn handle_task(
                     .map_err(|e| e.to_string())?;
             }
         }
-        DbTask::InsertDamageEvent {
-            timestamp_ms,
-            attacker_id,
-            defender_id,
-            monster_name,
-            skill_id,
-            value,
-            is_crit,
-            is_lucky,
-            hp_loss,
-            shield_loss,
-            defender_max_hp,
-            is_boss,
-            attempt_index,
-        } => {
-            // Raw per-event storage has been removed. We increment aggregate tables directly.
-            if let Some(enc_id) = *current_encounter_id {
-                // increment encounter totals
-                diesel::sql_query(
-                    "UPDATE encounters SET total_dmg = COALESCE(total_dmg,0) + ?1 WHERE id = ?2",
-                )
-                .bind::<diesel::sql_types::BigInt, _>(value)
-                .bind::<diesel::sql_types::Integer, _>(enc_id)
-                .execute(conn)
-                .ok();
-
-                // Materialize per-actor stats: attacker damage_dealt; defender damage_taken
-                upsert_stats_add_damage_dealt(
-                    conn,
-                    enc_id,
-                    attacker_id,
-                    value,
-                    is_crit,
-                    is_lucky,
-                    is_boss,
-                )?;
-
-                if let Some(def_id) = defender_id {
-                    if let Some(attacker_type) = get_entity_type(conn, attacker_id)? {
-                        if attacker_type
-                            != (blueprotobuf_lib::blueprotobuf::EEntityType::EntChar as i32)
-                        {
-                            upsert_stats_add_damage_taken(
-                                conn, enc_id, def_id, value, is_crit, is_lucky,
-                            )?;
-                        }
-                    } else {
-                        upsert_stats_add_damage_taken(
-                            conn, enc_id, def_id, value, is_crit, is_lucky,
-                        )?;
-                    }
-                }
-
-                // Upsert per-skill aggregated stats into damage_skill_stats
-                let skill_id_val: i32 = skill_id.unwrap_or(UNKNOWN_SKILL_ID_SENTINEL);
-                let crit_i: i32 = if is_crit { 1 } else { 0 };
-                let lucky_i: i32 = if is_lucky { 1 } else { 0 };
-
-                let hit_detail = json!({
-                    "timestamp": timestamp_ms,
-                    "ms_from_start": timestamp_ms - current_encounter_start_ms.unwrap_or(timestamp_ms),
-                    "damage": value,
-                    "crit": is_crit,
-                    "lucky": is_lucky,
-                    "hp_loss": hp_loss,
-                    "shield_loss": shield_loss,
-                    "is_boss": is_boss,
-                    "attempt_index": attempt_index,
-                });
-                let hit_detail_str = hit_detail.to_string();
-
-                diesel::sql_query(
-                    "INSERT INTO damage_skill_stats (encounter_id, attacker_id, defender_id, skill_id, hits, total_value, crit_hits, lucky_hits, crit_total, lucky_total, hp_loss_total, shield_loss_total, hit_details, monster_name) \
-                     VALUES (?1, ?2, ?3, ?4, 1, ?5, ?6, ?7, ?8, ?9, ?10, ?11, json_array(json(?13)), ?12) \
-                     ON CONFLICT(encounter_id, attacker_id, defender_id, skill_id) DO UPDATE SET \
-                         hits = hits + 1, total_value = total_value + excluded.total_value, \
-                         crit_hits = crit_hits + excluded.crit_hits, lucky_hits = lucky_hits + excluded.lucky_hits, \
-                         crit_total = crit_total + excluded.crit_total, lucky_total = lucky_total + excluded.lucky_total, \
-                         hp_loss_total = hp_loss_total + excluded.hp_loss_total, shield_loss_total = shield_loss_total + excluded.shield_loss_total, \
-                         hit_details = json_insert(hit_details, '$[#]', json(?13))",
-                )
-                .bind::<diesel::sql_types::Integer, _>(enc_id)
-                .bind::<diesel::sql_types::BigInt, _>(attacker_id)
-                .bind::<diesel::sql_types::Nullable<diesel::sql_types::BigInt>, _>(defender_id)
-                .bind::<diesel::sql_types::Integer, _>(skill_id_val)
-                .bind::<diesel::sql_types::BigInt, _>(value)
-                .bind::<diesel::sql_types::Integer, _>(crit_i)
-                .bind::<diesel::sql_types::Integer, _>(lucky_i)
-                .bind::<diesel::sql_types::BigInt, _>(if is_crit { value } else { 0 })
-                .bind::<diesel::sql_types::BigInt, _>(if is_lucky { value } else { 0 })
-                .bind::<diesel::sql_types::BigInt, _>(hp_loss)
-                .bind::<diesel::sql_types::BigInt, _>(shield_loss)
-                .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(monster_name.clone())
-                .bind::<diesel::sql_types::Text, _>(hit_detail_str)
-                .execute(conn)
-                .ok();
-
-                // Maintain encounter_bosses incrementally for boss hits
-                if is_boss {
-                    if let Some(monname) = monster_name.clone() {
-                        diesel::sql_query(
-                            "INSERT INTO encounter_bosses (encounter_id, monster_name, hits, total_damage, max_hp, is_defeated) \
-                             VALUES (?1, ?2, 1, ?3, ?4, 0) \
-                             ON CONFLICT(encounter_id, monster_name) DO UPDATE SET \
-                               hits = hits + 1, total_damage = total_damage + excluded.total_damage, \
-                               max_hp = COALESCE(excluded.max_hp, max_hp)"
-                        )
-                        .bind::<diesel::sql_types::Integer, _>(enc_id)
-                        .bind::<diesel::sql_types::Text, _>(&monname)
-                        .bind::<diesel::sql_types::BigInt, _>(value)
-                        .bind::<diesel::sql_types::Nullable<diesel::sql_types::BigInt>, _>(defender_max_hp)
-                        .execute(conn)
-                        .ok();
-                    }
-                }
-            }
+        DbTask::InsertDamageEvent { .. } => {
+            // Deprecated: Real-time insertion disabled for performance.
+            // Aggregated data is now written at EndEncounter.
         }
-        DbTask::InsertHealEvent {
-            timestamp_ms,
-            healer_id,
-            target_id,
-            skill_id,
-            value,
-            is_crit,
-            is_lucky,
-            attempt_index,
-        } => {
-            // Raw per-event storage removed — update aggregates directly.
-            if let Some(enc_id) = *current_encounter_id {
-                diesel::sql_query(
-                    "UPDATE encounters SET total_heal = COALESCE(total_heal,0) + ?1 WHERE id = ?2",
-                )
-                .bind::<diesel::sql_types::BigInt, _>(value)
-                .bind::<diesel::sql_types::Integer, _>(enc_id)
-                .execute(conn)
-                .ok();
-
-                upsert_stats_add_heal_dealt(conn, enc_id, healer_id, value, is_crit, is_lucky)?;
-
-                // Upsert into heal_skill_stats
-                let skill_id_val: i32 = skill_id.unwrap_or(UNKNOWN_SKILL_ID_SENTINEL);
-                let crit_i: i32 = if is_crit { 1 } else { 0 };
-                let lucky_i: i32 = if is_lucky { 1 } else { 0 };
-
-                let heal_detail = json!({
-                    "timestamp": timestamp_ms,
-                    "ms_from_start": timestamp_ms - current_encounter_start_ms.unwrap_or(timestamp_ms),
-                    "heal": value,
-                    "crit": is_crit,
-                    "lucky": is_lucky,
-                    "attempt_index": attempt_index,
-                });
-                let heal_detail_str = heal_detail.to_string();
-
-                diesel::sql_query(
-                    "INSERT INTO heal_skill_stats (encounter_id, healer_id, target_id, skill_id, hits, total_value, crit_hits, lucky_hits, crit_total, lucky_total, heal_details, monster_name) \
-                     VALUES (?1, ?2, ?3, ?4, 1, ?5, ?6, ?7, ?8, ?9, json_array(json(?11)), ?10) \
-                     ON CONFLICT(encounter_id, healer_id, target_id, skill_id) DO UPDATE SET \
-                         hits = hits + 1, total_value = total_value + excluded.total_value, \
-                         crit_hits = crit_hits + excluded.crit_hits, lucky_hits = lucky_hits + excluded.lucky_hits, \
-                         crit_total = crit_total + excluded.crit_total, lucky_total = lucky_total + excluded.lucky_total, \
-                         heal_details = json_insert(heal_details, '$[#]', json(?11))",
-                )
-                .bind::<diesel::sql_types::Integer, _>(enc_id)
-                .bind::<diesel::sql_types::BigInt, _>(healer_id)
-                .bind::<diesel::sql_types::Nullable<diesel::sql_types::BigInt>, _>(target_id)
-                .bind::<diesel::sql_types::Integer, _>(skill_id_val)
-                .bind::<diesel::sql_types::BigInt, _>(value)
-                .bind::<diesel::sql_types::Integer, _>(crit_i)
-                .bind::<diesel::sql_types::Integer, _>(lucky_i)
-                .bind::<diesel::sql_types::BigInt, _>(if is_crit { value } else { 0 })
-                .bind::<diesel::sql_types::BigInt, _>(if is_lucky { value } else { 0 })
-                .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(None::<String>)
-                .bind::<diesel::sql_types::Text, _>(heal_detail_str)
-                .execute(conn)
-                .ok();
-            }
+        DbTask::InsertHealEvent { .. } => {
+            // Deprecated: Real-time insertion disabled for performance.
+            // Aggregated data is now written at EndEncounter.
         }
         DbTask::InsertDeathEvent {
             timestamp_ms,
@@ -1250,24 +1170,6 @@ fn handle_task(
                     boss_name,
                     started_at_ms
                 );
-            }
-        }
-        DbTask::SaveBuffs { buffs } => {
-            if let Some(enc_id) = *current_encounter_id {
-                for (entity_id, buff_id, events_json) in buffs {
-                    diesel::sql_query(
-                        "INSERT INTO buffs (encounter_id, entity_id, buff_id, events)
-                         VALUES (?1, ?2, ?3, ?4)
-                         ON CONFLICT(encounter_id, entity_id, buff_id) DO UPDATE SET
-                             events = excluded.events",
-                    )
-                    .bind::<diesel::sql_types::Integer, _>(enc_id)
-                    .bind::<diesel::sql_types::BigInt, _>(entity_id)
-                    .bind::<diesel::sql_types::Integer, _>(buff_id)
-                    .bind::<diesel::sql_types::Text, _>(&events_json)
-                    .execute(conn)
-                    .ok();
-                }
             }
         }
     }
@@ -1569,6 +1471,150 @@ fn upsert_stats_add_damage_taken(
     .execute(conn)
     .map(|_| ())
     .map_err(|e| e.to_string())
+}
+
+fn batch_insert_actor_stats(
+    conn: &mut SqliteConnection,
+    encounter_id: i32,
+    actors: &[ActorAggData],
+) -> Result<(), String> {
+    for actor in actors {
+        diesel::sql_query(
+            "INSERT INTO actor_encounter_stats (
+                encounter_id, actor_id, name, class_id, class_spec, ability_score, level,
+                is_player, is_local_player, attributes,
+                damage_dealt, hits_dealt, crit_hits_dealt, lucky_hits_dealt, crit_total_dealt, lucky_total_dealt,
+                boss_damage_dealt, boss_hits_dealt, boss_crit_hits_dealt, boss_lucky_hits_dealt, boss_crit_total_dealt, boss_lucky_total_dealt,
+                heal_dealt, hits_heal, crit_hits_heal, lucky_hits_heal, crit_total_heal, lucky_total_heal,
+                damage_taken, hits_taken, crit_hits_taken, lucky_hits_taken, crit_total_taken, lucky_total_taken,
+                active_dmg_time_ms, revives
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind::<diesel::sql_types::Integer, _>(encounter_id)
+        .bind::<diesel::sql_types::BigInt, _>(actor.actor_id)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(actor.name.clone())
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Integer>, _>(actor.class_id)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Integer>, _>(actor.class_spec)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Integer>, _>(actor.ability_score)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Integer>, _>(actor.level)
+        .bind::<diesel::sql_types::Integer, _>(if actor.is_player { 1 } else { 0 })
+        .bind::<diesel::sql_types::Integer, _>(if actor.is_local_player { 1 } else { 0 })
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(actor.attributes.clone())
+        .bind::<diesel::sql_types::BigInt, _>(actor.damage_dealt)
+        .bind::<diesel::sql_types::BigInt, _>(actor.hits_dealt)
+        .bind::<diesel::sql_types::BigInt, _>(actor.crit_hits_dealt)
+        .bind::<diesel::sql_types::BigInt, _>(actor.lucky_hits_dealt)
+        .bind::<diesel::sql_types::BigInt, _>(actor.crit_total_dealt)
+        .bind::<diesel::sql_types::BigInt, _>(actor.lucky_total_dealt)
+        .bind::<diesel::sql_types::BigInt, _>(actor.boss_damage_dealt)
+        .bind::<diesel::sql_types::BigInt, _>(actor.boss_hits_dealt)
+        .bind::<diesel::sql_types::BigInt, _>(actor.boss_crit_hits_dealt)
+        .bind::<diesel::sql_types::BigInt, _>(actor.boss_lucky_hits_dealt)
+        .bind::<diesel::sql_types::BigInt, _>(actor.boss_crit_total_dealt)
+        .bind::<diesel::sql_types::BigInt, _>(actor.boss_lucky_total_dealt)
+        .bind::<diesel::sql_types::BigInt, _>(actor.heal_dealt)
+        .bind::<diesel::sql_types::BigInt, _>(actor.hits_heal)
+        .bind::<diesel::sql_types::BigInt, _>(actor.crit_hits_heal)
+        .bind::<diesel::sql_types::BigInt, _>(actor.lucky_hits_heal)
+        .bind::<diesel::sql_types::BigInt, _>(actor.crit_total_heal)
+        .bind::<diesel::sql_types::BigInt, _>(actor.lucky_total_heal)
+        .bind::<diesel::sql_types::BigInt, _>(actor.damage_taken)
+        .bind::<diesel::sql_types::BigInt, _>(actor.hits_taken)
+        .bind::<diesel::sql_types::BigInt, _>(actor.crit_hits_taken)
+        .bind::<diesel::sql_types::BigInt, _>(actor.lucky_hits_taken)
+        .bind::<diesel::sql_types::BigInt, _>(actor.crit_total_taken)
+        .bind::<diesel::sql_types::BigInt, _>(actor.lucky_total_taken)
+        .bind::<diesel::sql_types::BigInt, _>(actor.active_dmg_time_ms)
+        .bind::<diesel::sql_types::BigInt, _>(actor.revives)
+        .execute(conn)
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+fn batch_insert_damage_skills(
+    conn: &mut SqliteConnection,
+    encounter_id: i32,
+    skills: &[SkillAggData],
+) -> Result<(), String> {
+    for skill in skills {
+        // hit_details is set to empty array '[]' as we no longer store details in batch mode
+        diesel::sql_query(
+            "INSERT INTO damage_skill_stats (
+                encounter_id, attacker_id, defender_id, skill_id, hits, total_value,
+                crit_hits, lucky_hits, crit_total, lucky_total, hp_loss_total, shield_loss_total,
+                hit_details, monster_name
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?)"
+        )
+        .bind::<diesel::sql_types::Integer, _>(encounter_id)
+        .bind::<diesel::sql_types::BigInt, _>(skill.actor_id)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::BigInt>, _>(skill.target_id)
+        .bind::<diesel::sql_types::BigInt, _>(skill.skill_id)
+        .bind::<diesel::sql_types::Integer, _>(skill.hits)
+        .bind::<diesel::sql_types::BigInt, _>(skill.total_value)
+        .bind::<diesel::sql_types::Integer, _>(skill.crit_hits)
+        .bind::<diesel::sql_types::Integer, _>(skill.lucky_hits)
+        .bind::<diesel::sql_types::BigInt, _>(skill.crit_total)
+        .bind::<diesel::sql_types::BigInt, _>(skill.lucky_total)
+        .bind::<diesel::sql_types::BigInt, _>(skill.hp_loss_total)
+        .bind::<diesel::sql_types::BigInt, _>(skill.shield_loss_total)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(skill.monster_name.clone())
+        .execute(conn)
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+fn batch_insert_heal_skills(
+    conn: &mut SqliteConnection,
+    encounter_id: i32,
+    skills: &[SkillAggData],
+) -> Result<(), String> {
+    for skill in skills {
+        diesel::sql_query(
+            "INSERT INTO heal_skill_stats (
+                encounter_id, healer_id, target_id, skill_id, hits, total_value,
+                crit_hits, lucky_hits, crit_total, lucky_total, heal_details, monster_name
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?)"
+        )
+        .bind::<diesel::sql_types::Integer, _>(encounter_id)
+        .bind::<diesel::sql_types::BigInt, _>(skill.actor_id)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::BigInt>, _>(skill.target_id)
+        .bind::<diesel::sql_types::BigInt, _>(skill.skill_id)
+        .bind::<diesel::sql_types::Integer, _>(skill.hits)
+        .bind::<diesel::sql_types::BigInt, _>(skill.total_value)
+        .bind::<diesel::sql_types::Integer, _>(skill.crit_hits)
+        .bind::<diesel::sql_types::Integer, _>(skill.lucky_hits)
+        .bind::<diesel::sql_types::BigInt, _>(skill.crit_total)
+        .bind::<diesel::sql_types::BigInt, _>(skill.lucky_total)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(skill.monster_name.clone())
+        .execute(conn)
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+fn batch_insert_bosses(
+    conn: &mut SqliteConnection,
+    encounter_id: i32,
+    bosses: &[BossAggData],
+) -> Result<(), String> {
+    for boss in bosses {
+        diesel::sql_query(
+            "INSERT INTO encounter_bosses (
+                encounter_id, monster_name, hits, total_damage, max_hp, is_defeated
+            ) VALUES (?, ?, ?, ?, ?, ?)"
+        )
+        .bind::<diesel::sql_types::Integer, _>(encounter_id)
+        .bind::<diesel::sql_types::Text, _>(&boss.monster_name)
+        .bind::<diesel::sql_types::Integer, _>(boss.hits)
+        .bind::<diesel::sql_types::BigInt, _>(boss.total_damage)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::BigInt>, _>(boss.max_hp)
+        .bind::<diesel::sql_types::Integer, _>(if boss.is_defeated { 1 } else { 0 })
+        .execute(conn)
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 /// Materializes damage skill stats for an encounter.
@@ -1906,7 +1952,7 @@ mod tests {
                 ended_at_ms: 4_600,
                 defeated_bosses: None,
                 is_manually_reset: false,
-                player_active_times: Vec::new(),
+                encounter_data: None,
             },
             &mut enc_opt,
             &mut enc_start_opt,
@@ -2069,7 +2115,7 @@ mod tests {
                 ended_at_ms: 10_500,
                 defeated_bosses: None,
                 is_manually_reset: false,
-                player_active_times: Vec::new(),
+                encounter_data: None,
             },
             &mut enc_opt,
             &mut enc_start_opt,

@@ -209,7 +209,7 @@
       </thead>
     {/if}
     <tbody>
-      {#each sortedSkillRows as skill (skill.name)}
+      {#each sortedSkillRows as skill (skill.skillId)}
         {@const className = currentPlayer?.name.includes("You")
           ? SETTINGS_YOUR_NAME !== "Hide Your Name"
             ? currentPlayer.className

@@ -5,7 +5,7 @@ use crate::database::models as m;
 use crate::database::schema as sch;
 use crate::database::{default_db_path, ensure_parent_dir};
 use crate::live::commands_models as lc;
-use crate::live::skill_names;
+use crate::live::opcodes_models::Skill as LiveSkill;
 
 /// A summary of an encounter.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -1460,7 +1460,7 @@ pub fn get_encounter_attempt_player_skills(
         let mut actor_lucky_hits: i64 = 0;
 
         // Aggregate per-skill in-memory
-        let mut agg: std::collections::HashMap<i32, (i64, i64, i64, i64, i64, i64)> =
+        let mut agg: std::collections::HashMap<i64, (i64, i64, i64, i64, i64, i64)> =
             std::collections::HashMap::new();
         for r in &rows {
             actor_total_dmg += r.total_value;
@@ -1476,20 +1476,17 @@ pub fn get_encounter_attempt_player_skills(
             entry.5 += r.lucky_total;
         }
 
-        let mut items: Vec<(i32, (i64, i64, i64, i64, i64, i64))> = agg.into_iter().collect();
+        let mut items: Vec<(i64, (i64, i64, i64, i64, i64, i64))> = agg.into_iter().collect();
         items.sort_by(|a, b| b.1.0.cmp(&a.1.0));
 
         for (skill_id, (total_value, hits, crit_hits, lucky_hits, crit_total, lucky_total)) in items
         {
-            let name = if skill_id > 0 {
-                skill_names::lookup(skill_id).unwrap_or_else(|| String::from("Unknown Skill"))
-            } else {
-                String::from("Unknown Skill")
-            };
+            let name = LiveSkill::get_skill_name(skill_id);
 
             let hits_f = hits as f64;
             let total_dmg_f = total_value as f64;
             let sr = lc::SkillRow {
+                skill_id,
                 name,
                 total_dmg: total_value.max(0) as u128,
                 dps: if duration_secs > 0.0 {
@@ -1593,8 +1590,8 @@ pub fn get_encounter_attempt_player_skills(
     } else if skill_type == "heal" {
         #[derive(diesel::QueryableByName)]
         struct HealSkillAgg {
-            #[diesel(sql_type = diesel::sql_types::Integer)]
-            skill_id: i32,
+            #[diesel(sql_type = diesel::sql_types::BigInt)]
+            skill_id: i64,
             #[diesel(sql_type = diesel::sql_types::BigInt)]
             hits: i64,
             #[diesel(sql_type = diesel::sql_types::BigInt)]
@@ -1622,7 +1619,7 @@ pub fn get_encounter_attempt_player_skills(
         let mut actor_crit_hits: i64 = 0;
         let mut actor_lucky_hits: i64 = 0;
 
-        let mut agg: std::collections::HashMap<i32, (i64, i64, i64, i64, i64, i64)> =
+        let mut agg: std::collections::HashMap<i64, (i64, i64, i64, i64, i64, i64)> =
             std::collections::HashMap::new();
         for r in &rows {
             actor_total_heal += r.total_value;
@@ -1638,20 +1635,17 @@ pub fn get_encounter_attempt_player_skills(
             entry.5 += r.lucky_total;
         }
 
-        let mut items: Vec<(i32, (i64, i64, i64, i64, i64, i64))> = agg.into_iter().collect();
+        let mut items: Vec<(i64, (i64, i64, i64, i64, i64, i64))> = agg.into_iter().collect();
         items.sort_by(|a, b| b.1.0.cmp(&a.1.0));
 
         for (skill_id, (total_heal, hits, crit_hits, lucky_hits, crit_total, lucky_total)) in items
         {
-            let name = if skill_id > 0 {
-                skill_names::lookup(skill_id).unwrap_or_else(|| String::from("Unknown Skill"))
-            } else {
-                String::from("Unknown Skill")
-            };
+            let name = LiveSkill::get_skill_name(skill_id);
 
             let hits_f = hits as f64;
             let total_heal_f = total_heal as f64;
             let sr = lc::SkillRow {
+                skill_id,
                 name,
                 total_dmg: total_heal.max(0) as u128,
                 dps: if duration_secs > 0.0 {
@@ -2101,7 +2095,7 @@ pub fn get_encounter_player_skills(
             .load::<m::DamageSkillStatRow>(&mut conn)
             .map_err(|e| e.to_string())?;
 
-        let mut agg: HashMap<i32, (i64, i64, i64, i64, i64, i64)> = HashMap::new();
+        let mut agg: HashMap<i64, (i64, i64, i64, i64, i64, i64)> = HashMap::new();
         for stat in stats {
             let entry = agg.entry(stat.skill_id).or_insert((0, 0, 0, 0, 0, 0));
             entry.0 += stat.total_value;
@@ -2112,19 +2106,16 @@ pub fn get_encounter_player_skills(
             entry.5 += stat.lucky_total;
         }
 
-        let mut items: Vec<(i32, (i64, i64, i64, i64, i64, i64))> = agg.into_iter().collect();
+        let mut items: Vec<(i64, (i64, i64, i64, i64, i64, i64))> = agg.into_iter().collect();
         items.sort_by(|a, b| b.1.0.cmp(&a.1.0));
 
         for (skill_id, (total_dmg, hits, crit_hits, lucky_hits, crit_total, lucky_total)) in items {
-            let name = if skill_id > 0 {
-                skill_names::lookup(skill_id).unwrap_or_else(|| String::from("Unknown Skill"))
-            } else {
-                String::from("Unknown Skill")
-            };
+            let name = LiveSkill::get_skill_name(skill_id);
 
             let hits_f = hits as f64;
             let total_dmg_f = total_dmg as f64;
             let sr = lc::SkillRow {
+                skill_id,
                 name,
                 total_dmg: total_dmg.max(0) as u128,
                 dps: if duration_secs > 0.0 {
@@ -2173,7 +2164,7 @@ pub fn get_encounter_player_skills(
             .load::<m::HealSkillStatRow>(&mut conn)
             .map_err(|e| e.to_string())?;
 
-        let mut agg: HashMap<i32, (i64, i64, i64, i64, i64, i64)> = HashMap::new();
+        let mut agg: HashMap<i64, (i64, i64, i64, i64, i64, i64)> = HashMap::new();
         for stat in stats {
             let entry = agg.entry(stat.skill_id).or_insert((0, 0, 0, 0, 0, 0));
             entry.0 += stat.total_value;
@@ -2184,20 +2175,17 @@ pub fn get_encounter_player_skills(
             entry.5 += stat.lucky_total;
         }
 
-        let mut items: Vec<(i32, (i64, i64, i64, i64, i64, i64))> = agg.into_iter().collect();
+        let mut items: Vec<(i64, (i64, i64, i64, i64, i64, i64))> = agg.into_iter().collect();
         items.sort_by(|a, b| b.1.0.cmp(&a.1.0));
 
         for (skill_id, (total_heal, hits, crit_hits, lucky_hits, crit_total, lucky_total)) in items
         {
-            let name = if skill_id > 0 {
-                skill_names::lookup(skill_id).unwrap_or_else(|| String::from("Unknown Skill"))
-            } else {
-                String::from("Unknown Skill")
-            };
+            let name = LiveSkill::get_skill_name(skill_id);
 
             let hits_f = hits as f64;
             let total_heal_f = total_heal as f64;
             let sr = lc::SkillRow {
+                skill_id,
                 name,
                 total_dmg: total_heal.max(0) as u128,
                 dps: if duration_secs > 0.0 {
@@ -2318,121 +2306,3 @@ pub fn toggle_favorite_encounter(id: i32, is_favorite: bool) -> Result<(), Strin
     Ok(())
 }
 
-// Buff Tracking DTOs
-
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct EncounterBuffEventDto {
-    pub start_ms: i64,
-    pub end_ms: i64,
-    pub duration_ms: i64,
-    pub stack_count: i32,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct EncounterBuffDto {
-    pub buff_id: i32,
-    pub buff_name: String,
-    pub buff_name_long: Option<String>,
-    pub total_duration_ms: i64,
-    pub events: Vec<EncounterBuffEventDto>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct EncounterEntityBuffsDto {
-    pub entity_uid: i64,
-    pub entity_name: String,
-    pub buffs: Vec<EncounterBuffDto>,
-}
-
-#[derive(Deserialize)]
-struct StoredBuffEvent {
-    start: i64,
-    end: i64,
-    duration: i32,
-    stack_count: i32,
-}
-
-/// Gets the buffs for a given encounter, filtered by player entities.
-///
-/// # Arguments
-///
-/// * `encounter_id` - The ID of the encounter.
-///
-/// # Returns
-///
-/// * `Result<Vec<EncounterEntityBuffsDto>, String>` - A list of entity buffs.
-#[tauri::command]
-#[specta::specta]
-pub fn get_encounter_buffs(encounter_id: i32) -> Result<Vec<EncounterEntityBuffsDto>, String> {
-    let mut conn = get_conn()?;
-    use crate::live::buff_names;
-    use sch::actor_encounter_stats::dsl as s;
-    use sch::buffs::dsl as b;
-
-    // 1. Get players in this encounter to filter buffs
-    let players: std::collections::HashMap<i64, String> = s::actor_encounter_stats
-        .filter(s::encounter_id.eq(encounter_id))
-        .filter(s::is_player.eq(1))
-        .select((s::actor_id, s::name))
-        .load::<(i64, Option<String>)>(&mut conn)
-        .map_err(|e| e.to_string())?
-        .into_iter()
-        .map(|(uid, name)| (uid, name.unwrap_or_else(|| format!("Unknown ({})", uid))))
-        .collect();
-
-    // 2. Fetch all buffs for the encounter
-    let buff_rows = b::buffs
-        .filter(b::encounter_id.eq(encounter_id))
-        .load::<m::BuffRow>(&mut conn)
-        .map_err(|e| e.to_string())?;
-
-    let mut result_map: std::collections::HashMap<i64, EncounterEntityBuffsDto> =
-        std::collections::HashMap::new();
-
-    for row in buff_rows {
-        // Only process if entity is a known player
-        if let Some(name) = players.get(&row.entity_id) {
-            let entry =
-                result_map
-                    .entry(row.entity_id)
-                    .or_insert_with(|| EncounterEntityBuffsDto {
-                        entity_uid: row.entity_id,
-                        entity_name: name.clone(),
-                        buffs: Vec::new(),
-                    });
-
-            // Parse events
-            let stored_events: Vec<StoredBuffEvent> =
-                serde_json::from_str(&row.events).unwrap_or_default();
-
-            let events_dto: Vec<EncounterBuffEventDto> = stored_events
-                .into_iter()
-                .map(|e| EncounterBuffEventDto {
-                    start_ms: e.start,
-                    end_ms: e.end,
-                    duration_ms: e.duration as i64,
-                    stack_count: e.stack_count,
-                })
-                .collect();
-
-            let total_duration_ms: i64 = events_dto.iter().map(|e| e.duration_ms).sum();
-
-            if total_duration_ms > 0 {
-                if let Some((short, long)) = buff_names::lookup_full(row.buff_id) {
-                    entry.buffs.push(EncounterBuffDto {
-                        buff_id: row.buff_id,
-                        buff_name: short,
-                        buff_name_long: Some(long),
-                        total_duration_ms,
-                        events: events_dto,
-                    });
-                }
-            }
-        }
-    }
-
-    Ok(result_map.into_values().collect())
-}

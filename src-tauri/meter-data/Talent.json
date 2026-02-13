@@ -1,0 +1,5107 @@
+[
+  {
+    "id": 1,
+    "BuffIds": [],
+    "Des": "力量+10",
+    "TalentIcon": "common_icon05",
+    "SpriteFile": "common_icon05_-8156243332899822416.png"
+  },
+  {
+    "id": 2,
+    "BuffIds": [],
+    "Des": "智力+10",
+    "TalentIcon": "common_icon06",
+    "SpriteFile": "common_icon06_-3579383552921421169.png"
+  },
+  {
+    "id": 3,
+    "BuffIds": [],
+    "Des": "敏捷+10",
+    "TalentIcon": "common_attrdexterity",
+    "SpriteFile": "common_attrdexterity_5933509642912299638.png"
+  },
+  {
+    "id": 4,
+    "BuffIds": [],
+    "Des": "耐力+30",
+    "TalentIcon": "common_icon08",
+    "SpriteFile": "common_icon08_3824526913602173039.png"
+  },
+  {
+    "id": 5,
+    "BuffIds": [],
+    "Des": "暴击+25",
+    "TalentIcon": "common_icon12",
+    "SpriteFile": "common_icon12_3270441707782298779.png"
+  },
+  {
+    "id": 6,
+    "BuffIds": [],
+    "Des": "急速+25",
+    "TalentIcon": "common_attrhaste",
+    "SpriteFile": "common_attrhaste_8454206061634060323.png"
+  },
+  {
+    "id": 7,
+    "BuffIds": [],
+    "Des": "幸运+25",
+    "TalentIcon": "common_attrluck",
+    "SpriteFile": "common_attrluck_-6126577399248271687.png"
+  },
+  {
+    "id": 8,
+    "BuffIds": [],
+    "Des": "精通+25",
+    "TalentIcon": "common_attrmastery",
+    "SpriteFile": "common_attrmastery_7412119243494228917.png"
+  },
+  {
+    "id": 9,
+    "BuffIds": [],
+    "Des": "全能+25",
+    "TalentIcon": "common_attrversatility",
+    "SpriteFile": "common_attrversatility_-5327509501343454434.png"
+  },
+  {
+    "id": 20,
+    "BuffIds": [],
+    "Des": "冰元素攻击+5",
+    "TalentIcon": "common_icon03",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "id": 21,
+    "BuffIds": [],
+    "Des": "岩元素攻击+5",
+    "TalentIcon": "common_icon03",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "id": 22,
+    "BuffIds": [],
+    "Des": "雷元素攻击+5",
+    "TalentIcon": "common_icon03",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "id": 23,
+    "BuffIds": [],
+    "Des": "森元素攻击+5",
+    "TalentIcon": "common_icon03",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "id": 24,
+    "BuffIds": [],
+    "Des": "光元素攻击+5",
+    "TalentIcon": "common_icon03",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "id": 25,
+    "BuffIds": [],
+    "Des": "暗元素攻击+5",
+    "TalentIcon": "common_icon03",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "id": 26,
+    "BuffIds": [],
+    "Des": "风元素攻击+5",
+    "TalentIcon": "common_icon03",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "id": 27,
+    "BuffIds": [],
+    "Des": "火元素攻击+5",
+    "TalentIcon": "common_icon03",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "id": 40,
+    "BuffIds": [],
+    "Des": "暴击几率+2%",
+    "TalentIcon": "common_icon12",
+    "SpriteFile": "common_icon12_3270441707782298779.png"
+  },
+  {
+    "id": 41,
+    "BuffIds": [],
+    "Des": "攻击速度+1%",
+    "TalentIcon": "common_icon13",
+    "SpriteFile": "common_icon13_-2602042637177491941.png"
+  },
+  {
+    "id": 42,
+    "BuffIds": [],
+    "Des": "施法速度+1%",
+    "TalentIcon": "common_icon13",
+    "SpriteFile": "common_icon13_-2602042637177491941.png"
+  },
+  {
+    "id": 43,
+    "BuffIds": [],
+    "Des": "技能冷却+1%",
+    "TalentIcon": "common_icon13",
+    "SpriteFile": "common_icon13_-2602042637177491941.png"
+  },
+  {
+    "id": 44,
+    "BuffIds": [],
+    "Des": "幸运几率+2%",
+    "TalentIcon": "common_attrluck",
+    "SpriteFile": "common_attrluck_-6126577399248271687.png"
+  },
+  {
+    "id": 45,
+    "BuffIds": [],
+    "Des": "暴击伤害+3%",
+    "TalentIcon": "common_icon12",
+    "SpriteFile": "common_icon12_3270441707782298779.png"
+  },
+  {
+    "id": 46,
+    "BuffIds": [],
+    "Des": "幸运伤害+3%",
+    "TalentIcon": "common_attrluck",
+    "SpriteFile": "common_attrluck_-6126577399248271687.png"
+  },
+  {
+    "id": 47,
+    "BuffIds": [],
+    "Des": "治疗效果+3%",
+    "TalentIcon": "common_icon04",
+    "SpriteFile": "common_icon04_7530785129569524332.png"
+  },
+  {
+    "id": 48,
+    "BuffIds": [],
+    "Des": "护盾减伤+4%",
+    "TalentIcon": "common_icon04",
+    "SpriteFile": "common_icon04_7530785129569524332.png"
+  },
+  {
+    "id": 49,
+    "BuffIds": [],
+    "Des": "格挡减伤+4%",
+    "TalentIcon": "common_icon04",
+    "SpriteFile": "common_icon04_7530785129569524332.png"
+  },
+  {
+    "id": 50,
+    "BuffIds": [],
+    "Des": "全能增伤+3%",
+    "TalentIcon": "common_attrversatility",
+    "SpriteFile": "common_attrversatility_-5327509501343454434.png"
+  },
+  {
+    "id": 51,
+    "BuffIds": [],
+    "Des": "全能减伤+3%",
+    "TalentIcon": "common_attrversatility",
+    "SpriteFile": "common_attrversatility_-5327509501343454434.png"
+  },
+  {
+    "id": 52,
+    "BuffIds": [],
+    "Des": "易伤强度+3%",
+    "TalentIcon": "common_icon05",
+    "SpriteFile": "common_icon05_-8156243332899822416.png"
+  },
+  {
+    "id": 53,
+    "BuffIds": [],
+    "Des": "易伤增伤+3%",
+    "TalentIcon": "common_icon07",
+    "SpriteFile": "common_icon07_-9027704475579957595.png"
+  },
+  {
+    "id": 54,
+    "BuffIds": [],
+    "Des": "压制增伤+3%",
+    "TalentIcon": "common_icon05",
+    "SpriteFile": "common_icon05_-8156243332899822416.png"
+  },
+  {
+    "id": 55,
+    "BuffIds": [],
+    "Des": "压制减伤+3%",
+    "TalentIcon": "common_icon07",
+    "SpriteFile": "common_icon07_-9027704475579957595.png"
+  },
+  {
+    "id": 56,
+    "BuffIds": [],
+    "Des": "鼓舞效果+3%",
+    "TalentIcon": "common_icon05",
+    "SpriteFile": "common_icon05_-8156243332899822416.png"
+  },
+  {
+    "id": 57,
+    "BuffIds": [],
+    "Des": "忽视防御+2%",
+    "TalentIcon": "common_icon13",
+    "SpriteFile": "common_icon13_-2602042637177491941.png"
+  },
+  {
+    "id": 100,
+    "BuffIds": [
+      2200020
+    ],
+    "Des": "刀意",
+    "TalentIcon": "talent_passive_icon_general_tank_shieldbash",
+    "SpriteFile": "talent_passive_icon_general_tank_shieldbash_2276059374816935612.png"
+  },
+  {
+    "id": 101,
+    "BuffIds": [],
+    "Des": "敏捷转换",
+    "TalentIcon": "talent_passive_icon_general_dps_strtran",
+    "SpriteFile": "talent_passive_icon_general_dps_strtran_2602671007434135097.png"
+  },
+  {
+    "id": 102,
+    "BuffIds": [
+      2200040
+    ],
+    "Des": "霹雳回旋",
+    "TalentIcon": "talent_passive_icon_general_dps_injured",
+    "SpriteFile": "talent_passive_icon_general_dps_injured_-5416923532089156570.png"
+  },
+  {
+    "id": 103,
+    "BuffIds": [
+      2200050
+    ],
+    "Des": "心眼一击",
+    "TalentIcon": "talent_passive_icon_general_dps_fullattack",
+    "SpriteFile": "talent_passive_icon_general_dps_fullattack_-3695955764129732016.png"
+  },
+  {
+    "id": 104,
+    "BuffIds": [
+      2200060
+    ],
+    "Des": "心眼强化",
+    "TalentIcon": "talent_passive_icon_general_dps_fullattack",
+    "SpriteFile": "talent_passive_icon_general_dps_fullattack_-3695955764129732016.png"
+  },
+  {
+    "id": 105,
+    "BuffIds": [
+      2200070
+    ],
+    "Des": "居合天授",
+    "TalentIcon": "talent_passive_icon_general_dps_draw",
+    "SpriteFile": "talent_passive_icon_general_dps_draw_7468588183644438809.png"
+  },
+  {
+    "id": 106,
+    "BuffIds": [
+      2200080
+    ],
+    "Des": "追击风袭·上式",
+    "TalentIcon": "taidao144",
+    "SpriteFile": "taidao144_457255911769315799.png"
+  },
+  {
+    "id": 107,
+    "BuffIds": [
+      2200090
+    ],
+    "Des": "禅瞬之机",
+    "TalentIcon": "talent_passive_icon_general_dps_instant",
+    "SpriteFile": "talent_passive_icon_general_dps_instant_6578954050367131765.png"
+  },
+  {
+    "id": 108,
+    "BuffIds": [
+      2200100
+    ],
+    "Des": "霹雳符印",
+    "TalentIcon": "taidao136",
+    "SpriteFile": "taidao136_2679379289363234477.png"
+  },
+  {
+    "id": 109,
+    "BuffIds": [
+      2200110
+    ],
+    "Des": "雷返",
+    "TalentIcon": "talent_passive_icon_general_dps_pursue",
+    "SpriteFile": "talent_passive_icon_general_dps_pursue_-920102285510907981.png"
+  },
+  {
+    "id": 110,
+    "BuffIds": [
+      2200120
+    ],
+    "Des": "拔刀真空波",
+    "TalentIcon": "talent_passive_icon_general_dps_swordbullet",
+    "SpriteFile": "talent_passive_icon_general_dps_swordbullet_-8275410435127269321.png"
+  },
+  {
+    "id": 112,
+    "BuffIds": [
+      2200140
+    ],
+    "Des": "一闪狂刃",
+    "TalentIcon": "talent_passive_icon_general_dps_thundermastery",
+    "SpriteFile": "talent_passive_icon_general_dps_thundermastery_-4667395688833047006.png"
+  },
+  {
+    "id": 113,
+    "BuffIds": [
+      2200150
+    ],
+    "Des": "刃风界域",
+    "TalentIcon": "talent_skill_360105",
+    "SpriteFile": "talent_skill_360105_4925120933173908008.png"
+  },
+  {
+    "id": 114,
+    "BuffIds": [
+      2200160
+    ],
+    "Des": "雷魂之触",
+    "TalentIcon": "talent_passive_icon_general_dps_thunderstrike",
+    "SpriteFile": "talent_passive_icon_general_dps_thunderstrike_3218134762327707677.png"
+  },
+  {
+    "id": 115,
+    "BuffIds": [
+      2200170
+    ],
+    "Des": "印记之息",
+    "TalentIcon": "talent_passive_icon_general_dps_thunderrepro",
+    "SpriteFile": "talent_passive_icon_general_dps_thunderrepro_-7701914167442613011.png"
+  },
+  {
+    "id": 116,
+    "BuffIds": [
+      2200180
+    ],
+    "Des": "幻影时延",
+    "TalentIcon": "talent_passive_icon_general_dps_thunderseed",
+    "SpriteFile": "talent_passive_icon_general_dps_thunderseed_-7997887068673212519.png"
+  },
+  {
+    "id": 118,
+    "BuffIds": [
+      2200200
+    ],
+    "Des": "幻镰之境·一式",
+    "TalentIcon": "talent_passive_icon_general_dps_sickleairun",
+    "SpriteFile": "talent_passive_icon_general_dps_sickleairun_-6813231458193829154.png"
+  },
+  {
+    "id": 119,
+    "BuffIds": [
+      2200210
+    ],
+    "Des": "幻镰之境·二式",
+    "TalentIcon": "talent_passive_icon_general_dps_sickleairun",
+    "SpriteFile": "talent_passive_icon_general_dps_sickleairun_-6813231458193829154.png"
+  },
+  {
+    "id": 120,
+    "BuffIds": [
+      2200220
+    ],
+    "Des": "雷电之力",
+    "TalentIcon": "talent_passive_icon_general_dps_sickletime",
+    "SpriteFile": "talent_passive_icon_general_dps_sickletime_-8664202761899484080.png"
+  },
+  {
+    "id": 121,
+    "BuffIds": [
+      2200230
+    ],
+    "Des": "月影时延",
+    "TalentIcon": "taidao150",
+    "SpriteFile": "taidao150_-7716163340458354964.png"
+  },
+  {
+    "id": 122,
+    "BuffIds": [
+      2200240
+    ],
+    "Des": "霹雳之光",
+    "TalentIcon": "talent_passive_icon_general_dps_sicklespeed",
+    "SpriteFile": "talent_passive_icon_general_dps_sicklespeed_8925246470520840651.png"
+  },
+  {
+    "id": 123,
+    "BuffIds": [
+      2200250
+    ],
+    "Des": "雷咒",
+    "TalentIcon": "talent_passive_icon_general_dps_thundercurse",
+    "SpriteFile": "talent_passive_icon_general_dps_thundercurse_-2467988513355957660.png"
+  },
+  {
+    "id": 124,
+    "BuffIds": [
+      2200260
+    ],
+    "Des": "决斗意识",
+    "TalentIcon": "talent_passive_icon_dps_combo02",
+    "SpriteFile": "talent_passive_icon_dps_combo02_9069735004479135638.png"
+  },
+  {
+    "id": 126,
+    "BuffIds": [
+      2200280
+    ],
+    "Des": "狂戮雷鸣",
+    "TalentIcon": "talent_passive_icon_general_dps_thunderkill",
+    "SpriteFile": "talent_passive_icon_general_dps_thunderkill_7957514928206938738.png"
+  },
+  {
+    "id": 128,
+    "BuffIds": [
+      2200300
+    ],
+    "Des": "敌影蔑视",
+    "TalentIcon": "talent_passive_icon_general_dps_ignoredef",
+    "SpriteFile": "talent_passive_icon_general_dps_ignoredef_7286603713275054058.png"
+  },
+  {
+    "id": 129,
+    "BuffIds": [
+      2200310
+    ],
+    "Des": "居合雷舞",
+    "TalentIcon": "talent_passive_icon_general_dps_doublehit",
+    "SpriteFile": "talent_passive_icon_general_dps_doublehit_5092871202857175000.png"
+  },
+  {
+    "id": 130,
+    "BuffIds": [
+      2200320
+    ],
+    "Des": "居合斩流",
+    "TalentIcon": "talent_passive_icon_general_dps_joy",
+    "SpriteFile": "talent_passive_icon_general_dps_joy_-6716875204547555466.png"
+  },
+  {
+    "id": 131,
+    "BuffIds": [
+      2200330
+    ],
+    "Des": "霹雳电种",
+    "TalentIcon": "taidao157",
+    "SpriteFile": "taidao157_-4674659845681166599.png"
+  },
+  {
+    "id": 132,
+    "BuffIds": [
+      2200340
+    ],
+    "Des": "一闪锐击",
+    "TalentIcon": "talent_passive_icon_dps_crit04",
+    "SpriteFile": "talent_passive_icon_dps_crit04_1805785673948377249.png"
+  },
+  {
+    "id": 133,
+    "BuffIds": [
+      2200350
+    ],
+    "Des": "疾电破袭",
+    "TalentIcon": "talent_passive_icon_general_dps_thundercost",
+    "SpriteFile": "talent_passive_icon_general_dps_thundercost_6323952977511578800.png"
+  },
+  {
+    "id": 134,
+    "BuffIds": [
+      2200360
+    ],
+    "Des": "破灭之终结",
+    "TalentIcon": "talent_passive_icon_dps_comboconversion",
+    "SpriteFile": "talent_passive_icon_dps_comboconversion_8610329451014759470.png"
+  },
+  {
+    "id": 135,
+    "BuffIds": [],
+    "Des": "迅捷",
+    "TalentIcon": "taidao135",
+    "SpriteFile": "taidao135_1644291667619602855.png"
+  },
+  {
+    "id": 136,
+    "BuffIds": [
+      2200380
+    ],
+    "Des": "霹雳符印",
+    "TalentIcon": "taidao136",
+    "SpriteFile": "taidao136_2679379289363234477.png"
+  },
+  {
+    "id": 137,
+    "BuffIds": [
+      2200390
+    ],
+    "Des": "迅捷之刃",
+    "TalentIcon": "taidao137",
+    "SpriteFile": "taidao137_-2857153490999459874.png"
+  },
+  {
+    "id": 138,
+    "BuffIds": [
+      2200400
+    ],
+    "Des": "雷符刀意",
+    "TalentIcon": "taidao138",
+    "SpriteFile": "taidao138_7374684314001062954.png"
+  },
+  {
+    "id": 139,
+    "BuffIds": [
+      2200410
+    ],
+    "Des": "无穷雷霆",
+    "TalentIcon": "taidao139",
+    "SpriteFile": "taidao139_7089337983153356311.png"
+  },
+  {
+    "id": 140,
+    "BuffIds": [
+      2200420
+    ],
+    "Des": "雷印回溯",
+    "TalentIcon": "taidao140",
+    "SpriteFile": "taidao140_8839135166508308678.png"
+  },
+  {
+    "id": 141,
+    "BuffIds": [
+      2200430
+    ],
+    "Des": "雷霆神威",
+    "TalentIcon": "taidao141",
+    "SpriteFile": "taidao141_-1343588304675625764.png"
+  },
+  {
+    "id": 142,
+    "BuffIds": [
+      2200440
+    ],
+    "Des": "无双飞雷神",
+    "TalentIcon": "taidao142",
+    "SpriteFile": "taidao142_-4059180998150961438.png"
+  },
+  {
+    "id": 143,
+    "BuffIds": [
+      2200450
+    ],
+    "Des": "暴斩",
+    "TalentIcon": "taidao143",
+    "SpriteFile": "taidao143_-1467707851314563816.png"
+  },
+  {
+    "id": 144,
+    "BuffIds": [
+      2200460
+    ],
+    "Des": "追击风袭·下式",
+    "TalentIcon": "taidao144",
+    "SpriteFile": "taidao144_457255911769315799.png"
+  },
+  {
+    "id": 145,
+    "BuffIds": [
+      2200470
+    ],
+    "Des": "刀意双绝",
+    "TalentIcon": "taidao145",
+    "SpriteFile": "taidao145_6928810167663351857.png"
+  },
+  {
+    "id": 146,
+    "BuffIds": [
+      2200480
+    ],
+    "Des": "雷印亲和",
+    "TalentIcon": "taidao146",
+    "SpriteFile": "taidao146_1702839282550973457.png"
+  },
+  {
+    "id": 147,
+    "BuffIds": [
+      2200490
+    ],
+    "Des": "雷霆之压",
+    "TalentIcon": "taidao147",
+    "SpriteFile": "taidao147_-5428016891072870215.png"
+  },
+  {
+    "id": 148,
+    "BuffIds": [
+      2200500
+    ],
+    "Des": "超高出力精进",
+    "TalentIcon": "taidao148",
+    "SpriteFile": "taidao148_-2238719935558037101.png"
+  },
+  {
+    "id": 149,
+    "BuffIds": [
+      2200510
+    ],
+    "Des": "刀意雷击",
+    "TalentIcon": "taidao149",
+    "SpriteFile": "taidao149_5158377370814764496.png"
+  },
+  {
+    "id": 150,
+    "BuffIds": [
+      2200520
+    ],
+    "Des": "霹雳符印",
+    "TalentIcon": "taidao136",
+    "SpriteFile": "taidao136_2679379289363234477.png"
+  },
+  {
+    "id": 151,
+    "BuffIds": [
+      2200530
+    ],
+    "Des": "破斩",
+    "TalentIcon": "taidao151",
+    "SpriteFile": "taidao151_-1859278860122347610.png"
+  },
+  {
+    "id": 152,
+    "BuffIds": [
+      2200540
+    ],
+    "Des": "暴裂",
+    "TalentIcon": "taidao152",
+    "SpriteFile": "taidao152_-6577550984410376419.png"
+  },
+  {
+    "id": 153,
+    "BuffIds": [
+      2200550
+    ],
+    "Des": "瞬斩",
+    "TalentIcon": "taidao153",
+    "SpriteFile": "taidao153_-3820244644097162364.png"
+  },
+  {
+    "id": 154,
+    "BuffIds": [
+      2200560
+    ],
+    "Des": "精进",
+    "TalentIcon": "taidao154",
+    "SpriteFile": "taidao154_3824363030858337407.png"
+  },
+  {
+    "id": 155,
+    "BuffIds": [
+      2200570
+    ],
+    "Des": "雷霆之镰精进",
+    "TalentIcon": "taidao155",
+    "SpriteFile": "taidao155_-7046975182809769465.png"
+  },
+  {
+    "id": 156,
+    "BuffIds": [
+      2200580
+    ],
+    "Des": "刀意回复",
+    "TalentIcon": "taidao156",
+    "SpriteFile": "taidao156_-4151080417518821768.png"
+  },
+  {
+    "id": 157,
+    "BuffIds": [
+      2200590
+    ],
+    "Des": "月刃召唤流",
+    "TalentIcon": "talent_passive_icon_general_dps_sickleget",
+    "SpriteFile": "talent_passive_icon_general_dps_sickleget_7277470796038356571.png"
+  },
+  {
+    "id": 158,
+    "BuffIds": [
+      2200600
+    ],
+    "Des": "神罚之镰",
+    "TalentIcon": "taidao158",
+    "SpriteFile": "taidao158_4470989273118996281.png"
+  },
+  {
+    "id": 159,
+    "BuffIds": [
+      2200610
+    ],
+    "Des": "月光电荷",
+    "TalentIcon": "taidao159",
+    "SpriteFile": "taidao159_903205260476960303.png"
+  },
+  {
+    "id": 160,
+    "BuffIds": [
+      2200620
+    ],
+    "Des": "刀意·极",
+    "TalentIcon": "taidao160",
+    "SpriteFile": "taidao160_8577213380478401967.png"
+  },
+  {
+    "id": 161,
+    "BuffIds": [
+      2200630
+    ],
+    "Des": "雷鸣千闪",
+    "TalentIcon": "taidao161",
+    "SpriteFile": "taidao161_-8731798044924366803.png"
+  },
+  {
+    "id": 162,
+    "BuffIds": [
+      2200640
+    ],
+    "Des": "缭乱兜割",
+    "TalentIcon": "taidao162",
+    "SpriteFile": "taidao162_-4394392484815470849.png"
+  },
+  {
+    "id": 163,
+    "BuffIds": [
+      2200650
+    ],
+    "Des": "雷击强化",
+    "TalentIcon": "taidao163",
+    "SpriteFile": "taidao163_2521024467674555405.png"
+  },
+  {
+    "id": 164,
+    "BuffIds": [
+      2200660
+    ],
+    "Des": "电荷捕手",
+    "TalentIcon": "taidao164",
+    "SpriteFile": "taidao164_-7475652830760940628.png"
+  },
+  {
+    "id": 165,
+    "BuffIds": [
+      2200670
+    ],
+    "Des": "雷击低语",
+    "TalentIcon": "taidao165",
+    "SpriteFile": "taidao165_6706791743330362438.png"
+  },
+  {
+    "id": 166,
+    "BuffIds": [
+      2200680
+    ],
+    "Des": "月影锐击",
+    "TalentIcon": "taidao166",
+    "SpriteFile": "taidao166_8263710650311787539.png"
+  },
+  {
+    "id": 167,
+    "BuffIds": [
+      2200690
+    ],
+    "Des": "霹雳符印",
+    "TalentIcon": "taidao167",
+    "SpriteFile": "taidao167_603288090974383121.png"
+  },
+  {
+    "id": 168,
+    "BuffIds": [
+      2200700
+    ],
+    "Des": "雷符极意",
+    "TalentIcon": "taidao168",
+    "SpriteFile": "taidao168_-5169045047903268899.png"
+  },
+  {
+    "id": 169,
+    "BuffIds": [
+      2200710
+    ],
+    "Des": "霹雳电荷",
+    "TalentIcon": "taidao169",
+    "SpriteFile": "taidao169_-6945947578409367684.png"
+  },
+  {
+    "id": 170,
+    "BuffIds": [
+      2200720
+    ],
+    "Des": "月刃神速",
+    "TalentIcon": "taidao170",
+    "SpriteFile": "taidao170_-4495561753701230229.png"
+  },
+  {
+    "id": 171,
+    "BuffIds": [
+      2200730
+    ],
+    "Des": "雷霆神威",
+    "TalentIcon": "taidao170",
+    "SpriteFile": "taidao170_-4495561753701230229.png"
+  },
+  {
+    "id": 172,
+    "BuffIds": [
+      2200740
+    ],
+    "Des": "霹雳之光",
+    "TalentIcon": "talent_passive_icon_general_dps_sicklespeed",
+    "SpriteFile": "talent_passive_icon_general_dps_sicklespeed_8925246470520840651.png"
+  },
+  {
+    "id": 200,
+    "BuffIds": [
+      2204010
+    ],
+    "Des": "寒意·锐",
+    "TalentIcon": "mozhang238",
+    "SpriteFile": "mozhang238_-6211253637147627227.png"
+  },
+  {
+    "id": 201,
+    "BuffIds": [],
+    "Des": "智力转换",
+    "TalentIcon": "talent_passive_icon_general_dps_inttran",
+    "SpriteFile": "talent_passive_icon_general_dps_inttran_-3351449962676288113.png"
+  },
+  {
+    "id": 202,
+    "BuffIds": [
+      2204030
+    ],
+    "Des": "寒霜咒印",
+    "TalentIcon": "talent_passive_icon_general_dps_icenucleus",
+    "SpriteFile": "talent_passive_icon_general_dps_icenucleus_-3562277074333379218.png"
+  },
+  {
+    "id": 203,
+    "BuffIds": [
+      2204040
+    ],
+    "Des": "寒冰启示",
+    "TalentIcon": "talent_passive_icon_general_dps_doubleicearrow",
+    "SpriteFile": "talent_passive_icon_general_dps_doubleicearrow_-8250302052786953673.png"
+  },
+  {
+    "id": 204,
+    "BuffIds": [
+      2204050
+    ],
+    "Des": "玄冰之息",
+    "TalentIcon": "mozhang262",
+    "SpriteFile": "mozhang262_-1375423911745025561.png"
+  },
+  {
+    "id": 206,
+    "BuffIds": [
+      2204060
+    ],
+    "Des": "浪潮精通",
+    "TalentIcon": "talent_passive_icon_general_dps_icelasermastery",
+    "SpriteFile": "talent_passive_icon_general_dps_icelasermastery_3841266868427727827.png"
+  },
+  {
+    "id": 207,
+    "BuffIds": [
+      2204070
+    ],
+    "Des": "冰晶共鸣",
+    "TalentIcon": "talent_passive_icon_dps_sacrificeconversion",
+    "SpriteFile": "talent_passive_icon_dps_sacrificeconversion_-535211137127277943.png"
+  },
+  {
+    "id": 208,
+    "BuffIds": [
+      2204080
+    ],
+    "Des": "霜爆",
+    "TalentIcon": "talent_passive_icon_general_dps_icearrowaoe",
+    "SpriteFile": "talent_passive_icon_general_dps_icearrowaoe_-5890132798454636393.png"
+  },
+  {
+    "id": 209,
+    "BuffIds": [
+      2204090
+    ],
+    "Des": "冰晶扩充",
+    "TalentIcon": "mozhang270",
+    "SpriteFile": "mozhang270_-1900381981162474161.png"
+  },
+  {
+    "id": 210,
+    "BuffIds": [
+      2204100
+    ],
+    "Des": "冰凌之约",
+    "TalentIcon": "talent_passive_icon_general_dps_iceenergycost",
+    "SpriteFile": "talent_passive_icon_general_dps_iceenergycost_-1814576381972923272.png"
+  },
+  {
+    "id": 211,
+    "BuffIds": [
+      2204110
+    ],
+    "Des": "寒风凝聚",
+    "TalentIcon": "talent_passive_icon_general_dps_iceenergyget",
+    "SpriteFile": "talent_passive_icon_general_dps_iceenergyget_-6213448500245723497.png"
+  },
+  {
+    "id": 212,
+    "BuffIds": [
+      2204120
+    ],
+    "Des": "射线流",
+    "TalentIcon": "talent_passive_icon_general_dps_icespearget",
+    "SpriteFile": "talent_passive_icon_general_dps_icespearget_-7449856905542822401.png"
+  },
+  {
+    "id": 214,
+    "BuffIds": [
+      2204130
+    ],
+    "Des": "滝流雪影",
+    "TalentIcon": "talent_passive_icon_general_dps_icespearluck",
+    "SpriteFile": "talent_passive_icon_general_dps_icespearluck_356477374354012415.png"
+  },
+  {
+    "id": 215,
+    "BuffIds": [
+      2204140
+    ],
+    "Des": "冰霜彗星",
+    "TalentIcon": "talent_passive_icon_general_dps_icecomet",
+    "SpriteFile": "talent_passive_icon_general_dps_icecomet_1611337091920902535.png"
+  },
+  {
+    "id": 216,
+    "BuffIds": [
+      2204150
+    ],
+    "Des": "冻结星辰",
+    "TalentIcon": "talent_passive_icon_general_dps_luckandcri",
+    "SpriteFile": "talent_passive_icon_general_dps_luckandcri_-3138000845652143501.png"
+  },
+  {
+    "id": 217,
+    "BuffIds": [
+      2204160
+    ],
+    "Des": "冰暴双矛",
+    "TalentIcon": "talent_passive_icon_general_dps_icepearextra",
+    "SpriteFile": "talent_passive_icon_general_dps_icepearextra_-8255672618023533477.png"
+  },
+  {
+    "id": 219,
+    "BuffIds": [
+      2204170
+    ],
+    "Des": "风雨际会",
+    "TalentIcon": "talent_passive_icon_general_dps_icespeardouble",
+    "SpriteFile": "talent_passive_icon_general_dps_icespeardouble_4860997707069397100.png"
+  },
+  {
+    "id": 220,
+    "BuffIds": [
+      2204180
+    ],
+    "Des": "碎冰之击",
+    "TalentIcon": "talent_passive_icon_general_dps_crushedice",
+    "SpriteFile": "talent_passive_icon_general_dps_crushedice_-1267330544110224266.png"
+  },
+  {
+    "id": 221,
+    "BuffIds": [
+      2204190
+    ],
+    "Des": "冰川怒潮",
+    "TalentIcon": "talent_passive_icon_general_dps_crithreetimes",
+    "SpriteFile": "talent_passive_icon_general_dps_crithreetimes_-4526495085408076459.png"
+  },
+  {
+    "id": 222,
+    "BuffIds": [
+      2204200
+    ],
+    "Des": "极寒之矛",
+    "TalentIcon": "talent_passive_icon_general_dps_bigicespear",
+    "SpriteFile": "talent_passive_icon_general_dps_bigicespear_-5931002866956003642.png"
+  },
+  {
+    "id": 223,
+    "BuffIds": [
+      2204210
+    ],
+    "Des": "琉璃浩瀚",
+    "TalentIcon": "talent_passive_icon_general_tank_suppressex",
+    "SpriteFile": "talent_passive_icon_general_tank_suppressex_8799781842692572293.png"
+  },
+  {
+    "id": 224,
+    "BuffIds": [
+      2204220
+    ],
+    "Des": "涓流连绵",
+    "TalentIcon": "talent_passive_icon_general_dps_icedamgeup",
+    "SpriteFile": "talent_passive_icon_general_dps_icedamgeup_-3265969024740177737.png"
+  },
+  {
+    "id": 225,
+    "BuffIds": [
+      2204230
+    ],
+    "Des": "玄冰无界",
+    "TalentIcon": "talent_passive_icon_general_dps_iceskyhit",
+    "SpriteFile": "talent_passive_icon_general_dps_iceskyhit_-1035384728055736586.png"
+  },
+  {
+    "id": 226,
+    "BuffIds": [
+      2204240
+    ],
+    "Des": "冰霜冲击",
+    "TalentIcon": "talent_passive_icon_general_dps_icecharge",
+    "SpriteFile": "talent_passive_icon_general_dps_icecharge_6536620775141988385.png"
+  },
+  {
+    "id": 227,
+    "BuffIds": [
+      2204250
+    ],
+    "Des": "速冻爆破",
+    "TalentIcon": "talent_passive_icon_general_dps_icecharge02",
+    "SpriteFile": "talent_passive_icon_general_dps_icecharge02_-1232850557262009384.png"
+  },
+  {
+    "id": 228,
+    "BuffIds": [
+      2204260
+    ],
+    "Des": "冰息宁静",
+    "TalentIcon": "talent_passive_icon_general_dps_arrtuprandom",
+    "SpriteFile": "talent_passive_icon_general_dps_arrtuprandom_-170170258944537217.png"
+  },
+  {
+    "id": 229,
+    "BuffIds": [
+      2204270
+    ],
+    "Des": "冷却瞬息",
+    "TalentIcon": "talent_passive_icon_general_dps_iceenergy",
+    "SpriteFile": "talent_passive_icon_general_dps_iceenergy_-6391902725845644305.png"
+  },
+  {
+    "id": 230,
+    "BuffIds": [
+      2204280
+    ],
+    "Des": "寒流",
+    "TalentIcon": "talent_passive_icon_general_dps_iceenergy02",
+    "SpriteFile": "talent_passive_icon_general_dps_iceenergy02_7582705421025815122.png"
+  },
+  {
+    "id": 231,
+    "BuffIds": [
+      2204290
+    ],
+    "Des": "冰光共鸣",
+    "TalentIcon": "talent_passive_icon_general_dps_icejoin",
+    "SpriteFile": "talent_passive_icon_general_dps_icejoin_-9150297788508645420.png"
+  },
+  {
+    "id": 233,
+    "BuffIds": [
+      2204300
+    ],
+    "Des": "冰矛流",
+    "TalentIcon": "talent_passive_icon_general_dps_skilltriggericearrow",
+    "SpriteFile": "talent_passive_icon_general_dps_skilltriggericearrow_2374185675085443689.png"
+  },
+  {
+    "id": 234,
+    "BuffIds": [
+      2204310
+    ],
+    "Des": "寒冰领域",
+    "TalentIcon": "talent_passive_icon_general_dps_icearea",
+    "SpriteFile": "talent_passive_icon_general_dps_icearea_-6415426824015115183.png"
+  },
+  {
+    "id": 235,
+    "BuffIds": [
+      2204320
+    ],
+    "Des": "冰冷脉冲",
+    "TalentIcon": "talent_passive_icon_general_dps_icepulse",
+    "SpriteFile": "talent_passive_icon_general_dps_icepulse_-1930906762712051734.png"
+  },
+  {
+    "id": 236,
+    "BuffIds": [
+      2204330
+    ],
+    "Des": "智力冷却",
+    "TalentIcon": "mozhang236",
+    "SpriteFile": "mozhang236_-5694261179385412233.png"
+  },
+  {
+    "id": 237,
+    "BuffIds": [
+      2204340
+    ],
+    "Des": "次级增幅",
+    "TalentIcon": "mozhang237",
+    "SpriteFile": "mozhang237_-8144150381219040929.png"
+  },
+  {
+    "id": 238,
+    "BuffIds": [
+      2204350
+    ],
+    "Des": "寒意·流",
+    "TalentIcon": "mozhang238",
+    "SpriteFile": "mozhang238_-6211253637147627227.png"
+  },
+  {
+    "id": 239,
+    "BuffIds": [
+      2204360
+    ],
+    "Des": "冰彗",
+    "TalentIcon": "mozhang239",
+    "SpriteFile": "mozhang239_7863068387401225131.png"
+  },
+  {
+    "id": 240,
+    "BuffIds": [
+      2204370
+    ],
+    "Des": "无尽苦寒",
+    "TalentIcon": "mozhang240",
+    "SpriteFile": "mozhang240_2763127444974343976.png"
+  },
+  {
+    "id": 241,
+    "BuffIds": [
+      2204380
+    ],
+    "Des": "冰矛连弹",
+    "TalentIcon": "mozhang241",
+    "SpriteFile": "mozhang241_-7479211098212862186.png"
+  },
+  {
+    "id": 242,
+    "BuffIds": [
+      2204390
+    ],
+    "Des": "陨星风暴之冻结",
+    "TalentIcon": "mozhang242",
+    "SpriteFile": "mozhang242_8345750522791375286.png"
+  },
+  {
+    "id": 243,
+    "BuffIds": [
+      2204400
+    ],
+    "Des": "节能",
+    "TalentIcon": "mozhang243",
+    "SpriteFile": "mozhang243_8272853342141170763.png"
+  },
+  {
+    "id": 244,
+    "BuffIds": [
+      2204410
+    ],
+    "Des": "霜之利刃",
+    "TalentIcon": "mozhang244",
+    "SpriteFile": "mozhang244_-4218582218656298278.png"
+  },
+  {
+    "id": 245,
+    "BuffIds": [
+      2204420
+    ],
+    "Des": "深寒法矛",
+    "TalentIcon": "mozhang245",
+    "SpriteFile": "mozhang245_-231316717157022014.png"
+  },
+  {
+    "id": 246,
+    "BuffIds": [
+      2204430
+    ],
+    "Des": "陨星风暴之倍扩",
+    "TalentIcon": "mozhang246",
+    "SpriteFile": "mozhang246_-5575937324192706294.png"
+  },
+  {
+    "id": 247,
+    "BuffIds": [
+      2204440
+    ],
+    "Des": "冰矛暴击",
+    "TalentIcon": "mozhang247",
+    "SpriteFile": "mozhang247_6150221227282139836.png"
+  },
+  {
+    "id": 248,
+    "BuffIds": [
+      2204450
+    ],
+    "Des": "灌注升华",
+    "TalentIcon": "mozhang248",
+    "SpriteFile": "mozhang248_-7607321649420805272.png"
+  },
+  {
+    "id": 249,
+    "BuffIds": [
+      2204460
+    ],
+    "Des": "致命冰矛",
+    "TalentIcon": "mozhang249",
+    "SpriteFile": "mozhang249_-1875357226806229128.png"
+  },
+  {
+    "id": 250,
+    "BuffIds": [
+      2204470
+    ],
+    "Des": "暴击之寒",
+    "TalentIcon": "mozhang250",
+    "SpriteFile": "mozhang250_-6737098591456917482.png"
+  },
+  {
+    "id": 251,
+    "BuffIds": [
+      2204480
+    ],
+    "Des": "凛冽",
+    "TalentIcon": "mozhang251",
+    "SpriteFile": "mozhang251_7408337694167288412.png"
+  },
+  {
+    "id": 252,
+    "BuffIds": [
+      2204490
+    ],
+    "Des": "锐利冰暴",
+    "TalentIcon": "mozhang252",
+    "SpriteFile": "mozhang252_-7478174988781509750.png"
+  },
+  {
+    "id": 253,
+    "BuffIds": [
+      2204500
+    ],
+    "Des": "玄冰赋能",
+    "TalentIcon": "mozhang253",
+    "SpriteFile": "mozhang253_-6821954370713934915.png"
+  },
+  {
+    "id": 254,
+    "BuffIds": [
+      2204510
+    ],
+    "Des": "寒霜侵袭",
+    "TalentIcon": "mozhang254",
+    "SpriteFile": "mozhang254_-5456599955270050576.png"
+  },
+  {
+    "id": 255,
+    "BuffIds": [
+      2204520
+    ],
+    "Des": "幸运伤害",
+    "TalentIcon": "mozhang255",
+    "SpriteFile": "mozhang255_-1044921415998567028.png"
+  },
+  {
+    "id": 256,
+    "BuffIds": [
+      2204530
+    ],
+    "Des": "寒意留存",
+    "TalentIcon": "mozhang256",
+    "SpriteFile": "mozhang256_-4229276892184829850.png"
+  },
+  {
+    "id": 257,
+    "BuffIds": [
+      2204540
+    ],
+    "Des": "霜华启示",
+    "TalentIcon": "mozhang257",
+    "SpriteFile": "mozhang257_8971861892004539060.png"
+  },
+  {
+    "id": 258,
+    "BuffIds": [
+      2204550
+    ],
+    "Des": "涌能法则",
+    "TalentIcon": "mozhang258",
+    "SpriteFile": "mozhang258_-8249300292796268567.png"
+  },
+  {
+    "id": 259,
+    "BuffIds": [
+      2204560
+    ],
+    "Des": "冰晶之力",
+    "TalentIcon": "mozhang259",
+    "SpriteFile": "mozhang259_5303501064642724021.png"
+  },
+  {
+    "id": 260,
+    "BuffIds": [
+      2204570
+    ],
+    "Des": "冰晶回升",
+    "TalentIcon": "mozhang260",
+    "SpriteFile": "mozhang260_7975020198837852925.png"
+  },
+  {
+    "id": 261,
+    "BuffIds": [
+      2204580
+    ],
+    "Des": "冰箭速射",
+    "TalentIcon": "mozhang261",
+    "SpriteFile": "mozhang261_68457310628373794.png"
+  },
+  {
+    "id": 262,
+    "BuffIds": [
+      2204590
+    ],
+    "Des": "潮流无尽",
+    "TalentIcon": "mozhang262",
+    "SpriteFile": "mozhang262_-1375423911745025561.png"
+  },
+  {
+    "id": 263,
+    "BuffIds": [
+      2204600
+    ],
+    "Des": "玄冰潮汐",
+    "TalentIcon": "mozhang263",
+    "SpriteFile": "mozhang263_5013689969631274019.png"
+  },
+  {
+    "id": 264,
+    "BuffIds": [
+      2204610
+    ],
+    "Des": "射线精进一式",
+    "TalentIcon": "mozhang264",
+    "SpriteFile": "mozhang264_7073525340321408909.png"
+  },
+  {
+    "id": 265,
+    "BuffIds": [
+      2204620
+    ],
+    "Des": "广域冰箭",
+    "TalentIcon": "mozhang265",
+    "SpriteFile": "mozhang265_-1619521838561868028.png"
+  },
+  {
+    "id": 266,
+    "BuffIds": [
+      2204630
+    ],
+    "Des": "智力冰晶",
+    "TalentIcon": "mozhang266",
+    "SpriteFile": "mozhang266_2702788040260565207.png"
+  },
+  {
+    "id": 267,
+    "BuffIds": [
+      2204640
+    ],
+    "Des": "快速吟唱",
+    "TalentIcon": "mozhang267",
+    "SpriteFile": "mozhang267_8102179355957378390.png"
+  },
+  {
+    "id": 268,
+    "BuffIds": [
+      2204650
+    ],
+    "Des": "冰箭锐击",
+    "TalentIcon": "mozhang268",
+    "SpriteFile": "mozhang268_3745734882025806136.png"
+  },
+  {
+    "id": 269,
+    "BuffIds": [
+      2204660
+    ],
+    "Des": "射线绝唱",
+    "TalentIcon": "mozhang269",
+    "SpriteFile": "mozhang269_-1658129692608359478.png"
+  },
+  {
+    "id": 270,
+    "BuffIds": [
+      2204670
+    ],
+    "Des": "冰晶扩充",
+    "TalentIcon": "mozhang270",
+    "SpriteFile": "mozhang270_-1900381981162474161.png"
+  },
+  {
+    "id": 271,
+    "BuffIds": [
+      2204680
+    ],
+    "Des": "智力增幅",
+    "TalentIcon": "mozhang271",
+    "SpriteFile": "mozhang271_-8887330061916302916.png"
+  },
+  {
+    "id": 400,
+    "BuffIds": [
+      2205010
+    ],
+    "Des": "疾风流影",
+    "TalentIcon": "talent_passive_icon_general_sup_aggregation",
+    "SpriteFile": "talent_passive_icon_general_sup_aggregation_-3428670337991002917.png"
+  },
+  {
+    "id": 401,
+    "BuffIds": [],
+    "Des": "力量转换",
+    "TalentIcon": "talent_passive_icon_general_dps_strtran",
+    "SpriteFile": "talent_passive_icon_general_dps_strtran_2602671007434135097.png"
+  },
+  {
+    "id": 402,
+    "BuffIds": [
+      2205030
+    ],
+    "Des": "易伤一击",
+    "TalentIcon": "talent_passive_icon_general_dps_icenucleus",
+    "SpriteFile": "talent_passive_icon_general_dps_icenucleus_-3562277074333379218.png"
+  },
+  {
+    "id": 403,
+    "BuffIds": [
+      2205040
+    ],
+    "Des": "锐利",
+    "TalentIcon": "talent_passive_icon_general_dps_sharpget",
+    "SpriteFile": "talent_passive_icon_general_dps_sharpget_2364131482517998195.png"
+  },
+  {
+    "id": 404,
+    "BuffIds": [
+      2205050
+    ],
+    "Des": "锐利扩充",
+    "TalentIcon": "changqiang459",
+    "SpriteFile": "changqiang459_-2906842949815592558.png"
+  },
+  {
+    "id": 405,
+    "BuffIds": [
+      2205060
+    ],
+    "Des": "风裂扩散",
+    "TalentIcon": "talent_passive_icon_general_dps_teardelay",
+    "SpriteFile": "talent_passive_icon_general_dps_teardelay_2776217789318810523.png"
+  },
+  {
+    "id": 406,
+    "BuffIds": [
+      2205070
+    ],
+    "Des": "风裂",
+    "TalentIcon": "talent_passive_icon_general_dps_tearget",
+    "SpriteFile": "talent_passive_icon_general_dps_tearget_-4439643837671849030.png"
+  },
+  {
+    "id": 407,
+    "BuffIds": [
+      2205080
+    ],
+    "Des": "快枪流星",
+    "TalentIcon": "talent_passive_icon_general_dps_winddancecount",
+    "SpriteFile": "talent_passive_icon_general_dps_winddancecount_7929719269179499751.png"
+  },
+  {
+    "id": 409,
+    "BuffIds": [
+      2205090
+    ],
+    "Des": "锐利扩充",
+    "TalentIcon": "changqiang459",
+    "SpriteFile": "changqiang459_-2906842949815592558.png"
+  },
+  {
+    "id": 410,
+    "BuffIds": [
+      2205100
+    ],
+    "Des": "疾驰锋刃",
+    "TalentIcon": "talent_passive_icon_general_dps_backhitpro",
+    "SpriteFile": "talent_passive_icon_general_dps_backhitpro_-2066749960922532771.png"
+  },
+  {
+    "id": 411,
+    "BuffIds": [
+      2205110
+    ],
+    "Des": "风舞轻灵",
+    "TalentIcon": "talent_passive_icon_general_dps_sharpenergyre",
+    "SpriteFile": "talent_passive_icon_general_dps_sharpenergyre_-4988504195800596324.png"
+  },
+  {
+    "id": 412,
+    "BuffIds": [
+      2205120
+    ],
+    "Des": "追风逐影",
+    "TalentIcon": "talent_passive_icon_general_dps_sharpspeed",
+    "SpriteFile": "talent_passive_icon_general_dps_sharpspeed_-93795399919510782.png"
+  },
+  {
+    "id": 413,
+    "BuffIds": [
+      2205130
+    ],
+    "Des": "神影螺旋",
+    "TalentIcon": "talent_passive_icon_general_dps_windspiral",
+    "SpriteFile": "talent_passive_icon_general_dps_windspiral_-2750583510728120713.png"
+  },
+  {
+    "id": 414,
+    "BuffIds": [
+      2205140
+    ],
+    "Des": "刹那暴击",
+    "TalentIcon": "talent_passive_icon_general_dps_momentcri",
+    "SpriteFile": "talent_passive_icon_general_dps_momentcri_-1932996690629249149.png"
+  },
+  {
+    "id": 416,
+    "BuffIds": [
+      2205150
+    ],
+    "Des": "长矛贯穿",
+    "TalentIcon": "talent_passive_icon_general_dps_spearrush",
+    "SpriteFile": "talent_passive_icon_general_dps_spearrush_-5285447201626553291.png"
+  },
+  {
+    "id": 417,
+    "BuffIds": [
+      2205160
+    ],
+    "Des": "风怒",
+    "TalentIcon": "talent_passive_icon_general_dps_tyrannical",
+    "SpriteFile": "talent_passive_icon_general_dps_tyrannical_5179128863593007882.png"
+  },
+  {
+    "id": 418,
+    "BuffIds": [
+      2205170
+    ],
+    "Des": "锐利扩充",
+    "TalentIcon": "changqiang459",
+    "SpriteFile": "changqiang459_-2906842949815592558.png"
+  },
+  {
+    "id": 419,
+    "BuffIds": [
+      2205180
+    ],
+    "Des": "空舞重击",
+    "TalentIcon": "talent_passive_icon_general_dps_flycriluck",
+    "SpriteFile": "talent_passive_icon_general_dps_flycriluck_-4397977988837288756.png"
+  },
+  {
+    "id": 420,
+    "BuffIds": [
+      2205190
+    ],
+    "Des": "锐利扩充",
+    "TalentIcon": "changqiang459",
+    "SpriteFile": "changqiang459_-2906842949815592558.png"
+  },
+  {
+    "id": 421,
+    "BuffIds": [
+      2205200
+    ],
+    "Des": "龙卷之舞",
+    "TalentIcon": "talent_passive_icon_general_dps_tornadoget",
+    "SpriteFile": "talent_passive_icon_general_dps_tornadoget_8234457504861682088.png"
+  },
+  {
+    "id": 422,
+    "BuffIds": [
+      2205210
+    ],
+    "Des": "追击身法",
+    "TalentIcon": "talent_passive_icon_general_dps_ruthless",
+    "SpriteFile": "talent_passive_icon_general_dps_ruthless_-8955585685760905934.png"
+  },
+  {
+    "id": 423,
+    "BuffIds": [
+      2205320
+    ],
+    "Des": "神风之助",
+    "TalentIcon": "talent_passive_icon_general_dps_sharpenergyre02",
+    "SpriteFile": "talent_passive_icon_general_dps_sharpenergyre02_4724496562625892107.png"
+  },
+  {
+    "id": 424,
+    "BuffIds": [
+      2205220
+    ],
+    "Des": "战斗专长",
+    "TalentIcon": "talent_passive_icon_sup_melee02",
+    "SpriteFile": "talent_passive_icon_sup_melee02_-5148266489743418661.png"
+  },
+  {
+    "id": 425,
+    "BuffIds": [
+      2205230
+    ],
+    "Des": "势涨",
+    "TalentIcon": "talent_passive_icon_general_dps_sharpeffectup",
+    "SpriteFile": "talent_passive_icon_general_dps_sharpeffectup_2881723983785751079.png"
+  },
+  {
+    "id": 427,
+    "BuffIds": [
+      2205240
+    ],
+    "Des": "捕手",
+    "TalentIcon": "talent_passive_icon_tank_bk01",
+    "SpriteFile": "talent_passive_icon_tank_bk01_6349040228040050397.png"
+  },
+  {
+    "id": 428,
+    "BuffIds": [
+      2205250
+    ],
+    "Des": "风裂身法",
+    "TalentIcon": "talent_passive_icon_general_dps_teargetenergy",
+    "SpriteFile": "talent_passive_icon_general_dps_teargetenergy_-694662703563578361.png"
+  },
+  {
+    "id": 429,
+    "BuffIds": [
+      2205260
+    ],
+    "Des": "风雷破击",
+    "TalentIcon": "talent_passive_icon_general_dps_sharpenergyre03",
+    "SpriteFile": "talent_passive_icon_general_dps_sharpenergyre03_725438515333581216.png"
+  },
+  {
+    "id": 430,
+    "BuffIds": [
+      2205270
+    ],
+    "Des": "神隐",
+    "TalentIcon": "talent_passive_icon_sup_control01",
+    "SpriteFile": "talent_passive_icon_sup_control01_1788478368704197986.png"
+  },
+  {
+    "id": 431,
+    "BuffIds": [
+      2205280
+    ],
+    "Des": "刚勇",
+    "TalentIcon": "talent_passive_icon_tank_violent03",
+    "SpriteFile": "talent_passive_icon_tank_violent03_-6067882314511611014.png"
+  },
+  {
+    "id": 432,
+    "BuffIds": [
+      2205290
+    ],
+    "Des": "空战流",
+    "TalentIcon": "talent_passive_icon_general_dps_flyhitget",
+    "SpriteFile": "talent_passive_icon_general_dps_flyhitget_1483048762046676683.png"
+  },
+  {
+    "id": 433,
+    "BuffIds": [
+      2205300
+    ],
+    "Des": "重装流",
+    "TalentIcon": "talent_passive_icon_general_dps_backhitget",
+    "SpriteFile": "talent_passive_icon_general_dps_backhitget_4964421102441627641.png"
+  },
+  {
+    "id": 434,
+    "BuffIds": [
+      2205310
+    ],
+    "Des": "斗志昂扬",
+    "TalentIcon": "talent_skill_300001",
+    "SpriteFile": "talent_skill_300001_-713103732695156529.png"
+  },
+  {
+    "id": 435,
+    "BuffIds": [],
+    "Des": "迅捷",
+    "TalentIcon": "changqiang435",
+    "SpriteFile": "changqiang435_-2866570409935272242.png"
+  },
+  {
+    "id": 436,
+    "BuffIds": [
+      2205340
+    ],
+    "Des": "锐利扩充",
+    "TalentIcon": "changqiang436",
+    "SpriteFile": "changqiang436_4117253435183368844.png"
+  },
+  {
+    "id": 437,
+    "BuffIds": [
+      2205350
+    ],
+    "Des": "长枪利刃",
+    "TalentIcon": "changqiang437",
+    "SpriteFile": "changqiang437_7063217441095209841.png"
+  },
+  {
+    "id": 438,
+    "BuffIds": [
+      2205360
+    ],
+    "Des": "锋锐",
+    "TalentIcon": "changqiang438",
+    "SpriteFile": "changqiang438_-1282176577225336026.png"
+  },
+  {
+    "id": 439,
+    "BuffIds": [
+      2205370
+    ],
+    "Des": "破追精进",
+    "TalentIcon": "changqiang439",
+    "SpriteFile": "changqiang439_8818520318972933003.png"
+  },
+  {
+    "id": 440,
+    "BuffIds": [
+      2205380
+    ],
+    "Des": "风螺旋",
+    "TalentIcon": "changqiang440",
+    "SpriteFile": "changqiang440_5728195816400155166.png"
+  },
+  {
+    "id": 441,
+    "BuffIds": [
+      2205390
+    ],
+    "Des": "气劲加持",
+    "TalentIcon": "changqiang441",
+    "SpriteFile": "changqiang441_2150706842455422230.png"
+  },
+  {
+    "id": 442,
+    "BuffIds": [
+      2205400
+    ],
+    "Des": "无畏疾风",
+    "TalentIcon": "changqiang442",
+    "SpriteFile": "changqiang442_-2858139388189630353.png"
+  },
+  {
+    "id": 443,
+    "BuffIds": [
+      2205410
+    ],
+    "Des": "微风低语",
+    "TalentIcon": "changqiang443",
+    "SpriteFile": "changqiang443_-4834428676759947386.png"
+  },
+  {
+    "id": 444,
+    "BuffIds": [
+      2205420
+    ],
+    "Des": "疾驰龙炮",
+    "TalentIcon": "changqiang444",
+    "SpriteFile": "changqiang444_1156106869178080869.png"
+  },
+  {
+    "id": 445,
+    "BuffIds": [
+      2205430
+    ],
+    "Des": "千疮百孔",
+    "TalentIcon": "changqiang445",
+    "SpriteFile": "changqiang445_-4964736730817407015.png"
+  },
+  {
+    "id": 446,
+    "BuffIds": [
+      2205440
+    ],
+    "Des": "螺旋撕裂",
+    "TalentIcon": "changqiang446",
+    "SpriteFile": "changqiang446_7480908388146868551.png"
+  },
+  {
+    "id": 447,
+    "BuffIds": [
+      2205450
+    ],
+    "Des": "刚毅",
+    "TalentIcon": "changqiang447",
+    "SpriteFile": "changqiang447_5680669484564452170.png"
+  },
+  {
+    "id": 448,
+    "BuffIds": [
+      2205460
+    ],
+    "Des": "微风迅捷",
+    "TalentIcon": "changqiang448",
+    "SpriteFile": "changqiang448_-4510002464464487984.png"
+  },
+  {
+    "id": 449,
+    "BuffIds": [
+      2205470
+    ],
+    "Des": "风元素之息",
+    "TalentIcon": "changqiang449",
+    "SpriteFile": "changqiang449_3638626699845432040.png"
+  },
+  {
+    "id": 450,
+    "BuffIds": [
+      2205480
+    ],
+    "Des": "风起",
+    "TalentIcon": "changqiang450",
+    "SpriteFile": "changqiang450_6124430015259085455.png"
+  },
+  {
+    "id": 451,
+    "BuffIds": [
+      2205490
+    ],
+    "Des": "强攻",
+    "TalentIcon": "changqiang451",
+    "SpriteFile": "changqiang451_1442775011230175216.png"
+  },
+  {
+    "id": 452,
+    "BuffIds": [
+      2205500
+    ],
+    "Des": "螺旋爆炎",
+    "TalentIcon": "changqiang452",
+    "SpriteFile": "changqiang452_-1988887240211528143.png"
+  },
+  {
+    "id": 453,
+    "BuffIds": [
+      2205510
+    ],
+    "Des": "龙之怒焰",
+    "TalentIcon": "changqiang453",
+    "SpriteFile": "changqiang453_-8482019637162186223.png"
+  },
+  {
+    "id": 454,
+    "BuffIds": [
+      2205520
+    ],
+    "Des": "风环龙炮",
+    "TalentIcon": "changqiang454",
+    "SpriteFile": "changqiang454_8161012731315541338.png"
+  },
+  {
+    "id": 455,
+    "BuffIds": [
+      2205530
+    ],
+    "Des": "飞鸟精进",
+    "TalentIcon": "changqiang455",
+    "SpriteFile": "changqiang455_1760157507975667262.png"
+  },
+  {
+    "id": 456,
+    "BuffIds": [
+      2205540
+    ],
+    "Des": "锐利精进",
+    "TalentIcon": "changqiang456",
+    "SpriteFile": "changqiang456_4840828462350825523.png"
+  },
+  {
+    "id": 457,
+    "BuffIds": [
+      2205550
+    ],
+    "Des": "长矛回复",
+    "TalentIcon": "changqiang457",
+    "SpriteFile": "changqiang457_-1055245693951117675.png"
+  },
+  {
+    "id": 458,
+    "BuffIds": [
+      2205560
+    ],
+    "Des": "锐利长息",
+    "TalentIcon": "changqiang458",
+    "SpriteFile": "changqiang458_3095064993358103087.png"
+  },
+  {
+    "id": 459,
+    "BuffIds": [
+      2205570
+    ],
+    "Des": "锐利扩充",
+    "TalentIcon": "changqiang459",
+    "SpriteFile": "changqiang459_-2906842949815592558.png"
+  },
+  {
+    "id": 460,
+    "BuffIds": [
+      2205580
+    ],
+    "Des": "锐利翔返",
+    "TalentIcon": "changqiang460",
+    "SpriteFile": "changqiang460_-5890237489046489368.png"
+  },
+  {
+    "id": 461,
+    "BuffIds": [
+      2205590
+    ],
+    "Des": "追击之力",
+    "TalentIcon": "changqiang461",
+    "SpriteFile": "changqiang461_5704196102068674653.png"
+  },
+  {
+    "id": 462,
+    "BuffIds": [
+      2205600
+    ],
+    "Des": "卓绝风华",
+    "TalentIcon": "changqiang462",
+    "SpriteFile": "changqiang462_-2578614624030480868.png"
+  },
+  {
+    "id": 463,
+    "BuffIds": [
+      2205610
+    ],
+    "Des": "风神·锐利冲击",
+    "TalentIcon": "changqiang463",
+    "SpriteFile": "changqiang463_7129388977321887545.png"
+  },
+  {
+    "id": 464,
+    "BuffIds": [
+      2205620
+    ],
+    "Des": "刹那破式",
+    "TalentIcon": "changqiang464",
+    "SpriteFile": "changqiang464_-4481220336161756758.png"
+  },
+  {
+    "id": 465,
+    "BuffIds": [
+      2205630
+    ],
+    "Des": "风卷劲击",
+    "TalentIcon": "changqiang465",
+    "SpriteFile": "changqiang465_-1807010239651972738.png"
+  },
+  {
+    "id": 466,
+    "BuffIds": [
+      2205640
+    ],
+    "Des": "追击之锐",
+    "TalentIcon": "changqiang466",
+    "SpriteFile": "changqiang466_6187123280827468643.png"
+  },
+  {
+    "id": 467,
+    "BuffIds": [
+      2205650
+    ],
+    "Des": "刹那连击",
+    "TalentIcon": "changqiang467",
+    "SpriteFile": "changqiang467_-4472971840714153032.png"
+  },
+  {
+    "id": 468,
+    "BuffIds": [
+      2205660
+    ],
+    "Des": "破式",
+    "TalentIcon": "changqiang468",
+    "SpriteFile": "changqiang468_-8989146338701917470.png"
+  },
+  {
+    "id": 469,
+    "BuffIds": [
+      2205670
+    ],
+    "Des": "锐利回响",
+    "TalentIcon": "changqiang469",
+    "SpriteFile": "changqiang469_315812944271703805.png"
+  },
+  {
+    "id": 470,
+    "BuffIds": [
+      2205680
+    ],
+    "Des": "神风幸运",
+    "TalentIcon": "changqiang470",
+    "SpriteFile": "changqiang470_6576723726823090294.png"
+  },
+  {
+    "id": 500,
+    "BuffIds": [
+      2202020
+    ],
+    "Des": "活力充盈",
+    "TalentIcon": "talent_passive_icon_general_sup_grassenergyup",
+    "SpriteFile": "talent_passive_icon_general_sup_grassenergyup_-6783012000201020774.png"
+  },
+  {
+    "id": 501,
+    "BuffIds": [],
+    "Des": "智力转换",
+    "TalentIcon": "talent_passive_icon_general_dps_inttran",
+    "SpriteFile": "talent_passive_icon_general_dps_inttran_-3351449962676288113.png"
+  },
+  {
+    "id": 502,
+    "BuffIds": [
+      2202040
+    ],
+    "Des": "鼓舞",
+    "TalentIcon": "talent_passive_icon_general_sup_encourage",
+    "SpriteFile": "talent_passive_icon_general_sup_encourage_8876108180631058624.png"
+  },
+  {
+    "id": 503,
+    "BuffIds": [
+      2202050
+    ],
+    "Des": "再生蓓蕾",
+    "TalentIcon": "fahuan571",
+    "SpriteFile": "fahuan571_-4869854771324790511.png"
+  },
+  {
+    "id": 504,
+    "BuffIds": [
+      2202060
+    ],
+    "Des": "蓓蕾之息",
+    "TalentIcon": "talent_passive_icon_dps_luckyconversion",
+    "SpriteFile": "talent_passive_icon_dps_luckyconversion_-2226033876322988981.png"
+  },
+  {
+    "id": 505,
+    "BuffIds": [
+      2202120
+    ],
+    "Des": "自然护盾",
+    "TalentIcon": "talent_passive_icon_general_sup_healshield",
+    "SpriteFile": "talent_passive_icon_general_sup_healshield_-7749716988162940962.png"
+  },
+  {
+    "id": 506,
+    "BuffIds": [
+      2202080
+    ],
+    "Des": "绿意之爆发",
+    "TalentIcon": "talent_passive_icon_general_sup_grassdammastery",
+    "SpriteFile": "talent_passive_icon_general_sup_grassdammastery_-7240197960042963000.png"
+  },
+  {
+    "id": 507,
+    "BuffIds": [
+      2202090
+    ],
+    "Des": "治愈灵息",
+    "TalentIcon": "talent_passive_icon_general_sup_starlight",
+    "SpriteFile": "talent_passive_icon_general_sup_starlight_-1183063612983352033.png"
+  },
+  {
+    "id": 508,
+    "BuffIds": [
+      2202100
+    ],
+    "Des": "狂野祝福",
+    "TalentIcon": "talent_passive_icon_general_sup_shieldlimit",
+    "SpriteFile": "talent_passive_icon_general_sup_shieldlimit_-5255133618474193693.png"
+  },
+  {
+    "id": 509,
+    "BuffIds": [
+      2202320
+    ],
+    "Des": "繁盛",
+    "TalentIcon": "talent_skill_330101",
+    "SpriteFile": "talent_skill_330101_7760701223249705077.png"
+  },
+  {
+    "id": 510,
+    "BuffIds": [
+      2202110
+    ],
+    "Des": "惩击流",
+    "TalentIcon": "talent_passive_icon_general_sup_aoyitrigger",
+    "SpriteFile": "talent_passive_icon_general_sup_aoyitrigger_-3453879932511817198.png"
+  },
+  {
+    "id": 511,
+    "BuffIds": [
+      2202130
+    ],
+    "Des": "双重灌注",
+    "TalentIcon": "talent_passive_icon_dps_luckyconversion",
+    "SpriteFile": "talent_passive_icon_dps_luckyconversion_-2226033876322988981.png"
+  },
+  {
+    "id": 512,
+    "BuffIds": [
+      2202140
+    ],
+    "Des": "终焉光轮",
+    "TalentIcon": "talent_passive_icon_sup_heal02",
+    "SpriteFile": "talent_passive_icon_sup_heal02_371218397759507600.png"
+  },
+  {
+    "id": 514,
+    "BuffIds": [
+      2202160
+    ],
+    "Des": "翠绿根基",
+    "TalentIcon": "talent_passive_icon_general_sup_grassarea",
+    "SpriteFile": "talent_passive_icon_general_sup_grassarea_-2699280676978229692.png"
+  },
+  {
+    "id": 515,
+    "BuffIds": [
+      2202170
+    ],
+    "Des": "盛放",
+    "TalentIcon": "talent_passive_icon_general_sup_burstforth",
+    "SpriteFile": "talent_passive_icon_general_sup_burstforth_-6283895452403338216.png"
+  },
+  {
+    "id": 516,
+    "BuffIds": [
+      2202180
+    ],
+    "Des": "治疗充盈",
+    "TalentIcon": "talent_passive_icon_sup_melee01",
+    "SpriteFile": "talent_passive_icon_sup_melee01_-143879956763713635.png"
+  },
+  {
+    "id": 518,
+    "BuffIds": [
+      2202200
+    ],
+    "Des": "绿意二连奏",
+    "TalentIcon": "talent_passive_icon_general_sup_healringdouble",
+    "SpriteFile": "talent_passive_icon_general_sup_healringdouble_569031093535757954.png"
+  },
+  {
+    "id": 519,
+    "BuffIds": [
+      2202210
+    ],
+    "Des": "花语",
+    "TalentIcon": "talent_passive_icon_sup_heal04",
+    "SpriteFile": "talent_passive_icon_sup_heal04_-1163600720444833470.png"
+  },
+  {
+    "id": 520,
+    "BuffIds": [
+      2202220
+    ],
+    "Des": "生命延展",
+    "TalentIcon": "talent_passive_icon_general_sup_grace",
+    "SpriteFile": "talent_passive_icon_general_sup_grace_4357278635385016459.png"
+  },
+  {
+    "id": 521,
+    "BuffIds": [
+      2202230
+    ],
+    "Des": "滋养之华",
+    "TalentIcon": "talent_passive_icon_sup_healconversion",
+    "SpriteFile": "talent_passive_icon_sup_healconversion_1237461555720813909.png"
+  },
+  {
+    "id": 522,
+    "BuffIds": [
+      2202240
+    ],
+    "Des": "花开无尽",
+    "TalentIcon": "talent_passive_icon_dps_sacrifice04",
+    "SpriteFile": "talent_passive_icon_dps_sacrifice04_-2084638218474038508.png"
+  },
+  {
+    "id": 523,
+    "BuffIds": [
+      2202250
+    ],
+    "Des": "鹿之奔袭",
+    "TalentIcon": "talent_passive_icon_general_sup_grassdeer",
+    "SpriteFile": "talent_passive_icon_general_sup_grassdeer_-8459190925909112243.png"
+  },
+  {
+    "id": 524,
+    "BuffIds": [
+      2202260
+    ],
+    "Des": "复苏之翼",
+    "TalentIcon": "talent_passive_icon_sup_heal05",
+    "SpriteFile": "talent_passive_icon_sup_heal05_-3097515871320179690.png"
+  },
+  {
+    "id": 525,
+    "BuffIds": [
+      2202270
+    ],
+    "Des": "自然绽放",
+    "TalentIcon": "talent_passive_icon_sup_melee03",
+    "SpriteFile": "talent_passive_icon_sup_melee03_-7442360106387184460.png"
+  },
+  {
+    "id": 526,
+    "BuffIds": [
+      2202280
+    ],
+    "Des": "治愈脉动",
+    "TalentIcon": "talent_passive_icon_general_sup_killhealring",
+    "SpriteFile": "talent_passive_icon_general_sup_killhealring_2507991279959377824.png"
+  },
+  {
+    "id": 527,
+    "BuffIds": [
+      2202290
+    ],
+    "Des": "生命馈赠",
+    "TalentIcon": "talent_passive_icon_general_sup_aid",
+    "SpriteFile": "talent_passive_icon_general_sup_aid_8853143144856023181.png"
+  },
+  {
+    "id": 528,
+    "BuffIds": [
+      2202300
+    ],
+    "Des": "蓓蕾获取",
+    "TalentIcon": "talent_passive_icon_general_sup_killgrassenergy",
+    "SpriteFile": "talent_passive_icon_general_sup_killgrassenergy_-5325343834670923875.png"
+  },
+  {
+    "id": 529,
+    "BuffIds": [
+      2202310
+    ],
+    "Des": "防御加持",
+    "TalentIcon": "talent_passive_icon_general_sup_seedtrriger",
+    "SpriteFile": "talent_passive_icon_general_sup_seedtrriger_-8403839690203707975.png"
+  },
+  {
+    "id": 530,
+    "BuffIds": [
+      2202330
+    ],
+    "Des": "花界神升",
+    "TalentIcon": "talent_passive_icon_general_sup_flowerlimit",
+    "SpriteFile": "talent_passive_icon_general_sup_flowerlimit_-4727433609669891129.png"
+  },
+  {
+    "id": 531,
+    "BuffIds": [
+      2202340
+    ],
+    "Des": "愈合流",
+    "TalentIcon": "talent_passive_icon_general_sup_healringget",
+    "SpriteFile": "talent_passive_icon_general_sup_healringget_-1429063272623993457.png"
+  },
+  {
+    "id": 532,
+    "BuffIds": [
+      2202360
+    ],
+    "Des": "荆棘",
+    "TalentIcon": "talent_passive_icon_dps_lucky04",
+    "SpriteFile": "talent_passive_icon_dps_lucky04_3630585918272962198.png"
+  },
+  {
+    "id": 533,
+    "BuffIds": [],
+    "Des": "生机涌动",
+    "TalentIcon": "talent_passive_icon_general_sup_aoyiguide",
+    "SpriteFile": "talent_passive_icon_general_sup_aoyiguide_-148650855109893727.png"
+  },
+  {
+    "id": 534,
+    "BuffIds": [
+      2202380
+    ],
+    "Des": "绿意护佑",
+    "TalentIcon": "talent_passive_icon_general_sup_shieldlimit",
+    "SpriteFile": "talent_passive_icon_general_sup_shieldlimit_-5255133618474193693.png"
+  },
+  {
+    "id": 535,
+    "BuffIds": [],
+    "Des": "花语回升",
+    "TalentIcon": "talent_passive_icon_general_sup_aoyiguide",
+    "SpriteFile": "talent_passive_icon_general_sup_aoyiguide_-148650855109893727.png"
+  },
+  {
+    "id": 536,
+    "BuffIds": [
+      2202400
+    ],
+    "Des": "舞动之种",
+    "TalentIcon": "fahuan536",
+    "SpriteFile": "fahuan536_-44999428732803211.png"
+  },
+  {
+    "id": 537,
+    "BuffIds": [
+      2202410
+    ],
+    "Des": "能量涌动",
+    "TalentIcon": "fahuan537",
+    "SpriteFile": "fahuan537_-4481300547764871846.png"
+  },
+  {
+    "id": 538,
+    "BuffIds": [
+      2202420
+    ],
+    "Des": "再生之芽",
+    "TalentIcon": "fahuan538",
+    "SpriteFile": "fahuan538_-8144878600697684431.png"
+  },
+  {
+    "id": 539,
+    "BuffIds": [
+      2202430
+    ],
+    "Des": "全能之息",
+    "TalentIcon": "fahuan539",
+    "SpriteFile": "fahuan539_-7818113566627469458.png"
+  },
+  {
+    "id": 540,
+    "BuffIds": [
+      2202440
+    ],
+    "Des": "庇护",
+    "TalentIcon": "fahuan540",
+    "SpriteFile": "fahuan540_6979704159053203383.png"
+  },
+  {
+    "id": 541,
+    "BuffIds": [
+      2202450
+    ],
+    "Des": "脉冲之息",
+    "TalentIcon": "fahuan541",
+    "SpriteFile": "fahuan541_-4013252779961407226.png"
+  },
+  {
+    "id": 542,
+    "BuffIds": [
+      2202460
+    ],
+    "Des": "不羁之种共生",
+    "TalentIcon": "fahuan542",
+    "SpriteFile": "fahuan542_5486931548173804155.png"
+  },
+  {
+    "id": 543,
+    "BuffIds": [
+      2202470
+    ],
+    "Des": "狂野庇护",
+    "TalentIcon": "fahuan543",
+    "SpriteFile": "fahuan543_6552257880758455673.png"
+  },
+  {
+    "id": 544,
+    "BuffIds": [
+      2202480
+    ],
+    "Des": "广域荆棘",
+    "TalentIcon": "fahuan544",
+    "SpriteFile": "fahuan544_-7454259557201802938.png"
+  },
+  {
+    "id": 545,
+    "BuffIds": [
+      2202490
+    ],
+    "Des": "破荆",
+    "TalentIcon": "fahuan545",
+    "SpriteFile": "fahuan545_5318936377185258130.png"
+  },
+  {
+    "id": 546,
+    "BuffIds": [
+      2202500
+    ],
+    "Des": "脉冲二重",
+    "TalentIcon": "fahuan546",
+    "SpriteFile": "fahuan546_-7114294191212327446.png"
+  },
+  {
+    "id": 547,
+    "BuffIds": [
+      2202510
+    ],
+    "Des": "庇护迅捷",
+    "TalentIcon": "fahuan547",
+    "SpriteFile": "fahuan547_969106134143339723.png"
+  },
+  {
+    "id": 548,
+    "BuffIds": [
+      2202520
+    ],
+    "Des": "脉冲回望",
+    "TalentIcon": "fahuan548",
+    "SpriteFile": "fahuan548_-3923477589100837086.png"
+  },
+  {
+    "id": 549,
+    "BuffIds": [
+      2202530
+    ],
+    "Des": "迅捷蓓蕾",
+    "TalentIcon": "fahuan549",
+    "SpriteFile": "fahuan549_-8862656815810232831.png"
+  },
+  {
+    "id": 550,
+    "BuffIds": [
+      2202540
+    ],
+    "Des": "共生之息",
+    "TalentIcon": "fahuan550",
+    "SpriteFile": "fahuan550_2503545620821595806.png"
+  },
+  {
+    "id": 551,
+    "BuffIds": [
+      2202550
+    ],
+    "Des": "共生延长",
+    "TalentIcon": "fahuan551",
+    "SpriteFile": "fahuan551_-2780079593286497614.png"
+  },
+  {
+    "id": 552,
+    "BuffIds": [
+      2202560
+    ],
+    "Des": "脉冲回响",
+    "TalentIcon": "fahuan552",
+    "SpriteFile": "fahuan552_-2158863115718786368.png"
+  },
+  {
+    "id": 553,
+    "BuffIds": [
+      2202570
+    ],
+    "Des": "幸运伤害",
+    "TalentIcon": "fahuan553",
+    "SpriteFile": "fahuan553_-8685088967225004013.png"
+  },
+  {
+    "id": 554,
+    "BuffIds": [
+      2202580
+    ],
+    "Des": "绿意冲击",
+    "TalentIcon": "fahuan554",
+    "SpriteFile": "fahuan554_3454146171493669825.png"
+  },
+  {
+    "id": 555,
+    "BuffIds": [
+      2202590
+    ],
+    "Des": "狂野幸运",
+    "TalentIcon": "fahuan555",
+    "SpriteFile": "fahuan555_8230401689617975517.png"
+  },
+  {
+    "id": 556,
+    "BuffIds": [
+      2202600
+    ],
+    "Des": "绿意滋养",
+    "TalentIcon": "fahuan556",
+    "SpriteFile": "fahuan556_1453573699219029806.png"
+  },
+  {
+    "id": 557,
+    "BuffIds": [
+      2202610
+    ],
+    "Des": "极意鼓舞",
+    "TalentIcon": "fahuan557",
+    "SpriteFile": "fahuan557_6036496301706496962.png"
+  },
+  {
+    "id": 558,
+    "BuffIds": [
+      2202620
+    ],
+    "Des": "生命盛放",
+    "TalentIcon": "fahuan558",
+    "SpriteFile": "fahuan558_3412957291670990100.png"
+  },
+  {
+    "id": 559,
+    "BuffIds": [
+      2202630
+    ],
+    "Des": "生机",
+    "TalentIcon": "fahuan559",
+    "SpriteFile": "fahuan559_-3642899574653387783.png"
+  },
+  {
+    "id": 560,
+    "BuffIds": [
+      2202640
+    ],
+    "Des": "盛放精进",
+    "TalentIcon": "fahuan560",
+    "SpriteFile": "fahuan560_5562259156717883335.png"
+  },
+  {
+    "id": 561,
+    "BuffIds": [
+      2202650
+    ],
+    "Des": "绽放轮回",
+    "TalentIcon": "fahuan561",
+    "SpriteFile": "fahuan561_-498824976965191721.png"
+  },
+  {
+    "id": 562,
+    "BuffIds": [
+      2202660
+    ],
+    "Des": "能量勃发",
+    "TalentIcon": "fahuan562",
+    "SpriteFile": "fahuan562_7204500161430898321.png"
+  },
+  {
+    "id": 563,
+    "BuffIds": [
+      2202670
+    ],
+    "Des": "超然",
+    "TalentIcon": "fahuan563",
+    "SpriteFile": "fahuan563_-4047024709558437948.png"
+  },
+  {
+    "id": 564,
+    "BuffIds": [
+      2202680
+    ],
+    "Des": "花株繁盛",
+    "TalentIcon": "fahuan564",
+    "SpriteFile": "fahuan564_4730186388724748147.png"
+  },
+  {
+    "id": 565,
+    "BuffIds": [
+      2202690
+    ],
+    "Des": "三色启示",
+    "TalentIcon": "fahuan565",
+    "SpriteFile": "fahuan565_8858565807237953882.png"
+  },
+  {
+    "id": 566,
+    "BuffIds": [
+      2202700
+    ],
+    "Des": "花时轮舞",
+    "TalentIcon": "fahuan566",
+    "SpriteFile": "fahuan566_-3917635024218789857.png"
+  },
+  {
+    "id": 567,
+    "BuffIds": [
+      2202710
+    ],
+    "Des": "蓓蕾生花",
+    "TalentIcon": "fahuan567",
+    "SpriteFile": "fahuan567_-422092813257201281.png"
+  },
+  {
+    "id": 568,
+    "BuffIds": [
+      2202720
+    ],
+    "Des": "鼓舞强化",
+    "TalentIcon": "fahuan568",
+    "SpriteFile": "fahuan568_-2620164662528302541.png"
+  },
+  {
+    "id": 569,
+    "BuffIds": [
+      2202730
+    ],
+    "Des": "能量扩展",
+    "TalentIcon": "fahuan569",
+    "SpriteFile": "fahuan569_2630055620366304518.png"
+  },
+  {
+    "id": 570,
+    "BuffIds": [
+      2202740
+    ],
+    "Des": "救护",
+    "TalentIcon": "fahuan570",
+    "SpriteFile": "fahuan570_748945073261766250.png"
+  },
+  {
+    "id": 571,
+    "BuffIds": [
+      2202750
+    ],
+    "Des": "绽放瞬发",
+    "TalentIcon": "fahuan571",
+    "SpriteFile": "fahuan571_-4869854771324790511.png"
+  },
+  {
+    "id": 900,
+    "BuffIds": [
+      2201020
+    ],
+    "Des": "碎石引潮",
+    "TalentIcon": "talent_passive_icon_general_tank_angerinhibit",
+    "SpriteFile": "talent_passive_icon_general_tank_angerinhibit_-8592472177472865664.png"
+  },
+  {
+    "id": 901,
+    "BuffIds": [],
+    "Des": "力量转换",
+    "TalentIcon": "talent_passive_icon_general_tank_deftran",
+    "SpriteFile": "talent_passive_icon_general_tank_deftran_307476076342814903.png"
+  },
+  {
+    "id": 902,
+    "BuffIds": [
+      2201040
+    ],
+    "Des": "生命压制",
+    "TalentIcon": "talent_passive_icon_general_tank_angerinhibitget",
+    "SpriteFile": "talent_passive_icon_general_tank_angerinhibitget_7732332478532431048.png"
+  },
+  {
+    "id": 903,
+    "BuffIds": [
+      2201050
+    ],
+    "Des": "弱点打击",
+    "TalentIcon": "talent_passive_icon_tank_ridicule03",
+    "SpriteFile": "talent_passive_icon_tank_ridicule03_-7977123215517870881.png"
+  },
+  {
+    "id": 904,
+    "BuffIds": [
+      2201060
+    ],
+    "Des": "弱点强化",
+    "TalentIcon": "talent_passive_icon_tank_ridicule03",
+    "SpriteFile": "talent_passive_icon_tank_ridicule03_-7977123215517870881.png"
+  },
+  {
+    "id": 906,
+    "BuffIds": [
+      2201080
+    ],
+    "Des": "格挡回复",
+    "TalentIcon": "talent_passive_icon_general_sup_starfield",
+    "SpriteFile": "talent_passive_icon_general_sup_starfield_5093829511543149601.png"
+  },
+  {
+    "id": 907,
+    "BuffIds": [
+      2201090
+    ],
+    "Des": "格挡反击",
+    "TalentIcon": "talent_passive_icon_general_sup_guide",
+    "SpriteFile": "talent_passive_icon_general_sup_guide_8226416676337510715.png"
+  },
+  {
+    "id": 911,
+    "BuffIds": [
+      2201010
+    ],
+    "Des": "砂岩之握精进",
+    "TalentIcon": "talent_passive_icon_general_tank_pierce",
+    "SpriteFile": "talent_passive_icon_general_tank_pierce_3485067466456800186.png"
+  },
+  {
+    "id": 912,
+    "BuffIds": [],
+    "Des": "愈合之砂",
+    "TalentIcon": "talent_passive_icon_general_tank_adjustment",
+    "SpriteFile": "talent_passive_icon_general_tank_adjustment_4479773509355681438.png"
+  },
+  {
+    "id": 913,
+    "BuffIds": [
+      2201150
+    ],
+    "Des": "幸运壁垒",
+    "TalentIcon": "talent_passive_icon_general_tank_counterattack",
+    "SpriteFile": "talent_passive_icon_general_tank_counterattack_1355883207887674866.png"
+  },
+  {
+    "id": 914,
+    "BuffIds": [
+      2201160
+    ],
+    "Des": "猛击庇护",
+    "TalentIcon": "talent_passive_icon_general_tank_growing",
+    "SpriteFile": "talent_passive_icon_general_tank_growing_-2643893351757096063.png"
+  },
+  {
+    "id": 916,
+    "BuffIds": [
+      2201170
+    ],
+    "Des": "坚毅之息",
+    "TalentIcon": "talent_passive_icon_general_tank_unrelent",
+    "SpriteFile": "talent_passive_icon_general_tank_unrelent_-3175128053629604350.png"
+  },
+  {
+    "id": 917,
+    "BuffIds": [
+      2201180
+    ],
+    "Des": "猛击援护",
+    "TalentIcon": "talent_passive_icon_tank_violent05",
+    "SpriteFile": "talent_passive_icon_tank_violent05_2577265303974605481.png"
+  },
+  {
+    "id": 918,
+    "BuffIds": [
+      2201190
+    ],
+    "Des": "砂之庇护",
+    "TalentIcon": "talent_passive_icon_general_tank_barrier",
+    "SpriteFile": "talent_passive_icon_general_tank_barrier_1756594318485816037.png"
+  },
+  {
+    "id": 919,
+    "BuffIds": [
+      2201200
+    ],
+    "Des": "护盾连击",
+    "TalentIcon": "talent_passive_icon_sup_meleeconversion",
+    "SpriteFile": "talent_passive_icon_sup_meleeconversion_5095031411280052604.png"
+  },
+  {
+    "id": 920,
+    "BuffIds": [
+      2201210
+    ],
+    "Des": "巨岩之息",
+    "TalentIcon": "talent_passive_icon_general_tank_victoryrush",
+    "SpriteFile": "talent_passive_icon_general_tank_victoryrush_8328971838923015856.png"
+  },
+  {
+    "id": 921,
+    "BuffIds": [
+      2201220
+    ],
+    "Des": "元素协调",
+    "TalentIcon": "talent_passive_icon_tank_violentconversion",
+    "SpriteFile": "talent_passive_icon_tank_violentconversion_87977974815457412.png"
+  },
+  {
+    "id": 922,
+    "BuffIds": [
+      2201240
+    ],
+    "Des": "护盾回声",
+    "TalentIcon": "talent_passive_icon_tank_ridicule02",
+    "SpriteFile": "talent_passive_icon_tank_ridicule02_-4220460464625354670.png"
+  },
+  {
+    "id": 923,
+    "BuffIds": [
+      2201250
+    ],
+    "Des": "破碎怒击",
+    "TalentIcon": "talent_passive_icon_tank_violent01",
+    "SpriteFile": "talent_passive_icon_tank_violent01_-6899993752557351730.png"
+  },
+  {
+    "id": 924,
+    "BuffIds": [],
+    "Des": "首领之牙",
+    "TalentIcon": "talent_passive_icon_tank_ridiculeconversion",
+    "SpriteFile": "talent_passive_icon_tank_ridiculeconversion_7554233677811443365.png"
+  },
+  {
+    "id": 925,
+    "BuffIds": [
+      2201270
+    ],
+    "Des": "绝境逢生",
+    "TalentIcon": "talent_passive_icon_general_sup_inspire",
+    "SpriteFile": "talent_passive_icon_general_sup_inspire_-6432064480786422417.png"
+  },
+  {
+    "id": 926,
+    "BuffIds": [
+      2201280
+    ],
+    "Des": "敌影之盾",
+    "TalentIcon": "talent_passive_icon_tank_bk03",
+    "SpriteFile": "talent_passive_icon_tank_bk03_3263069676339373485.png"
+  },
+  {
+    "id": 927,
+    "BuffIds": [
+      2201290
+    ],
+    "Des": "奋勇",
+    "TalentIcon": "talent_passive_icon_sup_melee04",
+    "SpriteFile": "talent_passive_icon_sup_melee04_-3148179664473351796.png"
+  },
+  {
+    "id": 928,
+    "BuffIds": [
+      2201300
+    ],
+    "Des": "群敌压制",
+    "TalentIcon": "talent_passive_icon_tank_bk04",
+    "SpriteFile": "talent_passive_icon_tank_bk04_1340366341250342826.png"
+  },
+  {
+    "id": 929,
+    "BuffIds": [
+      2201310
+    ],
+    "Des": "怒火觉醒",
+    "TalentIcon": "talent_passive_icon_general_tank_tough",
+    "SpriteFile": "talent_passive_icon_general_tank_tough_6929393942810472144.png"
+  },
+  {
+    "id": 930,
+    "BuffIds": [
+      2201320
+    ],
+    "Des": "格挡流",
+    "TalentIcon": "talent_passive_icon_general_sup_inspireex",
+    "SpriteFile": "talent_passive_icon_general_sup_inspireex_-5332009446003868568.png"
+  },
+  {
+    "id": 931,
+    "BuffIds": [
+      2201330
+    ],
+    "Des": "岩盾流",
+    "TalentIcon": "talent_passive_icon_general_tank_shieldcounter",
+    "SpriteFile": "talent_passive_icon_general_tank_shieldcounter_-2474888131609774595.png"
+  },
+  {
+    "id": 932,
+    "BuffIds": [
+      2201340
+    ],
+    "Des": "同调领域",
+    "TalentIcon": "talent_passive_icon_general_tank_stonearea",
+    "SpriteFile": "talent_passive_icon_general_tank_stonearea_5865177450902400999.png"
+  },
+  {
+    "id": 933,
+    "BuffIds": [
+      2201350
+    ],
+    "Des": "砂岩回溯",
+    "TalentIcon": "talent_passive_icon_general_tank_luckblockcd",
+    "SpriteFile": "talent_passive_icon_general_tank_luckblockcd_7879603332321940074.png"
+  },
+  {
+    "id": 934,
+    "BuffIds": [
+      2201360
+    ],
+    "Des": "砂石震荡",
+    "TalentIcon": "talent_passive_icon_general_tank_grind",
+    "SpriteFile": "talent_passive_icon_general_tank_grind_-8011041684372079886.png"
+  },
+  {
+    "id": 935,
+    "BuffIds": [
+      2201370
+    ],
+    "Des": "格挡祝福",
+    "TalentIcon": "talent_passive_icon_general_tank_blockbless",
+    "SpriteFile": "talent_passive_icon_general_tank_blockbless_3176285845881368948.png"
+  },
+  {
+    "id": 936,
+    "BuffIds": [
+      2201380
+    ],
+    "Des": "狂怒庇护",
+    "TalentIcon": "weiren936",
+    "SpriteFile": "weiren936_2192281945077083776.png"
+  },
+  {
+    "id": 937,
+    "BuffIds": [
+      2201390
+    ],
+    "Des": "激怒压制",
+    "TalentIcon": "weiren937",
+    "SpriteFile": "weiren937_3245947757931255782.png"
+  },
+  {
+    "id": 938,
+    "BuffIds": [
+      2201400
+    ],
+    "Des": "激怒延时",
+    "TalentIcon": "weiren938",
+    "SpriteFile": "weiren938_4260719072765138885.png"
+  },
+  {
+    "id": 939,
+    "BuffIds": [
+      2201410
+    ],
+    "Des": "砂石复苏",
+    "TalentIcon": "weiren939",
+    "SpriteFile": "weiren939_-5103743225773167626.png"
+  },
+  {
+    "id": 940,
+    "BuffIds": [
+      2201420
+    ],
+    "Des": "激怒扩充",
+    "TalentIcon": "weiren940",
+    "SpriteFile": "weiren940_341436078491915378.png"
+  },
+  {
+    "id": 941,
+    "BuffIds": [
+      2201430
+    ],
+    "Des": "怒爆精进",
+    "TalentIcon": "weiren941",
+    "SpriteFile": "weiren941_-5228447378654407433.png"
+  },
+  {
+    "id": 942,
+    "BuffIds": [
+      2201440
+    ],
+    "Des": "星之狂怒",
+    "TalentIcon": "weiren942",
+    "SpriteFile": "weiren942_4897712912167863467.png"
+  },
+  {
+    "id": 943,
+    "BuffIds": [
+      2201450
+    ],
+    "Des": "石域",
+    "TalentIcon": "weiren943",
+    "SpriteFile": "weiren943_-809865590488259970.png"
+  },
+  {
+    "id": 944,
+    "BuffIds": [
+      2201460
+    ],
+    "Des": "岩盾倍增",
+    "TalentIcon": "weiren944",
+    "SpriteFile": "weiren944_-3415164336228523533.png"
+  },
+  {
+    "id": 945,
+    "BuffIds": [
+      2201470
+    ],
+    "Des": "巨石护体",
+    "TalentIcon": "weiren945",
+    "SpriteFile": "weiren945_4809790328159903964.png"
+  },
+  {
+    "id": 946,
+    "BuffIds": [
+      2201480
+    ],
+    "Des": "猛击护盾",
+    "TalentIcon": "weiren946",
+    "SpriteFile": "weiren946_-581375399550043404.png"
+  },
+  {
+    "id": 947,
+    "BuffIds": [
+      2201490
+    ],
+    "Des": "回复",
+    "TalentIcon": "weiren947",
+    "SpriteFile": "weiren947_-652670719946873945.png"
+  },
+  {
+    "id": 948,
+    "BuffIds": [
+      2201500
+    ],
+    "Des": "碎星崩裂",
+    "TalentIcon": "weiren948",
+    "SpriteFile": "weiren948_2403398221713346961.png"
+  },
+  {
+    "id": 949,
+    "BuffIds": [
+      2201510
+    ],
+    "Des": "岩之主",
+    "TalentIcon": "weiren949",
+    "SpriteFile": "weiren949_5507704167072511230.png"
+  },
+  {
+    "id": 950,
+    "BuffIds": [
+      2201520
+    ],
+    "Des": "碎击",
+    "TalentIcon": "weiren950",
+    "SpriteFile": "weiren950_5063989800749197717.png"
+  },
+  {
+    "id": 951,
+    "BuffIds": [
+      2201530
+    ],
+    "Des": "激怒崩裂",
+    "TalentIcon": "weiren951",
+    "SpriteFile": "weiren951_-520514212991545588.png"
+  },
+  {
+    "id": 952,
+    "BuffIds": [
+      2201540
+    ],
+    "Des": "碎星冲追击",
+    "TalentIcon": "weiren952",
+    "SpriteFile": "weiren952_8143393319629407803.png"
+  },
+  {
+    "id": 953,
+    "BuffIds": [
+      2201550
+    ],
+    "Des": "巨岩之主",
+    "TalentIcon": "weiren953",
+    "SpriteFile": "weiren953_-327305793929001874.png"
+  },
+  {
+    "id": 954,
+    "BuffIds": [
+      2201560
+    ],
+    "Des": "愈战愈勇",
+    "TalentIcon": "weiren954",
+    "SpriteFile": "weiren954_-5266264894873556893.png"
+  },
+  {
+    "id": 955,
+    "BuffIds": [
+      2201570
+    ],
+    "Des": "岩护",
+    "TalentIcon": "weiren955",
+    "SpriteFile": "weiren955_376778384323853777.png"
+  },
+  {
+    "id": 956,
+    "BuffIds": [
+      2201580
+    ],
+    "Des": "壁垒怒火",
+    "TalentIcon": "weiren956",
+    "SpriteFile": "weiren956_-2866362831242428321.png"
+  },
+  {
+    "id": 957,
+    "BuffIds": [
+      2201590
+    ],
+    "Des": "格挡庇护",
+    "TalentIcon": "weiren957",
+    "SpriteFile": "weiren957_-5789570813471792005.png"
+  },
+  {
+    "id": 958,
+    "BuffIds": [
+      2201600
+    ],
+    "Des": "格挡砂石",
+    "TalentIcon": "weiren958",
+    "SpriteFile": "weiren958_6169478197733365881.png"
+  },
+  {
+    "id": 959,
+    "BuffIds": [
+      2201610
+    ],
+    "Des": "岩之心",
+    "TalentIcon": "weiren959",
+    "SpriteFile": "weiren959_9006721102314387352.png"
+  },
+  {
+    "id": 960,
+    "BuffIds": [
+      2201620
+    ],
+    "Des": "岩弹",
+    "TalentIcon": "weiren960",
+    "SpriteFile": "weiren960_5509201915616776854.png"
+  },
+  {
+    "id": 961,
+    "BuffIds": [
+      2201630
+    ],
+    "Des": "岩弹激怒",
+    "TalentIcon": "weiren961",
+    "SpriteFile": "weiren961_1255242026940846560.png"
+  },
+  {
+    "id": 962,
+    "BuffIds": [
+      2201640
+    ],
+    "Des": "岩拳回复",
+    "TalentIcon": "weiren962",
+    "SpriteFile": "weiren962_487516027964618427.png"
+  },
+  {
+    "id": 963,
+    "BuffIds": [
+      2201650
+    ],
+    "Des": "壁垒刚毅",
+    "TalentIcon": "weiren963",
+    "SpriteFile": "weiren963_2502289835201006764.png"
+  },
+  {
+    "id": 964,
+    "BuffIds": [
+      2201660
+    ],
+    "Des": "怒击强化",
+    "TalentIcon": "weiren964",
+    "SpriteFile": "weiren964_-8650547743914937878.png"
+  },
+  {
+    "id": 965,
+    "BuffIds": [
+      2201670
+    ],
+    "Des": "岩弹二连击",
+    "TalentIcon": "weiren965",
+    "SpriteFile": "weiren965_-8795950900575911074.png"
+  },
+  {
+    "id": 966,
+    "BuffIds": [
+      2201680
+    ],
+    "Des": "威压",
+    "TalentIcon": "weiren966",
+    "SpriteFile": "weiren966_-2256281398126870544.png"
+  },
+  {
+    "id": 967,
+    "BuffIds": [
+      2201690
+    ],
+    "Des": "岩弹怒击",
+    "TalentIcon": "weiren967",
+    "SpriteFile": "weiren967_-1744710142381756092.png"
+  },
+  {
+    "id": 968,
+    "BuffIds": [
+      2201700
+    ],
+    "Des": "反击风暴",
+    "TalentIcon": "weiren968",
+    "SpriteFile": "weiren968_934415160672003609.png"
+  },
+  {
+    "id": 969,
+    "BuffIds": [
+      2201710
+    ],
+    "Des": "刚岩幸运",
+    "TalentIcon": "weiren969",
+    "SpriteFile": "weiren969_3945859805671368468.png"
+  },
+  {
+    "id": 970,
+    "BuffIds": [
+      2201720
+    ],
+    "Des": "刚岩精通",
+    "TalentIcon": "weiren970",
+    "SpriteFile": "weiren970_-7814936208432219688.png"
+  },
+  {
+    "id": 971,
+    "BuffIds": [
+      2201730
+    ],
+    "Des": "激怒岩之心",
+    "TalentIcon": "weiren971",
+    "SpriteFile": "weiren971_-9075450417919943305.png"
+  },
+  {
+    "id": 1100,
+    "BuffIds": [
+      2203010
+    ],
+    "Des": "光储限界",
+    "TalentIcon": "talent_passive_icon_general_dps_lightenergy",
+    "SpriteFile": "talent_passive_icon_general_dps_lightenergy_4654697744549693277.png"
+  },
+  {
+    "id": 1101,
+    "BuffIds": [],
+    "Des": "敏捷转换",
+    "TalentIcon": "talent_passive_icon_general_dps_speedtran",
+    "SpriteFile": "talent_passive_icon_general_dps_speedtran_-2559044009577034951.png"
+  },
+  {
+    "id": 1102,
+    "BuffIds": [
+      2203030
+    ],
+    "Des": "易伤一击",
+    "TalentIcon": "talent_passive_icon_general_dps_icenucleus",
+    "SpriteFile": "talent_passive_icon_general_dps_icenucleus_-3562277074333379218.png"
+  },
+  {
+    "id": 1103,
+    "BuffIds": [
+      2203040
+    ],
+    "Des": "狼之契约",
+    "TalentIcon": "talent_passive_icon_general_dps_wolfget",
+    "SpriteFile": "talent_passive_icon_general_dps_wolfget_-6127867354490971796.png"
+  },
+  {
+    "id": 1104,
+    "BuffIds": [
+      2203050
+    ],
+    "Des": "灵能激流",
+    "TalentIcon": "talent_passive_icon_general_dps_lightattackre",
+    "SpriteFile": "talent_passive_icon_general_dps_lightattackre_-7920381845468714401.png"
+  },
+  {
+    "id": 1105,
+    "BuffIds": [
+      2203060
+    ],
+    "Des": "战吼之法",
+    "TalentIcon": "talent_passive_icon_general_dps_wolfroar",
+    "SpriteFile": "talent_passive_icon_general_dps_wolfroar_1152377082036453333.png"
+  },
+  {
+    "id": 1106,
+    "BuffIds": [
+      2203070
+    ],
+    "Des": "魔狼之嗜",
+    "TalentIcon": "talent_passive_icon_general_dps_wolfspeedup",
+    "SpriteFile": "talent_passive_icon_general_dps_wolfspeedup_816324292716069852.png"
+  },
+  {
+    "id": 1107,
+    "BuffIds": [
+      2203080
+    ],
+    "Des": "冥想",
+    "TalentIcon": "talent_passive_icon_general_dps_lightenergycost",
+    "SpriteFile": "talent_passive_icon_general_dps_lightenergycost_-5831015236897072445.png"
+  },
+  {
+    "id": 1108,
+    "BuffIds": [
+      2203090
+    ],
+    "Des": "幻影狼袭",
+    "TalentIcon": "talent_passive_icon_general_dps_wolfswoop",
+    "SpriteFile": "talent_passive_icon_general_dps_wolfswoop_6927286954813557011.png"
+  },
+  {
+    "id": 1109,
+    "BuffIds": [
+      2203100
+    ],
+    "Des": "魔狼撕咬",
+    "TalentIcon": "talent_passive_icon_general_dps_wolfbleed",
+    "SpriteFile": "talent_passive_icon_general_dps_wolfbleed_5994421608145579662.png"
+  },
+  {
+    "id": 1110,
+    "BuffIds": [
+      2203110
+    ],
+    "Des": "魔狼双生",
+    "TalentIcon": "talent_passive_icon_general_dps_wolfonce",
+    "SpriteFile": "talent_passive_icon_general_dps_wolfonce_2135164927422448344.png"
+  },
+  {
+    "id": 1111,
+    "BuffIds": [
+      2203120
+    ],
+    "Des": "光铸学识",
+    "TalentIcon": "talent_passive_icon_general_dps_resetbite",
+    "SpriteFile": "talent_passive_icon_general_dps_resetbite_-7972763417752715279.png"
+  },
+  {
+    "id": 1112,
+    "BuffIds": [
+      2203130
+    ],
+    "Des": "双星之矢",
+    "TalentIcon": "talent_passive_icon_general_dps_doublearrowfly",
+    "SpriteFile": "talent_passive_icon_general_dps_doublearrowfly_3153531576962717561.png"
+  },
+  {
+    "id": 1114,
+    "BuffIds": [
+      2203140
+    ],
+    "Des": "灵箭神踪",
+    "TalentIcon": "talent_passive_icon_general_dps_extralightarrow",
+    "SpriteFile": "talent_passive_icon_general_dps_extralightarrow_584293073345477232.png"
+  },
+  {
+    "id": 1115,
+    "BuffIds": [
+      2203150
+    ],
+    "Des": "精神之辉",
+    "TalentIcon": "talent_passive_icon_general_dps_lightfull",
+    "SpriteFile": "talent_passive_icon_general_dps_lightfull_-4488458789564464957.png"
+  },
+  {
+    "id": 1116,
+    "BuffIds": [
+      2203160
+    ],
+    "Des": "迅捷",
+    "TalentIcon": "talent_passive_icon_general_dps_thunderbird",
+    "SpriteFile": "talent_passive_icon_general_dps_thunderbird_-3276686481378146780.png"
+  },
+  {
+    "id": 1117,
+    "BuffIds": [
+      2203170
+    ],
+    "Des": "光耀射手",
+    "TalentIcon": "talent_passive_icon_general_dps_lightenergy02",
+    "SpriteFile": "talent_passive_icon_general_dps_lightenergy02_-4737989366383713861.png"
+  },
+  {
+    "id": 1118,
+    "BuffIds": [
+      2203180
+    ],
+    "Des": "鹰眼闪电破",
+    "TalentIcon": "talent_passive_icon_general_dps_thunderbird02",
+    "SpriteFile": "talent_passive_icon_general_dps_thunderbird02_6566626226291510572.png"
+  },
+  {
+    "id": 1119,
+    "BuffIds": [
+      2203190
+    ],
+    "Des": "天空之落星",
+    "TalentIcon": "talent_passive_icon_general_dps_skyhitcri",
+    "SpriteFile": "talent_passive_icon_general_dps_skyhitcri_-9034016585177689235.png"
+  },
+  {
+    "id": 1120,
+    "BuffIds": [
+      2203200
+    ],
+    "Des": "锐射",
+    "TalentIcon": "talent_passive_icon_general_dps_skycri",
+    "SpriteFile": "talent_passive_icon_general_dps_skycri_-5270325091101540407.png"
+  },
+  {
+    "id": 1121,
+    "BuffIds": [
+      2203210
+    ],
+    "Des": "心之鹰击",
+    "TalentIcon": "talent_passive_icon_general_dps_birdingnoredef",
+    "SpriteFile": "talent_passive_icon_general_dps_birdingnoredef_9165524309035019873.png"
+  },
+  {
+    "id": 1122,
+    "BuffIds": [
+      2203220
+    ],
+    "Des": "光落",
+    "TalentIcon": "talent_passive_icon_general_dps_skyhitcrilight",
+    "SpriteFile": "talent_passive_icon_general_dps_skyhitcrilight_-4896179297343515246.png"
+  },
+  {
+    "id": 1123,
+    "BuffIds": [
+      2203230
+    ],
+    "Des": "专注射击",
+    "TalentIcon": "talent_passive_icon_sup_heal01",
+    "SpriteFile": "talent_passive_icon_sup_heal01_-6622005666501254407.png"
+  },
+  {
+    "id": 1124,
+    "BuffIds": [
+      2203240
+    ],
+    "Des": "勇者之心",
+    "TalentIcon": "talent_passive_icon_general_dps_petdamboss",
+    "SpriteFile": "talent_passive_icon_general_dps_petdamboss_1737517073416817444.png"
+  },
+  {
+    "id": 1125,
+    "BuffIds": [
+      2203250
+    ],
+    "Des": "激能",
+    "TalentIcon": "talent_passive_icon_general_dps_thirddamup",
+    "SpriteFile": "talent_passive_icon_general_dps_thirddamup_3103156042392658497.png"
+  },
+  {
+    "id": 1126,
+    "BuffIds": [
+      2203260
+    ],
+    "Des": "驭兽流",
+    "TalentIcon": "talent_passive_icon_general_dps_petbig",
+    "SpriteFile": "talent_passive_icon_general_dps_petbig_-1588689765727112482.png"
+  },
+  {
+    "id": 1127,
+    "BuffIds": [
+      2203270
+    ],
+    "Des": "连珠箭雨",
+    "TalentIcon": "talent_passive_icon_general_dps_threetargetarrow",
+    "SpriteFile": "talent_passive_icon_general_dps_threetargetarrow_7358845499223190469.png"
+  },
+  {
+    "id": 1128,
+    "BuffIds": [
+      2203280
+    ],
+    "Des": "裂空之矢",
+    "TalentIcon": "talent_passive_icon_general_dps_splitarrow",
+    "SpriteFile": "talent_passive_icon_general_dps_splitarrow_1358488041650526805.png"
+  },
+  {
+    "id": 1129,
+    "BuffIds": [
+      2203290
+    ],
+    "Des": "驯鹰流",
+    "TalentIcon": "talent_passive_icon_general_dps_skyhitget",
+    "SpriteFile": "talent_passive_icon_general_dps_skyhitget_-60442297385266657.png"
+  },
+  {
+    "id": 1130,
+    "BuffIds": [
+      2203300
+    ],
+    "Des": "猎狼之舞",
+    "TalentIcon": "talent_passive_icon_general_dps_bleedbow",
+    "SpriteFile": "talent_passive_icon_general_dps_bleedbow_7155227687755401273.png"
+  },
+  {
+    "id": 1131,
+    "BuffIds": [
+      2203310
+    ],
+    "Des": "爆破箭矢",
+    "TalentIcon": "talent_passive_icon_general_dps_bowarrow",
+    "SpriteFile": "talent_passive_icon_general_dps_bowarrow_-6517615294903934427.png"
+  },
+  {
+    "id": 1132,
+    "BuffIds": [
+      2203320
+    ],
+    "Des": "急速射击",
+    "TalentIcon": "gongjian1132",
+    "SpriteFile": "gongjian1132_-1302161707481035464.png"
+  },
+  {
+    "id": 1133,
+    "BuffIds": [
+      2203330
+    ],
+    "Des": "野兽之力",
+    "TalentIcon": "gongjian1133",
+    "SpriteFile": "gongjian1133_5976665028936618669.png"
+  },
+  {
+    "id": 1134,
+    "BuffIds": [
+      2203340
+    ],
+    "Des": "灵巧",
+    "TalentIcon": "gongjian1134",
+    "SpriteFile": "gongjian1134_1814174961468924098.png"
+  },
+  {
+    "id": 1135,
+    "BuffIds": [],
+    "Des": "迅射",
+    "TalentIcon": "gongjian1135",
+    "SpriteFile": "gongjian1135_4828386006887583276.png"
+  },
+  {
+    "id": 1136,
+    "BuffIds": [
+      2203360
+    ],
+    "Des": "野狼锐击",
+    "TalentIcon": "gongjian1136",
+    "SpriteFile": "gongjian1136_-4637771648593616074.png"
+  },
+  {
+    "id": 1137,
+    "BuffIds": [
+      2203370
+    ],
+    "Des": "野兽怒涛之力",
+    "TalentIcon": "gongjian1137",
+    "SpriteFile": "gongjian1137_6692597613712292927.png"
+  },
+  {
+    "id": 1138,
+    "BuffIds": [
+      2203380
+    ],
+    "Des": "箭雨加速",
+    "TalentIcon": "gongjian1138",
+    "SpriteFile": "gongjian1138_9205083172175722472.png"
+  },
+  {
+    "id": 1139,
+    "BuffIds": [
+      2203390
+    ],
+    "Des": "生命猎杀",
+    "TalentIcon": "gongjian1139",
+    "SpriteFile": "gongjian1139_-5220436269506633074.png"
+  },
+  {
+    "id": 1140,
+    "BuffIds": [
+      2203400
+    ],
+    "Des": "狼牙之契",
+    "TalentIcon": "gongjian1140",
+    "SpriteFile": "gongjian1140_6061510829725384148.png"
+  },
+  {
+    "id": 1141,
+    "BuffIds": [
+      2203410
+    ],
+    "Des": "光影流失",
+    "TalentIcon": "gongjian1141",
+    "SpriteFile": "gongjian1141_-8758213773347382136.png"
+  },
+  {
+    "id": 1142,
+    "BuffIds": [
+      2203420
+    ],
+    "Des": "野狼进化",
+    "TalentIcon": "gongjian1142",
+    "SpriteFile": "gongjian1142_3793203283890112842.png"
+  },
+  {
+    "id": 1143,
+    "BuffIds": [
+      2203430
+    ],
+    "Des": "传奇野兽",
+    "TalentIcon": "gongjian1143",
+    "SpriteFile": "gongjian1143_-8861874603109035245.png"
+  },
+  {
+    "id": 1144,
+    "BuffIds": [
+      2203440
+    ],
+    "Des": "光意怒涛射击",
+    "TalentIcon": "gongjian1144",
+    "SpriteFile": "gongjian1144_-2223882682845529979.png"
+  },
+  {
+    "id": 1145,
+    "BuffIds": [
+      2203450
+    ],
+    "Des": "狂野呼唤冷却",
+    "TalentIcon": "gongjian1145",
+    "SpriteFile": "gongjian1145_2027274784145327978.png"
+  },
+  {
+    "id": 1146,
+    "BuffIds": [
+      2203460
+    ],
+    "Des": "生命流失之精通",
+    "TalentIcon": "gongjian1146",
+    "SpriteFile": "gongjian1146_7852759246475548336.png"
+  },
+  {
+    "id": 1147,
+    "BuffIds": [
+      2203470
+    ],
+    "Des": "追光锋锐",
+    "TalentIcon": "gongjian1147",
+    "SpriteFile": "gongjian1147_-7070382074069117826.png"
+  },
+  {
+    "id": 1148,
+    "BuffIds": [
+      2203480
+    ],
+    "Des": "追光之箭",
+    "TalentIcon": "gongjian1148",
+    "SpriteFile": "gongjian1148_-1320308342387735457.png"
+  },
+  {
+    "id": 1149,
+    "BuffIds": [
+      2203490
+    ],
+    "Des": "光意",
+    "TalentIcon": "gongjian1149",
+    "SpriteFile": "gongjian1149_-2618424745002011847.png"
+  },
+  {
+    "id": 1150,
+    "BuffIds": [
+      2203500
+    ],
+    "Des": "魔狼嗜咬",
+    "TalentIcon": "gongjian1150",
+    "SpriteFile": "gongjian1150_3414212359170841905.png"
+  },
+  {
+    "id": 1151,
+    "BuffIds": [
+      2203510
+    ],
+    "Des": "践踏",
+    "TalentIcon": "gongjian1151",
+    "SpriteFile": "gongjian1151_3756239704465071853.png"
+  },
+  {
+    "id": 1152,
+    "BuffIds": [
+      2203520
+    ],
+    "Des": "钢制喙",
+    "TalentIcon": "gongjian1152",
+    "SpriteFile": "gongjian1152_-7892639729727182064.png"
+  },
+  {
+    "id": 1153,
+    "BuffIds": [
+      2203530
+    ],
+    "Des": "幻影猎鹰",
+    "TalentIcon": "gongjian1153",
+    "SpriteFile": "gongjian1153_-2544693340079185519.png"
+  },
+  {
+    "id": 1154,
+    "BuffIds": [
+      2203540
+    ],
+    "Des": "凝神专注",
+    "TalentIcon": "gongjian1154",
+    "SpriteFile": "gongjian1154_-1933085418678219963.png"
+  },
+  {
+    "id": 1155,
+    "BuffIds": [
+      2203550
+    ],
+    "Des": "双矢极意",
+    "TalentIcon": "gongjian1155",
+    "SpriteFile": "gongjian1155_3253108447175161270.png"
+  },
+  {
+    "id": 1156,
+    "BuffIds": [
+      2203560
+    ],
+    "Des": "锐利二连矢·一",
+    "TalentIcon": "gongjian1156",
+    "SpriteFile": "gongjian1156_-837403304086851961.png"
+  },
+  {
+    "id": 1157,
+    "BuffIds": [
+      2203570
+    ],
+    "Des": "光能凝滞",
+    "TalentIcon": "gongjian1157",
+    "SpriteFile": "gongjian1157_-6021832224655243960.png"
+  },
+  {
+    "id": 1158,
+    "BuffIds": [
+      2203580
+    ],
+    "Des": "猎鹰破式",
+    "TalentIcon": "gongjian1158",
+    "SpriteFile": "gongjian1158_300076161079534991.png"
+  },
+  {
+    "id": 1159,
+    "BuffIds": [
+      2203590
+    ],
+    "Des": "鹰眼",
+    "TalentIcon": "gongjian1159",
+    "SpriteFile": "gongjian1159_2751165188587234805.png"
+  },
+  {
+    "id": 1160,
+    "BuffIds": [
+      2203600
+    ],
+    "Des": "天界雄鹰",
+    "TalentIcon": "gongjian1160",
+    "SpriteFile": "gongjian1160_-2446302958817462071.png"
+  },
+  {
+    "id": 1161,
+    "BuffIds": [
+      2203610
+    ],
+    "Des": "辉爆蓄势",
+    "TalentIcon": "gongjian1161",
+    "SpriteFile": "gongjian1161_906420539170874407.png"
+  },
+  {
+    "id": 1162,
+    "BuffIds": [
+      2203620
+    ],
+    "Des": "光棱",
+    "TalentIcon": "gongjian1162",
+    "SpriteFile": "gongjian1162_-7710031968813354312.png"
+  },
+  {
+    "id": 1163,
+    "BuffIds": [
+      2203630
+    ],
+    "Des": "闪电破",
+    "TalentIcon": "gongjian1163",
+    "SpriteFile": "gongjian1163_6370743563231735347.png"
+  },
+  {
+    "id": 1164,
+    "BuffIds": [
+      2203640
+    ],
+    "Des": "聚能之力",
+    "TalentIcon": "gongjian1164",
+    "SpriteFile": "gongjian1164_2364470429858491604.png"
+  },
+  {
+    "id": 1165,
+    "BuffIds": [
+      2203650
+    ],
+    "Des": "钢喙之击",
+    "TalentIcon": "gongjian1165",
+    "SpriteFile": "gongjian1165_7903268321277358691.png"
+  },
+  {
+    "id": 1166,
+    "BuffIds": [
+      2203660
+    ],
+    "Des": "钢制喙聚集",
+    "TalentIcon": "gongjian1166",
+    "SpriteFile": "gongjian1166_298629613559334571.png"
+  },
+  {
+    "id": 1167,
+    "BuffIds": [
+      2203670
+    ],
+    "Des": "连环爆炸",
+    "TalentIcon": "gongjian1167",
+    "SpriteFile": "gongjian1167_-8284180784635419728.png"
+  },
+  {
+    "id": 1200,
+    "BuffIds": [
+      2206010
+    ],
+    "Des": "光铸身躯",
+    "TalentIcon": "jiandun1200",
+    "SpriteFile": "jiandun1200_-6773735832233916301.png"
+  },
+  {
+    "id": 1201,
+    "BuffIds": [
+      2206020
+    ],
+    "Des": "断罪",
+    "TalentIcon": "jiandun1201",
+    "SpriteFile": "jiandun1201_-8108579239872170853.png"
+  },
+  {
+    "id": 1202,
+    "BuffIds": [
+      2206030
+    ],
+    "Des": "圣令的恩惠",
+    "TalentIcon": "jiandun1202",
+    "SpriteFile": "jiandun1202_2290855188061519729.png"
+  },
+  {
+    "id": 1203,
+    "BuffIds": [
+      2206040
+    ],
+    "Des": "裁决之环",
+    "TalentIcon": "jiandun1203",
+    "SpriteFile": "jiandun1203_-43078451485573190.png"
+  },
+  {
+    "id": 1204,
+    "BuffIds": [
+      2206050
+    ],
+    "Des": "光铸延续",
+    "TalentIcon": "jiandun1204",
+    "SpriteFile": "jiandun1204_8394038943092455415.png"
+  },
+  {
+    "id": 1205,
+    "BuffIds": [
+      2206060
+    ],
+    "Des": "急速圣令",
+    "TalentIcon": "jiandun1205",
+    "SpriteFile": "jiandun1205_-1762508648945639034.png"
+  },
+  {
+    "id": 1206,
+    "BuffIds": [],
+    "Des": "力量转换",
+    "TalentIcon": "jiandun1206",
+    "SpriteFile": "jiandun1206_-6283846987022120379.png"
+  },
+  {
+    "id": 1207,
+    "BuffIds": [
+      2206080
+    ],
+    "Des": "断罪之光",
+    "TalentIcon": "jiandun1207",
+    "SpriteFile": "jiandun1207_-1429454668650764564.png"
+  },
+  {
+    "id": 1208,
+    "BuffIds": [
+      2206090
+    ],
+    "Des": "防护回复流",
+    "TalentIcon": "jiandun1208",
+    "SpriteFile": "jiandun1208_449476087059871284.png"
+  },
+  {
+    "id": 1209,
+    "BuffIds": [
+      2206100
+    ],
+    "Des": "神谕",
+    "TalentIcon": "jiandun1209",
+    "SpriteFile": "jiandun1209_-6752476680964564441.png"
+  },
+  {
+    "id": 1210,
+    "BuffIds": [
+      2206110
+    ],
+    "Des": "裁决启示",
+    "TalentIcon": "jiandun1210",
+    "SpriteFile": "jiandun1210_-5082643878449165271.png"
+  },
+  {
+    "id": 1211,
+    "BuffIds": [
+      2206120
+    ],
+    "Des": "圣环护卫",
+    "TalentIcon": "jiandun1211",
+    "SpriteFile": "jiandun1211_-5816055113790409608.png"
+  },
+  {
+    "id": 1212,
+    "BuffIds": [
+      2206130
+    ],
+    "Des": "光护",
+    "TalentIcon": "jiandun1212",
+    "SpriteFile": "jiandun1212_-1702913504885627293.png"
+  },
+  {
+    "id": 1213,
+    "BuffIds": [
+      2206140
+    ],
+    "Des": "圣光守卫赞歌",
+    "TalentIcon": "jiandun1213",
+    "SpriteFile": "jiandun1213_-1736642997314103878.png"
+  },
+  {
+    "id": 1214,
+    "BuffIds": [
+      2206150
+    ],
+    "Des": "无畏之盾",
+    "TalentIcon": "jiandun1214",
+    "SpriteFile": "jiandun1214_6342863842306165662.png"
+  },
+  {
+    "id": 1215,
+    "BuffIds": [
+      2206160
+    ],
+    "Des": "圣光守卫惩戒",
+    "TalentIcon": "jiandun1215",
+    "SpriteFile": "jiandun1215_6515870512490150235.png"
+  },
+  {
+    "id": 1216,
+    "BuffIds": [
+      2206170
+    ],
+    "Des": "光明圣剑",
+    "TalentIcon": "jiandun1216",
+    "SpriteFile": "jiandun1216_-6207186174221622816.png"
+  },
+  {
+    "id": 1217,
+    "BuffIds": [
+      2206180
+    ],
+    "Des": "神圣壁垒",
+    "TalentIcon": "jiandun1217",
+    "SpriteFile": "jiandun1217_-4732894723976089037.png"
+  },
+  {
+    "id": 1218,
+    "BuffIds": [
+      2206190
+    ],
+    "Des": "光盾回复流",
+    "TalentIcon": "jiandun1218",
+    "SpriteFile": "jiandun1218_9210525446440273373.png"
+  },
+  {
+    "id": 1219,
+    "BuffIds": [
+      2206200
+    ],
+    "Des": "光障",
+    "TalentIcon": "jiandun1219",
+    "SpriteFile": "jiandun1219_7452183829489257127.png"
+  },
+  {
+    "id": 1220,
+    "BuffIds": [
+      2206210
+    ],
+    "Des": "光铸屏障的升华",
+    "TalentIcon": "jiandun1220",
+    "SpriteFile": "jiandun1220_5505731374315686449.png"
+  },
+  {
+    "id": 1221,
+    "BuffIds": [
+      2206220
+    ],
+    "Des": "圣环咏叹",
+    "TalentIcon": "jiandun1221",
+    "SpriteFile": "jiandun1221_4275078565510249872.png"
+  },
+  {
+    "id": 1222,
+    "BuffIds": [
+      2206230
+    ],
+    "Des": "圣击",
+    "TalentIcon": "jiandun1222",
+    "SpriteFile": "jiandun1222_1567664867629103612.png"
+  },
+  {
+    "id": 1223,
+    "BuffIds": [
+      2206240
+    ],
+    "Des": "神圣光辉",
+    "TalentIcon": "jiandun1223",
+    "SpriteFile": "jiandun1223_1117255614674905977.png"
+  },
+  {
+    "id": 1224,
+    "BuffIds": [
+      2206250
+    ],
+    "Des": "决心斩击",
+    "TalentIcon": "jiandun1224",
+    "SpriteFile": "jiandun1224_-3686983280125223300.png"
+  },
+  {
+    "id": 1225,
+    "BuffIds": [
+      2206260
+    ],
+    "Des": "光铸驱动",
+    "TalentIcon": "jiandun1225",
+    "SpriteFile": "jiandun1225_-1522270446822299044.png"
+  },
+  {
+    "id": 1226,
+    "BuffIds": [
+      2206270
+    ],
+    "Des": "冷酷回溯",
+    "TalentIcon": "jiandun1226",
+    "SpriteFile": "jiandun1226_5588516664998390942.png"
+  },
+  {
+    "id": 1227,
+    "BuffIds": [
+      2206280
+    ],
+    "Des": "圣环激荡",
+    "TalentIcon": "jiandun1227",
+    "SpriteFile": "jiandun1227_4751278380088342101.png"
+  },
+  {
+    "id": 1228,
+    "BuffIds": [
+      2206290
+    ],
+    "Des": "众生裁决",
+    "TalentIcon": "jiandun1228",
+    "SpriteFile": "jiandun1228_-2637363237474792725.png"
+  },
+  {
+    "id": 1229,
+    "BuffIds": [
+      2206300
+    ],
+    "Des": "圣环祝福",
+    "TalentIcon": "jiandun1229",
+    "SpriteFile": "jiandun1229_-2186585529870960048.png"
+  },
+  {
+    "id": 1230,
+    "BuffIds": [
+      2206310
+    ],
+    "Des": "光铸平衡",
+    "TalentIcon": "jiandun1230",
+    "SpriteFile": "jiandun1230_-1726005971081924316.png"
+  },
+  {
+    "id": 1231,
+    "BuffIds": [
+      2206320
+    ],
+    "Des": "光铸刚毅",
+    "TalentIcon": "jiandun1231",
+    "SpriteFile": "jiandun1231_-3314942067790636626.png"
+  },
+  {
+    "id": 1232,
+    "BuffIds": [
+      2206330
+    ],
+    "Des": "光能援护",
+    "TalentIcon": "jiandun1232",
+    "SpriteFile": "jiandun1232_-1415930219092587397.png"
+  },
+  {
+    "id": 1233,
+    "BuffIds": [
+      2206340
+    ],
+    "Des": "生命强化",
+    "TalentIcon": "jiandun1233",
+    "SpriteFile": "jiandun1233_1609582243022166741.png"
+  },
+  {
+    "id": 1234,
+    "BuffIds": [
+      2206350
+    ],
+    "Des": "断罪时效",
+    "TalentIcon": "jiandun1234",
+    "SpriteFile": "jiandun1234_2351718655516323156.png"
+  },
+  {
+    "id": 1235,
+    "BuffIds": [
+      2206360
+    ],
+    "Des": "剑舞",
+    "TalentIcon": "jiandun1235",
+    "SpriteFile": "jiandun1235_1390609618129929372.png"
+  },
+  {
+    "id": 1236,
+    "BuffIds": [
+      2206370
+    ],
+    "Des": "持盾冲击",
+    "TalentIcon": "jiandun1236",
+    "SpriteFile": "jiandun1236_-6361339817339207180.png"
+  },
+  {
+    "id": 1237,
+    "BuffIds": [
+      2206380
+    ],
+    "Des": "清算炎盾",
+    "TalentIcon": "jiandun1237",
+    "SpriteFile": "jiandun1237_5702466976784301717.png"
+  },
+  {
+    "id": 1238,
+    "BuffIds": [
+      2206390
+    ],
+    "Des": "圣光时效",
+    "TalentIcon": "jiandun1238",
+    "SpriteFile": "jiandun1238_-4649790848388031777.png"
+  },
+  {
+    "id": 1239,
+    "BuffIds": [
+      2206400
+    ],
+    "Des": "圣光召唤",
+    "TalentIcon": "jiandun1239",
+    "SpriteFile": "jiandun1239_2465990856003016899.png"
+  },
+  {
+    "id": 1240,
+    "BuffIds": [
+      2206410
+    ],
+    "Des": "光击连锁",
+    "TalentIcon": "jiandun1240",
+    "SpriteFile": "jiandun1240_-5263172786528121644.png"
+  },
+  {
+    "id": 1241,
+    "BuffIds": [
+      2206420
+    ],
+    "Des": "清算爆炎",
+    "TalentIcon": "jiandun1241",
+    "SpriteFile": "jiandun1241_830678371601676996.png"
+  },
+  {
+    "id": 1242,
+    "BuffIds": [
+      2206430
+    ],
+    "Des": "圣体治愈",
+    "TalentIcon": "jiandun1242",
+    "SpriteFile": "jiandun1242_-6813561569957124518.png"
+  },
+  {
+    "id": 1243,
+    "BuffIds": [
+      2206440
+    ],
+    "Des": "光元素加护",
+    "TalentIcon": "jiandun1243",
+    "SpriteFile": "jiandun1243_7406568101833520745.png"
+  },
+  {
+    "id": 1244,
+    "BuffIds": [
+      2206450
+    ],
+    "Des": "守护极意",
+    "TalentIcon": "jiandun1244",
+    "SpriteFile": "jiandun1244_-6711190163413412939.png"
+  },
+  {
+    "id": 1245,
+    "BuffIds": [
+      2206460
+    ],
+    "Des": "盾击守护",
+    "TalentIcon": "jiandun1245",
+    "SpriteFile": "jiandun1245_8960019716899595701.png"
+  },
+  {
+    "id": 1246,
+    "BuffIds": [
+      2206470
+    ],
+    "Des": "光愈裁断",
+    "TalentIcon": "jiandun1246",
+    "SpriteFile": "jiandun1246_-8256969953470926977.png"
+  },
+  {
+    "id": 1247,
+    "BuffIds": [
+      2206480
+    ],
+    "Des": "极意神圣之击",
+    "TalentIcon": "jiandun1247",
+    "SpriteFile": "jiandun1247_1239733441280049316.png"
+  },
+  {
+    "id": 1248,
+    "BuffIds": [
+      2206490
+    ],
+    "Des": "盾击强化",
+    "TalentIcon": "jiandun1248",
+    "SpriteFile": "jiandun1248_1039790835260823812.png"
+  },
+  {
+    "id": 1249,
+    "BuffIds": [
+      2206500
+    ],
+    "Des": "极意征伐",
+    "TalentIcon": "jiandun1249",
+    "SpriteFile": "jiandun1249_-1814399949790760065.png"
+  },
+  {
+    "id": 1250,
+    "BuffIds": [],
+    "Des": "光之暴击",
+    "TalentIcon": "jiandun1250",
+    "SpriteFile": "jiandun1250_-4440082046267133992.png"
+  },
+  {
+    "id": 1251,
+    "BuffIds": [
+      2206520
+    ],
+    "Des": "逆境强化",
+    "TalentIcon": "jiandun1251",
+    "SpriteFile": "jiandun1251_-4870281914383440121.png"
+  },
+  {
+    "id": 1252,
+    "BuffIds": [
+      2206530
+    ],
+    "Des": "广域征伐",
+    "TalentIcon": "jiandun1252",
+    "SpriteFile": "jiandun1252_-961779494042555355.png"
+  },
+  {
+    "id": 1253,
+    "BuffIds": [
+      2206540
+    ],
+    "Des": "悍勇无畏",
+    "TalentIcon": "jiandun1253",
+    "SpriteFile": "jiandun1253_2440651556776620774.png"
+  },
+  {
+    "id": 1254,
+    "BuffIds": [
+      2206550
+    ],
+    "Des": "光芒核心",
+    "TalentIcon": "jiandun1254",
+    "SpriteFile": "jiandun1254_-1463541222100975820.png"
+  },
+  {
+    "id": 1255,
+    "BuffIds": [
+      2206560
+    ],
+    "Des": "征伐追击",
+    "TalentIcon": "jiandun1255",
+    "SpriteFile": "jiandun1255_-1985912719845156771.png"
+  },
+  {
+    "id": 1256,
+    "BuffIds": [
+      2206570
+    ],
+    "Des": "决断之刃",
+    "TalentIcon": "jiandun1256",
+    "SpriteFile": "jiandun1256_1777315687923373649.png"
+  },
+  {
+    "id": 1257,
+    "BuffIds": [
+      2206580
+    ],
+    "Des": "冷酷加速",
+    "TalentIcon": "jiandun1257",
+    "SpriteFile": "jiandun1257_-7338438287342497443.png"
+  },
+  {
+    "id": 1258,
+    "BuffIds": [
+      2206590
+    ],
+    "Des": "圣印强化",
+    "TalentIcon": "jiandun1258",
+    "SpriteFile": "jiandun1258_-6199259721473509106.png"
+  },
+  {
+    "id": 1259,
+    "BuffIds": [
+      2206600
+    ],
+    "Des": "圣环守护",
+    "TalentIcon": "jiandun1259",
+    "SpriteFile": "jiandun1259_7984178414492659520.png"
+  },
+  {
+    "id": 1260,
+    "BuffIds": [
+      2206610
+    ],
+    "Des": "裁决精进",
+    "TalentIcon": "jiandun1260",
+    "SpriteFile": "jiandun1260_-2806789615190311984.png"
+  },
+  {
+    "id": 1261,
+    "BuffIds": [
+      2206620
+    ],
+    "Des": "圣印追击",
+    "TalentIcon": "jiandun1261",
+    "SpriteFile": "jiandun1261_7103626725800279735.png"
+  },
+  {
+    "id": 1262,
+    "BuffIds": [
+      2206630
+    ],
+    "Des": "溢愈光壁",
+    "TalentIcon": "jiandun1262",
+    "SpriteFile": "jiandun1262_2498683532456260287.png"
+  },
+  {
+    "id": 1263,
+    "BuffIds": [
+      2206640
+    ],
+    "Des": "光愈",
+    "TalentIcon": "jiandun1263",
+    "SpriteFile": "jiandun1263_3623733060550291828.png"
+  },
+  {
+    "id": 1264,
+    "BuffIds": [
+      2206650
+    ],
+    "Des": "光元素加护",
+    "TalentIcon": "jiandun1264",
+    "SpriteFile": "jiandun1264_-1235518011761020916.png"
+  },
+  {
+    "id": 1265,
+    "BuffIds": [
+      2206660
+    ],
+    "Des": "决心速回",
+    "TalentIcon": "jiandun1265",
+    "SpriteFile": "jiandun1265_-4532514377643360226.png"
+  },
+  {
+    "id": 1266,
+    "BuffIds": [
+      2206670
+    ],
+    "Des": "光晕",
+    "TalentIcon": "jiandun1266",
+    "SpriteFile": "jiandun1266_5464923835327230226.png"
+  },
+  {
+    "id": 1300,
+    "BuffIds": [
+      2207010
+    ],
+    "Des": "热情迸发",
+    "TalentIcon": "gita1300",
+    "SpriteFile": "gita1300_7042270298278048048.png"
+  },
+  {
+    "id": 1301,
+    "BuffIds": [
+      2207020
+    ],
+    "Des": "弦域扩张",
+    "TalentIcon": "gita1301",
+    "SpriteFile": "gita1301_-7294983709632326696.png"
+  },
+  {
+    "id": 1302,
+    "BuffIds": [
+      2207030
+    ],
+    "Des": "炽热迸发",
+    "TalentIcon": "gita1302",
+    "SpriteFile": "gita1302_-5464239430900081923.png"
+  },
+  {
+    "id": 1303,
+    "BuffIds": [],
+    "Des": "智力转换",
+    "TalentIcon": "gita1303",
+    "SpriteFile": "gita1303_-2135000125641023626.png"
+  },
+  {
+    "id": 1304,
+    "BuffIds": [
+      2207050
+    ],
+    "Des": "魔力升华",
+    "TalentIcon": "gita1304",
+    "SpriteFile": "gita1304_5140558767029781562.png"
+  },
+  {
+    "id": 1305,
+    "BuffIds": [
+      2207060
+    ],
+    "Des": "鸣奏·热力核心",
+    "TalentIcon": "gita1305",
+    "SpriteFile": "gita1305_8758412832807048424.png"
+  },
+  {
+    "id": 1306,
+    "BuffIds": [
+      2207070
+    ],
+    "Des": "炎爆追击",
+    "TalentIcon": "gita1306",
+    "SpriteFile": "gita1306_-542090610853701645.png"
+  },
+  {
+    "id": 1307,
+    "BuffIds": [
+      2207080
+    ],
+    "Des": "炎爆追击二式",
+    "TalentIcon": "gita1307",
+    "SpriteFile": "gita1307_7606935984008914576.png"
+  },
+  {
+    "id": 1308,
+    "BuffIds": [
+      2207090
+    ],
+    "Des": "狂音流",
+    "TalentIcon": "gita1308",
+    "SpriteFile": "gita1308_-1586858441948561383.png"
+  },
+  {
+    "id": 1309,
+    "BuffIds": [
+      2207100
+    ],
+    "Des": "幸运音浪",
+    "TalentIcon": "gita1309",
+    "SpriteFile": "gita1309_788879049657143378.png"
+  },
+  {
+    "id": 1310,
+    "BuffIds": [
+      2207110
+    ],
+    "Des": "三重狂想",
+    "TalentIcon": "gita1310",
+    "SpriteFile": "gita1310_4876583110830487529.png"
+  },
+  {
+    "id": 1311,
+    "BuffIds": [
+      2207120
+    ],
+    "Des": "断章",
+    "TalentIcon": "gita1311",
+    "SpriteFile": "gita1311_-6564652363958283634.png"
+  },
+  {
+    "id": 1312,
+    "BuffIds": [
+      2207130
+    ],
+    "Des": "音浪烈火",
+    "TalentIcon": "gita1312",
+    "SpriteFile": "gita1312_4113308115471917756.png"
+  },
+  {
+    "id": 1313,
+    "BuffIds": [
+      2207140
+    ],
+    "Des": "愈疗音符",
+    "TalentIcon": "gita1313",
+    "SpriteFile": "gita1313_8065691184841970055.png"
+  },
+  {
+    "id": 1314,
+    "BuffIds": [
+      2207150
+    ],
+    "Des": "炽焰治愈",
+    "TalentIcon": "gita1314",
+    "SpriteFile": "gita1314_-2917578890301856271.png"
+  },
+  {
+    "id": 1315,
+    "BuffIds": [
+      2207160
+    ],
+    "Des": "协奏",
+    "TalentIcon": "gita1315",
+    "SpriteFile": "gita1315_5460004520000922569.png"
+  },
+  {
+    "id": 1316,
+    "BuffIds": [
+      2207170
+    ],
+    "Des": "重启",
+    "TalentIcon": "gita1316",
+    "SpriteFile": "gita1316_5581599121998839076.png"
+  },
+  {
+    "id": 1317,
+    "BuffIds": [
+      2207180
+    ],
+    "Des": "协奏流",
+    "TalentIcon": "gita1317",
+    "SpriteFile": "gita1317_-8451936109518878182.png"
+  },
+  {
+    "id": 1318,
+    "BuffIds": [
+      2207190
+    ],
+    "Des": "华彩章节充能",
+    "TalentIcon": "gita1318",
+    "SpriteFile": "gita1318_-5650709715071812200.png"
+  },
+  {
+    "id": 1319,
+    "BuffIds": [
+      2207200
+    ],
+    "Des": "双生治愈音符",
+    "TalentIcon": "gita1319",
+    "SpriteFile": "gita1319_-6930558388795201870.png"
+  },
+  {
+    "id": 1320,
+    "BuffIds": [
+      2207210
+    ],
+    "Des": "暴击治疗",
+    "TalentIcon": "gita1320",
+    "SpriteFile": "gita1320_-1399813773371777426.png"
+  },
+  {
+    "id": 1321,
+    "BuffIds": [
+      2207220
+    ],
+    "Des": "烈火节拍",
+    "TalentIcon": "gita1321",
+    "SpriteFile": "gita1321_-8179628368221980695.png"
+  },
+  {
+    "id": 1322,
+    "BuffIds": [
+      2207230
+    ],
+    "Des": "安可暴击增幅",
+    "TalentIcon": "gita1322",
+    "SpriteFile": "gita1322_-4392008421217031163.png"
+  },
+  {
+    "id": 1323,
+    "BuffIds": [
+      2207240
+    ],
+    "Des": "热情挥洒·激昂",
+    "TalentIcon": "gita1323",
+    "SpriteFile": "gita1323_-3800447573122976607.png"
+  },
+  {
+    "id": 1324,
+    "BuffIds": [
+      2207250
+    ],
+    "Des": "属性共鸣",
+    "TalentIcon": "gita1324",
+    "SpriteFile": "gita1324_2349786721378738097.png"
+  },
+  {
+    "id": 1325,
+    "BuffIds": [
+      2207260
+    ],
+    "Des": "属性共鸣暴击",
+    "TalentIcon": "gita1325",
+    "SpriteFile": "gita1325_-5447470031736844593.png"
+  },
+  {
+    "id": 1326,
+    "BuffIds": [
+      2207270
+    ],
+    "Des": "火曜",
+    "TalentIcon": "gita1326",
+    "SpriteFile": "gita1326_-8926076463079744637.png"
+  },
+  {
+    "id": 1327,
+    "BuffIds": [
+      2207280
+    ],
+    "Des": "临界喝彩",
+    "TalentIcon": "gita1327",
+    "SpriteFile": "gita1327_-812776380437314246.png"
+  },
+  {
+    "id": 1328,
+    "BuffIds": [
+      2207290
+    ],
+    "Des": "节奏灵韵",
+    "TalentIcon": "gita1328",
+    "SpriteFile": "gita1328_7606706970840134983.png"
+  },
+  {
+    "id": 1329,
+    "BuffIds": [],
+    "Des": "升格·无限狂想",
+    "TalentIcon": "gita1329",
+    "SpriteFile": "gita1329_5601130750137218605.png"
+  },
+  {
+    "id": 1330,
+    "BuffIds": [],
+    "Des": "升格·巡演曲",
+    "TalentIcon": "gita1330",
+    "SpriteFile": "gita1330_4953859182551037259.png"
+  },
+  {
+    "id": 1331,
+    "BuffIds": [
+      2207320
+    ],
+    "Des": "安可无限连奏",
+    "TalentIcon": "gita1331",
+    "SpriteFile": "gita1331_-1528431874626921891.png"
+  },
+  {
+    "id": 1332,
+    "BuffIds": [
+      2207330
+    ],
+    "Des": "热力加倍",
+    "TalentIcon": "gita1332",
+    "SpriteFile": "gita1332_7625590731055256217.png"
+  },
+  {
+    "id": 1333,
+    "BuffIds": [
+      2207340
+    ],
+    "Des": "变奏",
+    "TalentIcon": "gita1333",
+    "SpriteFile": "gita1333_5015477312347178629.png"
+  },
+  {
+    "id": 1334,
+    "BuffIds": [
+      2207350
+    ],
+    "Des": "鸣奏和弦",
+    "TalentIcon": "gita1334",
+    "SpriteFile": "gita1334_-8588402097613964101.png"
+  },
+  {
+    "id": 1335,
+    "BuffIds": [
+      2207360
+    ],
+    "Des": "激昂",
+    "TalentIcon": "gita1335",
+    "SpriteFile": "gita1335_-537427837496188791.png"
+  },
+  {
+    "id": 1336,
+    "BuffIds": [
+      2207370
+    ],
+    "Des": "不屈谐音",
+    "TalentIcon": "gita1336",
+    "SpriteFile": "gita1336_-546540430641009254.png"
+  },
+  {
+    "id": 1337,
+    "BuffIds": [
+      2207380
+    ],
+    "Des": "挥击回涌",
+    "TalentIcon": "gita1337",
+    "SpriteFile": "gita1337_4648724849424599981.png"
+  },
+  {
+    "id": 1338,
+    "BuffIds": [
+      2207390
+    ],
+    "Des": "幸运倍乘",
+    "TalentIcon": "gita1338",
+    "SpriteFile": "gita1338_-2358470468252112488.png"
+  },
+  {
+    "id": 1339,
+    "BuffIds": [
+      2207400
+    ],
+    "Des": "回响赋格",
+    "TalentIcon": "gita1339",
+    "SpriteFile": "gita1339_4094189731690727909.png"
+  },
+  {
+    "id": 1340,
+    "BuffIds": [
+      2207410
+    ],
+    "Des": "音爆愈疗",
+    "TalentIcon": "gita1340",
+    "SpriteFile": "gita1340_-2560734101898800203.png"
+  },
+  {
+    "id": 1341,
+    "BuffIds": [
+      2207420
+    ],
+    "Des": "音愈",
+    "TalentIcon": "gita1341",
+    "SpriteFile": "gita1341_4885128839853557617.png"
+  },
+  {
+    "id": 1342,
+    "BuffIds": [
+      2207430
+    ],
+    "Des": "炎律狂踏",
+    "TalentIcon": "gita1342",
+    "SpriteFile": "gita1342_-2424788192891654952.png"
+  },
+  {
+    "id": 1343,
+    "BuffIds": [
+      2207440
+    ],
+    "Des": "烈焰音符",
+    "TalentIcon": "gita1343",
+    "SpriteFile": "gita1343_-4992418681027234323.png"
+  },
+  {
+    "id": 1344,
+    "BuffIds": [
+      2207450
+    ],
+    "Des": "终幕指令",
+    "TalentIcon": "gita1344",
+    "SpriteFile": "gita1344_7145140224005900700.png"
+  },
+  {
+    "id": 1345,
+    "BuffIds": [
+      2207460
+    ],
+    "Des": "安可永续",
+    "TalentIcon": "gita1345",
+    "SpriteFile": "gita1345_4997531449544313089.png"
+  },
+  {
+    "id": 1346,
+    "BuffIds": [
+      2207470
+    ],
+    "Des": "安可幸运增幅",
+    "TalentIcon": "gita1346",
+    "SpriteFile": "gita1346_6011222973588733929.png"
+  },
+  {
+    "id": 1347,
+    "BuffIds": [
+      2207480
+    ],
+    "Des": "安可锐击",
+    "TalentIcon": "gita1347",
+    "SpriteFile": "gita1347_4234725828576437237.png"
+  },
+  {
+    "id": 1348,
+    "BuffIds": [
+      2207490
+    ],
+    "Des": "绝顶万众瞩目",
+    "TalentIcon": "gita1348",
+    "SpriteFile": "gita1348_8104144995079380705.png"
+  },
+  {
+    "id": 1349,
+    "BuffIds": [
+      2207500
+    ],
+    "Des": "极意万众瞩目·狂音",
+    "TalentIcon": "gita1349",
+    "SpriteFile": "gita1349_-3471932870631011929.png"
+  },
+  {
+    "id": 1350,
+    "BuffIds": [
+      2207510
+    ],
+    "Des": "音塔多重波动",
+    "TalentIcon": "gita1350",
+    "SpriteFile": "gita1350_1518685466594881416.png"
+  },
+  {
+    "id": 1351,
+    "BuffIds": [
+      2207520
+    ],
+    "Des": "音浪超频领域",
+    "TalentIcon": "gita1351",
+    "SpriteFile": "gita1351_7413395461200761542.png"
+  },
+  {
+    "id": 1352,
+    "BuffIds": [
+      2207530
+    ],
+    "Des": "会心充能律",
+    "TalentIcon": "gita1352",
+    "SpriteFile": "gita1352_-716981585557560936.png"
+  },
+  {
+    "id": 1353,
+    "BuffIds": [
+      2207540
+    ],
+    "Des": "音塔爆炎冲击",
+    "TalentIcon": "gita1353",
+    "SpriteFile": "gita1353_-1515754831156126652.png"
+  },
+  {
+    "id": 1354,
+    "BuffIds": [
+      2207550
+    ],
+    "Des": "多目标热力增幅",
+    "TalentIcon": "gita1354",
+    "SpriteFile": "gita1354_-3359520224797076492.png"
+  },
+  {
+    "id": 1355,
+    "BuffIds": [
+      2207560
+    ],
+    "Des": "热烈音塔爆炎冲击",
+    "TalentIcon": "gita1355",
+    "SpriteFile": "gita1355_6662380929134600867.png"
+  },
+  {
+    "id": 1356,
+    "BuffIds": [
+      2207570
+    ],
+    "Des": "音波裁决",
+    "TalentIcon": "gita1356",
+    "SpriteFile": "gita1356_-4817414435032203250.png"
+  },
+  {
+    "id": 1357,
+    "BuffIds": [
+      2207580
+    ],
+    "Des": "谐波增幅器",
+    "TalentIcon": "gita1357",
+    "SpriteFile": "gita1357_-1980810285946563658.png"
+  },
+  {
+    "id": 1358,
+    "BuffIds": [
+      2207590
+    ],
+    "Des": "渐强治愈和弦",
+    "TalentIcon": "gita1358",
+    "SpriteFile": "gita1358_-3376497144215722066.png"
+  },
+  {
+    "id": 1359,
+    "BuffIds": [
+      2207600
+    ],
+    "Des": "暴击天秤",
+    "TalentIcon": "gita1359",
+    "SpriteFile": "gita1359_404147572251239841.png"
+  },
+  {
+    "id": 1360,
+    "BuffIds": [
+      2207610
+    ],
+    "Des": "鸣奏交响式",
+    "TalentIcon": "gita1360",
+    "SpriteFile": "gita1360_1069751366696579003.png"
+  },
+  {
+    "id": 1361,
+    "BuffIds": [
+      2207620
+    ],
+    "Des": "活力解放",
+    "TalentIcon": "gita1361",
+    "SpriteFile": "gita1361_1953433533247231711.png"
+  },
+  {
+    "id": 1362,
+    "BuffIds": [
+      2207630
+    ],
+    "Des": "安可连发",
+    "TalentIcon": "gita1362",
+    "SpriteFile": "gita1362_-7575048779916721681.png"
+  },
+  {
+    "id": 1363,
+    "BuffIds": [
+      2207640
+    ],
+    "Des": "音塔共鸣",
+    "TalentIcon": "gita1363",
+    "SpriteFile": "gita1363_-8031967201643301070.png"
+  },
+  {
+    "id": 1364,
+    "BuffIds": [
+      2207650
+    ],
+    "Des": "属性共鸣超载",
+    "TalentIcon": "gita1364",
+    "SpriteFile": "gita1364_-7302750103488180759.png"
+  },
+  {
+    "id": 1365,
+    "BuffIds": [
+      2207660
+    ],
+    "Des": "极意万众瞩目·协奏",
+    "TalentIcon": "gita1365",
+    "SpriteFile": "gita1365_4302501160682938649.png"
+  },
+  {
+    "id": 1366,
+    "BuffIds": [
+      2207490
+    ],
+    "Des": "绝顶万众瞩目",
+    "TalentIcon": "gita1366",
+    "SpriteFile": "gita1366_-395760613389825022.png"
+  },
+  {
+    "id": 1367,
+    "BuffIds": [
+      2207680
+    ],
+    "Des": "螺旋炎奏",
+    "TalentIcon": "gita1367",
+    "SpriteFile": "gita1367_-5299931498317334948.png"
+  }
+]

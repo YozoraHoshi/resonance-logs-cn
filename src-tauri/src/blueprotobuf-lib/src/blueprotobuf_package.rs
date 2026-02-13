@@ -80,13 +80,11 @@ pub struct AoiSyncDelta {
     pub passive_skill_infos: ::core::option::Option<SeqPassiveSkillInfo>,
     #[prost(message, optional, tag = "9")]
     pub passive_skill_end_infos: ::core::option::Option<SeqPassiveSkillEndInfo>,
-    #[prost(message, optional, tag = "10")]
-    pub buff_infos: ::core::option::Option<BuffInfoSync>,
-    #[prost(bytes = "vec", optional, tag = "11")]
+    #[prost(bytes = "vec", optional, tag = "10")]
     pub buff_effect: ::core::option::Option<::prost::alloc::vec::Vec<u8>>,
-    #[prost(message, repeated, tag = "12")]
+    #[prost(message, repeated, tag = "11")]
     pub fake_bullets: ::prost::alloc::vec::Vec<FakeBulletInfo>,
-    #[prost(message, repeated, tag = "13")]
+    #[prost(message, repeated, tag = "12")]
     pub magnetic_ride_queue_change_info_list: ::prost::alloc::vec::Vec<MagneticRideQueueChangeInfo>,
 }
 #[derive(specta::Type, Clone, PartialEq, ::prost::Message)]
@@ -315,6 +313,15 @@ pub struct BuffInfo {
     pub fight_source_info: ::core::option::Option<FightSourceInfo>,
     #[prost(message, repeated, tag = "13")]
     pub logic_effect: ::prost::alloc::vec::Vec<BuffEffectLogicInfo>,
+}
+#[derive(specta::Type, Clone, PartialEq, ::prost::Message)]
+pub struct BuffChange {
+    #[prost(int32, optional, tag = "1")]
+    pub layer: ::core::option::Option<i32>,
+    #[prost(int32, optional, tag = "2")]
+    pub duration: ::core::option::Option<i32>,
+    #[prost(int64, optional, tag = "3")]
+    pub create_time: ::core::option::Option<i64>,
 }
 #[derive(specta::Type, Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct FightSourceInfo {
@@ -6278,6 +6285,8 @@ pub enum EBuffEffectLogicPbType {
     BuffEffectStopAll = 15,
     BuffEffectLayerChange = 16,
     Tension = 17,
+    BuffEffectAddBuff = 18,
+    BuffEffectBuffChange = 19,
 }
 impl EBuffEffectLogicPbType {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -6302,6 +6311,8 @@ impl EBuffEffectLogicPbType {
             Self::BuffEffectStopAll => "BuffEffectStopAll",
             Self::BuffEffectLayerChange => "BuffEffectLayerChange",
             Self::Tension => "Tension",
+            Self::BuffEffectAddBuff => "BuffEffectAddBuff",
+            Self::BuffEffectBuffChange => "BuffEffectBuffChange",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -6323,6 +6334,8 @@ impl EBuffEffectLogicPbType {
             "BuffEffectStopAll" => Some(Self::BuffEffectStopAll),
             "BuffEffectLayerChange" => Some(Self::BuffEffectLayerChange),
             "Tension" => Some(Self::Tension),
+            "BuffEffectAddBuff" => Some(Self::BuffEffectAddBuff),
+            "BuffEffectBuffChange" => Some(Self::BuffEffectBuffChange),
             _ => None,
         }
     }

@@ -1,15 +1,14 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
   import type { ModuleSolution } from "$lib/api";
-  import { createEventDispatcher } from "svelte";
 
   let {
     solutions = [],
+    onview,
   }: {
     solutions: ModuleSolution[];
+    onview?: (solution: ModuleSolution) => void;
   } = $props();
-
-  const dispatch = createEventDispatcher<{ view: ModuleSolution }>();
 </script>
 
 {#if !solutions.length}
@@ -36,7 +35,7 @@
                 .join(", ")}
             </td>
             <td class="px-3 py-2">
-              <Button size="sm" variant="outline" onclick={() => dispatch("view", sol)}>查看</Button>
+              <Button size="sm" variant="outline" onclick={() => onview?.(sol)}>查看</Button>
             </td>
           </tr>
         {/each}

@@ -1,8 +1,8 @@
 use crate::WINDOW_LIVE_LABEL;
 use crate::live::dungeon_log::{self, DungeonLogRuntime};
 use crate::live::state::{AppStateManager, StateEvent};
-use crate::live::state::{collect_player_active_times, finalize_and_save_buffs};
 use crate::database::{DbTask, enqueue, now_ms};
+use crate::live::commands_models::SkillCdState;
 use log::{info, trace, warn};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
@@ -420,20 +420,20 @@ pub async fn reset_encounter(
                 dungeon_log::persist_segments(&state.dungeon_log, true);
             }
 
-            // Save buff data before ending the encounter
-            finalize_and_save_buffs(&mut state.encounter, now_ms());
-
             // End any active encounter in DB. Drain any detected dead boss names for persistence.
             let defeated = state.event_manager.take_dead_bosses();
+            let encounter_data = state.last_encounter_snapshot.take();
+
             enqueue(DbTask::EndEncounter {
                 ended_at_ms: now_ms(),
                 defeated_bosses: if defeated.is_empty() { None } else { Some(defeated) },
                 is_manually_reset: true,
-                player_active_times: collect_player_active_times(&state.encounter),
+                encounter_data,
             });
 
             // Reset live combat state
             state.encounter.reset_combat_state();
+            state.last_encounter_snapshot = None;
             state.skill_subscriptions.clear();
             state.low_hp_bosses.clear();
 
@@ -638,98 +638,76 @@ pub async fn set_event_update_rate_ms(
     Ok(())
 }
 
-/// Returns the current active buffs for all players in the encounter.
+/// Sets the monitored buff list for buff updates.
 #[tauri::command]
 #[specta::specta]
-pub async fn get_live_buffs(
+pub async fn set_monitored_buffs(
+    buff_base_ids: Vec<i32>,
     state_manager: tauri::State<'_, AppStateManager>,
-) -> Result<Vec<crate::live::commands_models::EntityBuffsDto>, String> {
+) -> Result<(), String> {
+    info!("[buff] set monitored buffs: {:?}", buff_base_ids);
+    state_manager
+        .with_state_mut(|state| {
+            state.monitored_buff_ids = buff_base_ids;
+        })
+        .await;
+    Ok(())
+}
+
+/// Returns all buffs that have a sprite image available.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_available_buffs(
+    _state_manager: tauri::State<'_, AppStateManager>,
+) -> Result<Vec<crate::live::commands_models::BuffDefinition>, String> {
     use crate::live::buff_names;
-    use crate::live::commands_models::{BuffEventDto, BuffInfoDto, EntityBuffsDto};
-    use crate::live::opcodes_models::AttrType;
-    use blueprotobuf_lib::blueprotobuf::EEntityType;
+    use crate::live::commands_models::BuffDefinition;
 
-    let state = state_manager.state.read().await;
-    let encounter = &state.encounter;
-
-    let mut result_map: std::collections::HashMap<i64, EntityBuffsDto> =
-        std::collections::HashMap::new();
-
-    let fight_start_ms = if encounter.time_fight_start_ms > 0 {
-        Some(encounter.time_fight_start_ms.min(i64::MAX as u128) as i64)
-    } else {
-        None
-    };
-
-    let now_ms = {
-        let last_packet_ms = encounter.time_last_combat_packet_ms.min(i64::MAX as u128) as i64;
-        if last_packet_ms > 0 {
-            last_packet_ms
-        } else {
-            crate::database::now_ms()
-        }
-    };
-
-    let buff_events_lock = encounter.buff_events.read();
-    for ((entity_id, buff_id), events) in buff_events_lock.iter() {
-        // Check if entity is a player
-        let entity_name = if let Some(entity) = encounter.entity_uid_to_entity.get(entity_id) {
-            if entity.entity_type != EEntityType::EntChar {
-                continue;
-            }
-            // Try to get name from attributes
-            if let Some(attr) = entity.attributes.get(&AttrType::Name) {
-                attr.as_string().unwrap_or("Unknown").to_string()
-            } else {
-                format!("Player {}", entity_id)
-            }
-        } else {
-            // If entity not found, skip (likely not a player we track, or stale)
-            continue;
-        };
-
-        let entry = result_map
-            .entry(*entity_id)
-            .or_insert_with(|| EntityBuffsDto {
-                entity_uid: *entity_id,
-                entity_name: entity_name.clone(),
-                buffs: Vec::new(),
-            });
-
-        if let Some((buff_short, buff_long)) = buff_names::lookup_full(*buff_id) {
-            let mut event_dtos: Vec<BuffEventDto> = Vec::new();
-            let mut total_duration_ms: i64 = 0;
-
-            for e in events.iter() {
-                let clamped_start = fight_start_ms.map_or(e.start, |fs| e.start.max(fs));
-                let clamped_end = e.end.min(now_ms);
-
-                if clamped_end <= clamped_start {
-                    continue;
+    let buffs = buff_names::get_buffs_with_sprites()
+        .into_iter()
+        .map(|entry| {
+            let mut search_keywords = vec![entry.name.clone()];
+            if let Some(talent_name) = entry.talent_name.clone() {
+                if !talent_name.is_empty() {
+                    search_keywords.push(talent_name);
                 }
-
-                let duration_ms = clamped_end.saturating_sub(clamped_start);
-                total_duration_ms = total_duration_ms.saturating_add(duration_ms);
-
-                event_dtos.push(BuffEventDto {
-                    start_ms: clamped_start,
-                    end_ms: clamped_end,
-                    duration_ms,
-                    stack_count: e.stack_count,
-                });
             }
-
-            if total_duration_ms > 0 {
-                entry.buffs.push(BuffInfoDto {
-                    buff_id: *buff_id,
-                    buff_name: buff_short,
-                    buff_name_long: Some(buff_long),
-                    total_duration_ms,
-                    events: event_dtos,
-                });
+            BuffDefinition {
+                base_id: entry.base_id,
+                name: entry.name,
+                sprite_file: entry.sprite_file,
+                talent_name: entry.talent_name,
+                talent_sprite_file: entry.talent_sprite_file,
+                search_keywords,
             }
-        }
+        })
+        .collect();
+    Ok(buffs)
+}
+
+/// Sets the monitored skill list for skill CD updates.
+#[tauri::command]
+#[specta::specta]
+pub async fn set_monitored_skills(
+    skill_level_ids: Vec<i32>,
+    state_manager: tauri::State<'_, AppStateManager>,
+) -> Result<(), String> {
+    if skill_level_ids.len() > 10 {
+        return Err("最多监控10个技能".to_string());
     }
 
-    Ok(result_map.into_values().collect())
+    info!(
+        "[skill-cd] set monitored skills: {:?}",
+        skill_level_ids
+    );
+
+    state_manager
+        .with_state_mut(|state| {
+            state.monitored_skill_ids = skill_level_ids;
+            state
+                .skill_cd_map
+                .retain(|skill_level_id, _| state.monitored_skill_ids.contains(&(skill_level_id / 100)));
+        })
+        .await;
+    Ok(())
 }

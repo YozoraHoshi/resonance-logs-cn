@@ -1,4 +1,3 @@
-
 /// Represents the health of a boss.
 #[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -130,6 +129,8 @@ pub type SkillRows = Vec<SkillRow>;
 #[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SkillRow {
+    /// Unique skill identifier (used as stable key in frontend).
+    pub skill_id: i64,
     /// The name of the skill.
     pub name: String,
     /// The total damage dealt by the skill.
@@ -152,44 +153,81 @@ pub struct SkillRow {
     pub hits_per_minute: f64,
 }
 
-/// Represents a buff event.
-#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
+/// Represents a skill cooldown state.
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct BuffEventDto {
-    /// Timestamp when the buff started (relative to fight start or absolute, depending on usage).
-    pub start_ms: i64,
-    /// Timestamp when the buff ended.
-    pub end_ms: i64,
-    /// Duration of the buff in milliseconds.
-    pub duration_ms: i64,
-    /// Stack count of the buff.
-    pub stack_count: i32,
+pub struct SkillCdState {
+    /// The skill level ID.
+    pub skill_level_id: i32,
+    /// The cooldown begin timestamp
+    pub begin_time: i64,
+    /// The total duration of the cooldown in milliseconds.
+    /// -1 indicates a charge/resource style entry.
+    pub duration: i32,
+    /// The cooldown type enum value
+    pub skill_cd_type: i32,
+    /// The server-reported valid cooldown time in milliseconds.
+    pub valid_cd_time: i32,
+    /// Local timestamp when this cooldown state was received
+    pub received_at: i64,
+    /// Cooldown duration after applying AttrSkillCD/AttrSkillCDPCT and TempAttr rules.
+    pub calculated_duration: i32,
+    /// Cooldown accelerate rate for this skill
+    pub cd_accelerate_rate: f32,
 }
 
-/// Represents a specific buff on an entity.
-#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
+/// Represents a buff update state.
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct BuffInfoDto {
-    /// The unique ID of the buff.
-    pub buff_id: i32,
-    /// The name of the buff.
-    pub buff_name: String,
-    /// The long English name for the buff (when available).
-    pub buff_name_long: Option<String>,
-    /// Sum of all event durations for this buff in milliseconds.
-    pub total_duration_ms: i64,
-    /// events for this buff
-    pub events: Vec<BuffEventDto>,
+pub struct BuffUpdateState {
+    pub buff_uuid: i32,
+    pub base_id: i32,
+    pub layer: i32,
+    pub duration_ms: i32,
+    pub create_time_ms: i64,
+    pub source_config_id: i32,
 }
 
-/// Represents all buffs tracked for a specific entity.
-#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct EntityBuffsDto {
-    /// The unique UID of the entity.
-    pub entity_uid: i64,
-    /// The name of the entity.
-    pub entity_name: String,
-    /// List of buffs tracked for this entity.
-    pub buffs: Vec<BuffInfoDto>,
+pub struct BuffDefinition {
+    pub base_id: i32,
+    pub name: String,
+    pub sprite_file: String,
+    pub talent_name: Option<String>,
+    pub talent_sprite_file: Option<String>,
+    pub search_keywords: Vec<String>,
+}
+
+#[derive(serde::Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BuffUpdatePayload {
+    pub buffs: Vec<BuffUpdateState>,
+}
+
+#[derive(serde::Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillCdUpdatePayload {
+    pub skill_cds: Vec<SkillCdState>,
+}
+
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FightResourceState {
+    /// The full list of resource values
+    pub values: Vec<i64>,
+    /// Local timestamp when this state was received
+    pub received_at: i64,
+}
+
+#[derive(serde::Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FightResourceUpdatePayload {
+    pub fight_res: FightResourceState,
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+pub struct ModuleCalcProgressPayload {
+    pub processed: u64,
+    pub total: u64,
 }

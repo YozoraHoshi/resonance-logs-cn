@@ -377,7 +377,7 @@ pub struct UploadActorEncounterStatIn {
 pub struct UploadDamageSkillStatIn {
     pub attacker_id: i64,
     pub defender_id: Option<i64>,
-    pub skill_id: i32,
+    pub skill_id: i64,
     pub hits: i32,
     pub total_value: i64,
     pub crit_hits: i32,
@@ -395,7 +395,7 @@ pub struct UploadDamageSkillStatIn {
 pub struct UploadHealSkillStatIn {
     pub healer_id: i64,
     pub target_id: Option<i64>,
-    pub skill_id: i32,
+    pub skill_id: i64,
     pub hits: i32,
     pub total_value: i64,
     pub crit_hits: i32,
@@ -1065,7 +1065,7 @@ fn build_encounter_payload(
         .load::<(
             i64,
             Option<i64>,
-            i32,
+            i64,
             i32,
             i64,
             i32,
@@ -1132,7 +1132,7 @@ fn build_encounter_payload(
         .load::<(
             i64,
             Option<i64>,
-            i32,
+            i64,
             i32,
             i64,
             i32,
@@ -1271,102 +1271,6 @@ fn build_encounter_payload(
         dungeon_segments,
         encounter_buffs: Vec::new(),
     };
-
-    // Buffs per encounter (players only)
-    use sch::buffs::dsl as bu;
-    #[derive(Deserialize)]
-    struct StoredBuffEvent {
-        start: i64,
-        end: i64,
-        duration: i32,
-        stack_count: i32,
-    }
-
-    // Build a lookup of player names from actor stats
-    let mut player_names: std::collections::HashMap<i64, String> = std::collections::HashMap::new();
-    for s in &encounter.actor_encounter_stats {
-        if s.is_player {
-            let name = s
-                .name
-                .clone()
-                .unwrap_or_else(|| format!("Unknown ({})", s.actor_id));
-            player_names.insert(s.actor_id, name);
-        }
-    }
-
-    if !player_names.is_empty() {
-        let buff_rows = bu::buffs
-            .filter(bu::encounter_id.eq(id))
-            .select((bu::entity_id, bu::buff_id, bu::events))
-            .load::<(i64, i32, String)>(conn)
-            .unwrap_or_default();
-
-        let mut by_entity: std::collections::HashMap<i64, Vec<UploadEncounterBuffIn>> =
-            std::collections::HashMap::new();
-
-        for (entity_id, buff_id, events_json) in buff_rows {
-            // Only include player entities we know
-            let Some(_name) = player_names.get(&entity_id) else {
-                continue;
-            };
-
-            let events: Vec<StoredBuffEvent> =
-                serde_json::from_str(&events_json).unwrap_or_default();
-            if events.is_empty() {
-                continue;
-            }
-
-            let mut total_duration_ms: i64 = 0;
-            let mut event_out = Vec::with_capacity(events.len());
-            for ev in events {
-                // Basic sanity: drop if start/end invalid
-                if ev.end < ev.start || ev.duration < 0 {
-                    continue;
-                }
-                total_duration_ms += ev.duration as i64;
-                event_out.push(UploadBuffEventIn {
-                    start_ms: ev.start,
-                    end_ms: ev.end,
-                    duration_ms: ev.duration as i64,
-                    stack_count: ev.stack_count,
-                });
-            }
-
-            if total_duration_ms <= 0 || event_out.is_empty() {
-                continue;
-            }
-
-            let (buff_name, buff_name_long) = match crate::live::buff_names::lookup_full(buff_id) {
-                Some((short, long)) => (Some(short), Some(long)),
-                None => (None, None),
-            };
-
-            by_entity
-                .entry(entity_id)
-                .or_default()
-                .push(UploadEncounterBuffIn {
-                    buff_id,
-                    buff_name,
-                    buff_name_long,
-                    total_duration_ms,
-                    events: event_out,
-                });
-        }
-
-        if !by_entity.is_empty() {
-            encounter.encounter_buffs = by_entity
-                .into_iter()
-                .map(|(entity_uid, buffs)| UploadEncounterEntityBuffsIn {
-                    entity_uid,
-                    entity_name: player_names
-                        .get(&entity_uid)
-                        .cloned()
-                        .unwrap_or_else(|| format!("Unknown ({})", entity_uid)),
-                    buffs,
-                })
-                .collect();
-        }
-    }
 
     // Compute and set the source hash
     encounter.source_hash = Some(compute_encounter_hash(&encounter, uploader_id));

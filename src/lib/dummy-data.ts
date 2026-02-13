@@ -168,6 +168,7 @@ export function generateDummySkills(playerUid: number): SkillRow[] {
     const totalDmg = (player.totalDmg * dmgPct) / 100;
 
     skills.push({
+      skillId: 1000 + i,
       name: `Skill ${i}`,
       totalDmg: Math.floor(totalDmg),
       dps: Math.floor(totalDmg / 12), // Assuming 12 second duration

@@ -1,11 +1,11 @@
 {
   "name": "resonance-logs-cn",
-  "version": "0.19.1",
+  "version": "0.0.2",
   "description": "",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "svelte-kit sync && vite build",
     "preview": "vite preview",
     "dev:stop-windivert": "sc stop windivert 2>NUL & npm run dev",
     "build:stop-windivert": "sc stop windivert 2>NUL & npm run build",
@@ -19,8 +19,8 @@
   "dependencies": {
     "@tanstack/table-core": "^8.21.3",
     "@tauri-apps/api": "^2.9.0",
-    "@tauri-apps/plugin-dialog": "^2",
     "@tauri-apps/plugin-clipboard-manager": "^2.3.0",
+    "@tauri-apps/plugin-dialog": "^2",
     "@tauri-apps/plugin-global-shortcut": "^2.3.0",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-os": "^2.3.1",
@@ -42,8 +42,8 @@
     "@iconify/json": "^2.2.390",
     "@internationalized/date": "^3.9.0",
     "@lucide/svelte": "^0.544.0",
-    "@sveltejs/adapter-static": "^3.0.9",
-    "@sveltejs/kit": "^2.43.2",
+    "@sveltejs/adapter-static": "^3.0.0",
+    "@sveltejs/kit": "^2.49.3",
     "@sveltejs/vite-plugin-svelte": "^6.2.0",
     "@tailwindcss/vite": "^4.1.13",
     "@tauri-apps/cli": "^2.9.4",
@@ -61,7 +61,7 @@
     "prettier-plugin-tailwindcss": "^0.6.14",
     "svelte": "^5.39.5",
     "svelte-check": "^4.3.2",
-    "sveltekit-superforms": "^2.27.1",
+    "sveltekit-superforms": "^2.29.1",
     "tailwind-merge": "^3.3.1",
     "tailwind-variants": "^3.1.1",
     "tailwindcss": "^4.1.13",
@@ -71,5 +71,8 @@
     "unplugin-icons": "^22.4.2",
     "vite": "^7.1.7",
     "vite-plugin-devtools-json": "^1.0.0"
+  },
+  "overrides": {
+    "cookie": "^0.7.0"
   }
 }

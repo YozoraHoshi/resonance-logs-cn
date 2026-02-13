@@ -496,18 +496,6 @@
             : undefined}
           onclick={() => goto(resolve("/live/tanked"))}>TANKED</button
         >
-        <button
-          class="transition-all duration-200 font-bold tracking-wider uppercase whitespace-nowrap h-full flex items-center {$page.url.pathname.includes(
-            'buffs',
-          )
-            ? 'bg-muted text-foreground'
-            : 'text-muted-foreground hover:text-foreground hover:bg-popover/60'}"
-          style="font-size: {h.navTabFontSize}px; padding: {h.navTabPaddingY}px {h.navTabPaddingX}px"
-          aria-current={$page.url.pathname.includes("buffs")
-            ? "page"
-            : undefined}
-          onclick={() => goto(resolve("/live/buffs"))}>BUFFS</button
-        >
       </div>
     {/if}
   </header>

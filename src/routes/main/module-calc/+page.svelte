@@ -222,7 +222,7 @@
     </div>
     <ResultsTable
       solutions={MODULE_CALC.solutions}
-      on:view={(e) => openDetail(e.detail)}
+      onview={openDetail}
     />
   </div>
 

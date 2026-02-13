@@ -657,21 +657,20 @@ pub fn generate_skills_window_dps(
     // Skills for this player
     for (&skill_uid, skill) in &entity.skill_uid_to_dmg_skill {
         let skill_total: u128 = if boss_only {
+            // New structure is (skill_id, target_id) -> stats
+            // We iterate over all keys, filter by skill_uid and boss target
             entity
                 .skill_dmg_to_target
-                .get(&skill_uid)
-                .map(|m| {
-                    m.iter()
-                        .filter(|(tuid, _)| is_boss_target(encounter, tuid))
-                        .map(|(_, v)| *v)
-                        .sum()
-                })
-                .unwrap_or(0)
+                .iter()
+                .filter(|((sid, tuid), _)| *sid == skill_uid && is_boss_target(encounter, tuid))
+                .map(|(_, stats)| stats.total_value)
+                .sum()
         } else {
             skill.total_value
         };
         #[allow(clippy::cast_precision_loss)]
         let skill_row = SkillRow {
+            skill_id: skill_uid,
             name: Skill::get_skill_name(skill_uid),
             total_dmg: skill_total,
             dps: nan_is_zero(skill_total as f64 / time_elapsed_secs),
@@ -765,6 +764,7 @@ pub fn generate_skills_window_heal(
     for (&skill_uid, skill) in &entity.skill_uid_to_heal_skill {
         #[allow(clippy::cast_precision_loss)]
         let skill_row = SkillRow {
+            skill_id: skill_uid,
             name: Skill::get_skill_name(skill_uid),
             total_dmg: skill.total_value,
             dps: nan_is_zero(skill.total_value as f64 / time_elapsed_secs),
@@ -856,6 +856,7 @@ pub fn generate_skills_window_tanked(
     for (&skill_uid, skill) in &entity.skill_uid_to_taken_skill {
         #[allow(clippy::cast_precision_loss)]
         let skill_row = SkillRow {
+            skill_id: skill_uid,
             name: Skill::get_skill_name(skill_uid),
             total_dmg: skill.total_value,
             dps: nan_is_zero(skill.total_value as f64 / time_elapsed_secs),
@@ -1016,6 +1017,7 @@ pub fn generate_skill_rows(entity: &Entity, time_elapsed_secs: f64) -> Vec<Skill
     for (&skill_uid, skill) in &entity.skill_uid_to_dmg_skill {
         #[allow(clippy::cast_precision_loss)]
         let skill_row = SkillRow {
+            skill_id: skill_uid,
             name: Skill::get_skill_name(skill_uid),
             total_dmg: skill.total_value,
             dps: nan_is_zero(skill.total_value as f64 / time_elapsed_secs),

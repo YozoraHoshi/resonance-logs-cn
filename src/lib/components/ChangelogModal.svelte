@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { onMount } from 'svelte';
   import { marked } from 'marked';
   import changelogRaw from '../../../CHANGELOG.md?raw';
 
-  const dispatch = createEventDispatcher();
+  let { onclose }: { onclose?: () => void } = $props();
 
   let html = $state('');
 
@@ -18,7 +18,7 @@
   });
 
   function close() {
-    dispatch('close');
+    onclose?.();
   }
 </script>
 

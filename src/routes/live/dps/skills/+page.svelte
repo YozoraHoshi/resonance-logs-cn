@@ -199,7 +199,7 @@
       </thead>
     {/if}
     <tbody>
-      {#each sortedSkillRows as skill (skill.name)}
+      {#each sortedSkillRows as skill (skill.skillId)}
         {@const currPlayer = dpsSkillBreakdownWindow.currPlayer[0]}
         {#if currPlayer}
           {@const className = currPlayer.name.includes("You")

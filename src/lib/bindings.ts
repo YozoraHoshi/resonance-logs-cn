@@ -229,11 +229,33 @@ async getDungeonLog() : Promise<Result<DungeonLog, string>> {
 }
 },
 /**
- * Returns the current active buffs for all players in the encounter.
+ * Sets the monitored skill list for skill CD updates.
  */
-async getLiveBuffs() : Promise<Result<EntityBuffsDto[], string>> {
+async setMonitoredSkills(skillLevelIds: number[]) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_live_buffs") };
+    return { status: "ok", data: await TAURI_INVOKE("set_monitored_skills", { skillLevelIds }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Sets the monitored buff list for buff updates.
+ */
+async setMonitoredBuffs(buffBaseIds: number[]) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_monitored_buffs", { buffBaseIds }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Returns all buffs that have a sprite image available.
+ */
+async getAvailableBuffs() : Promise<Result<BuffDefinition[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_available_buffs") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -500,25 +522,6 @@ async getRecentPlayersCommand(limit: number) : Promise<Result<([number, string])
 async getPlayerNameCommand(uid: number) : Promise<Result<string | null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_player_name_command", { uid }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-/**
- * Gets the buffs for a given encounter, filtered by player entities.
- * 
- * # Arguments
- * 
- * * `encounter_id` - The ID of the encounter.
- * 
- * # Returns
- * 
- * * `Result<Vec<EncounterEntityBuffsDto>, String>` - A list of entity buffs.
- */
-async getEncounterBuffs(encounterId: number) : Promise<Result<EncounterEntityBuffsDto[], string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_encounter_buffs", { encounterId }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -834,50 +837,7 @@ maxHp: number | null;
  * Whether the boss was defeated.
  */
 isDefeated: boolean }
-/**
- * Represents a buff event.
- */
-export type BuffEventDto = { 
-/**
- * Timestamp when the buff started (relative to fight start or absolute, depending on usage).
- */
-startMs: number; 
-/**
- * Timestamp when the buff ended.
- */
-endMs: number; 
-/**
- * Duration of the buff in milliseconds.
- */
-durationMs: number; 
-/**
- * Stack count of the buff.
- */
-stackCount: number }
-/**
- * Represents a specific buff on an entity.
- */
-export type BuffInfoDto = { 
-/**
- * The unique ID of the buff.
- */
-buffId: number; 
-/**
- * The name of the buff.
- */
-buffName: string; 
-/**
- * The long English name for the buff (when available).
- */
-buffNameLong: string | null; 
-/**
- * Sum of all event durations for this buff in milliseconds.
- */
-totalDurationMs: number; 
-/**
- * events for this buff
- */
-events: BuffEventDto[] }
+export type BuffDefinition = { baseId: number; name: string; spriteFile: string; talentName: string | null; talentSpriteFile: string | null; searchKeywords: string[] }
 /**
  * Detailed API-key check response for UI logging.
  * 
@@ -951,9 +911,6 @@ totalDamage: number;
  * The number of hits during this segment.
  */
 hitCount: number }
-export type EncounterBuffDto = { buffId: number; buffName: string; buffNameLong: string | null; totalDurationMs: number; events: EncounterBuffEventDto[] }
-export type EncounterBuffEventDto = { startMs: number; endMs: number; durationMs: number; stackCount: number }
-export type EncounterEntityBuffsDto = { entityUid: number; entityName: string; buffs: EncounterBuffDto[] }
 /**
  * Filters for querying encounters.
  */
@@ -1046,22 +1003,6 @@ remoteEncounterId: number | null;
  * Whether the encounter is favorited.
  */
 isFavorite: boolean }
-/**
- * Represents all buffs tracked for a specific entity.
- */
-export type EntityBuffsDto = { 
-/**
- * The unique UID of the entity.
- */
-entityUid: number; 
-/**
- * The name of the entity.
- */
-entityName: string; 
-/**
- * List of buffs tracked for this entity.
- */
-buffs: BuffInfoDto[] }
 export type GpuSupport = { cuda_available: boolean; opencl_available: boolean }
 export type ModuleInfo = { name: string; config_id: number; uuid: number; quality: number; parts: ModulePart[] }
 export type ModulePart = { id: number; name: string; value: number }
@@ -1247,6 +1188,10 @@ export type SegmentType = "boss" | "trash"
  * Represents a row in the skills window.
  */
 export type SkillRow = { 
+/**
+ * Unique skill identifier (used as stable key in frontend).
+ */
+skillId: number; 
 /**
  * The name of the skill.
  */

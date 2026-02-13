@@ -1,11 +1,20 @@
-use crate::database::{DbTask, enqueue, now_ms};
+use crate::database::{
+    ActorAggData, BossAggData, DbTask, EncounterAggData, SkillAggData, enqueue, now_ms,
+};
 use crate::live::attempt_detector::AttemptConfig;
-use crate::live::buff_names;
+use crate::live::commands_models::{
+    BuffUpdatePayload, BuffUpdateState, FightResourceState, FightResourceUpdatePayload,
+    SkillCdState, SkillCdUpdatePayload,
+};
+use crate::live::cd_calc::calculate_skill_cd;
 use crate::live::dungeon_log::{self, DungeonLogRuntime, SegmentType, SharedDungeonLog};
 use crate::live::event_manager::{EventManager, MetricType};
-use crate::live::opcodes_models::{BuffEvent, Encounter};
+use crate::live::opcodes_models::Encounter;
 use crate::live::player_names::PlayerNames;
 use blueprotobuf_lib::blueprotobuf;
+use blueprotobuf_lib::blueprotobuf::{
+    BuffChange, BuffEffectSync, BuffInfo, EBuffEffectLogicPbType, EBuffEventType, EEntityType,
+};
 use log::{info, trace, warn};
 use serde::Serialize;
 use std::collections::{HashMap, HashSet};
@@ -13,6 +22,7 @@ use std::sync::Arc;
 use std::time::Instant;
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::RwLock;
+use prost::Message;
 
 /// Safely emits an event to the frontend, handling WebView2 state errors gracefully.
 /// This prevents the app from freezing when the WebView is in an invalid state, maybe.
@@ -49,18 +59,130 @@ fn safe_emit<S: Serialize + Clone>(app_handle: &AppHandle, event: &str, payload:
     }
 }
 
-pub(crate) fn collect_player_active_times(encounter: &Encounter) -> Vec<(i64, i64)> {
-    encounter
-        .entity_uid_to_entity
-        .iter()
-        .filter(|(_, entity)| {
-            entity.entity_type == blueprotobuf_lib::blueprotobuf::EEntityType::EntChar
-        })
-        .map(|(uid, entity)| {
-            let active_ms = entity.active_dmg_time_ms.min(i64::MAX as u128) as i64;
-            (*uid, active_ms)
-        })
-        .collect()
+pub(crate) fn build_encounter_snapshot(
+    encounter: &Encounter,
+    local_player_id: i64,
+) -> EncounterAggData {
+    let mut actors = Vec::new();
+    let mut damage_skills = Vec::new();
+    let mut heal_skills = Vec::new();
+    let mut bosses_map: HashMap<String, BossAggData> = HashMap::new();
+
+    for (uid, entity) in &encounter.entity_uid_to_entity {
+        let is_player = entity.entity_type == EEntityType::EntChar;
+        if !is_player {
+            continue;
+        }
+
+        // Serialize attributes to JSON string for storage
+        let attributes_json = crate::live::opcodes_process::serialize_attributes(entity);
+
+        actors.push(ActorAggData {
+            actor_id: *uid,
+            name: if entity.name.is_empty() {
+                None
+            } else {
+                Some(entity.name.clone())
+            },
+            class_id: Some(entity.class_id),
+            class_spec: Some(entity.class_spec as i32),
+            ability_score: Some(entity.ability_score),
+            level: Some(entity.level),
+            is_player: true,
+            is_local_player: *uid == local_player_id,
+            attributes: attributes_json,
+            damage_dealt: entity.total_dmg.min(i64::MAX as u128) as i64,
+            hits_dealt: entity.hits_dmg.min(i64::MAX as u128) as i64,
+            crit_hits_dealt: entity.crit_hits_dmg.min(i64::MAX as u128) as i64,
+            lucky_hits_dealt: entity.lucky_hits_dmg.min(i64::MAX as u128) as i64,
+            crit_total_dealt: entity.crit_total_dmg.min(i64::MAX as u128) as i64,
+            lucky_total_dealt: entity.lucky_total_dmg.min(i64::MAX as u128) as i64,
+            boss_damage_dealt: entity.total_dmg_boss_only.min(i64::MAX as u128) as i64,
+            boss_hits_dealt: entity.hits_dmg_boss_only.min(i64::MAX as u128) as i64,
+            boss_crit_hits_dealt: entity.crit_hits_dmg_boss_only.min(i64::MAX as u128) as i64,
+            boss_lucky_hits_dealt: entity.lucky_hits_dmg_boss_only.min(i64::MAX as u128) as i64,
+            boss_crit_total_dealt: entity.crit_total_dmg_boss_only.min(i64::MAX as u128) as i64,
+            boss_lucky_total_dealt: entity.lucky_total_dmg_boss_only.min(i64::MAX as u128) as i64,
+            heal_dealt: entity.total_heal.min(i64::MAX as u128) as i64,
+            hits_heal: entity.hits_heal.min(i64::MAX as u128) as i64,
+            crit_hits_heal: entity.crit_hits_heal.min(i64::MAX as u128) as i64,
+            lucky_hits_heal: entity.lucky_hits_heal.min(i64::MAX as u128) as i64,
+            crit_total_heal: entity.crit_total_heal.min(i64::MAX as u128) as i64,
+            lucky_total_heal: entity.lucky_total_heal.min(i64::MAX as u128) as i64,
+            damage_taken: entity.total_taken.min(i64::MAX as u128) as i64,
+            hits_taken: entity.hits_taken.min(i64::MAX as u128) as i64,
+            crit_hits_taken: entity.crit_hits_taken.min(i64::MAX as u128) as i64,
+            lucky_hits_taken: entity.lucky_hits_taken.min(i64::MAX as u128) as i64,
+            crit_total_taken: entity.crit_total_taken.min(i64::MAX as u128) as i64,
+            lucky_total_taken: entity.lucky_total_taken.min(i64::MAX as u128) as i64,
+            active_dmg_time_ms: entity.active_dmg_time_ms.min(i64::MAX as u128) as i64,
+            revives: 0, // Revives are tracked separately via upsert_stats_add_revive
+        });
+
+        // Collect damage skills (grouped by target)
+        for ((skill_id, target_id), stats) in &entity.skill_dmg_to_target {
+            damage_skills.push(SkillAggData {
+                actor_id: *uid,
+                target_id: Some(*target_id),
+                skill_id: *skill_id,
+                monster_name: stats.monster_name.clone(),
+                hits: stats.hits.min(i32::MAX as u128) as i32,
+                total_value: stats.total_value.min(i64::MAX as u128) as i64,
+                crit_hits: stats.crit_hits.min(i32::MAX as u128) as i32,
+                lucky_hits: stats.lucky_hits.min(i32::MAX as u128) as i32,
+                crit_total: stats.crit_total.min(i64::MAX as u128) as i64,
+                lucky_total: stats.lucky_total.min(i64::MAX as u128) as i64,
+                hp_loss_total: stats.hp_loss_total.min(i64::MAX as u128) as i64,
+                shield_loss_total: stats.shield_loss_total.min(i64::MAX as u128) as i64,
+            });
+
+            // Accumulate boss stats if this target has a monster name
+            if let Some(ref name) = stats.monster_name {
+                let boss = bosses_map.entry(name.clone()).or_insert_with(|| BossAggData {
+                    monster_name: name.clone(),
+                    hits: 0,
+                    total_damage: 0,
+                    max_hp: None,
+                    is_defeated: false,
+                });
+                boss.hits = boss.hits.saturating_add(stats.hits.min(i32::MAX as u128) as i32);
+                boss.total_damage = boss
+                    .total_damage
+                    .saturating_add(stats.total_value.min(i64::MAX as u128) as i64);
+            }
+        }
+
+        // Collect heal skills (grouped by target)
+        for ((skill_id, target_id), stats) in &entity.skill_heal_to_target {
+            heal_skills.push(SkillAggData {
+                actor_id: *uid,
+                target_id: Some(*target_id),
+                skill_id: *skill_id,
+                monster_name: None,
+                hits: stats.hits.min(i32::MAX as u128) as i32,
+                total_value: stats.total_value.min(i64::MAX as u128) as i64,
+                crit_hits: stats.crit_hits.min(i32::MAX as u128) as i32,
+                lucky_hits: stats.lucky_hits.min(i32::MAX as u128) as i32,
+                crit_total: stats.crit_total.min(i64::MAX as u128) as i64,
+                lucky_total: stats.lucky_total.min(i64::MAX as u128) as i64,
+                hp_loss_total: 0,
+                shield_loss_total: 0,
+            });
+        }
+    }
+
+    EncounterAggData {
+        total_dmg: encounter.total_dmg.min(i64::MAX as u128) as i64,
+        total_heal: encounter.total_heal.min(i64::MAX as u128) as i64,
+        combat_duration_ms: encounter
+            .time_last_combat_packet_ms
+            .saturating_sub(encounter.time_fight_start_ms)
+            .min(i64::MAX as u128) as i64,
+        actors,
+        damage_skills,
+        heal_skills,
+        bosses: bosses_map.into_values().collect(),
+    }
 }
 
 /// Represents the possible events that can be handled by the state manager.
@@ -97,78 +219,6 @@ pub enum StateEvent {
     },
 }
 
-/// Clamp ongoing buff events to the encounter end and persist them.
-/// Buffs are stored in absolute timestamps; we clamp to fight start (if known)
-/// and to the encounter end to avoid runaway durations across resets.
-pub(crate) fn finalize_and_save_buffs(encounter: &mut Encounter, ended_at_ms: i64) {
-    let mut buff_events = encounter.buff_events.write();
-
-    // Drop any buffs that don't meet our validity rules before clamping/persisting.
-    buff_events.retain(|(_, buff_id), _| buff_names::is_valid(*buff_id));
-
-    if buff_events.is_empty() {
-        return;
-    }
-
-    let encounter_end = ended_at_ms;
-    let fight_start_i64 = if encounter.time_fight_start_ms > 0 {
-        Some(encounter.time_fight_start_ms.min(i64::MAX as u128) as i64)
-    } else {
-        None
-    };
-
-    for events in buff_events.values_mut() {
-        if let Some(fs) = fight_start_i64 {
-            // Drop events that end before the fight starts
-            events.retain(|event| event.end >= fs);
-        }
-
-        for event in events.iter_mut() {
-            // Clamp to encounter end first
-            event.end = event.end.min(encounter_end);
-
-            // Then clamp to fight start if we have one
-            if let Some(fs) = fight_start_i64 {
-                if event.start < fs {
-                    event.start = fs;
-                }
-            }
-
-            if event.end < event.start {
-                event.end = event.start;
-                event.duration = 0;
-            } else {
-                let dur_i64 = (event.end - event.start).min(i32::MAX as i64);
-                event.duration = dur_i64 as i32;
-            }
-        }
-    }
-
-    // Move heavy work (serialization) outside the write lock to keep the lock duration short.
-    // First, clone the data we need while holding the lock.
-    let buffs_to_save: Vec<(i64, i32, Vec<BuffEvent>)> = buff_events
-        .iter()
-        .map(|((entity_id, buff_id), events)| (*entity_id, *buff_id, events.clone()))
-        .collect();
-
-    // Release the lock
-    drop(buff_events);
-
-    // Now perform the serialization and enqueue the DB task without holding any locks.
-    let buffs: Vec<(i64, i32, String)> = buffs_to_save
-        .into_iter()
-        .filter_map(|(entity_id, buff_id, events)| {
-            serde_json::to_string(&events)
-                .ok()
-                .map(|json| (entity_id, buff_id, json))
-        })
-        .collect();
-
-    if !buffs.is_empty() {
-        enqueue(DbTask::SaveBuffs { buffs });
-    }
-}
-
 /// Represents the state of the application.
 #[derive(Debug)]
 pub struct AppState {
@@ -178,6 +228,14 @@ pub struct AppState {
     pub event_manager: EventManager,
     /// The set of skill subscriptions.
     pub skill_subscriptions: HashSet<(i64, String)>,
+    /// Skill cooldown map keyed by skill level ID.
+    pub skill_cd_map: HashMap<i32, SkillCdState>,
+    /// Ordered list of monitored skill IDs.
+    pub monitored_skill_ids: Vec<i32>,
+    /// Ordered list of monitored buff base IDs.
+    pub monitored_buff_ids: Vec<i32>,
+    /// Active buffs keyed by buff UUID.
+    pub active_buffs: HashMap<i32, ActiveBuff>,
     /// A handle to the Tauri application instance.
     pub app_handle: AppHandle,
     /// Whether to only show boss DPS.
@@ -194,6 +252,28 @@ pub struct AppState {
     pub attempt_config: AttemptConfig,
     /// Event update rate in milliseconds (default: 200ms). Controls how often events are emitted to frontend.
     pub event_update_rate_ms: u64,
+    /// Current fight resource state.
+    pub fight_res_state: Option<FightResourceState>,
+    /// TempAttr values keyed by TempAttr id.
+    pub temp_attr_values: HashMap<i32, i32>,
+    /// AttrSkillCD (11750) fixed cooldown reduction.
+    pub attr_skill_cd: i32,
+    /// AttrSkillCDPCT (11760) cooldown percentage reduction in per-10k units.
+    pub attr_skill_cd_pct: i32,
+    /// AttrCdAcceleratePct (11960) skill acceleration in per-10k units.
+    pub attr_cd_accelerate_pct: i32,
+    /// Cached snapshot built from the last emitted live encounter frame.
+    pub last_encounter_snapshot: Option<EncounterAggData>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ActiveBuff {
+    pub buff_uuid: i32,
+    pub base_id: i32,
+    pub layer: i32,
+    pub duration: i32,
+    pub create_time: i64,
+    pub source_config_id: i32,
 }
 
 impl AppState {
@@ -207,6 +287,10 @@ impl AppState {
             encounter: Encounter::default(),
             event_manager: EventManager::new(),
             skill_subscriptions: HashSet::new(),
+            skill_cd_map: HashMap::new(),
+            monitored_skill_ids: Vec::new(),
+            monitored_buff_ids: Vec::new(),
+            active_buffs: HashMap::new(),
             app_handle,
             boss_only_dps: false,
             low_hp_bosses: HashMap::new(),
@@ -215,6 +299,12 @@ impl AppState {
             dungeon_segments_enabled: false,
             attempt_config: AttemptConfig::default(),
             event_update_rate_ms: 200,
+            fight_res_state: None,
+            temp_attr_values: HashMap::new(),
+            attr_skill_cd: 0,
+            attr_skill_cd_pct: 0,
+            attr_cd_accelerate_pct: 0,
+            last_encounter_snapshot: None,
         }
     }
 
@@ -231,6 +321,78 @@ impl AppState {
     pub fn set_encounter_paused(&mut self, paused: bool) {
         self.encounter.is_encounter_paused = paused;
         self.event_manager.emit_encounter_pause(paused);
+    }
+}
+
+fn decode_attr_i32(attrs: &blueprotobuf::AttrCollection, attr_id: i32) -> Option<i32> {
+    let attr = attrs.attrs.iter().find(|a| a.id == Some(attr_id))?;
+    match attr.raw_data.as_ref() {
+        // Server may send "key exists, value absent" as an explicit clear signal.
+        None => Some(0),
+        Some(raw) if raw.is_empty() => Some(0),
+        Some(raw) => {
+            let mut buf = raw.as_slice();
+            prost::encoding::decode_varint(&mut buf)
+                .ok()
+                .and_then(|v| i32::try_from(v).ok())
+        }
+    }
+}
+
+fn recalculate_cached_skill_cds(state: &mut AppState) {
+    for cd in state.skill_cd_map.values_mut() {
+        if cd.duration > 0 {
+            let (calculated_duration, cd_accelerate_rate) = calculate_skill_cd(
+                cd.duration as f32,
+                cd.skill_level_id,
+                &state.temp_attr_values,
+                state.attr_skill_cd as f32,
+                state.attr_skill_cd_pct as f32,
+                state.attr_cd_accelerate_pct as f32,
+            );
+            cd.calculated_duration = calculated_duration.round() as i32;
+            cd.cd_accelerate_rate = cd_accelerate_rate;
+        } else {
+            cd.calculated_duration = cd.duration;
+            cd.cd_accelerate_rate = 0.0;
+        }
+    }
+}
+
+fn build_filtered_skill_cds(state: &AppState) -> Vec<SkillCdState> {
+    if state.monitored_skill_ids.is_empty() {
+        return Vec::new();
+    }
+    state
+        .monitored_skill_ids
+        .iter()
+        .filter_map(|monitored_skill_id| {
+            state
+                .skill_cd_map
+                .values()
+                .filter(|cd| cd.skill_level_id / 100 == *monitored_skill_id)
+                .max_by_key(|cd| cd.received_at)
+                .cloned()
+        })
+        .collect()
+}
+
+fn emit_skill_cd_update_if_needed(state: &AppState, payload: Vec<SkillCdState>) {
+    if payload.is_empty() {
+        return;
+    }
+    if let Some(app_handle) = state.event_manager.get_app_handle() {
+        info!(
+            "[skill-cd] emit update for {} skills (monitored={:?})",
+            payload.len(),
+            state.monitored_skill_ids
+        );
+        info!("[skill-cd] payload={:?}", payload);
+        safe_emit(
+            &app_handle,
+            "skill-cd-update",
+            SkillCdUpdatePayload { skill_cds: payload },
+        );
     }
 }
 
@@ -455,11 +617,10 @@ impl AppStateManager {
             dungeon_log::persist_segments(&state.dungeon_log, true);
         }
 
-        // Save buff data before ending the encounter
-        finalize_and_save_buffs(&mut state.encounter, now_ms());
-
         // End any active encounter in DB. Drain any detected dead boss names for persistence.
         let defeated = state.event_manager.take_dead_bosses();
+        let encounter_data = state.last_encounter_snapshot.take();
+        
         enqueue(DbTask::EndEncounter {
             ended_at_ms: now_ms(),
             defeated_bosses: if defeated.is_empty() {
@@ -468,7 +629,7 @@ impl AppStateManager {
                 Some(defeated)
             },
             is_manually_reset: false,
-            player_active_times: collect_player_active_times(&state.encounter),
+            encounter_data,
         });
         on_server_change(&mut state.encounter);
 
@@ -493,6 +654,7 @@ impl AppStateManager {
 
         // Reset combat state (live meter)
         state.encounter.reset_combat_state();
+        state.last_encounter_snapshot = None;
         state.skill_subscriptions.clear();
 
         // Restore the original fight start time to preserve total encounter duration
@@ -864,7 +1026,109 @@ impl AppStateManager {
         state: &mut AppState,
         sync_to_me_delta_info: blueprotobuf::SyncToMeDeltaInfo,
     ) {
-        use crate::live::opcodes_process::process_sync_to_me_delta_info;
+        use crate::live::opcodes_process::{process_sync_to_me_delta_info, parse_fight_resources};
+        use crate::live::opcodes_models::attr_type::{
+            ATTR_CD_ACCELERATE_PCT, ATTR_FIGHT_RESOURCES, ATTR_SKILL_CD, ATTR_SKILL_CD_PCT,
+        };
+
+        let skill_cds = sync_to_me_delta_info
+            .delta_info
+            .as_ref()
+            .map(|d| d.sync_skill_c_ds.clone())
+            .unwrap_or_default();
+        let buff_effect_bytes = sync_to_me_delta_info
+            .delta_info
+            .as_ref()
+            .and_then(|d| d.base_delta.as_ref())
+            .and_then(|d| d.buff_effect.as_ref())
+            .cloned();
+
+        if !skill_cds.is_empty() {
+            let ids: Vec<i32> = skill_cds
+                .iter()
+                .filter_map(|cd| cd.skill_level_id)
+                .collect();
+            info!(
+                "[skill-cd] received {} cd entries, ids={:?}",
+                ids.len(),
+                ids
+            );
+        }
+
+        // Check for fight resources
+        let fight_res_values = if let Some(ref delta) = sync_to_me_delta_info.delta_info {
+            if let Some(ref base) = delta.base_delta {
+                if let Some(ref col) = base.attrs {
+                    col.attrs.iter()
+                        .find(|a| a.id == Some(ATTR_FIGHT_RESOURCES))
+                        .and_then(|a| a.raw_data.as_ref())
+                        .and_then(|raw| parse_fight_resources(raw))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        if let Some(values) = fight_res_values {
+            let now = crate::database::now_ms();
+            let new_state = FightResourceState {
+                values: values.clone(),
+                received_at: now,
+            };
+            state.fight_res_state = Some(new_state.clone());
+            
+            if let Some(app_handle) = state.event_manager.get_app_handle() {
+                safe_emit(
+                    &app_handle,
+                    "fight-res-update",
+                    FightResourceUpdatePayload { fight_res: new_state },
+                );
+            }
+        }
+
+        let mut should_recalculate = false;
+        if let Some(delta) = sync_to_me_delta_info.delta_info.as_ref() {
+            if let Some(base) = delta.base_delta.as_ref() {
+                if let Some(col) = base.attrs.as_ref() {
+                    if let Some(value) = decode_attr_i32(col, ATTR_SKILL_CD) {
+                        if value != state.attr_skill_cd {
+                            state.attr_skill_cd = value;
+                            should_recalculate = true;
+                        }
+                    }
+                    if let Some(value) = decode_attr_i32(col, ATTR_SKILL_CD_PCT) {
+                        if value != state.attr_skill_cd_pct {
+                            state.attr_skill_cd_pct = value;
+                            should_recalculate = true;
+                        }
+                    }
+                    if let Some(value) = decode_attr_i32(col, ATTR_CD_ACCELERATE_PCT) {
+                        if value != state.attr_cd_accelerate_pct {
+                            state.attr_cd_accelerate_pct = value;
+                            should_recalculate = true;
+                        }
+                    }
+                }
+
+                if let Some(temp_attr_collection) = base.temp_attrs.as_ref() {
+                    for temp_attr in &temp_attr_collection.attrs {
+                        let Some(id) = temp_attr.id else {
+                            continue;
+                        };
+                        let value = temp_attr.value.unwrap_or(0);
+                        let prev = state.temp_attr_values.insert(id, value);
+                        if prev != Some(value) {
+                            should_recalculate = true;
+                        }
+                    }
+                }
+            }
+        }
+
         // Missing fields are normal, no need to log
         let dungeon_ctx = dungeon_runtime_if_enabled(state);
         let _ = process_sync_to_me_delta_info(
@@ -873,6 +1137,66 @@ impl AppStateManager {
             dungeon_ctx.as_ref(),
             &state.attempt_config,
         );
+
+        if let Some(raw_bytes) = buff_effect_bytes {
+            if let Some(payload) =
+                process_buff_effect_bytes(&mut state.active_buffs, &raw_bytes, &state.monitored_buff_ids)
+            {
+                if let Some(app_handle) = state.event_manager.get_app_handle() {
+                    safe_emit(
+                        &app_handle,
+                        "buff-update",
+                        BuffUpdatePayload { buffs: payload },
+                    );
+                }
+            }
+        }
+
+        if !skill_cds.is_empty() {
+            let now = crate::database::now_ms();
+            for cd in &skill_cds {
+                if let Some(id) = cd.skill_level_id {
+                    if !state.monitored_skill_ids.contains(&(id / 100)) {
+                        continue;
+                    }
+                    let duration = cd.duration.unwrap_or(0);
+                    let (calculated_duration, cd_accelerate_rate) = if duration > 0 {
+                        calculate_skill_cd(
+                            duration as f32,
+                            id,
+                            &state.temp_attr_values,
+                            state.attr_skill_cd as f32,
+                            state.attr_skill_cd_pct as f32,
+                            state.attr_cd_accelerate_pct as f32,
+                        )
+                    } else {
+                        (duration as f32, 0.0)
+                    };
+                    state.skill_cd_map.insert(
+                        id,
+                        SkillCdState {
+                            skill_level_id: id,
+                            begin_time: cd.begin_time.unwrap_or(0),
+                            duration,
+                            skill_cd_type: cd.skill_cd_type.unwrap_or(0),
+                            valid_cd_time: cd.valid_cd_time.unwrap_or(0),
+                            received_at: now,
+                            calculated_duration: calculated_duration.round() as i32,
+                            cd_accelerate_rate,
+                        },
+                    );
+                }
+            }
+        }
+
+        if should_recalculate {
+            recalculate_cached_skill_cds(state);
+        }
+
+        if !skill_cds.is_empty() || should_recalculate {
+            let filtered = build_filtered_skill_cds(state);
+            emit_skill_cd_update_if_needed(state, filtered);
+        }
     }
 
     async fn process_sync_near_delta_info(
@@ -910,11 +1234,10 @@ impl AppStateManager {
             dungeon_log::persist_segments(&state.dungeon_log, true);
         }
 
-        // Save buff data before ending the encounter
-        finalize_and_save_buffs(&mut state.encounter, now_ms());
-
         // End any active encounter in DB. Drain any detected dead boss names for persistence.
         let defeated = state.event_manager.take_dead_bosses();
+        let encounter_data = state.last_encounter_snapshot.take();
+
         enqueue(DbTask::EndEncounter {
             ended_at_ms: now_ms(),
             defeated_bosses: if defeated.is_empty() {
@@ -923,15 +1246,23 @@ impl AppStateManager {
                 Some(defeated)
             },
             is_manually_reset: is_manual,
-            player_active_times: collect_player_active_times(&state.encounter),
+            encounter_data,
         });
         state.encounter.reset_combat_state();
+        state.last_encounter_snapshot = None;
         state.skill_subscriptions.clear();
+        state.active_buffs.clear();
 
         if state.event_manager.should_emit_events() {
             state.event_manager.emit_encounter_reset();
             // Clear dead bosses tracking on reset
             state.event_manager.clear_dead_bosses();
+
+            if !state.monitored_buff_ids.is_empty() {
+                if let Some(app_handle) = state.event_manager.get_app_handle() {
+                    safe_emit(&app_handle, "buff-update", BuffUpdatePayload { buffs: Vec::new() });
+                }
+            }
 
             // Emit an encounter update with cleared state so frontend updates immediately
             use crate::live::commands_models::HeaderInfo;
@@ -1076,6 +1407,102 @@ impl AppStateManager {
     }
 }
 
+fn process_buff_effect_bytes(
+    active_buffs: &mut HashMap<i32, ActiveBuff>,
+    raw_bytes: &[u8],
+    monitored_base_ids: &[i32],
+) -> Option<Vec<BuffUpdateState>> {
+    if monitored_base_ids.is_empty() {
+        return None;
+    }
+
+    let buff_effect_sync = BuffEffectSync::decode(raw_bytes).ok()?;
+    let now = now_ms();
+
+    for buff_effect in buff_effect_sync.buff_effects {
+        let buff_uuid = match buff_effect.buff_uuid {
+            Some(id) => id,
+            None => continue,
+        };
+
+        for logic_effect in buff_effect.logic_effect {
+            let Some(effect_type) = logic_effect.effect_type else {
+                continue;
+            };
+            let Some(raw) = logic_effect.raw_data else {
+                continue;
+            };
+
+            if effect_type == EBuffEffectLogicPbType::BuffEffectAddBuff as i32 {
+                if let Ok(buff_info) = BuffInfo::decode(raw.as_slice()) {
+                    let Some(base_id) = buff_info.base_id else {
+                        continue;
+                    };
+                    let layer = buff_info.layer.unwrap_or(1);
+                    let duration = buff_info.duration.unwrap_or(0);
+                    let create_time = buff_info.create_time.unwrap_or(now);
+                    let source_config_id = buff_info
+                        .fight_source_info
+                        .and_then(|info| info.source_config_id)
+                        .unwrap_or(0);
+
+                    active_buffs.insert(
+                        buff_uuid,
+                        ActiveBuff {
+                            buff_uuid,
+                            base_id,
+                            layer,
+                            duration,
+                            create_time,
+                            source_config_id,
+                        },
+                    );
+                }
+            } else if effect_type == EBuffEffectLogicPbType::BuffEffectBuffChange as i32 {
+                if let Ok(change_info) = BuffChange::decode(raw.as_slice()) {
+                    if let Some(entry) = active_buffs.get_mut(&buff_uuid) {
+                        if let Some(layer) = change_info.layer {
+                            entry.layer = layer;
+                        }
+                        if let Some(duration) = change_info.duration {
+                            entry.duration = duration;
+                        }
+                        if let Some(create_time) = change_info.create_time {
+                            entry.create_time = create_time;
+                        }
+                    }
+                }
+            }
+        }
+
+        if buff_effect.r#type == Some(EBuffEventType::BuffEventRemove as i32) {
+            active_buffs.remove(&buff_uuid);
+        }
+    }
+
+    let mut payload: Vec<BuffUpdateState> = active_buffs
+        .values()
+        .filter(|buff| {
+            monitored_base_ids.contains(&buff.base_id)
+                || (buff.source_config_id != 0
+                    && crate::live::buff_names::get_related_base_ids(buff.source_config_id)
+                        .iter()
+                        .any(|id| monitored_base_ids.contains(id)))
+        })
+        .map(|buff| BuffUpdateState {
+            buff_uuid: buff.buff_uuid,
+            base_id: buff.base_id,
+            layer: buff.layer,
+            duration_ms: buff.duration,
+            create_time_ms: buff.create_time,
+            source_config_id: buff.source_config_id,
+        })
+        .collect();
+
+    payload.sort_by_key(|entry| (entry.base_id, entry.create_time_ms, entry.buff_uuid));
+    Some(payload)
+}
+
 fn dungeon_runtime_if_enabled(state: &AppState) -> Option<DungeonLogRuntime> {
     if state.dungeon_segments_enabled {
         Some(DungeonLogRuntime::new(
@@ -1155,6 +1582,7 @@ impl AppStateManager {
             &encounter,
             segment_elapsed_ms,
         );
+        let snapshot = build_encounter_snapshot(&encounter, encounter.local_player_uid);
 
         // Generate skill windows for all players
         let mut dps_skill_windows = Vec::new();
@@ -1208,6 +1636,7 @@ impl AppStateManager {
         // We'll do ALL emissions without holding any locks to prevent deadlock
         let (final_header_info, boss_deaths, skill_subscriptions_clone, app_handle_opt) = {
             let mut state = self.state.write().await;
+            state.last_encounter_snapshot = Some(snapshot);
 
             let (final_header, final_deaths) = if let Some((mut header_info, mut dead_bosses)) =
                 header_info_with_deaths

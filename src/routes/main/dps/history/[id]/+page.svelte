@@ -23,11 +23,6 @@
   import { getModuleApiBaseUrl } from "$lib/stores/uploading";
   import { openUrl } from "@tauri-apps/plugin-opener";
   import { getEncounterSegments, type Segment } from "$lib/api";
-  import {
-    getEncounterBuffs,
-    type EncounterEntityBuffsDto,
-    type EncounterBuffDto,
-  } from "$lib/api_buffs";
 
   // Get encounter ID from URL params
   let encounterId = $derived(
@@ -59,17 +54,15 @@
   });
 
   // Tab state for encounter view
-  let activeTab = $state<"damage" | "tanked" | "healing" | "buffs">("damage");
-  let buffs = $state<EncounterEntityBuffsDto[]>([]);
+  let activeTab = $state<"damage" | "tanked" | "healing">("damage");
 
   const tabs: {
-    key: "damage" | "tanked" | "healing" | "buffs";
+    key: "damage" | "tanked" | "healing";
     label: string;
   }[] = [
     { key: "damage", label: "伤害" },
     { key: "tanked", label: "承伤" },
     { key: "healing", label: "治疗" },
-    { key: "buffs", label: "增益" },
   ];
 
   let encounterDurationMinutes = $derived.by(() => {
@@ -513,38 +506,6 @@
     }
   });
 
-  async function loadBuffs() {
-    if (!encounterId) return;
-    try {
-      buffs = await getEncounterBuffs(encounterId);
-      buffs.sort((a, b) => a.entityName.localeCompare(b.entityName));
-    } catch (e) {
-      console.error("Failed to load buffs", e);
-    }
-  }
-
-  // Helper: group buff events by stackCount and compute per-stack stats
-  function getBuffStacks(buff: EncounterBuffDto) {
-    const map = new Map<number, { stackCount: number; casts: number; totalDurationMs: number }>();
-    for (const ev of buff.events || []) {
-      const sc = ev.stackCount ?? 0;
-      const entry = map.get(sc);
-      if (entry) {
-        entry.casts += 1;
-        entry.totalDurationMs += ev.durationMs ?? 0;
-      } else {
-        map.set(sc, { stackCount: sc, casts: 1, totalDurationMs: ev.durationMs ?? 0 });
-      }
-    }
-    // Return as array sorted by stackCount ascending
-    return Array.from(map.values()).sort((a, b) => a.stackCount - b.stackCount);
-  }
-
-  $effect(() => {
-    if (encounterId && activeTab === "buffs") {
-      loadBuffs();
-    }
-  });
 </script>
 
 <div class="">
@@ -733,59 +694,7 @@
       </div>
     </div>
 
-    {#if activeTab === "buffs"}
-      <div class="space-y-2">
-        {#each buffs as entity (entity.entityUid)}
-          <div class="rounded border border-border/60 bg-card/30 p-3">
-            <div class="flex items-center justify-between gap-2 mb-2">
-              <div class="text-sm font-semibold text-foreground truncate">
-                {entity.entityName}
-              </div>
-              <span class="text-[11px] text-muted-foreground">{entity.buffs.length} 个增益</span>
-            </div>
-
-            {#if entity.buffs.length > 0}
-              <div class="flex flex-wrap gap-1.5">
-                {#each entity.buffs as buff}
-                  {#each getBuffStacks(buff) as s}
-                    <div
-                      class="flex flex-col gap-0.5 rounded border border-border/60 bg-popover/60 px-2 py-1 text-[11px] leading-tight min-w-[140px] max-w-[200px]"
-                      {@attach tooltip(() => buff.buffNameLong ?? "")}
-                    >
-                      <div class="flex items-center gap-1 min-w-0">
-                        <span class="font-semibold truncate">
-                          {getBuffStacks(buff).length > 1 ? `${buff.buffName} (${s.stackCount})` : buff.buffName}
-                        </span>
-                      </div>
-                      <div class="flex items-center gap-1 text-muted-foreground">
-                        <span>
-                          {#if encounter && encounter.startedAtMs}
-                            {Math.round((s.totalDurationMs / Math.max(1, ((encounter.endedAtMs ?? Date.now()) - encounter.startedAtMs))) * 100)}%
-                          {:else}
-                            {Math.round((s.totalDurationMs / Math.max(1, (encounter?.duration ?? 1))) * 100)}%
-                          {/if}
-                        </span>
-                        <span>•</span>
-                        <span>{s.casts} 次施放</span>
-                      </div>
-                    </div>
-                  {/each}
-                {/each}
-              </div>
-            {:else}
-              <div class="text-xs text-muted-foreground italic">无增益</div>
-            {/if}
-          </div>
-        {/each}
-
-        {#if buffs.length === 0}
-          <div class="rounded border border-border/60 bg-card/30 p-3 text-center text-muted-foreground text-xs italic">
-            暂无增益数据
-          </div>
-        {/if}
-      </div>
-    {:else}
-      <div class="overflow-x-auto rounded border border-border/60 bg-card/30">
+    <div class="overflow-x-auto rounded border border-border/60 bg-card/30">
         <table class="w-full border-collapse">
           <thead>
             <tr class="bg-popover/60">
@@ -897,8 +806,7 @@
             {/each}
           </tbody>
         </table>
-      </div>
-    {/if}
+    </div>
   {:else if charId && skillsWindow && selectedPlayer}
     <!-- Player Skills View -->
     <div class="mb-4">
@@ -960,7 +868,7 @@
           </tr>
         </thead>
         <tbody class="bg-background/40">
-          {#each skillsWindow.skillRows as s (s.name)}
+          {#each skillsWindow.skillRows as s (s.skillId)}
             <tr
               class="relative border-t border-border/40 hover:bg-muted/60 transition-colors"
             >

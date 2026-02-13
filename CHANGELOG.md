@@ -1,7 +1,10 @@
 
-# Changelog v0.19.4-beta (debug)
+# Changelog v0.0.2
 
 ## Logs
 
 
-- hotfix 3 for bug when manually resetting
+- 修改dps聚合数据逻辑, 与客户端内置dps检测一致使用伤害id->RecountTable.json
+- 增加枪区冰✌技能cd监控, 幻想cd监控
+- 参考老外BPSR-ZDPS增加buff监控
+- 增加一系列解包出的资源文件

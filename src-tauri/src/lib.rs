@@ -29,6 +29,10 @@ use serde_json::json;
 pub const WINDOW_LIVE_LABEL: &str = "live";
 /// The label for the main window.
 pub const WINDOW_MAIN_LABEL: &str = "main";
+/// The label for the skill CD window.
+pub const WINDOW_SKILL_CD_LABEL: &str = "skill-cd";
+/// The label for the buff monitor window.
+pub const WINDOW_BUFF_MONITOR_LABEL: &str = "buff-monitor";
 
 /// Keeps the non-blocking tracing appender worker alive for the lifetime of the process.
 /// If this guard is dropped, file logging may stop flushing.
@@ -62,7 +66,9 @@ pub fn run() {
             live::commands::set_wipe_detection_enabled,
             live::commands::set_event_update_rate_ms,
             live::commands::get_dungeon_log,
-            live::commands::get_live_buffs,
+            live::commands::set_monitored_skills,
+            live::commands::set_monitored_buffs,
+            live::commands::get_available_buffs,
             database::commands::get_recent_encounters,
             database::commands::get_unique_scene_names,
             database::commands::get_unique_boss_names,
@@ -77,7 +83,6 @@ pub fn run() {
             database::commands::toggle_favorite_encounter,
             database::commands::get_recent_players_command,
             database::commands::get_player_name_command,
-            database::commands::get_encounter_buffs,
             uploader::start_upload,
             uploader::cancel_upload_cmd,
             uploader::check_api_key,
@@ -224,6 +229,11 @@ pub fn run() {
             // Player data sync state (separate from encounter uploads)
             let player_data_sync_state = crate::uploader::player_data_sync::PlayerDataSyncState::default();
             app.manage(player_data_sync_state.clone());
+
+            crate::live::skill_monitor_init::init_skill_monitor_from_settings(
+                &app_handle,
+                &state_manager,
+            );
 
             // crate::uploader::start_auto_upload_task(app_handle.clone(), auto_upload_state.clone());
             // Start player data sync background task (runs every 15 minutes)

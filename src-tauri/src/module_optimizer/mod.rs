@@ -281,15 +281,26 @@ pub fn reset_progress() {
 fn prefilter_modules_by_total_scores(
     modules: &[ModuleInfo],
     target_attributes: &[i32],
+    min_attr_requirement_ids: &[i32],
     max_count: usize,
 ) -> Vec<ModuleInfo> {
+    let attr_ids_for_scoring: &[i32] = if !target_attributes.is_empty() {
+        target_attributes
+    } else if !min_attr_requirement_ids.is_empty() {
+        min_attr_requirement_ids
+    } else {
+        &[]
+    };
+
     let mut module_scores: Vec<(&ModuleInfo, i32)> = modules
         .iter()
         .map(|module| {
             let total_attr_sum: i32 = module
                 .parts
                 .iter()
-                .filter(|part| target_attributes.is_empty() || target_attributes.contains(&part.id))
+                .filter(|part| {
+                    attr_ids_for_scoring.is_empty() || attr_ids_for_scoring.contains(&part.id)
+                })
                 .map(|part| part.value)
                 .sum();
             (module, total_attr_sum)
@@ -308,17 +319,23 @@ pub fn strategy_enumeration_gpu(
     modules: &[ModuleInfo],
     options: &OptimizeOptions,
 ) -> Vec<ModuleSolution> {
-    let modules_to_use: Vec<ModuleInfo> = if modules.len() > 1000 {
-        prefilter_modules_by_total_scores(modules, &options.target_attributes, 1000)
-    } else {
-        modules.to_vec()
-    };
-    let ffi_modules = to_ffi_modules(&modules_to_use);
     let min_attr_ids: Vec<i32> = options.min_attr_requirements.keys().copied().collect();
     let min_attr_values: Vec<i32> = min_attr_ids
         .iter()
         .map(|k| options.min_attr_requirements.get(k).copied().unwrap_or(0))
         .collect();
+
+    let modules_to_use: Vec<ModuleInfo> = if modules.len() > 1000 {
+        prefilter_modules_by_total_scores(
+            modules,
+            &options.target_attributes,
+            &min_attr_ids,
+            1000,
+        )
+    } else {
+        modules.to_vec()
+    };
+    let ffi_modules = to_ffi_modules(&modules_to_use);
 
     let result = bridge::ffi::strategy_enumeration_gpu_ffi(
         &ffi_modules,
@@ -337,17 +354,23 @@ pub fn strategy_enumeration_cpu(
     modules: &[ModuleInfo],
     options: &OptimizeOptions,
 ) -> Vec<ModuleSolution> {
-    let modules_to_use: Vec<ModuleInfo> = if modules.len() > 800 {
-        prefilter_modules_by_total_scores(modules, &options.target_attributes, 800)
-    } else {
-        modules.to_vec()
-    };
-    let ffi_modules = to_ffi_modules(&modules_to_use);
     let min_attr_ids: Vec<i32> = options.min_attr_requirements.keys().copied().collect();
     let min_attr_values: Vec<i32> = min_attr_ids
         .iter()
         .map(|k| options.min_attr_requirements.get(k).copied().unwrap_or(0))
         .collect();
+
+    let modules_to_use: Vec<ModuleInfo> = if modules.len() > 800 {
+        prefilter_modules_by_total_scores(
+            modules,
+            &options.target_attributes,
+            &min_attr_ids,
+            800,
+        )
+    } else {
+        modules.to_vec()
+    };
+    let ffi_modules = to_ffi_modules(&modules_to_use);
 
     let result = bridge::ffi::strategy_enumeration_cpu_ffi(
         &ffi_modules,

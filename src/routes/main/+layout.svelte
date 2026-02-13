@@ -4,9 +4,11 @@
    * It sets up the left sidebar with tool list and right content area.
    */
   import { setupShortcuts } from "./dps/settings/shortcuts";
-  import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+  import { getCurrentWebviewWindow, WebviewWindow } from "@tauri-apps/api/webviewWindow";
   import { goto } from "$app/navigation";
   import { SETTINGS } from '$lib/settings-store';
+  import { commands } from "$lib/bindings";
+  import { getDefaultMonitoredBuffIds } from "$lib/skill-mappings";
   import { onMount } from 'svelte';
   import ToolSidebar from "./tool-sidebar.svelte";
   import ChangelogModal from '$lib/components/ChangelogModal.svelte';
@@ -17,6 +19,62 @@
   $effect.pre(() => {
     (async () => {
       await setupShortcuts();
+    })();
+  });
+
+  function getActiveSkillMonitorProfile() {
+    const profiles = SETTINGS.skillMonitor.state.profiles;
+    if (profiles.length === 0) return null;
+    const index = Math.min(
+      Math.max(SETTINGS.skillMonitor.state.activeProfileIndex, 0),
+      profiles.length - 1,
+    );
+    return profiles[index];
+  }
+
+  $effect(() => {
+    const enabled = SETTINGS.skillMonitor.state.enabled;
+    const activeProfile = getActiveSkillMonitorProfile();
+    const selectedClass = activeProfile?.selectedClass ?? "wind_knight";
+    const monitoredSkillIds = activeProfile?.monitoredSkillIds ?? [];
+    const monitoredBuffIds = activeProfile?.monitoredBuffIds ?? [];
+    const mergedBuffIds = Array.from(
+      new Set([...monitoredBuffIds, ...getDefaultMonitoredBuffIds(selectedClass)]),
+    );
+
+    void (async () => {
+      try {
+        if (enabled) {
+          await commands.setMonitoredSkills(monitoredSkillIds);
+          await commands.setMonitoredBuffs(mergedBuffIds);
+        } else {
+          await commands.setMonitoredSkills([]);
+          await commands.setMonitoredBuffs([]);
+        }
+
+        const skillWindow = await WebviewWindow.getByLabel("skill-cd");
+        const buffWindow = await WebviewWindow.getByLabel("buff-monitor");
+
+        if (skillWindow) {
+          if (enabled) {
+            await skillWindow.show();
+            await skillWindow.unminimize();
+          } else {
+            await skillWindow.hide();
+          }
+        }
+
+        if (buffWindow) {
+          if (enabled) {
+            await buffWindow.show();
+            await buffWindow.unminimize();
+          } else {
+            await buffWindow.hide();
+          }
+        }
+      } catch (error) {
+        console.error("[skill-monitor] failed to sync monitor state", error);
+      }
     })();
   });
 
@@ -142,7 +200,7 @@
   </main>
 
   {#if showChangelog}
-    <ChangelogModal on:close={handleClose} />
+    <ChangelogModal onclose={handleClose} />
   {/if}
 </div>
 
