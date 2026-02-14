@@ -264,8 +264,11 @@ pub struct AppState {
     pub attr_cd_accelerate_pct: i32,
     /// Cached snapshot built from the last emitted live encounter frame.
     pub last_encounter_snapshot: Option<EncounterAggData>,
+    /// Estimated offset: local_ms - server_ms. Used to convert server buff
+    /// timestamps into local time domain for clock-skew-safe rendering.
+    pub server_clock_offset: i64,
     /// Monitor All buff?
-    pub monitor_all_buff: bool
+    pub monitor_all_buff: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -308,6 +311,7 @@ impl AppState {
             attr_skill_cd_pct: 0,
             attr_cd_accelerate_pct: 0,
             last_encounter_snapshot: None,
+            server_clock_offset: 0,
         }
     }
 
@@ -1142,8 +1146,13 @@ impl AppStateManager {
         );
 
         if let Some(raw_bytes) = buff_effect_bytes {
-            if let Some(payload) =
-                process_buff_effect_bytes(&mut state.active_buffs, &raw_bytes, &state.monitored_buff_ids, state.monitor_all_buff)
+            if let Some(payload) = process_buff_effect_bytes(
+                &mut state.active_buffs,
+                &raw_bytes,
+                &state.monitored_buff_ids,
+                state.monitor_all_buff,
+                &mut state.server_clock_offset,
+            )
             {
                 if let Some(app_handle) = state.event_manager.get_app_handle() {
                     safe_emit(
@@ -1414,7 +1423,8 @@ fn process_buff_effect_bytes(
     active_buffs: &mut HashMap<i32, ActiveBuff>,
     raw_bytes: &[u8],
     monitored_base_ids: &[i32],
-    monitor_all_buff:bool,
+    monitor_all_buff: bool,
+    server_clock_offset: &mut i64,
 ) -> Option<Vec<BuffUpdateState>> {
     if monitored_base_ids.is_empty() && !monitor_all_buff {
         return None;
@@ -1445,6 +1455,9 @@ fn process_buff_effect_bytes(
                     let layer = buff_info.layer.unwrap_or(1);
                     let duration = buff_info.duration.unwrap_or(0);
                     let create_time = buff_info.create_time.unwrap_or(now);
+                    if buff_info.create_time.is_some() {
+                        *server_clock_offset = now - create_time;
+                    }
                     let source_config_id = buff_info
                         .fight_source_info
                         .and_then(|info| info.source_config_id)
@@ -1498,7 +1511,7 @@ fn process_buff_effect_bytes(
             base_id: buff.base_id,
             layer: buff.layer,
             duration_ms: buff.duration,
-            create_time_ms: buff.create_time,
+            create_time_ms: buff.create_time.saturating_add(*server_clock_offset),
             source_config_id: buff.source_config_id,
         })
         .collect();

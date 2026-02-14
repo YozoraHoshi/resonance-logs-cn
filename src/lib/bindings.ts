@@ -262,6 +262,17 @@ async getAvailableBuffs() : Promise<Result<BuffDefinition[], string>> {
 }
 },
 /**
+ * Returns display names for requested buff ids, including buffs without sprite images.
+ */
+async getBuffNames(baseIds: number[]) : Promise<Result<BuffNameInfo[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_buff_names", { baseIds }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
  * Searches buffs by name and returns matching entries, including no-icon buffs.
  */
 async searchBuffsByName(keyword: string, limit: number | null) : Promise<Result<BuffNameInfo[], string>> {

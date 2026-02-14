@@ -692,6 +692,36 @@ pub async fn get_available_buffs(
     Ok(buffs)
 }
 
+/// Returns display names for requested buff ids, including buffs without sprite images.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_buff_names(
+    base_ids: Vec<i32>,
+    _state_manager: tauri::State<'_, AppStateManager>,
+) -> Result<Vec<crate::live::commands_models::BuffNameInfo>, String> {
+    use crate::live::buff_names;
+    use crate::live::commands_models::BuffNameInfo;
+    use std::collections::BTreeSet;
+
+    let mut uniq_ids = BTreeSet::new();
+    for id in base_ids {
+        uniq_ids.insert(id);
+    }
+
+    let mut result = Vec::new();
+    for id in uniq_ids {
+        let name = buff_names::lookup_name(id).unwrap_or_else(|| format!("#{id}"));
+        let has_sprite_file = buff_names::lookup_sprite(id).is_some();
+        result.push(BuffNameInfo {
+            base_id: id,
+            name,
+            has_sprite_file,
+        });
+    }
+
+    Ok(result)
+}
+
 /// Searches buffs by name and returns matching entries, including no-icon buffs.
 #[tauri::command]
 #[specta::specta]
