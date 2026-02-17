@@ -2,11 +2,52 @@ use crate::packets;
 use crate::packets::opcodes::FragmentType;
 use crate::packets::parser;
 use crate::packets::utils::BinaryReader;
-use log::debug;
+use log::{debug, error, warn};
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+const QUEUE_DEPTH_WARN_THRESHOLD: usize = 100;
+const QUEUE_DEPTH_ERROR_THRESHOLD: usize = 500;
+const QUEUE_DEPTH_CRITICAL_THRESHOLD: usize = 2000;
+
+fn check_queue_depth(queue_depth: &AtomicUsize, warn_counter: &mut usize) {
+    let current = queue_depth.load(Ordering::Relaxed);
+    if current >= QUEUE_DEPTH_CRITICAL_THRESHOLD {
+        *warn_counter += 1;
+        if *warn_counter % 50 == 1 {
+            error!(
+                target: "app::capture",
+                "queue_depth_critical depth={} - consumer severely behind, risk of OOM",
+                current
+            );
+        }
+    } else if current >= QUEUE_DEPTH_ERROR_THRESHOLD {
+        *warn_counter += 1;
+        if *warn_counter % 20 == 1 {
+            error!(
+                target: "app::capture",
+                "queue_depth_high depth={} - consumer significantly behind",
+                current
+            );
+        }
+    } else if current >= QUEUE_DEPTH_WARN_THRESHOLD {
+        *warn_counter += 1;
+        if *warn_counter % 10 == 1 {
+            warn!(
+                target: "app::capture",
+                "queue_depth_elevated depth={} - consumer falling behind",
+                current
+            );
+        }
+    } else {
+        *warn_counter = 0;
+    }
+}
 
 pub fn process_packet(
     mut packets_reader: BinaryReader,
-    packet_sender: tokio::sync::mpsc::Sender<(packets::opcodes::Pkt, Vec<u8>)>,
+    packet_sender: tokio::sync::mpsc::UnboundedSender<(packets::opcodes::Pkt, Vec<u8>)>,
+    queue_depth: &AtomicUsize,
+    warn_counter: &mut usize,
 ) {
     let mut _debug_ctr = 0;
     while packets_reader.remaining() > 0 {
@@ -50,8 +91,11 @@ pub fn process_packet(
                 if let Some((method_id, payload)) =
                     parser::parse_notify_fragment(&mut reader, is_zstd_compressed != 0)
                 {
-                    if let Err(err) = packet_sender.blocking_send((method_id, payload)) {
+                    if let Err(err) = packet_sender.send((method_id, payload)) {
                         debug!("Failed to send packet: {err}");
+                    } else {
+                        queue_depth.fetch_add(1, Ordering::Relaxed);
+                        check_queue_depth(queue_depth, warn_counter);
                     }
                 } else {
                     // parse_notify_fragment logged details
@@ -164,23 +208,3 @@ pub fn process_packet(
 //         }
 //     }
 // }
-
-// todo: remove this test
-#[cfg(test)]
-mod tests {
-    use crate::packets::opcodes::Pkt;
-    use crate::packets::packet_process::process_packet;
-    use crate::packets::utils::BinaryReader;
-
-    #[tokio::test]
-    async fn test_add() {
-        use std::fs;
-        let (packet_sender, _) = tokio::sync::mpsc::channel::<(Pkt, Vec<u8>)>(1);
-        let filename = "src/packets/test_add_packet.json";
-        let v: Vec<u8> = serde_json::from_str(
-            &fs::read_to_string(filename).expect(&format!("Failed to open {filename}")),
-        )
-        .expect("Invalid JSON in test_packet.json");
-        process_packet(BinaryReader::from(v), packet_sender);
-    }
-}

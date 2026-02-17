@@ -9,7 +9,8 @@ use etherparse::SlicedPacket;
 use etherparse::TransportSlice::Tcp;
 use log::{debug, error, info, warn};
 use once_cell::sync::OnceCell;
-use std::sync::OnceLock;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, OnceLock};
 use tokio::sync::watch;
 use windivert::WinDivert;
 use windivert::prelude::NetworkLayer;
@@ -19,12 +20,49 @@ use windivert::prelude::WinDivertFlags;
 static RESTART_SENDER: OnceCell<watch::Sender<bool>> = OnceCell::new();
 
 const MAX_BACKTRACK_BYTES: u32 = 2 * 1024 * 1024; // 2 MiB safety window before considering a reset
+const QUEUE_DEPTH_WARN_THRESHOLD: usize = 100;
+const QUEUE_DEPTH_ERROR_THRESHOLD: usize = 500;
+const QUEUE_DEPTH_CRITICAL_THRESHOLD: usize = 2000;
 
 // Common libpcap datalink constants we care about.
 const DLT_NULL: i32 = 0;
 const DLT_EN10MB: i32 = 1;
 const DLT_RAW: i32 = 12;
 const DLT_LOOP: i32 = 108;
+
+fn check_queue_depth(queue_depth: &AtomicUsize, warn_counter: &mut usize) {
+    let current = queue_depth.load(Ordering::Relaxed);
+    if current >= QUEUE_DEPTH_CRITICAL_THRESHOLD {
+        *warn_counter += 1;
+        if *warn_counter % 50 == 1 {
+            error!(
+                target: "app::capture",
+                "queue_depth_critical depth={} - consumer severely behind, risk of OOM",
+                current
+            );
+        }
+    } else if current >= QUEUE_DEPTH_ERROR_THRESHOLD {
+        *warn_counter += 1;
+        if *warn_counter % 20 == 1 {
+            error!(
+                target: "app::capture",
+                "queue_depth_high depth={} - consumer significantly behind",
+                current
+            );
+        }
+    } else if current >= QUEUE_DEPTH_WARN_THRESHOLD {
+        *warn_counter += 1;
+        if *warn_counter % 10 == 1 {
+            warn!(
+                target: "app::capture",
+                "queue_depth_elevated depth={} - consumer falling behind",
+                current
+            );
+        }
+    } else {
+        *warn_counter = 0;
+    }
+}
 
 #[derive(Clone, Debug)]
 pub enum CaptureMethod {
@@ -132,11 +170,14 @@ impl PacketSource for NpcapSource {
 
 pub fn start_capture(
     method: CaptureMethod,
-) -> tokio::sync::mpsc::Receiver<(packets::opcodes::Pkt, Vec<u8>)> {
-    // Use a larger bounded channel to prevent producer backpressure from stalling
-    // headroom for bursts without risking unbounded memory growth.
+) -> (
+    tokio::sync::mpsc::UnboundedReceiver<(packets::opcodes::Pkt, Vec<u8>)>,
+    Arc<AtomicUsize>,
+) {
     let (packet_sender, packet_receiver) =
-        tokio::sync::mpsc::channel::<(packets::opcodes::Pkt, Vec<u8>)>(20);
+        tokio::sync::mpsc::unbounded_channel::<(packets::opcodes::Pkt, Vec<u8>)>();
+    let queue_depth = Arc::new(AtomicUsize::new(0));
+    let capture_queue_depth = Arc::clone(&queue_depth);
     let (restart_sender, mut restart_receiver) = watch::channel(false);
     RESTART_SENDER.set(restart_sender.clone()).ok();
 
@@ -154,7 +195,12 @@ pub fn start_capture(
         let capture_span = tracing::info_span!(target: "app::capture", "capture_thread", method = ?method);
         let _capture_guard = capture_span.enter();
         loop {
-            read_packets(&packet_sender, &mut restart_receiver, method.clone());
+            read_packets(
+                &packet_sender,
+                &capture_queue_depth,
+                &mut restart_receiver,
+                method.clone(),
+            );
             
             // Check if this was a requested restart or a crash/exit
             if !*restart_receiver.borrow() {
@@ -172,12 +218,13 @@ pub fn start_capture(
         }
         // info!("oopsies {}", line!());
     });
-    packet_receiver
+    (packet_receiver, queue_depth)
 }
 
 #[allow(clippy::too_many_lines)]
 fn read_packets(
-    packet_sender: &tokio::sync::mpsc::Sender<(packets::opcodes::Pkt, Vec<u8>)>,
+    packet_sender: &tokio::sync::mpsc::UnboundedSender<(packets::opcodes::Pkt, Vec<u8>)>,
+    queue_depth: &AtomicUsize,
     restart_receiver: &mut watch::Receiver<bool>,
     method: CaptureMethod,
 ) {
@@ -209,6 +256,7 @@ fn read_packets(
     let mut known_server: Option<Server> = None; // nothing at start
     let mut tcp_reassembler: TCPReassembler = TCPReassembler::new();
     let mut reassembler = Reassembler::new();
+    let mut queue_depth_warn_counter = 0usize;
 
     loop {
         let packet_data = match source.next_packet() {
@@ -306,11 +354,17 @@ fn read_packets(
                                                     &mut reassembler,
                                                     Some(seq_end),
                                                 );
-                                                if let Err(err) = packet_sender.blocking_send((
+                                                if let Err(err) = packet_sender.send((
                                                     Pkt::ServerChangeInfo,
                                                     Vec::new(),
                                                 )) {
                                                     debug!("Failed to send packet: {err}");
+                                                } else {
+                                                    queue_depth.fetch_add(1, Ordering::Relaxed);
+                                                    check_queue_depth(
+                                                        queue_depth,
+                                                        &mut queue_depth_warn_counter,
+                                                    );
                                                 }
                                             }
                                         }
@@ -349,10 +403,11 @@ fn read_packets(
                     let payload_len = u32::try_from(tcp_payload.len()).unwrap_or(u32::MAX);
                     let seq_end = tcp_packet.sequence_number().wrapping_add(payload_len);
                     reset_stream(&mut tcp_reassembler, &mut reassembler, Some(seq_end));
-                    if let Err(err) =
-                        packet_sender.blocking_send((Pkt::ServerChangeInfo, Vec::new()))
-                    {
+                    if let Err(err) = packet_sender.send((Pkt::ServerChangeInfo, Vec::new())) {
                         debug!("Failed to send packet: {err}");
+                    } else {
+                        queue_depth.fetch_add(1, Ordering::Relaxed);
+                        check_queue_depth(queue_depth, &mut queue_depth_warn_counter);
                     }
                 }
             }
@@ -413,7 +468,12 @@ fn read_packets(
         }
 
         while let Some(packet) = reassembler.try_next() {
-            process_packet(BinaryReader::from(packet), packet_sender.clone());
+            process_packet(
+                BinaryReader::from(packet),
+                packet_sender.clone(),
+                queue_depth,
+                &mut queue_depth_warn_counter,
+            );
         }
 
         if defer_reset {

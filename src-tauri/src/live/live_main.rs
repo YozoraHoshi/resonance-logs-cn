@@ -4,6 +4,7 @@ use blueprotobuf_lib::blueprotobuf;
 use bytes::Bytes;
 use log::{debug, info, trace, warn};
 use prost::Message;
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager};
 
@@ -42,7 +43,7 @@ pub async fn start(app_handle: AppHandle) {
 
     // 1. Start capturing packets and send to rx
     let method = get_capture_method(&app_handle);
-    let mut rx = packets::packet_capture::start_capture(method);
+    let (mut rx, queue_depth) = packets::packet_capture::start_capture(method);
 
     // 2. Use the channel to receive packets back and process them
     loop {
@@ -159,6 +160,7 @@ pub async fn start(app_handle: AppHandle) {
 
         match packet_result {
             Ok(Some((op, data))) => {
+                queue_depth.fetch_sub(1, Ordering::Relaxed);
                 // Process the first packet immediately (low-latency path)
                 if let Some(event) = decode_event(op, data) {
                     state_manager.handle_event(event).await;
@@ -180,6 +182,7 @@ pub async fn start(app_handle: AppHandle) {
 
                     match rx.try_recv() {
                         Ok((op, data)) => {
+                            queue_depth.fetch_sub(1, Ordering::Relaxed);
                             if let Some(event) = decode_event(op, data) {
                                 let is_server_change = matches!(event, StateEvent::ServerChange);
                                 state_manager.handle_event(event).await;
