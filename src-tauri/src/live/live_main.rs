@@ -8,6 +8,54 @@ use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager};
 
+const QUEUE_DEPTH_WARN_THRESHOLD: usize = 100;
+const QUEUE_DEPTH_ERROR_THRESHOLD: usize = 500;
+const QUEUE_DEPTH_CRITICAL_THRESHOLD: usize = 2000;
+const QUEUE_DEPTH_LOG_INTERVAL: Duration = Duration::from_millis(500);
+
+fn log_queue_depth_if_needed(
+    queue_depth: &std::sync::atomic::AtomicUsize,
+    warn_counter: &mut usize,
+    last_log_at: &mut Instant,
+) {
+    if last_log_at.elapsed() < QUEUE_DEPTH_LOG_INTERVAL {
+        return;
+    }
+    *last_log_at = Instant::now();
+
+    let current = queue_depth.load(Ordering::Relaxed);
+    if current >= QUEUE_DEPTH_CRITICAL_THRESHOLD {
+        *warn_counter += 1;
+        if *warn_counter % 5 == 1 {
+            warn!(
+                target: "app::live",
+                "queue_depth_critical depth={} - consumer severely behind, risk of OOM",
+                current
+            );
+        }
+    } else if current >= QUEUE_DEPTH_ERROR_THRESHOLD {
+        *warn_counter += 1;
+        if *warn_counter % 3 == 1 {
+            warn!(
+                target: "app::live",
+                "queue_depth_high depth={} - consumer significantly behind",
+                current
+            );
+        }
+    } else if current >= QUEUE_DEPTH_WARN_THRESHOLD {
+        *warn_counter += 1;
+        if *warn_counter % 2 == 1 {
+            warn!(
+                target: "app::live",
+                "queue_depth_elevated depth={} - consumer falling behind",
+                current
+            );
+        }
+    } else {
+        *warn_counter = 0;
+    }
+}
+
 /// Starts the live meter.
 ///
 /// This function captures packets, processes them, and emits events to the frontend.
@@ -44,19 +92,27 @@ pub async fn start(app_handle: AppHandle) {
     // 1. Start capturing packets and send to rx
     let method = get_capture_method(&app_handle);
     let (mut rx, queue_depth) = packets::packet_capture::start_capture(method);
+    let mut queue_depth_warn_counter = 0usize;
+    let mut queue_depth_last_log_at = Instant::now();
 
     // 2. Use the channel to receive packets back and process them
     loop {
+        log_queue_depth_if_needed(
+            queue_depth.as_ref(),
+            &mut queue_depth_warn_counter,
+            &mut queue_depth_last_log_at,
+        );
+
         // Use tokio::time::timeout to ensure we emit periodically even if no packets arrive
         let packet_result = tokio::time::timeout(heartbeat_duration, rx.recv()).await;
 
         // Helper to decode op/data into a StateEvent; returns None if decoding failed
-        let decode_event = |op: packets::opcodes::Pkt, data: Vec<u8>| -> Option<StateEvent> {
+        let decode_event = |op: packets::opcodes::Pkt, data: Bytes| -> Option<StateEvent> {
             match op {
                 packets::opcodes::Pkt::ServerChangeInfo => Some(StateEvent::ServerChange),
                 packets::opcodes::Pkt::EnterScene => {
                     info!(target: "app::live", "Received EnterScene packet");
-                    match blueprotobuf::EnterScene::decode(Bytes::from(data)) {
+                    match blueprotobuf::EnterScene::decode(data) {
                         Ok(v) => Some(StateEvent::EnterScene(v)),
                         Err(e) => {
                             warn!("Error decoding EnterScene.. ignoring: {e}");
@@ -65,7 +121,7 @@ pub async fn start(app_handle: AppHandle) {
                     }
                 }
                 packets::opcodes::Pkt::SyncNearEntities => {
-                    match blueprotobuf::SyncNearEntities::decode(Bytes::from(data)) {
+                    match blueprotobuf::SyncNearEntities::decode(data) {
                         Ok(v) => Some(StateEvent::SyncNearEntities(v)),
                         Err(e) => {
                             warn!("Error decoding SyncNearEntities.. ignoring: {e}");
@@ -74,7 +130,7 @@ pub async fn start(app_handle: AppHandle) {
                     }
                 }
                 packets::opcodes::Pkt::SyncContainerData => {
-                    match blueprotobuf::SyncContainerData::decode(Bytes::from(data)) {
+                    match blueprotobuf::SyncContainerData::decode(data) {
                         Ok(v) => Some(StateEvent::SyncContainerData(v)),
                         Err(e) => {
                             warn!("Error decoding SyncContainerData.. ignoring: {e}");
@@ -83,7 +139,7 @@ pub async fn start(app_handle: AppHandle) {
                     }
                 }
                 packets::opcodes::Pkt::SyncContainerDirtyData => {
-                    match blueprotobuf::SyncContainerDirtyData::decode(Bytes::from(data)) {
+                    match blueprotobuf::SyncContainerDirtyData::decode(data) {
                         Ok(v) => Some(StateEvent::SyncContainerDirtyData(v)),
                         Err(e) => {
                             warn!("Error decoding SyncContainerDirtyData.. ignoring: {e}");
@@ -92,7 +148,7 @@ pub async fn start(app_handle: AppHandle) {
                     }
                 }
                 packets::opcodes::Pkt::SyncServerTime => {
-                    match blueprotobuf::SyncServerTime::decode(Bytes::from(data)) {
+                    match blueprotobuf::SyncServerTime::decode(data) {
                         Ok(v) => Some(StateEvent::SyncServerTime(v)),
                         Err(e) => {
                             warn!("Error decoding SyncServerTime.. ignoring: {e}");
@@ -101,7 +157,7 @@ pub async fn start(app_handle: AppHandle) {
                     }
                 }
                 packets::opcodes::Pkt::SyncToMeDeltaInfo => {
-                    match blueprotobuf::SyncToMeDeltaInfo::decode(Bytes::from(data)) {
+                    match blueprotobuf::SyncToMeDeltaInfo::decode(data) {
                         Ok(v) => Some(StateEvent::SyncToMeDeltaInfo(v)),
                         Err(e) => {
                             warn!("Error decoding SyncToMeDeltaInfo.. ignoring: {e}");
@@ -110,7 +166,7 @@ pub async fn start(app_handle: AppHandle) {
                     }
                 }
                 packets::opcodes::Pkt::SyncNearDeltaInfo => {
-                    match blueprotobuf::SyncNearDeltaInfo::decode(Bytes::from(data)) {
+                    match blueprotobuf::SyncNearDeltaInfo::decode(data) {
                         Ok(v) => Some(StateEvent::SyncNearDeltaInfo(v)),
                         Err(e) => {
                             warn!("Error decoding SyncNearDeltaInfo.. ignoring: {e}");
@@ -119,7 +175,7 @@ pub async fn start(app_handle: AppHandle) {
                     }
                 }
                 packets::opcodes::Pkt::NotifyReviveUser => {
-                    match blueprotobuf::NotifyReviveUser::decode(Bytes::from(data)) {
+                    match blueprotobuf::NotifyReviveUser::decode(data) {
                         Ok(v) => Some(StateEvent::NotifyReviveUser(v)),
                         Err(e) => {
                             warn!("Error decoding NotifyReviveUser.. ignoring: {e}");
@@ -128,7 +184,7 @@ pub async fn start(app_handle: AppHandle) {
                     }
                 }
                 packets::opcodes::Pkt::BuffInfoSync => {
-                    match blueprotobuf::BuffInfoSync::decode(Bytes::from(data)) {
+                    match blueprotobuf::BuffInfoSync::decode(data) {
                         Ok(v) => {
                             // Dump the packet as JSON for debugging
                             match serde_json::to_string_pretty(&v) {

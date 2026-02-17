@@ -304,12 +304,12 @@ impl AttrValue {
     /// Parse a string from raw bytes and create a String variant.
     #[allow(dead_code)]
     pub fn from_string_bytes(bytes: Vec<u8>) -> Result<Self, std::io::Error> {
-        use crate::packets::utils::BinaryReader;
         let mut bytes = bytes;
         if !bytes.is_empty() {
             bytes.remove(0); // Skip first byte (encoding marker)
         }
-        let s = BinaryReader::from(bytes).read_string()?;
+        let s = String::from_utf8(bytes)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
         Ok(AttrValue::String(s))
     }
 }

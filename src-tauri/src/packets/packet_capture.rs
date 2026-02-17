@@ -3,7 +3,8 @@ use crate::packets::npcap::NpcapCapture;
 use crate::packets::opcodes::Pkt;
 use crate::packets::packet_process::process_packet;
 use crate::packets::reassembler::Reassembler;
-use crate::packets::utils::{BinaryReader, Server, TCPReassembler, tcp_sequence_before};
+use crate::packets::utils::{Server, TCPReassembler, tcp_sequence_before};
+use bytes::Bytes;
 use etherparse::NetSlice::Ipv4;
 use etherparse::SlicedPacket;
 use etherparse::TransportSlice::Tcp;
@@ -20,49 +21,12 @@ use windivert::prelude::WinDivertFlags;
 static RESTART_SENDER: OnceCell<watch::Sender<bool>> = OnceCell::new();
 
 const MAX_BACKTRACK_BYTES: u32 = 2 * 1024 * 1024; // 2 MiB safety window before considering a reset
-const QUEUE_DEPTH_WARN_THRESHOLD: usize = 100;
-const QUEUE_DEPTH_ERROR_THRESHOLD: usize = 500;
-const QUEUE_DEPTH_CRITICAL_THRESHOLD: usize = 2000;
 
 // Common libpcap datalink constants we care about.
 const DLT_NULL: i32 = 0;
 const DLT_EN10MB: i32 = 1;
 const DLT_RAW: i32 = 12;
 const DLT_LOOP: i32 = 108;
-
-fn check_queue_depth(queue_depth: &AtomicUsize, warn_counter: &mut usize) {
-    let current = queue_depth.load(Ordering::Relaxed);
-    if current >= QUEUE_DEPTH_CRITICAL_THRESHOLD {
-        *warn_counter += 1;
-        if *warn_counter % 50 == 1 {
-            error!(
-                target: "app::capture",
-                "queue_depth_critical depth={} - consumer severely behind, risk of OOM",
-                current
-            );
-        }
-    } else if current >= QUEUE_DEPTH_ERROR_THRESHOLD {
-        *warn_counter += 1;
-        if *warn_counter % 20 == 1 {
-            error!(
-                target: "app::capture",
-                "queue_depth_high depth={} - consumer significantly behind",
-                current
-            );
-        }
-    } else if current >= QUEUE_DEPTH_WARN_THRESHOLD {
-        *warn_counter += 1;
-        if *warn_counter % 10 == 1 {
-            warn!(
-                target: "app::capture",
-                "queue_depth_elevated depth={} - consumer falling behind",
-                current
-            );
-        }
-    } else {
-        *warn_counter = 0;
-    }
-}
 
 #[derive(Clone, Debug)]
 pub enum CaptureMethod {
@@ -171,11 +135,11 @@ impl PacketSource for NpcapSource {
 pub fn start_capture(
     method: CaptureMethod,
 ) -> (
-    tokio::sync::mpsc::UnboundedReceiver<(packets::opcodes::Pkt, Vec<u8>)>,
+    tokio::sync::mpsc::UnboundedReceiver<(packets::opcodes::Pkt, Bytes)>,
     Arc<AtomicUsize>,
 ) {
     let (packet_sender, packet_receiver) =
-        tokio::sync::mpsc::unbounded_channel::<(packets::opcodes::Pkt, Vec<u8>)>();
+        tokio::sync::mpsc::unbounded_channel::<(packets::opcodes::Pkt, Bytes)>();
     let queue_depth = Arc::new(AtomicUsize::new(0));
     let capture_queue_depth = Arc::clone(&queue_depth);
     let (restart_sender, mut restart_receiver) = watch::channel(false);
@@ -223,7 +187,7 @@ pub fn start_capture(
 
 #[allow(clippy::too_many_lines)]
 fn read_packets(
-    packet_sender: &tokio::sync::mpsc::UnboundedSender<(packets::opcodes::Pkt, Vec<u8>)>,
+    packet_sender: &tokio::sync::mpsc::UnboundedSender<(packets::opcodes::Pkt, Bytes)>,
     queue_depth: &AtomicUsize,
     restart_receiver: &mut watch::Receiver<bool>,
     method: CaptureMethod,
@@ -256,7 +220,6 @@ fn read_packets(
     let mut known_server: Option<Server> = None; // nothing at start
     let mut tcp_reassembler: TCPReassembler = TCPReassembler::new();
     let mut reassembler = Reassembler::new();
-    let mut queue_depth_warn_counter = 0usize;
 
     loop {
         let packet_data = match source.next_packet() {
@@ -297,92 +260,66 @@ fn read_packets(
         // 1. Try to identify game server via small packets
         if known_server != Some(curr_server) {
             let tcp_payload = tcp_packet.payload();
-            let mut tcp_payload_reader = BinaryReader::from(tcp_payload.to_vec());
-            if tcp_payload_reader.remaining() >= 10 {
-                match tcp_payload_reader.read_bytes(10) {
-                    Ok(bytes) => {
-                        if bytes[4] == 0 {
-                            const FRAG_LENGTH_SIZE: usize = 4;
-                            const SIGNATURE: [u8; 6] = [0x00, 0x63, 0x33, 0x53, 0x42, 0x00];
-                            const MAX_FRAG_ITERATIONS: usize = 2000; // Circuit breaker
+            if tcp_payload.len() >= 10 && tcp_payload[4] == 0 {
+                const FRAG_LENGTH_SIZE: usize = 4;
+                const SIGNATURE: [u8; 6] = [0x00, 0x63, 0x33, 0x53, 0x42, 0x00];
+                const MAX_FRAG_ITERATIONS: usize = 2000; // Circuit breaker
 
-                            let mut i = 0;
-                            while tcp_payload_reader.remaining() >= FRAG_LENGTH_SIZE {
-                                i += 1;
-                                if i >= MAX_FRAG_ITERATIONS {
-                                    error!(
-                                        "TCP fragment processing stuck after {i} iterations - forcing recovery. \
-                                        remaining={}, line={}",
-                                        tcp_payload_reader.remaining(),
-                                        line!()
-                                    );
-                                    break;
-                                }
-                                if i % 1000 == 0 {
-                                    warn!(
-                                        "High iteration count in fragment processing: iteration={i}, remaining={}, line={}",
-                                        tcp_payload_reader.remaining(),
-                                        line!()
-                                    );
-                                }
-                                let tcp_frag_payload_len = match tcp_payload_reader.read_u32() {
-                                    Ok(len) => len.saturating_sub(FRAG_LENGTH_SIZE as u32) as usize,
-                                    Err(e) => {
-                                        debug!("Malformed TCP fragment: failed to read_u32: {e}");
-                                        break;
-                                    }
-                                };
-                                if tcp_payload_reader.remaining() >= tcp_frag_payload_len {
-                                    match tcp_payload_reader.read_bytes(tcp_frag_payload_len) {
-                                        Ok(tcp_frag) => {
-                                            if tcp_frag.len() >= 5 + SIGNATURE.len()
-                                                && tcp_frag[5..5 + SIGNATURE.len()] == SIGNATURE
-                                            {
-                                                info!(
-                                                    target: "app::capture",
-                                                    "Got Scene Server Address (by change): {curr_server}"
-                                                );
-                                                known_server = Some(curr_server);
-                                                let payload_len =
-                                                    u32::try_from(tcp_payload_reader.len())
-                                                        .unwrap_or(u32::MAX);
-                                                let seq_end = tcp_packet
-                                                    .sequence_number()
-                                                    .wrapping_add(payload_len);
-                                                reset_stream(
-                                                    &mut tcp_reassembler,
-                                                    &mut reassembler,
-                                                    Some(seq_end),
-                                                );
-                                                if let Err(err) = packet_sender.send((
-                                                    Pkt::ServerChangeInfo,
-                                                    Vec::new(),
-                                                )) {
-                                                    debug!("Failed to send packet: {err}");
-                                                } else {
-                                                    queue_depth.fetch_add(1, Ordering::Relaxed);
-                                                    check_queue_depth(
-                                                        queue_depth,
-                                                        &mut queue_depth_warn_counter,
-                                                    );
-                                                }
-                                            }
-                                        }
-                                        Err(e) => {
-                                            debug!(
-                                                "Malformed TCP fragment: failed to read_bytes: {e}"
-                                            );
-                                            break;
-                                        }
-                                    }
-                                } else {
-                                    break;
-                                }
-                            }
-                        }
+                let mut i = 0usize;
+                let mut offset = 10usize;
+                while tcp_payload.len().saturating_sub(offset) >= FRAG_LENGTH_SIZE {
+                    i += 1;
+                    if i >= MAX_FRAG_ITERATIONS {
+                        error!(
+                            "TCP fragment processing stuck after {i} iterations - forcing recovery. \
+                            remaining={}, line={}",
+                            tcp_payload.len().saturating_sub(offset),
+                            line!()
+                        );
+                        break;
                     }
-                    Err(e) => {
-                        debug!("Malformed TCP payload: failed to read_bytes(10): {e}");
+                    if i % 1000 == 0 {
+                        warn!(
+                            "High iteration count in fragment processing: iteration={i}, remaining={}, line={}",
+                            tcp_payload.len().saturating_sub(offset),
+                            line!()
+                        );
+                    }
+
+                    let len_bytes = &tcp_payload[offset..offset + FRAG_LENGTH_SIZE];
+                    let tcp_frag_payload_len = u32::from_be_bytes([
+                        len_bytes[0],
+                        len_bytes[1],
+                        len_bytes[2],
+                        len_bytes[3],
+                    ])
+                    .saturating_sub(FRAG_LENGTH_SIZE as u32) as usize;
+                    offset += FRAG_LENGTH_SIZE;
+
+                    if tcp_payload.len().saturating_sub(offset) < tcp_frag_payload_len {
+                        break;
+                    }
+
+                    let tcp_frag = &tcp_payload[offset..offset + tcp_frag_payload_len];
+                    offset += tcp_frag_payload_len;
+
+                    if tcp_frag.len() >= 5 + SIGNATURE.len()
+                        && tcp_frag[5..5 + SIGNATURE.len()] == SIGNATURE
+                    {
+                        info!(
+                            target: "app::capture",
+                            "Got Scene Server Address (by change): {curr_server}"
+                        );
+                        known_server = Some(curr_server);
+                        let payload_len = u32::try_from(tcp_payload.len()).unwrap_or(u32::MAX);
+                        let seq_end = tcp_packet.sequence_number().wrapping_add(payload_len);
+                        reset_stream(&mut tcp_reassembler, &mut reassembler, Some(seq_end));
+                        if let Err(err) = packet_sender.send((Pkt::ServerChangeInfo, Bytes::new()))
+                        {
+                            debug!("Failed to send packet: {err}");
+                        } else {
+                            queue_depth.fetch_add(1, Ordering::Relaxed);
+                        }
                     }
                 }
             }
@@ -403,11 +340,10 @@ fn read_packets(
                     let payload_len = u32::try_from(tcp_payload.len()).unwrap_or(u32::MAX);
                     let seq_end = tcp_packet.sequence_number().wrapping_add(payload_len);
                     reset_stream(&mut tcp_reassembler, &mut reassembler, Some(seq_end));
-                    if let Err(err) = packet_sender.send((Pkt::ServerChangeInfo, Vec::new())) {
+                    if let Err(err) = packet_sender.send((Pkt::ServerChangeInfo, Bytes::new())) {
                         debug!("Failed to send packet: {err}");
                     } else {
                         queue_depth.fetch_add(1, Ordering::Relaxed);
-                        check_queue_depth(queue_depth, &mut queue_depth_warn_counter);
                     }
                 }
             }
@@ -468,12 +404,7 @@ fn read_packets(
         }
 
         while let Some(packet) = reassembler.try_next() {
-            process_packet(
-                BinaryReader::from(packet),
-                packet_sender.clone(),
-                queue_depth,
-                &mut queue_depth_warn_counter,
-            );
+            process_packet(&packet, packet_sender, queue_depth);
         }
 
         if defer_reset {

@@ -10,7 +10,6 @@ use crate::live::opcodes_models::class::{
 };
 use crate::live::opcodes_models::{AttrType, AttrValue, Encounter, Entity, Skill, attr_type};
 use crate::live::recount_names;
-use crate::packets::utils::BinaryReader;
 use blueprotobuf_lib::blueprotobuf;
 use blueprotobuf_lib::blueprotobuf::{Attr, EDamageType, EEntityType};
 use log::info;
@@ -1531,7 +1530,7 @@ fn process_monster_attrs(monster_entity: &mut Entity, attrs: Vec<Attr>) {
                 if !raw_bytes.is_empty() {
                     raw_bytes.remove(0);
                 }
-                if let Ok(name) = BinaryReader::from(raw_bytes).read_string() {
+                if let Ok(name) = String::from_utf8(raw_bytes) {
                     // Always capture the raw packet name for monsters
                     monster_entity.monster_name_packet = Some(name.clone());
                     if monster_entity.monster_type_id.is_none() {

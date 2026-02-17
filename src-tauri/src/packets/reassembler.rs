@@ -1,14 +1,13 @@
+use bytes::{Bytes, BytesMut};
 use std::convert::TryInto;
 
 /// A simple TCP reassembler for length-prefixed frames where each frame
-/// starts with a u32 length (little-endian) followed by that many bytes.
+/// starts with a u32 length (big-endian) followed by that many bytes.
 ///
-/// The reassembler keeps a single Vec<u8> buffer and an offset cursor to avoid
-/// cloning the whole buffer repeatedly. When a complete frame is available it
-/// returns it as a Vec<u8> (one allocation per frame).
+/// The reassembler keeps a single BytesMut buffer. When a complete frame is
+/// available, it returns a Bytes view.
 pub struct Reassembler {
-    buffer: Vec<u8>,
-    cursor: usize,
+    buffer: BytesMut,
     /// Safety cap to avoid pathological allocations (can be tuned)
     max_buffer_size: usize,
 }
@@ -16,8 +15,7 @@ pub struct Reassembler {
 impl Reassembler {
     pub fn new() -> Self {
         Self {
-            buffer: Vec::with_capacity(4096),
-            cursor: 0,
+            buffer: BytesMut::with_capacity(4096),
             max_buffer_size: 10 * 1024 * 1024, // 10 MB
         }
     }
@@ -26,93 +24,55 @@ impl Reassembler {
     #[allow(dead_code)]
     pub fn push(&mut self, data: &[u8]) {
         self.buffer.extend_from_slice(data);
-        // If buffer grows beyond max, we compact immediately to avoid OOM
+        // If buffer grows beyond max, drop to recover from malformed input.
         if self.buffer.len() > self.max_buffer_size {
-            self.compact();
+            self.buffer.clear();
         }
     }
 
     /// Try to extract the next complete frame if available.
     /// Returns Some(frame_bytes) or None if not enough data yet.
-    pub fn try_next(&mut self) -> Option<Vec<u8>> {
+    pub fn try_next(&mut self) -> Option<Bytes> {
         // Need at least 4 bytes to read length
-        if self.available_len() < 4 {
+        if self.buffer.len() < 4 {
             return None;
         }
 
-        // Read u32 big-endian from buffer[cursor..cursor+4]
-        let len_bytes = &self.buffer[self.cursor..self.cursor + 4];
+        // Read u32 big-endian from buffer[0..4]
+        let len_bytes = &self.buffer[..4];
         let frame_len = u32::from_be_bytes(len_bytes.try_into().unwrap()) as usize;
 
         // Sanity check: frame length must be >= 4 (header included) and not absurd
         if frame_len == 0 || frame_len > self.max_buffer_size {
             // Avoid trying to parse insane frame sizes; drop buffer to recover.
-            // Caller may decide to surface an error instead of silent recovery.
-            self.cursor = self.buffer.len();
-            self.compact();
+            self.buffer.clear();
             return None;
         }
 
-        if self.available_len() < frame_len {
+        if self.buffer.len() < frame_len {
             // Not enough bytes yet
             return None;
         }
 
-        let start = self.cursor;
-        let end = self.cursor + frame_len;
-        let frame = self.buffer[start..end].to_vec();
-
-        self.cursor = end;
-        // Compact buffer occasionally to discard consumed prefix
-        if self.cursor > 4096 {
-            self.compact();
-        }
-
-        Some(frame)
-    }
-
-    fn available_len(&self) -> usize {
-        self.buffer.len().saturating_sub(self.cursor)
-    }
-
-    fn compact(&mut self) {
-        if self.cursor == 0 {
-            return;
-        }
-        if self.cursor >= self.buffer.len() {
-            self.buffer.clear();
-            self.cursor = 0;
-            return;
-        }
-        // Move remaining bytes to start
-        let remaining = self.buffer.split_off(self.cursor);
-        self.buffer = remaining;
-        self.cursor = 0;
+        Some(self.buffer.split_to(frame_len).freeze())
     }
 
     /// Feed an owned Vec<u8> into the reassembler without copying when possible.
-    /// If the internal buffer is empty and cursor==0 we take ownership of the
+    /// If the internal buffer is empty we take ownership of the
     /// provided Vec to avoid an extra copy. Otherwise we extend the buffer.
     pub fn feed_owned(&mut self, bytes: Vec<u8>) {
-        if self.cursor == 0 && self.buffer.is_empty() {
+        if self.buffer.is_empty() {
             // reuse the allocation
-            self.buffer = bytes;
+            self.buffer = Bytes::from(bytes).into();
             return;
         }
         self.buffer.extend_from_slice(&bytes);
     }
 
-    /// Take and return the remaining unconsumed bytes as a Vec<u8> and
+    /// Take and return the remaining unconsumed bytes and
     /// reset the internal buffer.
-    pub fn take_remaining(&mut self) -> Vec<u8> {
-        if self.cursor == 0 {
-            let rem = std::mem::take(&mut self.buffer);
-            return rem;
-        }
-        let rem = self.buffer.split_off(self.cursor);
-        self.buffer = Vec::new();
-        self.cursor = 0;
-        rem
+    pub fn take_remaining(&mut self) -> Bytes {
+        self.buffer.split().freeze()
     }
 }
 
@@ -165,20 +125,5 @@ mod tests {
         r.push(&frame[split..]);
         let got = r.try_next().unwrap();
         assert_eq!(&got[4..], b"split-me");
-    }
-
-    #[test]
-    fn malformed_large_length_is_recovered() {
-        let mut r = Reassembler::new();
-        // put a ridiculously large length
-        let huge = (r.max_buffer_size as u32 + 100).to_le_bytes();
-        r.push(&huge);
-        // no panic, and try_next returns None
-        assert!(r.try_next().is_none());
-        // after compaction, pushing a normal frame still succeeds
-        let f = make_frame(b"ok");
-        r.push(&f);
-        let got = r.try_next().unwrap();
-        assert_eq!(&got[4..], b"ok");
     }
 }

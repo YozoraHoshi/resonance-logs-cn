@@ -1,210 +1,91 @@
 use crate::packets;
 use crate::packets::opcodes::FragmentType;
 use crate::packets::parser;
-use crate::packets::utils::BinaryReader;
-use log::{debug, error, warn};
+use bytes::Bytes;
+use log::debug;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-const QUEUE_DEPTH_WARN_THRESHOLD: usize = 100;
-const QUEUE_DEPTH_ERROR_THRESHOLD: usize = 500;
-const QUEUE_DEPTH_CRITICAL_THRESHOLD: usize = 2000;
-
-fn check_queue_depth(queue_depth: &AtomicUsize, warn_counter: &mut usize) {
-    let current = queue_depth.load(Ordering::Relaxed);
-    if current >= QUEUE_DEPTH_CRITICAL_THRESHOLD {
-        *warn_counter += 1;
-        if *warn_counter % 50 == 1 {
-            error!(
-                target: "app::capture",
-                "queue_depth_critical depth={} - consumer severely behind, risk of OOM",
-                current
-            );
-        }
-    } else if current >= QUEUE_DEPTH_ERROR_THRESHOLD {
-        *warn_counter += 1;
-        if *warn_counter % 20 == 1 {
-            error!(
-                target: "app::capture",
-                "queue_depth_high depth={} - consumer significantly behind",
-                current
-            );
-        }
-    } else if current >= QUEUE_DEPTH_WARN_THRESHOLD {
-        *warn_counter += 1;
-        if *warn_counter % 10 == 1 {
-            warn!(
-                target: "app::capture",
-                "queue_depth_elevated depth={} - consumer falling behind",
-                current
-            );
-        }
-    } else {
-        *warn_counter = 0;
-    }
-}
-
 pub fn process_packet(
-    mut packets_reader: BinaryReader,
-    packet_sender: tokio::sync::mpsc::UnboundedSender<(packets::opcodes::Pkt, Vec<u8>)>,
+    frame: &Bytes,
+    packet_sender: &tokio::sync::mpsc::UnboundedSender<(packets::opcodes::Pkt, Bytes)>,
     queue_depth: &AtomicUsize,
-    warn_counter: &mut usize,
 ) {
-    let mut _debug_ctr = 0;
-    while packets_reader.remaining() > 0 {
-        let packet_size = match packets_reader.peek_u32() {
-            Ok(sz) => sz,
-            Err(e) => {
-                debug!("Malformed packet: failed to peek_u32: {e}");
-                continue;
-            }
+    let mut offset = 0usize;
+    let buf = frame.as_ref();
+
+    while offset + 6 <= buf.len() {
+        let size_bytes = match buf.get(offset..offset + 4) {
+            Some(v) => v,
+            None => break,
         };
+        let packet_size = u32::from_be_bytes(match size_bytes.try_into() {
+            Ok(v) => v,
+            Err(_) => break,
+        }) as usize;
+
         if packet_size < 6 {
             debug!("Malformed packet: packet_size < 6");
-            continue;
+            break;
+        }
+        let end = match offset.checked_add(packet_size) {
+            Some(v) => v,
+            None => break,
+        };
+        if end > buf.len() {
+            break;
         }
 
-        let mut reader = match packets_reader.read_bytes(packet_size as usize) {
-            Ok(bytes) => BinaryReader::from(bytes),
-            Err(e) => {
-                debug!("Malformed packet: failed to read_bytes: {e}");
-                continue;
-            }
-        };
-        if reader.read_u32().is_err() {
-            debug!("Malformed packet: failed to skip u32");
-            continue;
-        }
-        let packet_type = match reader.read_u16() {
-            Ok(pt) => pt,
-            Err(e) => {
-                debug!("Malformed packet: failed to read_u16: {e}");
-                continue;
-            }
-        };
-        let is_zstd_compressed = packet_type & 0x8000;
+        let packet_type = u16::from_be_bytes(match buf[offset + 4..offset + 6].try_into() {
+            Ok(v) => v,
+            Err(_) => break,
+        });
+        let is_zstd_compressed = (packet_type & 0x8000) != 0;
         let msg_type_id = packet_type & 0x7fff;
+        let payload_start = offset + 6;
+        let payload_end = end;
 
-        _debug_ctr += 1;
-        match packets::opcodes::FragmentType::from(msg_type_id) {
+        match FragmentType::from(msg_type_id) {
             FragmentType::Notify => {
-                // Use parser helper to extract components and payload.
-                if let Some((method_id, payload)) =
-                    parser::parse_notify_fragment(&mut reader, is_zstd_compressed != 0)
-                {
+                if let Some((method_id, payload)) = parser::parse_notify_fragment(
+                    frame,
+                    payload_start,
+                    payload_end,
+                    is_zstd_compressed,
+                ) {
                     if let Err(err) = packet_sender.send((method_id, payload)) {
                         debug!("Failed to send packet: {err}");
                     } else {
                         queue_depth.fetch_add(1, Ordering::Relaxed);
-                        check_queue_depth(queue_depth, warn_counter);
                     }
-                } else {
-                    // parse_notify_fragment logged details
-                    continue;
                 }
             }
             FragmentType::FrameDown => {
-                let _server_sequence_id = match reader.read_u32() {
-                    Ok(sid) => sid,
-                    Err(_e) => {
-                        // debug!("FrameDown: failed to read_u32 server_sequence_id: {e}");
-                        continue;
-                    }
-                };
-                if reader.remaining() == 0 {
-                    // debug!("FrameDown: reader.remaining() == 0");
-                    break;
+                if payload_end.saturating_sub(payload_start) < 4 {
+                    debug!("FrameDown: payload too short");
+                    offset = end;
+                    continue;
                 }
 
-                let nested_packet = reader.read_remaining();
-                if is_zstd_compressed != 0 {
+                let nested_start = payload_start + 4;
+                let nested_packet = &buf[nested_start..payload_end];
+                if is_zstd_compressed {
                     match zstd::decode_all(nested_packet) {
                         Ok(tcp_fragment_decompressed) => {
-                            packets_reader = BinaryReader::from(tcp_fragment_decompressed);
+                            let nested_bytes = Bytes::from(tcp_fragment_decompressed);
+                            process_packet(&nested_bytes, packet_sender, queue_depth);
                         }
                         Err(_e) => {
-                            // debug!("FrameDown: zstd decompression failed");
-                            continue;
+                            debug!("FrameDown: zstd decompression failed");
                         }
                     }
                 } else {
-                    packets_reader = BinaryReader::from(Vec::from(nested_packet));
+                    let nested_bytes = frame.slice(nested_start..payload_end);
+                    process_packet(&nested_bytes, packet_sender, queue_depth);
                 }
             }
-            _ => {
-                continue;
-            }
+            _ => {}
         }
+
+        offset = end;
     }
 }
-
-// pub async fn process_packet(
-//     mut tcp_fragments: BinaryReader,
-//     packet_sender: tokio::sync::mpsc::Sender<(packets::opcodes::Pkt, Vec<u8>)>,
-// ) {
-//     println!("during process packet");
-//     let mut debug_ctr = 0;
-//     const MIN_FRAG_LEN: usize = 8 + 1 + 3; // frag_len + is_zstd + frag_type
-//     println!("{}", tcp_fragments.remaining());
-//     while tcp_fragments.remaining() >= MIN_FRAG_LEN {
-//         let tcp_frag_len = tcp_fragments.peek_u32().unwrap();
-//         if tcp_fragments.remaining() < tcp_frag_len as usize {
-//             println!("{} < {tcp_frag_len}", tcp_fragments.remaining());
-//             return;
-//         }
-//         let mut tcp_fragment = BinaryReader::from(tcp_fragments.read_bytes(tcp_frag_len as usize).unwrap());
-//         let _ = tcp_fragment.read_u32(); // skip tcp_frag_len from before // todo: somehow this crashed before
-//
-//
-//
-//         let (is_zstd, frag_type) = {
-//             let temp = tcp_fragment.read_u16().unwrap(); // todo: fix all these unwraps properly
-//             ((temp & 0x8000) != 0, packets::opcodes::FragmentType::from(temp & 0x7fff)) // get bit 1 and bits 2-16
-//         };
-//
-//         debug_ctr += 1;
-//         println!("{frag_type:?}");
-//         match frag_type {
-//             packets::opcodes::FragmentType::Notify => {
-//                 println!("{debug_ctr} Notify {:?}", tcp_fragment.cursor.get_ref());
-//                 let service_uuid = tcp_fragment.read_u64().unwrap(); // service_uuid?
-//                 let _stub_id = tcp_fragment.read_bytes(4); // bytes 15-18 are ignored
-//
-//                 if service_uuid == 63_335_342 {
-//                     trace!("Skipping FragmentType with service_uuid: {service_uuid}");
-//                     return;
-//                 }
-//
-//                 let Ok(method_id) = packets::opcodes::Pkt::try_from(tcp_fragment.read_u32().unwrap()) else {
-//                     return;
-//                 };
-//
-//                 let mut tcp_fragment_vec = tcp_fragment.read_remaining().to_vec();
-//                 if is_zstd {
-//                     if let Ok(decoded) = zstd::decode_all(tcp_fragment_vec.as_slice()) {
-//                         tcp_fragment_vec = decoded;
-//                     } else {
-//                         return; // faulty TCP packet
-//                     }
-//                 }
-//
-//                 if let Err(err) = packet_sender.send((method_id, tcp_fragment_vec)).await
-//                 {
-//                     debug!("Failed to send packet: {err}");
-//                 }
-//                 break;
-//             }
-//             packets::opcodes::FragmentType::FrameDown => {
-//                 println!("{debug_ctr} FrameDown {:?}", tcp_fragment.cursor.get_ref());
-//                 let _ = tcp_fragment.read_bytes(4).unwrap(); // bytes 1-4 are ignored
-//                 let tcp_fragment_t = tcp_fragment.read_remaining(); // todo: change name
-//                 if is_zstd {
-//                     let Ok(tcp_fragment_decompressed) = zstd::decode_all(tcp_fragment_t) else {return};
-//                     tcp_fragment.splice_remaining(&tcp_fragment_decompressed);
-//                 }
-//
-//                 // recursively process the packet
-//             }
-//             _ => return,
-//         }
-//     }
-// }
