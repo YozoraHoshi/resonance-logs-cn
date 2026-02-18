@@ -2,12 +2,15 @@ use crate::database::{
     CachedEntity, CachedPlayerData, EncounterMetadata, flush_entity_cache, flush_playerdata,
     now_ms, save_encounter,
 };
+use crate::live::cd_calc::calculate_skill_cd;
 use crate::live::commands_models::{
     BuffUpdatePayload, BuffUpdateState, FightResourceState, FightResourceUpdatePayload,
     SkillCdState, SkillCdUpdatePayload,
 };
-use crate::live::cd_calc::calculate_skill_cd;
-use crate::live::dungeon_log::{self, DungeonLogRuntime, SegmentType, SharedDungeonLog};
+use crate::live::dungeon_log::{
+    self, BattleStateMachine, DungeonLogRuntime, EncounterResetReason, SegmentType,
+    SharedDungeonLog,
+};
 use crate::live::event_manager::{EventManager, MetricType};
 use crate::live::opcodes_models::Encounter;
 use blueprotobuf_lib::blueprotobuf;
@@ -15,6 +18,7 @@ use blueprotobuf_lib::blueprotobuf::{
     BuffChange, BuffEffectSync, BuffInfo, EBuffEffectLogicPbType, EBuffEventType, EEntityType,
 };
 use log::{info, trace, warn};
+use prost::Message;
 use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
@@ -24,7 +28,6 @@ use tokio::sync::{
     mpsc::{UnboundedReceiver, UnboundedSender, error::TryRecvError, unbounded_channel},
     watch,
 };
-use prost::Message;
 
 /// Safely emits an event to the frontend, handling WebView2 state errors gracefully.
 /// This prevents the app from freezing when the WebView is in an invalid state, maybe.
@@ -76,6 +79,10 @@ pub enum StateEvent {
     SyncContainerDirtyData(blueprotobuf::SyncContainerDirtyData),
     /// A sync server time event.
     SyncServerTime(blueprotobuf::SyncServerTime),
+    /// A sync dungeon data event.
+    SyncDungeonData(blueprotobuf::SyncDungeonData),
+    /// A sync dungeon dirty data event.
+    SyncDungeonDirtyData(blueprotobuf::SyncDungeonDirtyData),
     /// A sync to me delta info event.
     SyncToMeDeltaInfo(blueprotobuf::SyncToMeDeltaInfo),
     /// A sync near delta info event.
@@ -151,6 +158,8 @@ pub struct AppState {
     pub entity_cache: HashMap<i64, CachedEntity>,
     /// Latest captured detailed player data.
     pub playerdata_cache: Option<CachedPlayerData>,
+    /// battle state machine for objective/state driven resets.
+    pub battle_state: BattleStateMachine,
 }
 
 #[derive(Debug, Clone)]
@@ -175,11 +184,16 @@ pub struct LiveStateSnapshot {
 #[derive(Debug, Clone)]
 pub enum LiveControlCommand {
     StateEvent(StateEvent),
-    SubscribePlayerSkill { uid: i64, skill_type: String },
-    UnsubscribePlayerSkill { uid: i64, skill_type: String },
+    SubscribePlayerSkill {
+        uid: i64,
+        skill_type: String,
+    },
+    UnsubscribePlayerSkill {
+        uid: i64,
+        skill_type: String,
+    },
     SetBossOnlyDps(bool),
     SetDungeonSegmentsEnabled(bool),
-    ResetPlayerMetricsForSegment,
     SetEventUpdateRateMs(u64),
     SetMonitoredBuffs(Vec<i32>),
     SetMonitoredSkills(Vec<i32>),
@@ -225,6 +239,7 @@ impl AppState {
             server_clock_offset: 0,
             entity_cache: crate::database::load_initial_entity_cache(),
             playerdata_cache: None,
+            battle_state: BattleStateMachine::default(),
         }
     }
 
@@ -500,7 +515,11 @@ impl AppStateManager {
             .map_err(|_| "live runtime channel is unavailable".to_string())
     }
 
-    pub async fn handle_events_batch_with_state(&self, state: &mut AppState, events: Vec<StateEvent>) {
+    pub async fn handle_events_batch_with_state(
+        &self,
+        state: &mut AppState,
+        events: Vec<StateEvent>,
+    ) {
         if events.is_empty() {
             return;
         }
@@ -574,14 +593,22 @@ impl AppStateManager {
                 // No need to maintain a separate cache anymore
             }
             StateEvent::SyncContainerDirtyData(data) => {
-                self.process_sync_container_dirty_data(state, data)
-                    .await;
+                self.process_sync_container_dirty_data(state, data).await;
             }
             StateEvent::SyncServerTime(_data) => {
                 // todo: this is skipped, not sure what info it has
             }
+            StateEvent::SyncDungeonData(data) => {
+                self.process_sync_dungeon_data(state, data).await;
+                self.apply_battle_state_resets_if_needed(state).await;
+            }
+            StateEvent::SyncDungeonDirtyData(data) => {
+                self.process_sync_dungeon_dirty_data(state, data).await;
+                self.apply_battle_state_resets_if_needed(state).await;
+            }
             StateEvent::SyncToMeDeltaInfo(data) => {
                 self.process_sync_to_me_delta_info(state, data).await;
+                self.apply_battle_state_resets_if_needed(state).await;
                 // Note: Player names are automatically stored in the database via UpsertEntity tasks
                 // No need to maintain a separate cache anymore
             }
@@ -622,48 +649,10 @@ impl AppStateManager {
             }
             LiveControlCommand::SetDungeonSegmentsEnabled(enabled) => {
                 state.dungeon_segments_enabled = enabled;
-                let runtime = DungeonLogRuntime::new(state.dungeon_log.clone(), state.app_handle.clone());
+                let runtime =
+                    DungeonLogRuntime::new(state.dungeon_log.clone(), state.app_handle.clone());
                 let snapshot = runtime.snapshot();
                 dungeon_log::emit_if_changed(&runtime.app_handle, snapshot);
-            }
-            LiveControlCommand::ResetPlayerMetricsForSegment => {
-                let original_fight_start_ms = state.encounter.time_fight_start_ms;
-                let active_segment_name = dungeon_log::snapshot(&state.dungeon_log).and_then(|log| {
-                    log.segments
-                        .iter()
-                        .rev()
-                        .find(|s| s.ended_at_ms.is_none())
-                        .and_then(|s| s.boss_name.clone())
-                });
-
-                state.encounter.reset_combat_state();
-                state.skill_subscriptions.clear();
-                state.encounter.time_fight_start_ms = original_fight_start_ms;
-
-                if state.event_manager.should_emit_events() {
-                    if let Some(app_handle) = state.event_manager.get_app_handle() {
-                        let payload = crate::live::event_manager::PlayerMetricsResetPayload {
-                            segment_name: active_segment_name,
-                        };
-                        safe_emit(&app_handle, "reset-player-metrics", payload);
-
-                        let payload = crate::live::event_manager::EncounterUpdatePayload {
-                            header_info: crate::live::commands_models::HeaderInfo {
-                                total_dps: 0.0,
-                                total_dmg: 0,
-                                elapsed_ms: 0,
-                                fight_start_timestamp_ms: state.encounter.time_fight_start_ms,
-                                bosses: vec![],
-                                scene_id: state.encounter.current_scene_id,
-                                scene_name: state.encounter.current_scene_name.clone(),
-                                current_segment_type: None,
-                                current_segment_name: None,
-                            },
-                            is_paused: state.encounter.is_encounter_paused,
-                        };
-                        safe_emit(&app_handle, "encounter-update", payload);
-                    }
-                }
             }
             LiveControlCommand::SetEventUpdateRateMs(rate_ms) => {
                 state.event_update_rate_ms = rate_ms;
@@ -731,7 +720,8 @@ impl AppStateManager {
             duration: ((state
                 .encounter
                 .time_last_combat_packet_ms
-                .saturating_sub(state.encounter.time_fight_start_ms)) as f64)
+                .saturating_sub(state.encounter.time_fight_start_ms))
+                as f64)
                 / 1000.0,
             is_manually_reset: false,
             boss_names: defeated,
@@ -797,6 +787,7 @@ impl AppStateManager {
         // Clear skill subscriptions
         state.skill_subscriptions.clear();
         state.low_hp_bosses.clear();
+        state.battle_state = BattleStateMachine::default();
     }
 
     async fn snapshot_segment_and_reset_live_meter(&self, state: &mut AppState) {
@@ -1184,15 +1175,73 @@ impl AppStateManager {
         }
     }
 
+    async fn process_sync_dungeon_data(
+        &self,
+        state: &mut AppState,
+        sync_dungeon_data: blueprotobuf::SyncDungeonData,
+    ) {
+        use crate::live::opcodes_process::process_sync_dungeon_data;
+
+        let encounter_has_stats = state.encounter.total_dmg > 0
+            || state.encounter.total_heal > 0
+            || state
+                .encounter
+                .entity_uid_to_entity
+                .values()
+                .any(|e| e.damage.hits > 0 || e.healing.hits > 0 || e.taken.hits > 0);
+
+        if let Some(reason) = process_sync_dungeon_data(
+            &mut state.battle_state,
+            sync_dungeon_data,
+            encounter_has_stats,
+        ) {
+            info!(
+                target: "app::live",
+                "State layer applying reset from SyncDungeonData: {:?}",
+                reason
+            );
+            self.apply_reset_reason(state, reason).await;
+        }
+    }
+
+    async fn process_sync_dungeon_dirty_data(
+        &self,
+        state: &mut AppState,
+        sync_dungeon_dirty_data: blueprotobuf::SyncDungeonDirtyData,
+    ) {
+        use crate::live::opcodes_process::process_sync_dungeon_dirty_data;
+
+        let encounter_has_stats = state.encounter.total_dmg > 0
+            || state.encounter.total_heal > 0
+            || state
+                .encounter
+                .entity_uid_to_entity
+                .values()
+                .any(|e| e.damage.hits > 0 || e.healing.hits > 0 || e.taken.hits > 0);
+
+        if let Some(reason) = process_sync_dungeon_dirty_data(
+            &mut state.battle_state,
+            sync_dungeon_dirty_data,
+            encounter_has_stats,
+        ) {
+            info!(
+                target: "app::live",
+                "State layer applying reset from SyncDungeonDirtyData: {:?}",
+                reason
+            );
+            self.apply_reset_reason(state, reason).await;
+        }
+    }
+
     async fn process_sync_to_me_delta_info(
         &self,
         state: &mut AppState,
         sync_to_me_delta_info: blueprotobuf::SyncToMeDeltaInfo,
     ) {
-        use crate::live::opcodes_process::{process_sync_to_me_delta_info, parse_fight_resources};
         use crate::live::opcodes_models::attr_type::{
             ATTR_CD_ACCELERATE_PCT, ATTR_FIGHT_RESOURCES, ATTR_SKILL_CD, ATTR_SKILL_CD_PCT,
         };
+        use crate::live::opcodes_process::{parse_fight_resources, process_sync_to_me_delta_info};
 
         let skill_cds = sync_to_me_delta_info
             .delta_info
@@ -1222,7 +1271,8 @@ impl AppStateManager {
         let fight_res_values = if let Some(ref delta) = sync_to_me_delta_info.delta_info {
             if let Some(ref base) = delta.base_delta {
                 if let Some(ref col) = base.attrs {
-                    col.attrs.iter()
+                    col.attrs
+                        .iter()
                         .find(|a| a.id == Some(ATTR_FIGHT_RESOURCES))
                         .and_then(|a| a.raw_data.as_ref())
                         .and_then(|raw| parse_fight_resources(raw))
@@ -1243,12 +1293,14 @@ impl AppStateManager {
                 received_at: now,
             };
             state.fight_res_state = Some(new_state.clone());
-            
+
             if let Some(app_handle) = state.event_manager.get_app_handle() {
                 safe_emit(
                     &app_handle,
                     "fight-res-update",
-                    FightResourceUpdatePayload { fight_res: new_state },
+                    FightResourceUpdatePayload {
+                        fight_res: new_state,
+                    },
                 );
             }
         }
@@ -1311,8 +1363,7 @@ impl AppStateManager {
                 &mut state.ordered_buff_uuids,
                 &mut state.buff_order_dirty,
                 &mut state.server_clock_offset,
-            )
-            {
+            ) {
                 if let Some(app_handle) = state.event_manager.get_app_handle() {
                     safe_emit(
                         &app_handle,
@@ -1399,6 +1450,44 @@ impl AppStateManager {
         }
     }
 
+    async fn apply_reset_reason(&self, state: &mut AppState, reason: EncounterResetReason) {
+        let encounter_has_stats = state.encounter.total_dmg > 0
+            || state
+                .encounter
+                .entity_uid_to_entity
+                .values()
+                .any(|e| e.damage.hits > 0 || e.healing.hits > 0 || e.taken.hits > 0);
+        info!(
+            target: "app::live",
+            "Applying encounter reset due to rule: {:?} (has_stats={}, total_dmg={}, total_heal={})",
+            reason,
+            encounter_has_stats,
+            state.encounter.total_dmg,
+            state.encounter.total_heal
+        );
+        match reason {
+            EncounterResetReason::NewObjective
+            | EncounterResetReason::Wipe
+            | EncounterResetReason::Force
+            | EncounterResetReason::Restart
+            | EncounterResetReason::DungeonStateEnd => {
+                self.reset_encounter(state, false).await;
+            }
+        }
+    }
+
+    async fn apply_battle_state_resets_if_needed(&self, state: &mut AppState) {
+        if let Some(reason) = state.battle_state.check_deferred_calls() {
+            self.apply_reset_reason(state, reason).await;
+            return;
+        }
+
+        if let Some(reason) = state.battle_state.check_for_wipe(&mut state.active_buffs)
+        {
+            self.apply_reset_reason(state, reason).await;
+        }
+    }
+
     async fn reset_encounter(&self, state: &mut AppState, is_manual: bool) {
         // Persist dungeon segments if enabled
         if state.dungeon_segments_enabled {
@@ -1431,7 +1520,8 @@ impl AppStateManager {
             duration: ((state
                 .encounter
                 .time_last_combat_packet_ms
-                .saturating_sub(state.encounter.time_fight_start_ms)) as f64)
+                .saturating_sub(state.encounter.time_fight_start_ms))
+                as f64)
                 / 1000.0,
             is_manually_reset: is_manual,
             boss_names: defeated,
@@ -1499,7 +1589,11 @@ impl AppStateManager {
 
             if !state.monitored_buff_ids.is_empty() {
                 if let Some(app_handle) = state.event_manager.get_app_handle() {
-                    safe_emit(&app_handle, "buff-update", BuffUpdatePayload { buffs: Vec::new() });
+                    safe_emit(
+                        &app_handle,
+                        "buff-update",
+                        BuffUpdatePayload { buffs: Vec::new() },
+                    );
                 }
             }
 
@@ -1523,6 +1617,9 @@ impl AppStateManager {
 
         state.low_hp_bosses.clear();
         state.skill_subscriptions.clear();
+        if is_manual {
+            state.battle_state = BattleStateMachine::default();
+        }
     }
 
     pub async fn subscribe_player_skill(&self, uid: i64, skill_type: String) -> Result<(), String> {
@@ -1548,7 +1645,9 @@ impl AppStateManager {
     /// * `Option<String>` - The name of the player, or `None` if not found.
     #[allow(dead_code)]
     pub async fn get_player_name(&self, uid: i64) -> Option<String> {
-        crate::database::commands::get_name_by_uid(uid).ok().flatten()
+        crate::database::commands::get_name_by_uid(uid)
+            .ok()
+            .flatten()
     }
 
     /// Get recent players ordered by last seen (most recent first)
@@ -1608,10 +1707,6 @@ impl AppStateManager {
 
     pub async fn set_dungeon_segments_enabled(&self, enabled: bool) -> Result<(), String> {
         self.send_control(LiveControlCommand::SetDungeonSegmentsEnabled(enabled))
-    }
-
-    pub async fn reset_player_metrics_for_segment(&self) -> Result<(), String> {
-        self.send_control(LiveControlCommand::ResetPlayerMetricsForSegment)
     }
 
     pub async fn set_event_update_rate_ms(&self, rate_ms: u64) -> Result<(), String> {
@@ -1760,8 +1855,9 @@ fn process_buff_effect_bytes(
     let payload: Vec<BuffUpdateState> = ordered_buff_uuids
         .iter()
         .filter_map(|uuid| active_buffs.get(uuid))
-        .filter(|buff| { monitor_all_buff ||
-            monitored_base_ids.contains(&buff.base_id)
+        .filter(|buff| {
+            monitor_all_buff
+                || monitored_base_ids.contains(&buff.base_id)
                 || (buff.source_config_id != 0
                     && crate::live::buff_names::get_related_base_ids(buff.source_config_id)
                         .iter()
@@ -1934,55 +2030,57 @@ impl AppStateManager {
             // Collect subscribed players for later emission
             subscribed_players.push(entity_uid);
         }
-        let (final_header_info, boss_deaths) = if let Some((mut header_info, mut dead_bosses)) =
-            header_info_with_deaths
-        {
-            use std::collections::HashSet;
+        let (final_header_info, boss_deaths) =
+            if let Some((mut header_info, mut dead_bosses)) = header_info_with_deaths {
+                use std::collections::HashSet;
 
-            if let Some((segment_type, segment_name)) = &active_segment {
-                header_info.current_segment_type = Some(segment_type.clone());
-                header_info.current_segment_name = segment_name.clone();
-            } else {
-                header_info.current_segment_type = None;
-                header_info.current_segment_name = None;
-            }
+                if let Some((segment_type, segment_name)) = &active_segment {
+                    header_info.current_segment_type = Some(segment_type.clone());
+                    header_info.current_segment_name = segment_name.clone();
+                } else {
+                    header_info.current_segment_type = None;
+                    header_info.current_segment_name = None;
+                }
 
-            let mut dead_ids: HashSet<i64> = dead_bosses.iter().map(|(uid, _)| *uid).collect();
-            let current_time_ms = now_ms() as u128;
+                let mut dead_ids: HashSet<i64> = dead_bosses.iter().map(|(uid, _)| *uid).collect();
+                let current_time_ms = now_ms() as u128;
 
-            for boss in &mut header_info.bosses {
-                let hp_percent =
-                    if let (Some(curr_hp), Some(max_hp)) = (boss.current_hp, boss.max_hp) {
-                        if max_hp > 0 {
-                            curr_hp as f64 / max_hp as f64 * 100.0
+                for boss in &mut header_info.bosses {
+                    let hp_percent =
+                        if let (Some(curr_hp), Some(max_hp)) = (boss.current_hp, boss.max_hp) {
+                            if max_hp > 0 {
+                                curr_hp as f64 / max_hp as f64 * 100.0
+                            } else {
+                                0.0
+                            }
                         } else {
-                            0.0
+                            100.0
+                        };
+
+                    if hp_percent < 5.0 {
+                        let entry = state
+                            .low_hp_bosses
+                            .entry(boss.uid)
+                            .or_insert(current_time_ms);
+                        if current_time_ms.saturating_sub(*entry) >= 5_000 {
+                            if dead_ids.insert(boss.uid) {
+                                dead_bosses.push((boss.uid, boss.name.clone()));
+                            }
                         }
                     } else {
-                        100.0
-                    };
-
-                if hp_percent < 5.0 {
-                    let entry = state.low_hp_bosses.entry(boss.uid).or_insert(current_time_ms);
-                    if current_time_ms.saturating_sub(*entry) >= 5_000 {
-                        if dead_ids.insert(boss.uid) {
-                            dead_bosses.push((boss.uid, boss.name.clone()));
-                        }
+                        state.low_hp_bosses.remove(&boss.uid);
                     }
-                } else {
-                    state.low_hp_bosses.remove(&boss.uid);
+
+                    if dead_ids.contains(&boss.uid) {
+                        boss.current_hp = Some(0);
+                        state.low_hp_bosses.remove(&boss.uid);
+                    }
                 }
 
-                if dead_ids.contains(&boss.uid) {
-                    boss.current_hp = Some(0);
-                    state.low_hp_bosses.remove(&boss.uid);
-                }
-            }
-
-            (Some(header_info), dead_bosses)
-        } else {
-            (None, Vec::new())
-        };
+                (Some(header_info), dead_bosses)
+            } else {
+                (None, Vec::new())
+            };
 
         let skill_subscriptions_clone = state.skill_subscriptions.clone();
         let app_handle_opt = state.event_manager.get_app_handle();
@@ -2002,7 +2100,6 @@ impl AppStateManager {
                 for (boss_uid, boss_name) in boss_deaths {
                     let first_time = state.event_manager.emit_boss_death(boss_name, boss_uid);
                     if first_time {
-                        state.encounter.waiting_for_next_boss = true;
                         any_new_death = true;
                     }
                 }

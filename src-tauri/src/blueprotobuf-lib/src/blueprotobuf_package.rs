@@ -4173,6 +4173,8 @@ pub struct DungeonPlayerList {
 }
 #[derive(specta::Type, Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct DungeonRaidInfo {}
+#[derive(specta::Type, Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct DungeonAreaInfo {}
 #[derive(specta::Type, Clone, PartialEq, ::prost::Message)]
 pub struct DungeonRandomEntityConfigIdInfo {
     #[prost(map = "int64, int32", tag = "1")]
@@ -4290,7 +4292,9 @@ pub struct DungeonSyncData {
     pub dungeon_var_all: ::core::option::Option<DungeonVarAll>,
     #[prost(message, optional, tag = "23")]
     pub dungeon_raid_info: ::core::option::Option<DungeonRaidInfo>,
-    #[prost(enumeration = "EErrorCode", optional, tag = "24")]
+    #[prost(message, optional, tag = "24")]
+    pub dungeon_area_info: ::core::option::Option<DungeonAreaInfo>,
+    #[prost(enumeration = "EErrorCode", optional, tag = "25")]
     pub err_code: ::core::option::Option<i32>,
 }
 #[derive(specta::Type, Clone, PartialEq, ::prost::Message)]

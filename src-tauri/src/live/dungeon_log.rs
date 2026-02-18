@@ -1,9 +1,10 @@
-use log::{trace, warn};
+use log::{info, trace, warn};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, LazyLock, Mutex, MutexGuard};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager};
+use crate::live::opcodes_models::Encounter;
 
 /// Shared handle that can be stored inside Tauri state.
 pub type SharedDungeonLog = Arc<Mutex<DungeonLog>>;
@@ -294,6 +295,205 @@ pub enum CombatState {
 /// Creates a new shared dungeon log handle.
 pub fn create_shared_log() -> SharedDungeonLog {
     Arc::new(Mutex::new(DungeonLog::default()))
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EncounterResetReason {
+    NewObjective,
+    Wipe,
+    Force,
+    Restart,
+    DungeonStateEnd,
+}
+
+#[derive(Debug, Clone)]
+pub struct DungeonTargetEntry {
+    pub target_id: i32,
+    pub nums: i32,
+    pub complete: i32,
+    pub received_at: Instant,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct BattleStateMachine {
+    pub dungeon_target_history: VecDeque<DungeonTargetEntry>,
+    pub previous_dungeon_target: Option<DungeonTargetEntry>,
+    pub dungeon_state_history: VecDeque<i32>,
+    pub deferred_reset: Option<(Instant, EncounterResetReason)>,
+}
+
+impl BattleStateMachine {
+    pub fn record_dungeon_state(
+        &mut self,
+        dungeon_state: i32,
+        encounter_has_stats: bool,
+    ) -> Option<EncounterResetReason> {
+        let prev_state = self.dungeon_state_history.back().copied();
+        self.dungeon_state_history.push_back(dungeon_state);
+        if self.dungeon_state_history.len() > 300 {
+            self.dungeon_state_history.pop_front();
+        }
+
+        if prev_state == Some(dungeon_state) {
+            return None;
+        }
+
+        use blueprotobuf_lib::blueprotobuf::EDungeonState;
+        if dungeon_state == EDungeonState::DungeonStatePlaying as i32 {
+            let reason = if encounter_has_stats {
+                EncounterResetReason::Force
+            } else {
+                EncounterResetReason::NewObjective
+            };
+            info!(
+                target: "app::live",
+                "Reset rule matched: dungeon_state=Playing prev_state={:?} encounter_has_stats={} => {:?}",
+                prev_state,
+                encounter_has_stats,
+                reason
+            );
+            return Some(if encounter_has_stats {
+                EncounterResetReason::Force
+            } else {
+                EncounterResetReason::NewObjective
+            });
+        }
+        if dungeon_state == EDungeonState::DungeonStateEnd as i32 {
+            info!(
+                target: "app::live",
+                "Reset rule matched: dungeon_state=End prev_state={:?} => {:?}",
+                prev_state,
+                EncounterResetReason::DungeonStateEnd
+            );
+            return Some(EncounterResetReason::DungeonStateEnd);
+        }
+        if dungeon_state == EDungeonState::DungeonStateNull as i32 && encounter_has_stats {
+            info!(
+                target: "app::live",
+                "Reset rule matched: dungeon_state=Null prev_state={:?} encounter_has_stats=true => {:?}",
+                prev_state,
+                EncounterResetReason::Force
+            );
+            return Some(EncounterResetReason::Force);
+        }
+        None
+    }
+
+    pub fn record_dungeon_target(
+        &mut self,
+        target_id: i32,
+        nums: i32,
+        complete: i32,
+    ) -> Option<EncounterResetReason> {
+        let new_entry = DungeonTargetEntry {
+            target_id,
+            nums,
+            complete,
+            received_at: Instant::now(),
+        };
+        self.dungeon_target_history.push_back(new_entry.clone());
+        if self.dungeon_target_history.len() > 300 {
+            self.dungeon_target_history.pop_front();
+        }
+
+        if self.dungeon_target_history.len() > 2 && complete == 0 && nums == 0 {
+            if let (Some(first), Some(previous)) = (
+                self.dungeon_target_history.front(),
+                self.previous_dungeon_target.as_ref(),
+            ) {
+                if first.target_id != 0
+                    && previous.target_id != 0
+                    && previous.target_id != first.target_id
+                    && first.target_id == target_id
+                {
+                    info!(
+                        target: "app::live",
+                        "Reset rule matched: target_restart_loop first_target_id={} prev_target_id={} current_target_id={} complete={} nums={} => {:?}",
+                        first.target_id,
+                        previous.target_id,
+                        target_id,
+                        complete,
+                        nums,
+                        EncounterResetReason::Restart
+                    );
+                    self.previous_dungeon_target = Some(new_entry);
+                    self.deferred_reset = None;
+                    return Some(EncounterResetReason::Restart);
+                }
+            }
+        }
+
+        if let Some(previous) = self.previous_dungeon_target.as_ref() {
+            if previous.complete == 0 && complete == 0 && previous.target_id == target_id {
+                self.previous_dungeon_target = Some(new_entry);
+                return None;
+            }
+        }
+
+        self.previous_dungeon_target = Some(new_entry);
+        if complete == 0 && nums == 0 {
+            let trigger_at = Instant::now() + Duration::from_secs(1);
+            info!(
+                target: "app::live",
+                "Reset rule armed: target_new_objective target_id={} complete={} nums={} trigger_in_ms={} reason={:?}",
+                target_id,
+                complete,
+                nums,
+                1000,
+                EncounterResetReason::NewObjective
+            );
+            self.deferred_reset = Some((
+                trigger_at,
+                EncounterResetReason::NewObjective,
+            ));
+        } else if complete == 1 && nums > 0 {
+            info!(
+                target: "app::live",
+                "Reset deferred cleared: target_completed target_id={} complete={} nums={}",
+                target_id,
+                complete,
+                nums
+            );
+            self.deferred_reset = None;
+        }
+        None
+    }
+
+    pub fn check_deferred_calls(&mut self) -> Option<EncounterResetReason> {
+        if let Some((trigger_at, reason)) = self.deferred_reset {
+            if Instant::now() >= trigger_at {
+                self.deferred_reset = None;
+                info!(
+                    target: "app::live",
+                    "Reset rule matched: deferred_timer_elapsed => {:?}",
+                    reason
+                );
+                return Some(reason);
+            }
+        }
+        None
+    }
+
+    pub fn check_for_wipe(
+        &mut self,
+        active_buffs: &mut HashMap<i32, crate::live::state::ActiveBuff>,
+    ) -> Option<EncounterResetReason> {
+        if let Some(buff_uuid) = active_buffs
+            .iter()
+            .find_map(|(uuid, buff)| (buff.base_id == 510072).then_some(*uuid))
+        {
+            active_buffs.remove(&buff_uuid);
+            info!(
+                target: "app::live",
+                "Reset rule matched: wipe_buff_detected base_id=510072 buff_uuid={} => {:?}",
+                buff_uuid,
+                EncounterResetReason::Wipe
+            );
+            return Some(EncounterResetReason::Wipe);
+        }
+
+        None
+    }
 }
 
 #[cfg(test)]

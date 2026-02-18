@@ -30,10 +30,6 @@ pub struct Encounter {
     // DB death inserts. We no longer use death tracking for wipe detection; revives
     // are tracked for UI purposes while death DB inserts are still written.
     pub last_death_db_ms: HashMap<i64, u128>,
-    // Dungeon segment tracking: set to true when a boss dies, cleared when next boss is hit
-    pub waiting_for_next_boss: bool,
-    // Track the last active segment type to detect transitions for meter resets
-    pub last_active_segment_type: Option<String>, // "boss" or "trash"
 }
 
 // Use an async-aware RwLock so readers don't block the tokio runtime threads.
@@ -250,7 +246,7 @@ impl AttrType {
             AttrType::BuffSlot2 => attr_type::ATTR_BUFF_SLOT_2,
             AttrType::Unknown(id) => id,
         }
-    }
+}
 }
 
 impl AttrValue {
@@ -456,39 +452,6 @@ impl Encounter {
         self.last_revive_ms.clear();
         self.last_death_db_ms.clear();
 
-        self.waiting_for_next_boss = false;
-        self.last_active_segment_type = None;
-
-    }
-    pub fn reset_segment_metrics(&mut self) {
-        // Reset encounter-level combat totals (but NOT timestamps - caller preserves those)
-        self.total_dmg = 0;
-        self.total_heal = 0;
-
-        // Reset per-entity combat stats while preserving identity AND HP attributes
-        for entity in self.entity_uid_to_entity.values_mut() {
-            // Damage
-            entity.damage = CombatStats::default();
-            entity.skill_uid_to_dmg_skill.clear();
-            entity.dmg_to_target.clear();
-            entity.skill_dmg_to_target.clear();
-            entity.active_dmg_time_ms = 0;
-            entity.last_dmg_timestamp_ms = None;
-
-            // NOTE: Do NOT clear HP attributes here - we want to preserve boss HP
-            // for display when switching segments within the same encounter
-
-            // Healing
-            entity.healing = CombatStats::default();
-            entity.skill_uid_to_heal_skill.clear();
-            entity.skill_heal_to_target.clear();
-
-            // Taken
-            entity.taken = CombatStats::default();
-            entity.skill_uid_to_taken_skill.clear();
-        }
-
-        // Don't reset attempt tracking or segment type - this is just a metrics reset
     }
 }
 

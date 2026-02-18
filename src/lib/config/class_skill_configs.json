@@ -3,7 +3,7 @@
     "classKey": "wind_knight",
     "className": "青岚骑士",
     "classId": 4,
-    "defaultMonitoredBuffIds": [2205561, 31201, 2205211, 2205401, 2205134, 2205521, 31901],
+    "defaultMonitoredBuffIds": [510072, 2205561, 31201, 2205211, 2205401, 2205134, 2205521, 31901],
     "derivations": [
       {
         "sourceSkillId": 1425,
@@ -118,7 +118,7 @@
     "classKey": "frost_mage",
     "className": "冰法",
     "classId": 2,
-    "defaultMonitoredBuffIds": [27007, 2204191],
+    "defaultMonitoredBuffIds": [510072, 27007, 2204191],
     "derivations": [
       {
         "sourceSkillId": 1244,

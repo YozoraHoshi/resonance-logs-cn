@@ -1,6 +1,6 @@
 // NOTE: opcodes_process works on Encounter directly; avoid importing opcodes_models at top-level.
 use crate::database::{CachedEntity, CachedPlayerData, now_ms};
-use crate::live::dungeon_log::{self, DungeonLogRuntime};
+use crate::live::dungeon_log::{self, BattleStateMachine, DungeonLogRuntime, EncounterResetReason};
 use crate::live::opcodes_models::class::{
     ClassSpec, get_class_id_from_spec, get_class_spec_from_skill_id,
 };
@@ -8,7 +8,7 @@ use crate::live::opcodes_models::{AttrType, AttrValue, Encounter, Entity, Skill,
 use crate::live::recount_names;
 use blueprotobuf_lib::blueprotobuf;
 use blueprotobuf_lib::blueprotobuf::{Attr, EDamageType, EEntityType};
-use log::info;
+use log::{info, warn};
 use std::collections::HashMap;
 use bytes::Buf;
 use std::default::Default;
@@ -398,6 +398,122 @@ pub fn process_sync_container_dirty_data(
     // Incremental attribute updates come through process_player_attrs via AoiSyncDelta
     // which handles attr packets with proper typing
     Some(())
+}
+
+pub fn process_sync_dungeon_data(
+    battle_state: &mut BattleStateMachine,
+    sync_dungeon_data: blueprotobuf::SyncDungeonData,
+    encounter_has_stats: bool,
+) -> Option<EncounterResetReason> {
+    let mut reset_reason = None;
+    info!(
+        target: "app::live",
+        "Processing SyncDungeonData (encounter_has_stats={})",
+        encounter_has_stats
+    );
+    if let Some(v_data) = sync_dungeon_data.v_data {
+        if let Some(flow_info) = v_data.flow_info {
+            if let Some(state) = flow_info.state {
+                info!(target: "app::live", "SyncDungeonData flow_info.state={}", state);
+                reset_reason = battle_state.record_dungeon_state(state, encounter_has_stats);
+            }
+        }
+
+        if let Some(target) = v_data.target {
+            for (_, target_data) in target.target_data {
+                let target_id = target_data.target_id.unwrap_or_default();
+                let nums = target_data.nums.unwrap_or_default();
+                let complete = target_data.complete.unwrap_or_default();
+                info!(
+                    target: "app::live",
+                    "SyncDungeonData target entry target_id={} complete={} nums={}",
+                    target_id,
+                    complete,
+                    nums
+                );
+                if let Some(reason) = battle_state.record_dungeon_target(target_id, nums, complete) {
+                    reset_reason = Some(reason);
+                }
+            }
+        }
+    }
+
+    if let Some(reason) = reset_reason {
+        info!(target: "app::live", "SyncDungeonData produced reset reason: {:?}", reason);
+    }
+    reset_reason
+}
+
+pub fn process_sync_dungeon_dirty_data(
+    battle_state: &mut BattleStateMachine,
+    sync_dungeon_dirty_data: blueprotobuf::SyncDungeonDirtyData,
+    encounter_has_stats: bool,
+) -> Option<EncounterResetReason> {
+    info!(
+        target: "app::live",
+        "Processing SyncDungeonDirtyData (encounter_has_stats={})",
+        encounter_has_stats
+    );
+    let Some(v_data) = sync_dungeon_dirty_data.v_data else {
+        warn!(target: "app::live", "SyncDungeonDirtyData missing v_data");
+        return None;
+    };
+    let Some(bytes) = v_data.buffer else {
+        warn!(target: "app::live", "SyncDungeonDirtyData missing buffer");
+        return None;
+    };
+    info!(
+        target: "app::live",
+        "SyncDungeonDirtyData buffer length={} bytes",
+        bytes.len()
+    );
+    let dirty_sync = match crate::live::dungeon_dirty_blob::parse_dirty_dungeon_data(bytes.as_slice())
+    {
+        Ok(v) => v,
+        Err(e) => {
+            warn!(
+                target: "app::live",
+                "Failed to decode dirty dungeon blob from buffer: {}",
+                e
+            );
+            return None;
+        }
+    };
+
+    let mut reset_reason = None;
+    if let Some(state) = dirty_sync.flow_state {
+        info!(
+            target: "app::live",
+            "SyncDungeonDirtyData flow_info.state={}",
+            state
+        );
+        reset_reason = battle_state.record_dungeon_state(state, encounter_has_stats);
+    }
+
+    for target_data in dirty_sync.targets {
+        let target_id = target_data.target_id;
+        let nums = target_data.nums;
+        let complete = target_data.complete;
+        info!(
+            target: "app::live",
+            "SyncDungeonDirtyData target entry target_id={} complete={} nums={}",
+            target_id,
+            complete,
+            nums
+        );
+        if let Some(reason) = battle_state.record_dungeon_target(target_id, nums, complete) {
+            reset_reason = Some(reason);
+        }
+    }
+
+    if let Some(reason) = reset_reason {
+        info!(
+            target: "app::live",
+            "SyncDungeonDirtyData produced reset reason: {:?}",
+            reason
+        );
+    }
+    reset_reason
 }
 
 pub fn process_sync_to_me_delta_info(
@@ -806,57 +922,6 @@ pub fn process_aoi_sync_delta(
                 // Persist segments if a boss died or a new boss started (implies previous segment closed)
                 if boss_died || new_boss_started {
                     dungeon_log::persist_segments(&runtime.shared_log, false);
-                }
-
-                // Check for segment type transitions and reset metrics if needed
-                // Prioritize open boss segments over trash - during a boss fight with adds,
-                // we don't want to switch to "trash" just because trash mob damage occurred.
-                let current_segment_type =
-                    dungeon_log::snapshot(&runtime.shared_log).and_then(|log| {
-                        // First check for any open boss segment
-                        let open_boss = log.segments.iter().rev().find(|s| {
-                            s.segment_type == dungeon_log::SegmentType::Boss
-                                && s.ended_at_ms.is_none()
-                        });
-                        if open_boss.is_some() {
-                            return Some("boss".to_string());
-                        }
-                        // Fall back to any open segment (trash)
-                        log.segments
-                            .iter()
-                            .rev()
-                            .find(|s| s.ended_at_ms.is_none())
-                            .map(|s| match s.segment_type {
-                                dungeon_log::SegmentType::Boss => "boss".to_string(),
-                                dungeon_log::SegmentType::Trash => "trash".to_string(),
-                            })
-                    });
-
-                // If segment type changed, reset the live meter
-                if let Some(current_type) = &current_segment_type {
-                    if encounter.last_active_segment_type.as_ref() != Some(current_type) {
-                        info!(
-                            "Segment type changed from {:?} to {}, resetting live meter",
-                            encounter.last_active_segment_type, current_type
-                        );
-
-                        // Reset only player metrics, preserving boss HP attributes
-                        // so the boss health bar remains visible during segment switches
-                        encounter.reset_segment_metrics();
-
-                        // Update the last segment type
-                        encounter.last_active_segment_type = Some(current_type.clone());
-                    }
-                }
-
-                // If a boss just died, set the waiting flag
-                if boss_died {
-                    encounter.waiting_for_next_boss = true;
-                }
-
-                // If a new boss started while we were waiting, clear the waiting flag
-                if new_boss_started && encounter.waiting_for_next_boss {
-                    encounter.waiting_for_next_boss = false;
                 }
             }
         }

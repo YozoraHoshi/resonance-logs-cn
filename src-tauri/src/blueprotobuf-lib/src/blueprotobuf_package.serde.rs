@@ -21063,6 +21063,77 @@ impl<'de> serde::Deserialize<'de> for DungeonRaidInfo {
         deserializer.deserialize_struct("blueprotobuf_package.DungeonRaidInfo", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for DungeonAreaInfo {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let len = 0;
+        let struct_ser = serializer.serialize_struct("blueprotobuf_package.DungeonAreaInfo", len)?;
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for DungeonAreaInfo {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                            Err(serde::de::Error::unknown_field(value, FIELDS))
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = DungeonAreaInfo;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct blueprotobuf_package.DungeonAreaInfo")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DungeonAreaInfo, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                while map_.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                }
+                Ok(DungeonAreaInfo {
+                })
+            }
+        }
+        deserializer.deserialize_struct("blueprotobuf_package.DungeonAreaInfo", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for DungeonRandomEntityConfigIdInfo {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -21928,6 +21999,9 @@ impl serde::Serialize for DungeonSyncData {
         if self.dungeon_raid_info.is_some() {
             len += 1;
         }
+        if self.dungeon_area_info.is_some() {
+            len += 1;
+        }
         if self.err_code.is_some() {
             len += 1;
         }
@@ -22003,6 +22077,9 @@ impl serde::Serialize for DungeonSyncData {
         if let Some(v) = self.dungeon_raid_info.as_ref() {
             struct_ser.serialize_field("DungeonRaidInfo", v)?;
         }
+        if let Some(v) = self.dungeon_area_info.as_ref() {
+            struct_ser.serialize_field("DungeonAreaInfo", v)?;
+        }
         if let Some(v) = self.err_code.as_ref() {
             let v = EErrorCode::try_from(*v)
                 .map_err(|_| serde::ser::Error::custom(format!("Invalid variant {}", *v)))?;
@@ -22041,6 +22118,7 @@ impl<'de> serde::Deserialize<'de> for DungeonSyncData {
             "DungeonSceneInfo",
             "DungeonVarAll",
             "DungeonRaidInfo",
+            "DungeonAreaInfo",
             "ErrCode",
         ];
 
@@ -22069,6 +22147,7 @@ impl<'de> serde::Deserialize<'de> for DungeonSyncData {
             DungeonSceneInfo,
             DungeonVarAll,
             DungeonRaidInfo,
+            DungeonAreaInfo,
             ErrCode,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -22114,6 +22193,7 @@ impl<'de> serde::Deserialize<'de> for DungeonSyncData {
                             "DungeonSceneInfo" => Ok(GeneratedField::DungeonSceneInfo),
                             "DungeonVarAll" => Ok(GeneratedField::DungeonVarAll),
                             "DungeonRaidInfo" => Ok(GeneratedField::DungeonRaidInfo),
+                            "DungeonAreaInfo" => Ok(GeneratedField::DungeonAreaInfo),
                             "ErrCode" => Ok(GeneratedField::ErrCode),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -22157,6 +22237,7 @@ impl<'de> serde::Deserialize<'de> for DungeonSyncData {
                 let mut dungeon_scene_info__ = None;
                 let mut dungeon_var_all__ = None;
                 let mut dungeon_raid_info__ = None;
+                let mut dungeon_area_info__ = None;
                 let mut err_code__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
@@ -22300,6 +22381,12 @@ impl<'de> serde::Deserialize<'de> for DungeonSyncData {
                             }
                             dungeon_raid_info__ = map_.next_value()?;
                         }
+                        GeneratedField::DungeonAreaInfo => {
+                            if dungeon_area_info__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("DungeonAreaInfo"));
+                            }
+                            dungeon_area_info__ = map_.next_value()?;
+                        }
                         GeneratedField::ErrCode => {
                             if err_code__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("ErrCode"));
@@ -22332,6 +22419,7 @@ impl<'de> serde::Deserialize<'de> for DungeonSyncData {
                     dungeon_scene_info: dungeon_scene_info__,
                     dungeon_var_all: dungeon_var_all__,
                     dungeon_raid_info: dungeon_raid_info__,
+                    dungeon_area_info: dungeon_area_info__,
                     err_code: err_code__,
                 })
             }

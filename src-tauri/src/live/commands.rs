@@ -261,28 +261,6 @@ pub async fn toggle_pause_encounter(
     Ok(())
 }
 
-/// Resets player metrics for the live meter without ending the encounter.
-/// This is used for segment transitions to clear UI data.
-///
-/// # Arguments
-///
-/// * `state_manager` - The state manager.
-///
-/// # Returns
-///
-/// * `Result<(), String>` - An empty result.
-#[tauri::command]
-#[specta::specta]
-pub async fn reset_player_metrics(
-    state_manager: tauri::State<'_, AppStateManager>,
-) -> Result<(), String> {
-    state_manager
-        .reset_player_metrics_for_segment()
-        .await?;
-    info!("Player metrics reset for segment transition");
-    Ok(())
-}
-
 /// Sets the event update rate in milliseconds.
 ///
 /// # Arguments

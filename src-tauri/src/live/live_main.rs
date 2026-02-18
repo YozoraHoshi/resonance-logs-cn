@@ -153,6 +153,58 @@ pub async fn start(app_handle: AppHandle) {
                         }
                     }
                 }
+                packets::opcodes::Pkt::SyncDungeonData => {
+                    info!(target: "app::live", "Received SyncDungeonData packet");
+                    match blueprotobuf::SyncDungeonData::decode(data) {
+                        Ok(v) => {
+                            let has_flow = v
+                                .v_data
+                                .as_ref()
+                                .and_then(|d| d.flow_info.as_ref())
+                                .is_some();
+                            let target_count = v
+                                .v_data
+                                .as_ref()
+                                .and_then(|d| d.target.as_ref())
+                                .map(|t| t.target_data.len())
+                                .unwrap_or(0);
+                            info!(
+                                target: "app::live",
+                                "Decoded SyncDungeonData (has_flow_info={}, target_entries={})",
+                                has_flow,
+                                target_count
+                            );
+                            Some(StateEvent::SyncDungeonData(v))
+                        }
+                        Err(e) => {
+                            warn!("Error decoding SyncDungeonData.. ignoring: {e}");
+                            None
+                        }
+                    }
+                }
+                packets::opcodes::Pkt::SyncDungeonDirtyData => {
+                    info!(target: "app::live", "Received SyncDungeonDirtyData packet");
+                    match blueprotobuf::SyncDungeonDirtyData::decode(data) {
+                        Ok(v) => {
+                            let buffer_len = v
+                                .v_data
+                                .as_ref()
+                                .and_then(|s| s.buffer.as_ref())
+                                .map(|b| b.len())
+                                .unwrap_or(0);
+                            info!(
+                                target: "app::live",
+                                "Decoded SyncDungeonDirtyData (buffer_len={})",
+                                buffer_len
+                            );
+                            Some(StateEvent::SyncDungeonDirtyData(v))
+                        }
+                        Err(e) => {
+                            warn!("Error decoding SyncDungeonDirtyData.. ignoring: {e}");
+                            None
+                        }
+                    }
+                }
                 packets::opcodes::Pkt::SyncToMeDeltaInfo => {
                     match blueprotobuf::SyncToMeDeltaInfo::decode(data) {
                         Ok(v) => Some(StateEvent::SyncToMeDeltaInfo(v)),

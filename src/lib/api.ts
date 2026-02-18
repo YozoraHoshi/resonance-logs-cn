@@ -201,12 +201,6 @@ export const onTankedSkillsUpdate = makeSkillsUpdateFilter("tanked");
 export const onResetEncounter = (handler: () => void): Promise<UnlistenFn> =>
   listen("reset-encounter", handler);
 
-export type PlayerMetricsResetPayload = {
-  segmentName?: string | null;
-};
-export const onResetPlayerMetrics = (handler: (event: Event<PlayerMetricsResetPayload>) => void): Promise<UnlistenFn> =>
-  listen<PlayerMetricsResetPayload>("reset-player-metrics", handler);
-
 export const onPauseEncounter = (handler: (event: Event<boolean>) => void): Promise<UnlistenFn> =>
   listen<boolean>("pause-encounter", handler);
 
@@ -228,7 +222,6 @@ export const onBuffUpdate = (
 
 export const resetEncounter = (): Promise<Result<null, string>> => commands.resetEncounter();
 export const togglePauseEncounter = (): Promise<Result<null, string>> => commands.togglePauseEncounter();
-export const resetPlayerMetrics = (): Promise<Result<null, string>> => commands.resetPlayerMetrics();
 export const enableBlur = (): Promise<void> => commands.enableBlur();
 export const disableBlur = (): Promise<void> => commands.disableBlur();
 
