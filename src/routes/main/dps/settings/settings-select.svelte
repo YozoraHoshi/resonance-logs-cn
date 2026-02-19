@@ -1,4 +1,11 @@
 <script lang="ts">
+  type SettingsSelectOption =
+    | string
+    | {
+        label: string;
+        value: string;
+      };
+
   let {
     label = "",
     description = "",
@@ -8,7 +15,7 @@
     label: string;
     description?: string | undefined;
     selected: string;
-    values: string[];
+    values: SettingsSelectOption[];
   } = $props();
 </script>
 
@@ -23,15 +30,18 @@
     </div>
     <div class="flex flex-wrap gap-2">
       {#each values as value (value)}
+        {@const option = typeof value === "string"
+          ? { label: value, value }
+          : value}
         <button
           type="button"
-          onclick={() => selected = value}
-          class="px-3 py-1.5 rounded-md text-xs font-medium transition-all {selected === value
+          onclick={() => selected = option.value}
+          class="px-3 py-1.5 rounded-md text-xs font-medium transition-all {selected === option.value
             ? 'bg-muted text-foreground shadow-sm border border-border'
             : 'bg-popover/50 text-muted-foreground hover:bg-popover/70 hover:text-foreground border border-border/60'}"
-          style="background: {selected === value ? 'var(--muted)' : 'color-mix(in oklab, var(--popover) 50%, transparent)'}; color: {selected === value ? 'var(--foreground)' : 'var(--muted-foreground)'}; border-color: var(--border);"
+          style="background: {selected === option.value ? 'var(--muted)' : 'color-mix(in oklab, var(--popover) 50%, transparent)'}; color: {selected === option.value ? 'var(--foreground)' : 'var(--muted-foreground)'}; border-color: var(--border);"
         >
-          {value}
+          {option.label}
         </button>
       {/each}
     </div>

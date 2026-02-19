@@ -78,11 +78,11 @@
           <SettingsSelect
             bind:selected={SETTINGS.live.general.state.showYourName}
             values={[
-              "显示你的名称",
-              "显示你的职业",
-              "显示你的名称 - 职业",
-              "显示你的名称 - 专精",
-              "隐藏你的名称",
+              { label: "显示你的名称", value: "Show Your Name" },
+              { label: "显示你的职业", value: "Show Your Class" },
+              { label: "显示你的名称 - 职业", value: "Show Your Name - Class" },
+              { label: "显示你的名称 - 专精", value: "Show Your Name - Spec" },
+              { label: "隐藏你的名称", value: "Hide Your Name" },
             ]}
             label="显示你的名称"
             description="“显示你的职业”会用职业替代你的名称；“名称 - 职业/专精”会同时显示两者。"
@@ -90,11 +90,11 @@
           <SettingsSelect
             bind:selected={SETTINGS.live.general.state.showOthersName}
             values={[
-              "显示他人名称",
-              "显示他人职业",
-              "显示他人名称 - 职业",
-              "显示他人名称 - 专精",
-              "隐藏他人名称",
+              { label: "显示他人名称", value: "Show Others' Name" },
+              { label: "显示他人职业", value: "Show Others' Class" },
+              { label: "显示他人名称 - 职业", value: "Show Others' Name - Class" },
+              { label: "显示他人名称 - 专精", value: "Show Others' Name - Spec" },
+              { label: "隐藏他人名称", value: "Hide Others' Name" },
             ]}
             label="显示他人名称"
             description="“显示他人职业”会用职业替代他人名称；“名称 - 职业/专精”会同时显示两者。"
@@ -155,11 +155,6 @@
             description="将 DPS 显示为 5k、50k 等"
           />
           <!-- <SettingsSwitch bind:checked={SETTINGS.live.general.state.dungeonSegmentsEnabled} label="Dungeon Segments" description="Persist a dungeon-wide log with boss and trash segments" /> -->
-          <SettingsSwitch
-            bind:checked={SETTINGS.live.general.state.useDummyData}
-            label="使用模拟数据"
-            description="向实时统计注入模拟玩家数据（用于测试与预览）"
-          />
           <SettingsSwitch
             bind:checked={SETTINGS.live.general.state.wipeDetection}
             label="团灭检测"

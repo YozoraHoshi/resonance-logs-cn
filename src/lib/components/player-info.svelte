@@ -5,6 +5,8 @@
   import { SETTINGS } from "$lib/settings-store";
   import { copyToClipboard, getClassIcon, tooltip } from "$lib/utils.svelte";
   import AbbreviatedNumber from "./abbreviated-number.svelte";
+  import { normalizeNameDisplaySetting } from "$lib/name-display";
+  import { formatClassSpecLabel, toClassLabel } from "$lib/class-labels";
 
   let {
     className = "",
@@ -26,21 +28,25 @@
 
   // Derived helpers
   const isYou = $derived(name?.includes("You") ?? false);
-  const classDisplay = $derived(`${className}${classSpecName ? "-" : ""}${classSpecName}`);
+  const classDisplay = $derived(
+    formatClassSpecLabel(className, classSpecName) || "未知职业",
+  );
 
   const nameDisplay = $derived(() => {
     const base = name ? name : `#${uid}`;
     if (isYou) {
-      if (SETTINGS_YOUR_NAME === "Show Your Class") {
-        return `${classDisplay} (You)`;
-      } else if (SETTINGS_YOUR_NAME === "Hide Your Name") {
+      const yourSetting = normalizeNameDisplaySetting(SETTINGS_YOUR_NAME);
+      if (yourSetting === "Show Your Class") {
+        return `${toClassLabel(className)} (You)`;
+      } else if (yourSetting === "Hide Your Name") {
         return "Hidden Name (You)";
       }
       return base;
     } else {
-      if (SETTINGS_OTHERS_NAME === "Show Others' Class") {
-        return classDisplay;
-      } else if (SETTINGS_OTHERS_NAME === "Hide Others' Name") {
+      const othersSetting = normalizeNameDisplaySetting(SETTINGS_OTHERS_NAME);
+      if (othersSetting === "Show Others' Class") {
+        return toClassLabel(className);
+      } else if (othersSetting === "Hide Others' Name") {
         return "Hidden Name";
       }
       return base;
@@ -49,11 +55,13 @@
 
   const classIconDisplay = $derived(() => {
     if (isYou) {
-      if (SETTINGS_YOUR_NAME === "Hide Your Name") {
+      if (normalizeNameDisplaySetting(SETTINGS_YOUR_NAME) === "Hide Your Name") {
         return "blank";
       }
     } else {
-      if (SETTINGS_OTHERS_NAME === "Hide Others' Name") {
+      if (
+        normalizeNameDisplaySetting(SETTINGS_OTHERS_NAME) === "Hide Others' Name"
+      ) {
         return "blank";
       }
     }

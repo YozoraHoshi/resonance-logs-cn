@@ -24,6 +24,7 @@
     type RecountGroup,
     type SkillDisplayRow,
   } from "$lib/config/recount-table";
+  import { formatClassSpecLabel } from "$lib/class-labels";
 
   type HistorySkillType = "dps" | "heal" | "tanked";
 
@@ -71,6 +72,7 @@
   let skillType = $derived(($page.url.searchParams.get("skillType") ?? "dps") as HistorySkillType);
 
   let encounter = $state<EncounterSummaryDto | null>(null);
+  let localPlayerUid = $state<number | null>(null);
   let rawEntities = $state<RawEntityData[]>([]);
   let players = $state<HistoryPlayerRow[]>([]);
   let error = $state<string | null>(null);
@@ -97,7 +99,11 @@
 
   let encounterDurationMinutes = $derived.by(() => Math.floor(encounterDurationSeconds / 60));
 
-  function buildHistoryPlayers(entities: RawEntityData[], durationSeconds: number): HistoryPlayerRow[] {
+  function buildHistoryPlayers(
+    entities: RawEntityData[],
+    durationSeconds: number,
+    localUid: number | null,
+  ): HistoryPlayerRow[] {
     const elapsedMs = Math.max(1, Math.floor(durationSeconds * 1000));
     const source = {
       entities,
@@ -124,10 +130,10 @@
         return {
           uid: entity.uid,
           name: entity.name || `#${entity.uid}`,
-          isLocalPlayer: false,
+          isLocalPlayer: localUid !== null && entity.uid === localUid,
           className,
           classSpecName,
-          classDisplay: className || "未知职业",
+          classDisplay: formatClassSpecLabel(className, classSpecName) || "未知职业",
           abilityScore: entity.abilityScore || 0,
           totalDmg: dps?.totalDmg ?? 0,
           dps: dps?.dps ?? 0,
@@ -310,31 +316,39 @@
     if (!encounterId) return;
     error = null;
     expandedGroups = new Set<number>();
+    try {
+      const [encounterRes, entitiesRes] = await Promise.all([
+        commands.getEncounterById(encounterId),
+        commands.getEncounterEntitiesRaw(encounterId),
+      ]);
 
-    const [encounterRes, entitiesRes] = await Promise.all([
-      commands.getEncounterById(encounterId),
-      commands.getEncounterEntitiesRaw(encounterId),
-    ]);
+      if (encounterRes.status !== "ok") {
+        error = String(encounterRes.error);
+        return;
+      }
+      if (entitiesRes.status !== "ok") {
+        error = String(entitiesRes.error);
+        return;
+      }
 
-    if (encounterRes.status !== "ok") {
-      error = String(encounterRes.error);
-      return;
+      encounter = encounterRes.data;
+      localPlayerUid =
+        (encounterRes.data as { localPlayerId?: number | null }).localPlayerId ??
+        null;
+      rawEntities = entitiesRes.data;
+      const durationSeconds =
+        encounterRes.data.duration > 0
+          ? Math.max(1, encounterRes.data.duration)
+          : Math.max(
+              1,
+              ((encounterRes.data.endedAtMs ?? Date.now()) -
+                encounterRes.data.startedAtMs) /
+                1000,
+            );
+      players = buildHistoryPlayers(rawEntities, durationSeconds, localPlayerUid);
+    } catch (err) {
+      error = err instanceof Error ? err.message : String(err);
     }
-    if (entitiesRes.status !== "ok") {
-      error = String(entitiesRes.error);
-      return;
-    }
-
-    encounter = encounterRes.data;
-    rawEntities = entitiesRes.data;
-    const durationSeconds =
-      encounterRes.data.duration > 0
-        ? Math.max(1, encounterRes.data.duration)
-        : Math.max(
-            1,
-            ((encounterRes.data.endedAtMs ?? Date.now()) - encounterRes.data.startedAtMs) / 1000,
-          );
-    players = buildHistoryPlayers(rawEntities, durationSeconds);
   }
 
   function viewPlayerSkills(playerUid: number, type = "dps") {
@@ -618,14 +632,18 @@
                       {@attach tooltip(() => `UID: #${p.uid}`)}
                     >
                       {#if p.abilityScore > 0}
-                        {#if SETTINGS.history.general.state.shortenAbilityScore}
-                          <span class="text-muted-foreground"
-                            ><AbbreviatedNumber num={p.abilityScore} /></span
-                          >
-                        {:else}
-                          <span class="text-muted-foreground"
-                            >{p.abilityScore}</span
-                          >
+                        {#if p.isLocalPlayer
+                          ? SETTINGS.history.general.state.showYourAbilityScore
+                          : SETTINGS.history.general.state.showOthersAbilityScore}
+                          {#if SETTINGS.history.general.state.shortenAbilityScore}
+                            <span class="text-muted-foreground"
+                              ><AbbreviatedNumber num={p.abilityScore} /></span
+                            >
+                          {:else}
+                            <span class="text-muted-foreground"
+                              >{p.abilityScore}</span
+                            >
+                          {/if}
                         {/if}
                       {/if}
                       {getDisplayName({

@@ -8,6 +8,7 @@
   import { historyDpsSkillColumns } from "$lib/column-data";
   import AbbreviatedNumber from "$lib/components/abbreviated-number.svelte";
   import PercentFormat from "$lib/components/percent-format.svelte";
+  import { normalizeNameDisplaySetting } from "$lib/name-display";
 
   const playerUid = Number(page.url.searchParams.get("playerUid") ?? "-1");
 
@@ -128,11 +129,14 @@
     <tbody>
       {#each sortedSkillRows as skill (skill.skillId)}
         {#if currPlayer}
-          {@const className = currPlayer.name.includes("You")
-            ? SETTINGS_YOUR_NAME !== "Hide Your Name"
+          {@const isLocalPlayer = liveData?.localPlayerUid != null &&
+            currPlayer.uid === liveData.localPlayerUid}
+          {@const className = isLocalPlayer
+            ? normalizeNameDisplaySetting(SETTINGS_YOUR_NAME) !== "Hide Your Name"
               ? currPlayer.className
               : ""
-            : SETTINGS_OTHERS_NAME !== "Hide Others' Name"
+            : normalizeNameDisplaySetting(SETTINGS_OTHERS_NAME) !==
+                "Hide Others' Name"
               ? currPlayer.className
               : ""}
           <tr

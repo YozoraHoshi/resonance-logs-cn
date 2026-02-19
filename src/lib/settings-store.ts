@@ -217,7 +217,6 @@ const DEFAULT_GENERAL_SETTINGS = {
   bossOnlyDps: false,
   dungeonSegmentsEnabled: false,
   wipeDetection: true,
-  useDummyData: false,
   eventUpdateRateMs: 200,
 };
 

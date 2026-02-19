@@ -34,7 +34,6 @@
     cleanupStores,
     setLiveDungeonLog,
     clearLiveDungeonLog,
-    injectDummyData,
   } from "$lib/stores/live-meter-store.svelte";
   import HeaderCustom from "./header-custom.svelte";
 
@@ -427,14 +426,6 @@
     }
   });
 
-  // Watch for dummy data toggle
-  $effect(() => {
-    if (SETTINGS.live.general.state.useDummyData) {
-      injectDummyData();
-    } else {
-      cleanupStores();
-    }
-  });
 </script>
 
 <!-- flex flex-col min-h-screen → makes the page stretch full height and stack header, body, and footer. -->

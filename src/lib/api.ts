@@ -125,6 +125,7 @@ export type LiveDataPayload = {
   totalDmg: number;
   totalDmgBossOnly: number;
   totalHeal: number;
+  localPlayerUid: number;
   sceneId: number | null;
   sceneName: string | null;
   isPaused: boolean;

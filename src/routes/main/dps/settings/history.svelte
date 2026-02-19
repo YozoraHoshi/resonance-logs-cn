@@ -37,8 +37,30 @@
       </button>
       {#if expandedSections.general}
         <div class="px-4 pb-3 space-y-1">
-          <SettingsSelect bind:selected={SETTINGS.history.general.state.showYourName} values={["显示你的名称", "显示你的职业", "显示你的名称 - 职业", "显示你的名称 - 专精", "隐藏你的名称"]} label="显示你的名称" description="“显示你的职业”会用职业替代你的名称；“名称 - 职业/专精”会同时显示两者。" />
-          <SettingsSelect bind:selected={SETTINGS.history.general.state.showOthersName} values={["显示他人名称", "显示他人职业", "显示他人名称 - 职业", "显示他人名称 - 专精", "隐藏他人名称"]} label="显示他人名称" description="“显示他人职业”会用职业替代他人名称；“名称 - 职业/专精”会同时显示两者。" />
+          <SettingsSelect
+            bind:selected={SETTINGS.history.general.state.showYourName}
+            values={[
+              { label: "显示你的名称", value: "Show Your Name" },
+              { label: "显示你的职业", value: "Show Your Class" },
+              { label: "显示你的名称 - 职业", value: "Show Your Name - Class" },
+              { label: "显示你的名称 - 专精", value: "Show Your Name - Spec" },
+              { label: "隐藏你的名称", value: "Hide Your Name" },
+            ]}
+            label="显示你的名称"
+            description="“显示你的职业”会用职业替代你的名称；“名称 - 职业/专精”会同时显示两者。"
+          />
+          <SettingsSelect
+            bind:selected={SETTINGS.history.general.state.showOthersName}
+            values={[
+              { label: "显示他人名称", value: "Show Others' Name" },
+              { label: "显示他人职业", value: "Show Others' Class" },
+              { label: "显示他人名称 - 职业", value: "Show Others' Name - Class" },
+              { label: "显示他人名称 - 专精", value: "Show Others' Name - Spec" },
+              { label: "隐藏他人名称", value: "Hide Others' Name" },
+            ]}
+            label="显示他人名称"
+            description="“显示他人职业”会用职业替代他人名称；“名称 - 职业/专精”会同时显示两者。"
+          />
           <SettingsSwitch bind:checked={SETTINGS.history.general.state.showYourAbilityScore} label="你的能力评分" description="显示你的能力评分" />
           <SettingsSwitch bind:checked={SETTINGS.history.general.state.showOthersAbilityScore} label="他人能力评分" description="显示他人的能力评分" />
           <SettingsSwitch bind:checked={SETTINGS.history.general.state.relativeToTopDPSPlayer} label="以最高 DPS 为基准（玩家）" description="颜色条按最高 DPS 玩家进行相对缩放，而不是按所有玩家。适用于 20 人或世界 Boss。" />

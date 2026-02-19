@@ -24,13 +24,10 @@
   import { emitTo } from "@tauri-apps/api/event";
   import { SETTINGS } from "$lib/settings-store";
   import { getLiveData, getLiveDungeonLog } from "$lib/stores/live-meter-store.svelte";
-  import { DUMMY_HEADER_INFO, DUMMY_SEGMENT_INFO } from "$lib/dummy-data";
 
   // Get header settings
   let h = $derived(SETTINGS.live.headerCustomization.state);
 
-  // Check if dummy data mode is enabled
-  let useDummyData = $derived(SETTINGS.live.general.state.useDummyData);
   let liveData = $derived(getLiveData());
 
   let fightStartTimestampMs = $state(0);
@@ -43,11 +40,6 @@
     dungeonLog?.segments?.find((s) => !s.endedAtMs) ?? null,
   );
   let activeSegmentInfo = $derived.by(() => {
-    // Use dummy segment info when dummy data is enabled
-    if (useDummyData) {
-      return DUMMY_SEGMENT_INFO;
-    }
-
     if (!activeSegment) return null;
 
     const durationSecs = Math.max(
@@ -66,9 +58,9 @@
     };
   });
 
-  // Client-side timer loop - only runs when not using dummy data
+  // Client-side timer loop for smooth local elapsed display.
   function updateClientTimer() {
-    if (!useDummyData && fightStartTimestampMs > 0 && !isEncounterPaused) {
+    if (fightStartTimestampMs > 0 && !isEncounterPaused) {
       clientElapsedMs = Date.now() - fightStartTimestampMs;
     }
     animationFrameId = requestAnimationFrame(updateClientTimer);
@@ -121,9 +113,6 @@
   let isEncounterPaused = $state(false);
 
   $effect(() => {
-    // In dummy mode, state is entirely derived from DUMMY_HEADER_INFO.
-    if (useDummyData) return;
-
     const data = liveData;
     if (!data || data.fightStartTimestampMs <= 0) {
       resetTimer();
@@ -152,19 +141,10 @@
     }
   });
 
-  // Display values - use dummy data when enabled
-  let displayHeaderInfo = $derived(
-    useDummyData ? DUMMY_HEADER_INFO : headerInfo,
-  );
-  let displayElapsedMs = $derived(
-    useDummyData ? DUMMY_HEADER_INFO.elapsedMs : clientElapsedMs,
-  );
-  let displaySceneName = $derived(
-    useDummyData ? DUMMY_HEADER_INFO.sceneName : headerInfo.sceneName,
-  );
-  let displayBosses = $derived(
-    useDummyData ? DUMMY_HEADER_INFO.bosses : headerInfo.bosses,
-  );
+  let displayHeaderInfo = $derived(headerInfo);
+  let displayElapsedMs = $derived(clientElapsedMs);
+  let displaySceneName = $derived(headerInfo.sceneName);
+  let displayBosses = $derived(headerInfo.bosses);
 
   const appWindow = getCurrentWebviewWindow();
 

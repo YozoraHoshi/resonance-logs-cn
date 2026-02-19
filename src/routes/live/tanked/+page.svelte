@@ -8,6 +8,8 @@
   import AbbreviatedNumber from "$lib/components/abbreviated-number.svelte";
   import PercentFormat from "$lib/components/percent-format.svelte";
   import getDisplayName from "$lib/name-display";
+  import { normalizeNameDisplaySetting } from "$lib/name-display";
+  import { formatClassSpecLabel } from "$lib/class-labels";
 
   let liveData = $derived(getLiveData());
   let rawTankedData = $derived(
@@ -125,7 +127,8 @@
     {/if}
     <tbody>
       {#each tankedData as player (player.uid)}
-        {@const isLocalPlayer = player.name.includes("You")}
+        {@const isLocalPlayer = liveData?.localPlayerUid != null &&
+          player.uid === liveData.localPlayerUid}
         {@const displayName = getDisplayName({
           player: {
             uid: player.uid,
@@ -138,10 +141,11 @@
           isLocalPlayer,
         })}
         {@const className = isLocalPlayer
-          ? SETTINGS_YOUR_NAME !== "Hide Your Name"
+          ? normalizeNameDisplaySetting(SETTINGS_YOUR_NAME) !== "Hide Your Name"
             ? player.className
             : ""
-          : SETTINGS_OTHERS_NAME !== "Hide Others' Name"
+          : normalizeNameDisplaySetting(SETTINGS_OTHERS_NAME) !==
+              "Hide Others' Name"
             ? player.className
             : ""}
         <tr
@@ -157,10 +161,11 @@
                 alt="Class icon"
                 {@attach tooltip(
                   () =>
-                    `${player.className}${player.classSpecName ? " - " + player.classSpecName : ""}`,
+                    formatClassSpecLabel(player.className, player.classSpecName) ||
+                    "未知职业",
                 )}
               />
-              {#if player.abilityScore > 0}
+              {#if player.abilityScore > 0 && (isLocalPlayer ? SETTINGS.live.general.state.showYourAbilityScore : SETTINGS.live.general.state.showOthersAbilityScore)}
                 {#if SETTINGS.live.general.state.shortenAbilityScore}
                   <span
                     class="tabular-nums"

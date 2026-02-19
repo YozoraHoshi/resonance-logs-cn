@@ -35,7 +35,3 @@ export function cleanupStores() {
   clearLiveData();
   clearLiveDungeonLog();
 }
-
-export function injectDummyData() {
-  clearLiveData();
-}

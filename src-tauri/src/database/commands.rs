@@ -27,6 +27,8 @@ pub struct EncounterSummaryDto {
     pub scene_name: Option<String>,
     /// The duration of the encounter in seconds.
     pub duration: f64,
+    /// The UID of the local player for this encounter.
+    pub local_player_id: Option<i64>,
     /// A list of bosses in the encounter.
     pub bosses: Vec<BossSummaryDto>,
     /// A list of players in the encounter.
@@ -378,6 +380,7 @@ pub fn get_recent_encounters_filtered(
             scene_id,
             scene_name,
             duration,
+            local_player_id: None,
             bosses: boss_entries,
             players: player_data,
             remote_encounter_id: remote_id,
@@ -513,6 +516,7 @@ pub fn get_encounter_by_id(encounter_id: i32) -> Result<EncounterSummaryDto, Str
         Option<String>,
         f64,
         Option<i64>,
+        Option<i64>,
         i32,
         Option<String>,
         Option<String>,
@@ -528,6 +532,7 @@ pub fn get_encounter_by_id(encounter_id: i32) -> Result<EncounterSummaryDto, Str
                 e::scene_id,
                 e::scene_name,
                 e::duration,
+                e::local_player_id,
                 e::remote_encounter_id,
                 e::is_favorite,
                 e::boss_names,
@@ -537,7 +542,7 @@ pub fn get_encounter_by_id(encounter_id: i32) -> Result<EncounterSummaryDto, Str
             .map_err(|er| er.to_string())
     })?;
 
-    let boss_names: Vec<BossSummaryDto> = row.10
+    let boss_names: Vec<BossSummaryDto> = row.11
         .as_ref()
         .and_then(|j| serde_json::from_str::<Vec<String>>(j).ok())
         .unwrap_or_default()
@@ -549,7 +554,7 @@ pub fn get_encounter_by_id(encounter_id: i32) -> Result<EncounterSummaryDto, Str
         })
         .collect();
 
-    let players: Vec<PlayerInfoDto> = row.11
+    let players: Vec<PlayerInfoDto> = row.12
         .as_ref()
         .and_then(|j| serde_json::from_str::<Vec<String>>(j).ok())
         .unwrap_or_default()
@@ -570,10 +575,11 @@ pub fn get_encounter_by_id(encounter_id: i32) -> Result<EncounterSummaryDto, Str
         scene_id: row.5,
         scene_name: row.6.clone(),
         duration: row.7,
+        local_player_id: row.8,
         bosses: boss_names,
         players,
-        remote_encounter_id: row.8,
-        is_favorite: row.9 != 0,
+        remote_encounter_id: row.9,
+        is_favorite: row.10 != 0,
     })
 }
 
@@ -624,6 +630,7 @@ pub fn get_encounter_entities_raw(encounter_id: i32) -> Result<Vec<lc::RawEntity
     rows.sort_by_key(|row| row.uid);
     Ok(rows)
 }
+
 
 /// Deletes an encounter by its ID.
 ///

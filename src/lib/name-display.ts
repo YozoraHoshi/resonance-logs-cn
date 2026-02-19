@@ -2,6 +2,7 @@
  * Utility function for transforming player name display in the DPS meter
  * based on user preferences for showing/hiding names and classes.
  */
+import { toClassLabel, toSpecLabel } from "$lib/class-labels";
 
 /**
  * Player object containing basic player information
@@ -31,6 +32,25 @@ export type NameDisplaySetting =
   | "Show Others' Name - Class"
   | "Show Others' Name - Spec"
   | "Hide Others' Name";
+
+const CN_TO_EN_SETTING: Record<string, NameDisplaySetting> = {
+  "显示你的名称": "Show Your Name",
+  "显示你的职业": "Show Your Class",
+  "显示你的名称 - 职业": "Show Your Name - Class",
+  "显示你的名称 - 专精": "Show Your Name - Spec",
+  "隐藏你的名称": "Hide Your Name",
+  "显示他人名称": "Show Others' Name",
+  "显示他人职业": "Show Others' Class",
+  "显示他人名称 - 职业": "Show Others' Name - Class",
+  "显示他人名称 - 专精": "Show Others' Name - Spec",
+  "隐藏他人名称": "Hide Others' Name",
+};
+
+export function normalizeNameDisplaySetting(
+  setting: string,
+): NameDisplaySetting | string {
+  return CN_TO_EN_SETTING[setting] ?? setting;
+}
 
 /**
  * Parameters for the name display transformation function
@@ -67,7 +87,8 @@ export default function getDisplayName(params: NameDisplayParams): string {
   const { player, showYourNameSetting, showOthersNameSetting, isLocalPlayer } = params;
 
   // Determine which setting to use based on whether this is the local player
-  const setting = isLocalPlayer ? showYourNameSetting : showOthersNameSetting;
+  const settingRaw = isLocalPlayer ? showYourNameSetting : showOthersNameSetting;
+  const setting = normalizeNameDisplaySetting(settingRaw);
 
   // Get the base name to use
   const baseName = player.name || player.uid.toString();
@@ -80,23 +101,23 @@ export default function getDisplayName(params: NameDisplayParams): string {
 
     case "Show Your Class":
     case "Show Others' Class":
-      return player.className || baseName;
+      return player.className ? toClassLabel(player.className) : baseName;
 
     case "Show Your Name - Class":
     case "Show Others' Name - Class":
       if (player.className) {
-        return `${baseName} - ${player.className}`;
+        return `${baseName} - ${toClassLabel(player.className)}`;
       }
       return baseName;
 
     case "Show Your Name - Spec":
     case "Show Others' Name - Spec":
       if (player.classSpecName) {
-        return `${baseName} - ${player.classSpecName}`;
+        return `${baseName} - ${toSpecLabel(player.classSpecName)}`;
       }
       // Fallback to class if spec is not available
       if (player.className) {
-        return `${baseName} - ${player.className}`;
+        return `${baseName} - ${toClassLabel(player.className)}`;
       }
       return baseName;
 

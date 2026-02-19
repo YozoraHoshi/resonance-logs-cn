@@ -603,6 +603,10 @@ sceneName: string | null;
  */
 duration: number; 
 /**
+ * The UID of the local player for this encounter.
+ */
+localPlayerId: number | null; 
+/**
  * A list of bosses in the encounter.
  */
 bosses: BossSummaryDto[]; 

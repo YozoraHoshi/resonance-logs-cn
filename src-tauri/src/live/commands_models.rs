@@ -48,6 +48,7 @@ pub struct LiveDataPayload {
     pub total_dmg: u128,
     pub total_dmg_boss_only: u128,
     pub total_heal: u128,
+    pub local_player_uid: i64,
     pub scene_id: Option<i32>,
     pub scene_name: Option<String>,
     pub is_paused: bool,

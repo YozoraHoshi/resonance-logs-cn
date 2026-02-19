@@ -9,6 +9,9 @@
   import { liveTankedSkillColumns } from "$lib/column-data";
   import AbbreviatedNumber from "$lib/components/abbreviated-number.svelte";
   import PercentFormat from "$lib/components/percent-format.svelte";
+  import getDisplayName from "$lib/name-display";
+  import { normalizeNameDisplaySetting } from "$lib/name-display";
+  import { toSpecLabel } from "$lib/class-labels";
 
   const playerUid = Number(page.url.searchParams.get("playerUid") ?? "-1");
 
@@ -104,20 +107,40 @@
 </script>
 
 {#if currentPlayer}
-  {@const className = currentPlayer.name.includes("You")
-    ? SETTINGS_YOUR_NAME !== "Hide Your Name"
+  {@const isLocalPlayer = liveData?.localPlayerUid != null &&
+    currentPlayer.uid === liveData.localPlayerUid}
+  {@const className = isLocalPlayer
+    ? normalizeNameDisplaySetting(SETTINGS_YOUR_NAME) !== "Hide Your Name"
       ? currentPlayer.className
       : ""
-    : SETTINGS_OTHERS_NAME !== "Hide Others' Name"
+    : normalizeNameDisplaySetting(SETTINGS_OTHERS_NAME) !== "Hide Others' Name"
       ? currentPlayer.className
       : ""}
+  {@const nameSetting = normalizeNameDisplaySetting(
+    isLocalPlayer ? SETTINGS_YOUR_NAME : SETTINGS_OTHERS_NAME,
+  )}
+  {@const displayName = getDisplayName({
+    player: {
+      uid: currentPlayer.uid,
+      name: currentPlayer.name,
+      className: currentPlayer.className,
+      classSpecName: currentPlayer.classSpecName,
+    },
+    showYourNameSetting: SETTINGS_YOUR_NAME,
+    showOthersNameSetting: SETTINGS_OTHERS_NAME,
+    isLocalPlayer,
+  })}
   <div
     class="sticky top-0 z-10 flex h-8 w-full items-center gap-2 bg-popover/60 px-2 text-xs"
     style="background-color: {`color-mix(in srgb, ${className ? `var(--class-color-${className.toLowerCase().replace(/\s+/g, '-')})` : '#6b7280'} 30%, transparent)`};"
   >
     <button class="underline" onclick={() => goto("/live/tanked")}>Back</button>
-    <span class="font-bold">{currentPlayer.name}</span>
-    <span>{currentPlayer.classSpecName}</span>
+    <span class="font-bold">{displayName || `#${currentPlayer.uid}`}</span>
+    {#if nameSetting !== "Show Your Name - Spec" &&
+      nameSetting !== "Show Others' Name - Spec" &&
+      currentPlayer.classSpecName}
+      <span>{toSpecLabel(currentPlayer.classSpecName)}</span>
+    {/if}
     <span class="ml-auto">
       <span class="text-xs">Total: </span>
       {#if SETTINGS_SHORTEN_TPS}
@@ -165,12 +188,16 @@
     {/if}
     <tbody>
       {#each sortedSkillRows as skill (skill.skillId)}
-        {@const className = currentPlayer?.name.includes("You")
-          ? SETTINGS_YOUR_NAME !== "Hide Your Name"
-            ? currentPlayer.className
+        {@const rowIsLocalPlayer = liveData?.localPlayerUid != null &&
+          currentPlayer != null &&
+          currentPlayer.uid === liveData.localPlayerUid}
+        {@const className = rowIsLocalPlayer
+          ? normalizeNameDisplaySetting(SETTINGS_YOUR_NAME) !== "Hide Your Name"
+            ? (currentPlayer?.className ?? "")
             : ""
-          : SETTINGS_OTHERS_NAME !== "Hide Others' Name" && currentPlayer
-            ? currentPlayer.className
+          : normalizeNameDisplaySetting(SETTINGS_OTHERS_NAME) !==
+                "Hide Others' Name" && currentPlayer
+            ? (currentPlayer.className ?? "")
             : ""}
         <tr
           class="relative hover:bg-muted/60 transition-colors bg-background/40"
