@@ -6,7 +6,12 @@
 import { listen, type UnlistenFn, type Event } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { commands } from "./bindings";
-import type { Result } from "./bindings";
+import type {
+  Result,
+  RawCombatStats as BindingRawCombatStats,
+  RawSkillStats as BindingRawSkillStats,
+  RawEntityData as BindingRawEntityData,
+} from "./bindings";
 
 // Type definitions for event payloads
 export type BossHealth = {
@@ -68,11 +73,6 @@ export type SkillRow = {
   hitsPerMinute: number
 };
 
-export type SkillsWindow = {
-  currPlayer: PlayerRow[];
-  skillRows: SkillRow[]
-};
-
 export type SkillCdState = {
   skillLevelId: number;
   beginTime: number;
@@ -115,17 +115,23 @@ export type EncounterUpdatePayload = {
   isPaused: boolean;
 };
 
-export type MetricType = "dps" | "heal" | "tanked";
+export type RawCombatStats = BindingRawCombatStats;
+export type RawSkillStats = BindingRawSkillStats;
+export type RawEntityData = BindingRawEntityData;
 
-export type PlayersUpdatePayload = {
-  metricType: MetricType;
-  playersWindow: PlayersWindow;
-};
-
-export type SkillsUpdatePayload = {
-  metricType: MetricType;
-  playerUid: number;
-  skillsWindow: SkillsWindow;
+export type LiveDataPayload = {
+  elapsedMs: number;
+  fightStartTimestampMs: number;
+  totalDmg: number;
+  totalDmgBossOnly: number;
+  totalHeal: number;
+  sceneId: number | null;
+  sceneName: string | null;
+  isPaused: boolean;
+  bosses: BossHealth[];
+  entities: RawEntityData[];
+  currentSegmentType: "boss" | "trash" | null;
+  currentSegmentName: string | null;
 };
 
 export type BossDeathPayload = {
@@ -171,11 +177,8 @@ export type DungeonLog = {
 export const onEncounterUpdate = (handler: (event: Event<EncounterUpdatePayload>) => void): Promise<UnlistenFn> =>
   listen<EncounterUpdatePayload>("encounter-update", handler);
 
-export const onPlayersUpdate = (handler: (event: Event<PlayersUpdatePayload>) => void): Promise<UnlistenFn> =>
-  listen<PlayersUpdatePayload>("players-update", handler);
-
-export const onSkillsUpdate = (handler: (event: Event<SkillsUpdatePayload>) => void): Promise<UnlistenFn> =>
-  listen<SkillsUpdatePayload>("skills-update", handler);
+export const onLiveData = (handler: (event: Event<LiveDataPayload>) => void): Promise<UnlistenFn> =>
+  listen<LiveDataPayload>("live-data", handler);
 
 export const onBossDeath = (handler: (event: Event<BossDeathPayload>) => void): Promise<UnlistenFn> =>
   listen<BossDeathPayload>("boss-death", handler);
@@ -185,18 +188,6 @@ export const onSceneChange = (handler: (event: Event<SceneChangePayload>) => voi
 
 export const onDungeonLogUpdate = (handler: (event: Event<DungeonLog>) => void): Promise<UnlistenFn> =>
   listen<DungeonLog>("log-update", handler);
-
-// Convenience: factory to create metric-filtered listeners
-export const makeSkillsUpdateFilter =
-  (metric: MetricType) =>
-    (handler: (event: Event<SkillsUpdatePayload>) => void): Promise<UnlistenFn> =>
-      listen<SkillsUpdatePayload>("skills-update", (event) => {
-        if (event.payload.metricType === metric) handler(event);
-      });
-
-export const onDpsSkillsUpdate = makeSkillsUpdateFilter("dps");
-export const onHealSkillsUpdate = makeSkillsUpdateFilter("heal");
-export const onTankedSkillsUpdate = makeSkillsUpdateFilter("tanked");
 
 export const onResetEncounter = (handler: () => void): Promise<UnlistenFn> =>
   listen("reset-encounter", handler);
@@ -224,6 +215,10 @@ export const resetEncounter = (): Promise<Result<null, string>> => commands.rese
 export const togglePauseEncounter = (): Promise<Result<null, string>> => commands.togglePauseEncounter();
 export const enableBlur = (): Promise<void> => commands.enableBlur();
 export const disableBlur = (): Promise<void> => commands.disableBlur();
+export const getEncounterEntitiesRaw = (
+  encounterId: number,
+): Promise<Result<RawEntityData[], string>> =>
+  commands.getEncounterEntitiesRaw(encounterId);
 
 // New: toggle boss-only DPS filtering on the backend
 export const setBossOnlyDps = (enabled: boolean): Promise<void> => invoke("set_boss_only_dps", { enabled });

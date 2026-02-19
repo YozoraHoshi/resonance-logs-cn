@@ -23,7 +23,7 @@
 
   function updateMin(idx: number, field: "attrId" | "value", val: number | null) {
     const next = [...minRequirements];
-    const current = next[idx];
+    const current = next[idx] ?? { attrId: null, value: null };
     if (field === "attrId") {
       next[idx] = { attrId: val, value: current.value };
     } else {

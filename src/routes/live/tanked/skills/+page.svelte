@@ -1,25 +1,39 @@
 <script lang="ts">
-  import { commands } from "$lib/bindings";
   import { settings, SETTINGS } from "$lib/settings-store";
-  import type { SkillsWindow, SkillsUpdatePayload } from "$lib/api";
-  import { onTankedSkillsUpdate } from "$lib/api";
-  import type { Event as TauriEvent } from "@tauri-apps/api/event";
-  import { getTankedPlayers } from "$lib/stores/live-meter-store.svelte";
-  import { onMount } from "svelte";
-  import { page } from "$app/stores";
+  import { computePlayerRows, computeSkillRows } from "$lib/live-derived";
+  import { lookupDamageIdName } from "$lib/config/recount-table";
+  import { getLiveData } from "$lib/stores/live-meter-store.svelte";
+  import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import TableRowGlow from "$lib/components/table-row-glow.svelte";
-  import { liveTankedSkillColumns } from "$lib/column-data"; // Use tanked structure for consistency
+  import { liveTankedSkillColumns } from "$lib/column-data";
   import AbbreviatedNumber from "$lib/components/abbreviated-number.svelte";
   import PercentFormat from "$lib/components/percent-format.svelte";
 
-  let skillsWindow: SkillsWindow | null = $state(null);
-  let unlisten: (() => void) | null = null;
+  const playerUid = Number(page.url.searchParams.get("playerUid") ?? "-1");
 
-  // Get the playerUid from the URL query parameters
-  const playerUid = Number($page.url.searchParams.get("playerUid"));
+  let liveData = $derived(getLiveData());
+  let tankedPlayers = $derived(
+    liveData ? computePlayerRows(liveData, "tanked") : [],
+  );
+  let currentPlayer = $derived(
+    tankedPlayers.find((player) => player.uid === playerUid) ?? null,
+  );
+  let currentEntity = $derived(
+    liveData?.entities.find((entity) => entity.uid === playerUid) ?? null,
+  );
 
-  // Optimize derived calculations to avoid recalculation on every render
+  let skillRows = $derived(
+    currentEntity && liveData
+      ? computeSkillRows(
+          currentEntity.takenSkills,
+          liveData.elapsedMs,
+          currentEntity.taken.total,
+          lookupDamageIdName,
+        )
+      : [],
+  );
+
   let maxTakenSkill = $state(0);
   let SETTINGS_YOUR_NAME = $state(settings.state.live.general.showYourName);
   let SETTINGS_OTHERS_NAME = $state(settings.state.live.general.showOthersName);
@@ -28,20 +42,17 @@
     settings.state.live.general.relativeToTopTankedSkill,
   );
 
-  // Table customization settings for skills
   let tableSettings = $derived(SETTINGS.live.tableCustomization.state);
   let customThemeColors = $derived(
     SETTINGS.accessibility.state.customThemeColors,
   );
 
-  // Sorting settings for skills
   let sortKey = $derived(SETTINGS.live.sorting.tankedSkills.state.sortKey);
   let sortDesc = $derived(SETTINGS.live.sorting.tankedSkills.state.sortDesc);
   let columnOrder = $derived(
     SETTINGS.live.columnOrder.tankedSkills.state.order,
   );
 
-  // Handle column header click for sorting
   function handleSort(key: string) {
     if (SETTINGS.live.sorting.tankedSkills.state.sortKey === key) {
       SETTINGS.live.sorting.tankedSkills.state.sortDesc =
@@ -52,9 +63,8 @@
     }
   }
 
-  // Sorted skill data based on settings
   let sortedSkillRows = $derived.by(() => {
-    const data = [...(skillsWindow?.skillRows ?? [])];
+    const data = [...skillRows];
     data.sort((a, b) => {
       const aVal = (a as Record<string, unknown>)[sortKey] ?? 0;
       const bVal = (b as Record<string, unknown>)[sortKey] ?? 0;
@@ -66,16 +76,13 @@
     return data;
   });
 
-  // Update maxTakenSkill when data changes
   $effect(() => {
-    maxTakenSkill =
-      skillsWindow?.skillRows.reduce(
-        (max, s) => (s.totalDmg > max ? s.totalDmg : max),
-        0,
-      ) ?? 0;
+    maxTakenSkill = sortedSkillRows.reduce(
+      (max, s) => (s.totalDmg > max ? s.totalDmg : max),
+      0,
+    );
   });
 
-  // Update settings references when settings change
   $effect(() => {
     SETTINGS_YOUR_NAME = settings.state.live.general.showYourName;
     SETTINGS_OTHERS_NAME = settings.state.live.general.showOthersName;
@@ -84,7 +91,6 @@
       settings.state.live.general.relativeToTopTankedSkill;
   });
 
-  // Get visible columns based on settings and column order
   let visibleSkillColumns = $derived.by(() => {
     const visible = liveTankedSkillColumns.filter(
       (col) => settings.state.live.tanked.skills[col.key],
@@ -95,59 +101,8 @@
       return aIdx - bIdx;
     });
   });
-
-  onMount(() => {
-    let isDestroyed = false;
-
-    if (playerUid) {
-      // Fetch initial skills data
-      commands
-        .getPlayerSkills(playerUid, "tanked")
-        .then((result) => {
-          if (isDestroyed) return;
-          if (result.status === "ok") {
-            skillsWindow = result.data;
-          }
-        })
-        .catch((e) => {
-          console.error("Failed to load tanked skills:", e);
-        });
-
-      // Listen for updates
-      onTankedSkillsUpdate((event: TauriEvent<SkillsUpdatePayload>) => {
-        if (isDestroyed) return;
-        if (event.payload.playerUid === playerUid) {
-          skillsWindow = event.payload.skillsWindow;
-        }
-      }).then((fn) => {
-        if (isDestroyed) {
-          fn();
-        } else {
-          unlisten = fn;
-        }
-      });
-    }
-
-    return () => {
-      isDestroyed = true;
-      if (unlisten) {
-        unlisten();
-      }
-    };
-  });
-
-  // Get players list for breadcrumb info
-  let tankedPlayers: any[] = $state([]);
-  let currentPlayer: any = $state(null);
-
-  // Update players list when store changes
-  $effect(() => {
-    tankedPlayers = getTankedPlayers().playerRows;
-    currentPlayer = tankedPlayers.find((p) => p.uid === playerUid);
-  });
 </script>
 
-<!-- Breadcrumb to go back to the main table -->
 {#if currentPlayer}
   {@const className = currentPlayer.name.includes("You")
     ? SETTINGS_YOUR_NAME !== "Hide Your Name"
@@ -275,7 +230,7 @@
           <TableRowGlow
             isSkill={true}
             {className}
-            classSpecName={currentPlayer?.classSpecName}
+            classSpecName={currentPlayer?.classSpecName ?? ""}
             percentage={SETTINGS_RELATIVE_TO_TOP_TANKED_SKILL
               ? maxTakenSkill > 0
                 ? (skill.totalDmg / maxTakenSkill) * 100

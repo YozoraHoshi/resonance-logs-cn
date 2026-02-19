@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use crate::database::schema as sch;
 use crate::database::db_exec;
 use crate::live::commands_models as lc;
-use crate::live::opcodes_models::Skill as LiveSkill;
+use crate::live::opcodes_models::class;
+use blueprotobuf_lib::blueprotobuf::EEntityType;
 
 /// A summary of an encounter.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -30,8 +31,6 @@ pub struct EncounterSummaryDto {
     pub bosses: Vec<BossSummaryDto>,
     /// A list of players in the encounter.
     pub players: Vec<PlayerInfoDto>,
-    /// A list of actor encounter stats.
-    pub actors: Vec<ActorEncounterStatDto>,
     /// The encounter ID on the remote website/server after successful upload.
     pub remote_encounter_id: Option<i64>,
     /// Whether the encounter is favorited.
@@ -118,172 +117,12 @@ pub struct PlayerInfoDto {
     pub is_local_player: bool,
 }
 
-/// Statistics for an actor in an encounter.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct ActorEncounterStatDto {
-    /// The ID of the encounter.
-    pub encounter_id: i32,
-    /// The ID of the actor.
-    pub actor_id: i64,
-    /// The name of the actor.
-    pub name: Option<String>,
-    /// The class ID of the actor.
-    pub class_id: Option<i32>,
-    /// The ability score of the actor.
-    pub ability_score: Option<i32>,
-    /// The total damage dealt by the actor.
-    pub damage_dealt: i64,
-    /// The total healing done by the actor.
-    pub heal_dealt: i64,
-    /// The total damage taken by the actor.
-    pub damage_taken: i64,
-    /// The number of hits dealt by the actor.
-    pub hits_dealt: i64,
-    /// The number of hits healed by the actor.
-    pub hits_heal: i64,
-    /// The number of hits taken by the actor.
-    pub hits_taken: i64,
-    /// The number of critical hits dealt by the actor.
-    pub crit_hits_dealt: i64,
-    /// The number of critical hits healed by the actor.
-    pub crit_hits_heal: i64,
-    /// The number of critical hits taken by the actor.
-    pub crit_hits_taken: i64,
-    /// The number of lucky hits dealt by the actor.
-    pub lucky_hits_dealt: i64,
-    /// The number of lucky hits healed by the actor.
-    pub lucky_hits_heal: i64,
-    /// The number of lucky hits taken by the actor.
-    pub lucky_hits_taken: i64,
-    /// The total critical damage dealt by the actor.
-    pub crit_total_dealt: i64,
-    /// The total critical healing done by the actor.
-    pub crit_total_heal: i64,
-    /// The total critical damage taken by the actor.
-    pub crit_total_taken: i64,
-    /// The total lucky damage dealt by the actor.
-    pub lucky_total_dealt: i64,
-    /// The total lucky healing done by the actor.
-    pub lucky_total_heal: i64,
-    /// The total lucky damage taken by the actor.
-    pub lucky_total_taken: i64,
-    /// The total damage dealt to bosses by the actor.
-    pub boss_damage_dealt: i64,
-    /// The number of hits dealt to bosses by the actor.
-    pub boss_hits_dealt: i64,
-    /// The number of critical hits dealt to bosses by the actor.
-    pub boss_crit_hits_dealt: i64,
-    /// The number of lucky hits dealt to bosses by the actor.
-    pub boss_lucky_hits_dealt: i64,
-    /// The total critical damage dealt to bosses by the actor.
-    pub boss_crit_total_dealt: i64,
-    /// The total lucky damage dealt to bosses by the actor.
-    pub boss_lucky_total_dealt: i64,
-    /// The average DPS snapshot for the actor during the encounter.
-    pub dps: f64,
-    /// The accumulated active damage time (ms) used for True DPS.
-    pub active_dmg_time_ms: i64,
-    /// The True DPS snapshot for the actor during the encounter.
-    pub tdps: f64,
-    /// The encounter duration in seconds used for the DPS snapshot.
-    pub duration: f64,
-    /// Whether the actor is the local player.
-    pub is_local_player: bool,
-}
-
-/// Loads the actor stats for a given encounter.
-///
-/// # Arguments
-///
-/// * `conn` - A mutable reference to a `SqliteConnection`.
-/// * `encounter_id` - The ID of the encounter.
-///
-/// # Returns
-///
-/// * `Result<Vec<ActorEncounterStatDto>, String>` - A list of actor encounter stats.
 fn with_db<T, F>(f: F) -> Result<T, String>
 where
     T: Send + 'static,
     F: FnOnce(&mut diesel::sqlite::SqliteConnection) -> Result<T, String> + Send + 'static,
 {
     db_exec(f)
-}
-
-fn load_actor_stats(
-    encounter_id: i32,
-    encounter_duration_secs: f64,
-    local_player_id: Option<i64>,
-    entities: &std::collections::HashMap<i64, crate::live::opcodes_models::Entity>,
-) -> Result<Vec<ActorEncounterStatDto>, String> {
-    use blueprotobuf_lib::blueprotobuf::EEntityType;
-    let mut rows = Vec::new();
-
-    for (actor_id, entity) in entities.iter() {
-        if entity.entity_type != EEntityType::EntChar {
-            continue;
-        }
-        let has_combat = entity.damage.hits > 0 || entity.healing.hits > 0 || entity.taken.hits > 0;
-        if !has_combat {
-            continue;
-        }
-        let damage_dealt = entity.damage.total.min(i64::MAX as u128) as i64;
-        let heal_dealt = entity.healing.total.min(i64::MAX as u128) as i64;
-        let damage_taken = entity.taken.total.min(i64::MAX as u128) as i64;
-        let active_ms = entity.active_dmg_time_ms.min(i64::MAX as u128) as i64;
-        let dps = if encounter_duration_secs > 0.0 {
-            damage_dealt as f64 / encounter_duration_secs
-        } else {
-            0.0
-        };
-        let tdps = if active_ms > 0 {
-            damage_dealt as f64 * 1000.0 / active_ms as f64
-        } else {
-            dps
-        };
-        rows.push(ActorEncounterStatDto {
-            encounter_id,
-            actor_id: *actor_id,
-            name: if entity.name.is_empty() {
-                None
-            } else {
-                Some(entity.name.clone())
-            },
-            class_id: Some(entity.class_id),
-            ability_score: Some(entity.ability_score),
-            damage_dealt,
-            heal_dealt,
-            damage_taken,
-            hits_dealt: entity.damage.hits.min(i64::MAX as u128) as i64,
-            hits_heal: entity.healing.hits.min(i64::MAX as u128) as i64,
-            hits_taken: entity.taken.hits.min(i64::MAX as u128) as i64,
-            crit_hits_dealt: entity.damage.crit_hits.min(i64::MAX as u128) as i64,
-            crit_hits_heal: entity.healing.crit_hits.min(i64::MAX as u128) as i64,
-            crit_hits_taken: entity.taken.crit_hits.min(i64::MAX as u128) as i64,
-            lucky_hits_dealt: entity.damage.lucky_hits.min(i64::MAX as u128) as i64,
-            lucky_hits_heal: entity.healing.lucky_hits.min(i64::MAX as u128) as i64,
-            lucky_hits_taken: entity.taken.lucky_hits.min(i64::MAX as u128) as i64,
-            crit_total_dealt: entity.damage.crit_total.min(i64::MAX as u128) as i64,
-            crit_total_heal: entity.healing.crit_total.min(i64::MAX as u128) as i64,
-            crit_total_taken: entity.taken.crit_total.min(i64::MAX as u128) as i64,
-            lucky_total_dealt: entity.damage.lucky_total.min(i64::MAX as u128) as i64,
-            lucky_total_heal: entity.healing.lucky_total.min(i64::MAX as u128) as i64,
-            lucky_total_taken: entity.taken.lucky_total.min(i64::MAX as u128) as i64,
-            boss_damage_dealt: entity.damage_boss_only.total.min(i64::MAX as u128) as i64,
-            boss_hits_dealt: entity.damage_boss_only.hits.min(i64::MAX as u128) as i64,
-            boss_crit_hits_dealt: entity.damage_boss_only.crit_hits.min(i64::MAX as u128) as i64,
-            boss_lucky_hits_dealt: entity.damage_boss_only.lucky_hits.min(i64::MAX as u128) as i64,
-            boss_crit_total_dealt: entity.damage_boss_only.crit_total.min(i64::MAX as u128) as i64,
-            boss_lucky_total_dealt: entity.damage_boss_only.lucky_total.min(i64::MAX as u128) as i64,
-            dps,
-            active_dmg_time_ms: active_ms,
-            tdps,
-            duration: encounter_duration_secs,
-            is_local_player: local_player_id == Some(*actor_id),
-        });
-    }
-    rows.sort_by(|a, b| b.damage_dealt.cmp(&a.damage_dealt));
-    Ok(rows)
 }
 
 /// Gets a list of unique boss names.
@@ -541,7 +380,6 @@ pub fn get_recent_encounters_filtered(
             duration,
             bosses: boss_entries,
             players: player_data,
-            actors: Vec::new(),
             remote_encounter_id: remote_id,
             is_favorite: is_fav != 0,
         });
@@ -568,36 +406,6 @@ pub fn get_recent_encounters_filtered(
 #[specta::specta]
 pub fn get_recent_encounters(limit: i32, offset: i32) -> Result<RecentEncountersResult, String> {
     get_recent_encounters_filtered(limit, offset, None)
-}
-
-/// Gets the actor stats for a given encounter.
-///
-/// # Arguments
-///
-/// * `encounter_id` - The ID of the encounter.
-///
-/// # Returns
-///
-/// * `Result<Vec<ActorEncounterStatDto>, String>` - A list of actor encounter stats.
-#[tauri::command]
-#[specta::specta]
-pub fn get_encounter_actor_stats(encounter_id: i32) -> Result<Vec<ActorEncounterStatDto>, String> {
-    use crate::database::load_encounter_data;
-    let entities = load_encounter_data(encounter_id)?;
-    let (duration, local_player_id) = with_db(move |conn| {
-        let encounter_duration_secs: f64 = sch::encounters::dsl::encounters
-            .filter(sch::encounters::dsl::id.eq(encounter_id))
-            .select(sch::encounters::dsl::duration)
-            .first::<f64>(conn)
-            .unwrap_or(0.0);
-        let local_player_id: Option<i64> = sch::encounters::dsl::encounters
-            .filter(sch::encounters::dsl::id.eq(encounter_id))
-            .select(sch::encounters::dsl::local_player_id)
-            .first::<Option<i64>>(conn)
-            .unwrap_or(None);
-        Ok((encounter_duration_secs, local_player_id))
-    })?;
-    load_actor_stats(encounter_id, duration, local_player_id, &entities)
 }
 
 /// Get player name by UID from database
@@ -729,8 +537,6 @@ pub fn get_encounter_by_id(encounter_id: i32) -> Result<EncounterSummaryDto, Str
             .map_err(|er| er.to_string())
     })?;
 
-    let actors = get_encounter_actor_stats(encounter_id)?;
-
     let boss_names: Vec<BossSummaryDto> = row.10
         .as_ref()
         .and_then(|j| serde_json::from_str::<Vec<String>>(j).ok())
@@ -766,10 +572,57 @@ pub fn get_encounter_by_id(encounter_id: i32) -> Result<EncounterSummaryDto, Str
         duration: row.7,
         bosses: boss_names,
         players,
-        actors,
         remote_encounter_id: row.8,
         is_favorite: row.9 != 0,
     })
+}
+
+/// Gets raw actor entities for a historical encounter.
+#[tauri::command]
+#[specta::specta]
+pub fn get_encounter_entities_raw(encounter_id: i32) -> Result<Vec<lc::RawEntityData>, String> {
+    let entities = crate::database::load_encounter_data(encounter_id)?;
+    let mut rows = Vec::new();
+    for (&uid, entity) in &entities {
+        if entity.entity_type != EEntityType::EntChar {
+            continue;
+        }
+        let has_combat = entity.damage.hits > 0 || entity.healing.hits > 0 || entity.taken.hits > 0;
+        if !has_combat {
+            continue;
+        }
+        rows.push(lc::RawEntityData {
+            uid,
+            name: entity.name.clone(),
+            class_id: entity.class_id,
+            class_spec: entity.class_spec as i32,
+            class_name: class::get_class_name(entity.class_id),
+            class_spec_name: class::get_class_spec(entity.class_spec),
+            ability_score: entity.ability_score,
+            damage: lc::to_raw_combat_stats(&entity.damage),
+            damage_boss_only: lc::to_raw_combat_stats(&entity.damage_boss_only),
+            healing: lc::to_raw_combat_stats(&entity.healing),
+            taken: lc::to_raw_combat_stats(&entity.taken),
+            active_dmg_time_ms: entity.active_dmg_time_ms,
+            dmg_skills: entity
+                .skill_uid_to_dmg_skill
+                .iter()
+                .map(|(skill_id, stats)| (*skill_id, lc::to_raw_skill_stats(stats)))
+                .collect(),
+            heal_skills: entity
+                .skill_uid_to_heal_skill
+                .iter()
+                .map(|(skill_id, stats)| (*skill_id, lc::to_raw_skill_stats(stats)))
+                .collect(),
+            taken_skills: entity
+                .skill_uid_to_taken_skill
+                .iter()
+                .map(|(skill_id, stats)| (*skill_id, lc::to_raw_skill_stats(stats)))
+                .collect(),
+        });
+    }
+    rows.sort_by_key(|row| row.uid);
+    Ok(rows)
 }
 
 /// Deletes an encounter by its ID.
@@ -795,123 +648,6 @@ pub fn delete_encounter(encounter_id: i32) -> Result<(), String> {
         })
         .map_err(|e| e.to_string())?;
         Ok(())
-    })
-}
-
-/// Gets the skills used by a player in an encounter.
-///
-/// # Arguments
-///
-/// * `encounter_id` - The ID of the encounter.
-/// * `actor_id` - The ID of the actor.
-/// * `skill_type` - The type of skill to get (e.g., "dps", "heal").
-///
-/// # Returns
-///
-/// * `Result<lc::SkillsWindow, String>` - The skills window.
-#[tauri::command]
-#[specta::specta]
-pub fn get_encounter_player_skills(
-    encounter_id: i32,
-    actor_id: i64,
-    skill_type: String,
-) -> Result<lc::SkillsWindow, String> {
-    let entities = crate::database::load_encounter_data(encounter_id)?;
-    let entity = entities
-        .get(&actor_id)
-        .ok_or_else(|| format!("Actor {} not found in encounter {}", actor_id, encounter_id))?;
-    let duration_secs = with_db(move |conn| {
-        let duration = sch::encounters::dsl::encounters
-            .filter(sch::encounters::dsl::id.eq(encounter_id))
-            .select(sch::encounters::dsl::duration)
-            .first::<f64>(conn)
-            .unwrap_or(0.0)
-            .max(1.0);
-        Ok(duration)
-    })?;
-
-    let (total, hits, crit_hits, lucky_hits, crit_total, lucky_total, skill_map) = match skill_type.as_str() {
-        "heal" => (
-            entity.healing.total,
-            entity.healing.hits,
-            entity.healing.crit_hits,
-            entity.healing.lucky_hits,
-            entity.healing.crit_total,
-            entity.healing.lucky_total,
-            &entity.skill_uid_to_heal_skill,
-        ),
-        "dps" | "tanked" => (
-            entity.damage.total,
-            entity.damage.hits,
-            entity.damage.crit_hits,
-            entity.damage.lucky_hits,
-            entity.damage.crit_total,
-            entity.damage.lucky_total,
-            &entity.skill_uid_to_dmg_skill,
-        ),
-        other => return Err(format!("Invalid skill type: {}", other)),
-    };
-
-    let curr_player = lc::PlayerRow {
-        uid: actor_id as u128,
-        name: entity.name.clone(),
-        class_name: crate::live::opcodes_models::class::get_class_name(entity.class_id),
-        class_spec_name: crate::live::opcodes_models::class::get_class_spec(entity.class_spec),
-        ability_score: entity.ability_score.max(0) as u128,
-        total_dmg: total,
-        dps: total as f64 / duration_secs,
-        tdps: if entity.active_dmg_time_ms > 0 {
-            total as f64 * 1000.0 / entity.active_dmg_time_ms as f64
-        } else {
-            total as f64 / duration_secs
-        },
-        active_time_ms: entity.active_dmg_time_ms,
-        dmg_pct: 100.0,
-        crit_rate: if hits > 0 { crit_hits as f64 / hits as f64 } else { 0.0 },
-        crit_dmg_rate: if total > 0 { crit_total as f64 / total as f64 } else { 0.0 },
-        lucky_rate: if hits > 0 { lucky_hits as f64 / hits as f64 } else { 0.0 },
-        lucky_dmg_rate: if total > 0 { lucky_total as f64 / total as f64 } else { 0.0 },
-        hits,
-        hits_per_minute: hits as f64 / duration_secs * 60.0,
-        boss_dmg: entity.damage_boss_only.total,
-        boss_dps: entity.damage_boss_only.total as f64 / duration_secs,
-        boss_dmg_pct: 0.0,
-        rank_level: entity.rank_level(),
-        current_hp: entity.hp(),
-        max_hp: entity.max_hp(),
-        crit_stat: entity.crit(),
-        lucky_stat: entity.lucky(),
-        haste: entity.haste(),
-        mastery: entity.mastery(),
-        element_flag: entity
-            .get_attr(crate::live::opcodes_models::AttrType::ElementFlag)
-            .and_then(|v| v.as_int()),
-        energy_flag: entity
-            .get_attr(crate::live::opcodes_models::AttrType::EnergyFlag)
-            .and_then(|v| v.as_int()),
-        reduction_level: entity.reduction_level(),
-    };
-
-    let mut skill_rows: Vec<lc::SkillRow> = skill_map
-        .iter()
-        .map(|(skill_id, skill)| lc::SkillRow {
-            skill_id: *skill_id,
-            name: LiveSkill::get_skill_name(*skill_id),
-            total_dmg: skill.total_value,
-            dps: skill.total_value as f64 / duration_secs,
-            dmg_pct: if total > 0 { skill.total_value as f64 / total as f64 * 100.0 } else { 0.0 },
-            crit_rate: if skill.hits > 0 { skill.crit_hits as f64 / skill.hits as f64 } else { 0.0 },
-            crit_dmg_rate: if skill.total_value > 0 { skill.crit_total_value as f64 / skill.total_value as f64 } else { 0.0 },
-            lucky_rate: if skill.hits > 0 { skill.lucky_hits as f64 / skill.hits as f64 } else { 0.0 },
-            lucky_dmg_rate: if skill.total_value > 0 { skill.lucky_total_value as f64 / skill.total_value as f64 } else { 0.0 },
-            hits: skill.hits,
-            hits_per_minute: skill.hits as f64 / duration_secs * 60.0,
-        })
-        .collect();
-    skill_rows.sort_by(|a, b| b.total_dmg.cmp(&a.total_dmg));
-    Ok(lc::SkillsWindow {
-        curr_player: vec![curr_player],
-        skill_rows,
     })
 }
 

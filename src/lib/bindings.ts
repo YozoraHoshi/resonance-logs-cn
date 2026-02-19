@@ -64,69 +64,6 @@ async togglePauseEncounter() : Promise<Result<null, string>> {
 }
 },
 /**
- * Gets a player's skills.
- * 
- * # Arguments
- * 
- * * `uid` - The UID of the player.
- * * `skill_type` - The type of skill to get.
- * * `state_manager` - The state manager.
- * 
- * # Returns
- * 
- * * `Result<crate::live::commands_models::SkillsWindow, String>` - The skills window.
- */
-async getPlayerSkills(uid: number, skillType: string) : Promise<Result<SkillsWindow, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_player_skills", { uid, skillType }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-/**
- * Subscribes to a player's skills.
- * 
- * # Arguments
- * 
- * * `uid` - The UID of the player.
- * * `skill_type` - The type of skill to subscribe to.
- * * `state_manager` - The state manager.
- * 
- * # Returns
- * 
- * * `Result<crate::live::commands_models::SkillsWindow, String>` - The skills window.
- */
-async subscribePlayerSkills(uid: number, skillType: string) : Promise<Result<SkillsWindow, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("subscribe_player_skills", { uid, skillType }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-/**
- * Unsubscribes from a player's skills.
- * 
- * # Arguments
- * 
- * * `uid` - The UID of the player.
- * * `skill_type` - The type of skill to unsubscribe from.
- * * `state_manager` - The state manager.
- * 
- * # Returns
- * 
- * * `Result<(), String>` - An empty result.
- */
-async unsubscribePlayerSkills(uid: number, skillType: string) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("unsubscribe_player_skills", { uid, skillType }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-/**
  * Sets whether to only show boss DPS.
  * 
  * # Arguments
@@ -352,25 +289,6 @@ async getRecentEncountersFiltered(limit: number, offset: number, filters: Encoun
 }
 },
 /**
- * Gets the actor stats for a given encounter.
- * 
- * # Arguments
- * 
- * * `encounter_id` - The ID of the encounter.
- * 
- * # Returns
- * 
- * * `Result<Vec<ActorEncounterStatDto>, String>` - A list of actor encounter stats.
- */
-async getEncounterActorStats(encounterId: number) : Promise<Result<ActorEncounterStatDto[], string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_encounter_actor_stats", { encounterId }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-/**
  * Gets an encounter by its ID.
  * 
  * # Arguments
@@ -390,21 +308,11 @@ async getEncounterById(encounterId: number) : Promise<Result<EncounterSummaryDto
 }
 },
 /**
- * Gets the skills used by a player in an encounter.
- * 
- * # Arguments
- * 
- * * `encounter_id` - The ID of the encounter.
- * * `actor_id` - The ID of the actor.
- * * `skill_type` - The type of skill to get (e.g., "dps", "heal").
- * 
- * # Returns
- * 
- * * `Result<lc::SkillsWindow, String>` - The skills window.
+ * Gets raw actor entities for a historical encounter.
  */
-async getEncounterPlayerSkills(encounterId: number, actorId: number, skillType: string) : Promise<Result<SkillsWindow, string>> {
+async getEncounterEntitiesRaw(encounterId: number) : Promise<Result<RawEntityData[], string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_encounter_player_skills", { encounterId, actorId, skillType }) };
+    return { status: "ok", data: await TAURI_INVOKE("get_encounter_entities_raw", { encounterId }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -587,146 +495,6 @@ async greedyOptimizeModules(modules: ModuleInfo[], targetAttributes: number[], e
 /** user-defined types **/
 
 /**
- * Statistics for an actor in an encounter.
- */
-export type ActorEncounterStatDto = { 
-/**
- * The ID of the encounter.
- */
-encounterId: number; 
-/**
- * The ID of the actor.
- */
-actorId: number; 
-/**
- * The name of the actor.
- */
-name: string | null; 
-/**
- * The class ID of the actor.
- */
-classId: number | null; 
-/**
- * The ability score of the actor.
- */
-abilityScore: number | null; 
-/**
- * The total damage dealt by the actor.
- */
-damageDealt: number; 
-/**
- * The total healing done by the actor.
- */
-healDealt: number; 
-/**
- * The total damage taken by the actor.
- */
-damageTaken: number; 
-/**
- * The number of hits dealt by the actor.
- */
-hitsDealt: number; 
-/**
- * The number of hits healed by the actor.
- */
-hitsHeal: number; 
-/**
- * The number of hits taken by the actor.
- */
-hitsTaken: number; 
-/**
- * The number of critical hits dealt by the actor.
- */
-critHitsDealt: number; 
-/**
- * The number of critical hits healed by the actor.
- */
-critHitsHeal: number; 
-/**
- * The number of critical hits taken by the actor.
- */
-critHitsTaken: number; 
-/**
- * The number of lucky hits dealt by the actor.
- */
-luckyHitsDealt: number; 
-/**
- * The number of lucky hits healed by the actor.
- */
-luckyHitsHeal: number; 
-/**
- * The number of lucky hits taken by the actor.
- */
-luckyHitsTaken: number; 
-/**
- * The total critical damage dealt by the actor.
- */
-critTotalDealt: number; 
-/**
- * The total critical healing done by the actor.
- */
-critTotalHeal: number; 
-/**
- * The total critical damage taken by the actor.
- */
-critTotalTaken: number; 
-/**
- * The total lucky damage dealt by the actor.
- */
-luckyTotalDealt: number; 
-/**
- * The total lucky healing done by the actor.
- */
-luckyTotalHeal: number; 
-/**
- * The total lucky damage taken by the actor.
- */
-luckyTotalTaken: number; 
-/**
- * The total damage dealt to bosses by the actor.
- */
-bossDamageDealt: number; 
-/**
- * The number of hits dealt to bosses by the actor.
- */
-bossHitsDealt: number; 
-/**
- * The number of critical hits dealt to bosses by the actor.
- */
-bossCritHitsDealt: number; 
-/**
- * The number of lucky hits dealt to bosses by the actor.
- */
-bossLuckyHitsDealt: number; 
-/**
- * The total critical damage dealt to bosses by the actor.
- */
-bossCritTotalDealt: number; 
-/**
- * The total lucky damage dealt to bosses by the actor.
- */
-bossLuckyTotalDealt: number; 
-/**
- * The average DPS snapshot for the actor during the encounter.
- */
-dps: number; 
-/**
- * The accumulated active damage time (ms) used for True DPS.
- */
-activeDmgTimeMs: number; 
-/**
- * The True DPS snapshot for the actor during the encounter.
- */
-tdps: number; 
-/**
- * The encounter duration in seconds used for the DPS snapshot.
- */
-duration: number; 
-/**
- * Whether the actor is the local player.
- */
-isLocalPlayer: boolean }
-/**
  * The result of a query for boss names.
  */
 export type BossNamesResult = { 
@@ -843,10 +611,6 @@ bosses: BossSummaryDto[];
  */
 players: PlayerInfoDto[]; 
 /**
- * A list of actor encounter stats.
- */
-actors: ActorEncounterStatDto[]; 
-/**
  * The encounter ID on the remote website/server after successful upload.
  */
 remoteEncounterId: number | null; 
@@ -882,126 +646,9 @@ export type PlayerNamesResult = {
  * A list of player names.
  */
 names: string[] }
-/**
- * Represents a row in the players window.
- */
-export type PlayerRow = { 
-/**
- * The unique ID of the player.
- */
-uid: number; 
-/**
- * The name of the player.
- */
-name: string; 
-/**
- * The class name of the player.
- */
-className: string; 
-/**
- * The class spec name of the player.
- */
-classSpecName: string; 
-/**
- * The ability score of the player.
- */
-abilityScore: number; 
-/**
- * The total damage dealt by the player.
- */
-totalDmg: number; 
-/**
- * The DPS of the player.
- */
-dps: number; 
-/**
- * The "True DPS" of the player (uses active damage time).
- */
-tdps: number; 
-/**
- * The accumulated active damage time used for True DPS, in milliseconds.
- */
-activeTimeMs: number; 
-/**
- * The damage percentage of the player.
- */
-dmgPct: number; 
-/**
- * The critical hit rate of the player.
- */
-critRate: number; 
-/**
- * The critical damage rate of the player.
- */
-critDmgRate: number; 
-/**
- * The lucky hit rate of the player.
- */
-luckyRate: number; 
-/**
- * The lucky damage rate of the player.
- */
-luckyDmgRate: number; 
-/**
- * The number of hits dealt by the player.
- */
-hits: number; 
-/**
- * The number of hits per minute dealt by the player.
- */
-hitsPerMinute: number; 
-/**
- * The total damage dealt to bosses by the player.
- */
-bossDmg: number; 
-/**
- * The DPS dealt to bosses by the player.
- */
-bossDps: number; 
-/**
- * The percentage contribution of boss damage relative to all boss damage.
- */
-bossDmgPct: number; 
-/**
- * The rank level of the player.
- */
-rankLevel: number | null; 
-/**
- * The current HP of the player.
- */
-currentHp: number | null; 
-/**
- * The maximum HP of the player.
- */
-maxHp: number | null; 
-/**
- * The critical hit stat of the player.
- */
-critStat: number | null; 
-/**
- * The lucky hit stat of the player.
- */
-luckyStat: number | null; 
-/**
- * The haste of the player.
- */
-haste: number | null; 
-/**
- * The mastery of the player.
- */
-mastery: number | null; 
-/**
- * The element flag of the player.
- */
-elementFlag: number | null; 
-/**
- * The energy flag of the player.
- */
-energyFlag: number | null; 
-/**
- * The reduction level of the player.
- */
-reductionLevel: number | null }
+export type RawCombatStats = { total: number; hits: number; critHits: number; critTotal: number; luckyHits: number; luckyTotal: number }
+export type RawEntityData = { uid: number; name: string; classId: number; classSpec: number; className: string; classSpecName: string; abilityScore: number; damage: RawCombatStats; damageBossOnly: RawCombatStats; healing: RawCombatStats; taken: RawCombatStats; activeDmgTimeMs: number; dmgSkills: Partial<{ [key in number]: RawSkillStats }>; healSkills: Partial<{ [key in number]: RawSkillStats }>; takenSkills: Partial<{ [key in number]: RawSkillStats }> }
+export type RawSkillStats = { totalValue: number; hits: number; critHits: number; critTotalValue: number; luckyHits: number; luckyTotalValue: number }
 /**
  * The result of a query for recent encounters.
  */
@@ -1031,66 +678,6 @@ export type Segment = { id: number; segmentType: SegmentType;
  */
 bossEntityId: number | null; bossMonsterTypeId: number | null; bossName: string | null; startedAtMs: number; endedAtMs: number | null; totalDamage: number; hitCount: number; events: DamageEvent[] }
 export type SegmentType = "boss" | "trash"
-/**
- * Represents a row in the skills window.
- */
-export type SkillRow = { 
-/**
- * Unique skill identifier (used as stable key in frontend).
- */
-skillId: number; 
-/**
- * The name of the skill.
- */
-name: string; 
-/**
- * The total damage dealt by the skill.
- */
-totalDmg: number; 
-/**
- * The DPS of the skill.
- */
-dps: number; 
-/**
- * The damage percentage of the skill.
- */
-dmgPct: number; 
-/**
- * The critical hit rate of the skill.
- */
-critRate: number; 
-/**
- * The critical damage rate of the skill.
- */
-critDmgRate: number; 
-/**
- * The lucky hit rate of the skill.
- */
-luckyRate: number; 
-/**
- * The lucky damage rate of the skill.
- */
-luckyDmgRate: number; 
-/**
- * The number of hits dealt by the skill.
- */
-hits: number; 
-/**
- * The number of hits per minute dealt by the skill.
- */
-hitsPerMinute: number }
-/**
- * Represents the skills window.
- */
-export type SkillsWindow = { 
-/**
- * A list of player rows for the current player.
- */
-currPlayer: PlayerRow[]; 
-/**
- * A list of skill rows.
- */
-skillRows: SkillRow[] }
 
 /** tauri-specta globals **/
 

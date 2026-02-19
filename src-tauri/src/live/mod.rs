@@ -8,7 +8,7 @@ pub mod event_manager;
 pub mod live_main;
 pub mod opcodes_models;
 pub mod opcodes_process;
-pub mod recount_names;
+pub mod damage_id;
 pub mod scene_names;
 pub mod skill_names;
 pub mod skill_monitor_init;

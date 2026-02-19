@@ -1,42 +1,63 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { page } from "$app/state";
   import { settings, SETTINGS } from "$lib/settings-store";
-  import { commands } from "$lib/bindings";
-  import { onDpsSkillsUpdate } from "$lib/api";
-  import { generateDummySkills, DUMMY_PLAYER_DATA } from "$lib/dummy-data";
-  import type { Event as TauriEvent } from "@tauri-apps/api/event";
-  import type { SkillsWindow, SkillsUpdatePayload } from "$lib/api";
+  import { getLiveData } from "$lib/stores/live-meter-store.svelte";
+  import { computePlayerRows } from "$lib/live-derived";
+  import {
+    groupSkillsByRecount,
+    type RecountGroup,
+    type SkillDisplayRow,
+  } from "$lib/config/recount-table";
   import TableRowGlow from "$lib/components/table-row-glow.svelte";
   import { historyDpsSkillColumns } from "$lib/column-data";
   import AbbreviatedNumber from "$lib/components/abbreviated-number.svelte";
   import PercentFormat from "$lib/components/percent-format.svelte";
 
-  const playerUid: string = page.url.searchParams.get("playerUid") ?? "-1";
+  type FlatSkillRow = SkillDisplayRow & {
+    key: string;
+    isGroup: boolean;
+    depth: number;
+    groupId?: number;
+    expandable?: boolean;
+    expanded?: boolean;
+  };
 
-  let dpsSkillBreakdownWindow: SkillsWindow = $state({
-    currPlayer: [],
-    skillRows: [],
-  });
-  let unlisten: (() => void) | null = null;
+  const playerUid = Number(page.url.searchParams.get("playerUid") ?? "-1");
+  const expandedGroups = $state(new Set<number>());
 
-  // Optimize derived calculations to avoid recalculation on every render
+  let liveData = $derived(getLiveData());
+  let dpsPlayers = $derived(
+    liveData ? computePlayerRows(liveData, "dps") : [],
+  );
+  let currPlayer = $derived(dpsPlayers.find((player) => player.uid === playerUid));
+  let currEntity = $derived(
+    liveData?.entities.find((entity) => entity.uid === playerUid) ?? null,
+  );
+  let elapsedSecs = $derived((liveData?.elapsedMs ?? 0) / 1000);
+
+  let groupedSkills = $derived(
+    currEntity
+      ? groupSkillsByRecount(
+          currEntity.dmgSkills,
+          elapsedSecs,
+          currEntity.damage.total,
+        )
+      : { groups: [] as RecountGroup[], ungrouped: [] as SkillDisplayRow[] },
+  );
+
   let maxSkillValue = $state(0);
   let SETTINGS_YOUR_NAME = $state(settings.state.live.general.showYourName);
   let SETTINGS_OTHERS_NAME = $state(settings.state.live.general.showOthersName);
 
-  // Table customization settings for skills
   let tableSettings = $derived(SETTINGS.live.tableCustomization.state);
   let customThemeColors = $derived(
     SETTINGS.accessibility.state.customThemeColors,
   );
 
-  // Sorting settings for skills
   let sortKey = $derived(SETTINGS.live.sorting.dpsSkills.state.sortKey);
   let sortDesc = $derived(SETTINGS.live.sorting.dpsSkills.state.sortDesc);
   let columnOrder = $derived(SETTINGS.live.columnOrder.dpsSkills.state.order);
 
-  // Handle column header click for sorting
   function handleSort(key: string) {
     if (SETTINGS.live.sorting.dpsSkills.state.sortKey === key) {
       SETTINGS.live.sorting.dpsSkills.state.sortDesc =
@@ -47,50 +68,99 @@
     }
   }
 
-  // Sorted skill data based on settings
-  let sortedSkillRows = $derived.by(() => {
-    const data = [...dpsSkillBreakdownWindow.skillRows];
-    data.sort((a, b) => {
-      const aVal = (a as Record<string, unknown>)[sortKey] ?? 0;
-      const bVal = (b as Record<string, unknown>)[sortKey] ?? 0;
-      if (typeof aVal === "number" && typeof bVal === "number") {
-        return sortDesc ? bVal - aVal : aVal - bVal;
-      }
-      return 0;
+  function numericValue(value: unknown): number {
+    return typeof value === "number" ? value : 0;
+  }
+
+  function sortRows<T extends Record<string, unknown>>(rows: T[]): T[] {
+    return [...rows].sort((a, b) => {
+      const aVal = numericValue(a[sortKey]);
+      const bVal = numericValue(b[sortKey]);
+      return sortDesc ? bVal - aVal : aVal - bVal;
     });
-    return data;
-  });
+  }
 
-  $effect(() => {
-    if (SETTINGS.live.general.state.useDummyData) {
-      const uid = parseInt(playerUid);
-      const player = DUMMY_PLAYER_DATA.find((p) => p.uid === uid);
-      const dummyskilldata = player ? generateDummySkills(uid) : [];
-      dpsSkillBreakdownWindow = {
-        currPlayer: player ? [player] : [],
-        skillRows: dummyskilldata,
+  function toggleGroup(groupId: number) {
+    if (expandedGroups.has(groupId)) expandedGroups.delete(groupId);
+    else expandedGroups.add(groupId);
+    expandedGroups;
+  }
+
+  let flatRows = $derived.by(() => {
+    const rows: FlatSkillRow[] = [];
+    const sortedGroups = sortRows(groupedSkills.groups);
+    const sortedUngrouped = sortRows(groupedSkills.ungrouped);
+
+    for (const group of sortedGroups) {
+      const groupRow: FlatSkillRow = {
+        key: `group-${group.recountId}`,
+        skillId: group.recountId,
+        name: group.recountName,
+        totalDmg: group.totalDmg,
+        dps: group.dps,
+        dmgPct: group.dmgPct,
+        critRate: 0,
+        critDmgRate: 0,
+        luckyRate: 0,
+        luckyDmgRate: 0,
+        hits: group.hits,
+        hitsPerMinute: group.hitsPerMinute,
+        raw: {
+          totalValue: group.totalDmg,
+          hits: group.hits,
+          critHits: 0,
+          critTotalValue: 0,
+          luckyHits: 0,
+          luckyTotalValue: 0,
+        },
+        isGroup: true,
+        depth: 0,
+        groupId: group.recountId,
+        expandable: true,
+        expanded: expandedGroups.has(group.recountId),
       };
-    } else {
-      // If dummy data disabled, clear the window so the backend subscription can repopulate
-      dpsSkillBreakdownWindow = { currPlayer: [], skillRows: [] };
+      rows.push(groupRow);
+
+      if (expandedGroups.has(group.recountId)) {
+        const children = sortRows(group.skills).map(
+          (skill): FlatSkillRow => ({
+            ...skill,
+            key: `skill-${group.recountId}-${skill.skillId}`,
+            isGroup: false,
+            depth: 1,
+            groupId: group.recountId,
+          }),
+        );
+        rows.push(...children);
+      }
     }
+
+    rows.push(
+      ...sortedUngrouped.map(
+        (skill): FlatSkillRow => ({
+          ...skill,
+          key: `ungrouped-${skill.skillId}`,
+          isGroup: false,
+          depth: 0,
+        }),
+      ),
+    );
+
+    return rows;
   });
 
-  // Update maxSkillValue when data changes
   $effect(() => {
-    maxSkillValue = dpsSkillBreakdownWindow.skillRows.reduce(
-      (max, p) => (p.totalDmg > max ? p.totalDmg : max),
+    maxSkillValue = flatRows.reduce(
+      (max, row) => (row.totalDmg > max ? row.totalDmg : max),
       0,
     );
   });
 
-  // Update settings references when settings change
   $effect(() => {
     SETTINGS_YOUR_NAME = settings.state.live.general.showYourName;
     SETTINGS_OTHERS_NAME = settings.state.live.general.showOthersName;
   });
 
-  // Get visible columns based on settings and column order
   let visibleSkillColumns = $derived.by(() => {
     const visible = historyDpsSkillColumns.filter(
       (col) => settings.state.live.dps.skillBreakdown[col.key],
@@ -100,69 +170,6 @@
       const bIdx = columnOrder.indexOf(b.key);
       return aIdx - bIdx;
     });
-  });
-
-  let isDestroyed = false;
-
-  async function subscribePlayerSkills() {
-    if (isDestroyed) return;
-    try {
-      // Subscribe and get initial data
-      const result = await commands.subscribePlayerSkills(
-        parseInt(playerUid),
-        "dps",
-      );
-      if (isDestroyed) return;
-      if (result.status === "ok") {
-        dpsSkillBreakdownWindow = result.data;
-      } else {
-        console.error("Failed to subscribe to player skills:", result.error);
-      }
-
-      // Set up websocket listener for updates
-      const unlistenFn = await onDpsSkillsUpdate(
-        (event: TauriEvent<SkillsUpdatePayload>) => {
-          if (isDestroyed) return;
-          // Only update if this is the correct player
-          if (event.payload.playerUid.toString() === playerUid) {
-            dpsSkillBreakdownWindow = event.payload.skillsWindow;
-          }
-        },
-      );
-
-      if (isDestroyed) {
-        unlistenFn();
-      } else {
-        unlisten = unlistenFn;
-      }
-    } catch (error) {
-      console.error("Failed to subscribe to player skills:", error);
-    }
-  }
-
-  async function unsubscribePlayerSkills() {
-    isDestroyed = true;
-    try {
-      // Remove websocket listener first
-      if (unlisten) {
-        unlisten();
-        unlisten = null;
-      }
-
-      // Unsubscribe from backend
-      await commands.unsubscribePlayerSkills(parseInt(playerUid), "dps");
-    } catch (error) {
-      console.error("Failed to unsubscribe from player skills:", error);
-    }
-  }
-
-  onMount(() => {
-    isDestroyed = false;
-    subscribePlayerSkills();
-
-    return () => {
-      unsubscribePlayerSkills();
-    };
   });
 </script>
 
@@ -199,8 +206,7 @@
       </thead>
     {/if}
     <tbody>
-      {#each sortedSkillRows as skill (skill.skillId)}
-        {@const currPlayer = dpsSkillBreakdownWindow.currPlayer[0]}
+      {#each flatRows as skill (skill.key)}
         {#if currPlayer}
           {@const className = currPlayer.name.includes("You")
             ? SETTINGS_YOUR_NAME !== "Hide Your Name"
@@ -217,9 +223,22 @@
               class="px-2 py-1 relative z-10"
               style="color: {customThemeColors.tableTextColor};"
             >
-              <div class="flex items-center gap-1 h-full">
+              <button
+                class="flex items-center gap-1 h-full w-full text-left"
+                onclick={() =>
+                  skill.isGroup && skill.groupId !== undefined
+                    ? toggleGroup(skill.groupId)
+                    : undefined}
+                disabled={!skill.isGroup}
+              >
+                <span style="padding-left: {skill.depth * 12}px;"></span>
+                {#if skill.isGroup && skill.expandable}
+                  <span class="text-xs">{skill.expanded ? "▼" : "▶"}</span>
+                {:else}
+                  <span class="text-xs text-muted-foreground">•</span>
+                {/if}
                 <span class="truncate">{skill.name}</span>
-              </div>
+              </button>
             </td>
             {#each visibleSkillColumns as col (col.key)}
               <td

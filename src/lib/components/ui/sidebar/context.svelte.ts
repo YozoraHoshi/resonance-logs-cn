@@ -1,8 +1,30 @@
-import { IsMobile } from "$lib/hooks/is-mobile.svelte.js";
 import { getContext, setContext } from "svelte";
 import { SIDEBAR_KEYBOARD_SHORTCUT } from "./constants";
 
 type Getter<T> = () => T;
+
+class IsMobile {
+  current = $state(false);
+  #cleanup: (() => void) | null = null;
+
+  constructor() {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(max-width: 768px)");
+    const update = () => {
+      this.current = mediaQuery.matches;
+    };
+
+    update();
+    mediaQuery.addEventListener("change", update);
+    this.#cleanup = () => mediaQuery.removeEventListener("change", update);
+  }
+
+  destroy() {
+    this.#cleanup?.();
+    this.#cleanup = null;
+  }
+}
 
 export type SidebarStateProps = {
   /**
@@ -37,7 +59,7 @@ class SidebarState {
   // Convenience getter for checking if the sidebar is mobile
   // without this, we would need to use `sidebar.isMobile.current` everywhere
   get isMobile() {
-    return true;
+    return this.#isMobile.current;
   }
 
   // Event handler to apply to the `<svelte:window>`
@@ -53,7 +75,7 @@ class SidebarState {
   };
 
   toggle = () => {
-    return this.#isMobile
+    return this.#isMobile.current
       ? (this.openMobile = !this.openMobile)
       : this.setOpen(!this.open);
   };

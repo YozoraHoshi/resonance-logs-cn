@@ -5,7 +5,7 @@ use crate::live::opcodes_models::class::{
     ClassSpec, get_class_id_from_spec, get_class_spec_from_skill_id,
 };
 use crate::live::opcodes_models::{AttrType, AttrValue, Encounter, Entity, Skill, attr_type};
-use crate::live::recount_names;
+use crate::live::damage_id;
 use blueprotobuf_lib::blueprotobuf;
 use blueprotobuf_lib::blueprotobuf::{Attr, EDamageType, EEntityType};
 use log::{info, warn};
@@ -632,13 +632,13 @@ pub fn process_aoi_sync_delta(
 
         // Local copies of fields needed later (avoid holding map borrows across operations)
         let owner_id = sync_damage_info.owner_id?;
-        let damage_id = recount_names::compute_damage_id(
+        let damage_id = damage_id::compute_damage_id(
             sync_damage_info.damage_source,
             owner_id,
             sync_damage_info.owner_level,
             sync_damage_info.hit_event_id,
         );
-        let skill_key = recount_names::resolve_skill_key(damage_id);
+        let skill_key = damage_id;
         let flag = sync_damage_info.type_flag.unwrap_or_default();
         // Pre-calculate whether this target is recognized as a boss and local player id
         let is_boss_target = encounter

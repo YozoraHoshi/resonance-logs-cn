@@ -592,12 +592,17 @@
 
   // Group custom theme colors by category
   const colorCategories = $derived.by(() => {
-    const categories: Record<string, string[]> = {};
+    const categories: Record<
+      string,
+      Array<keyof typeof DEFAULT_CUSTOM_THEME_COLORS>
+    > = {};
     for (const [key, info] of Object.entries(CUSTOM_THEME_COLOR_LABELS)) {
       if (!categories[info.category]) {
         categories[info.category] = [];
       }
-      categories[info.category]!.push(key);
+      categories[info.category]!.push(
+        key as keyof typeof DEFAULT_CUSTOM_THEME_COLORS,
+      );
     }
     return categories;
   });
@@ -649,7 +654,10 @@
     };
   }
 
-  function updateCustomThemeColor(key: string, value: string) {
+  function updateCustomThemeColor(
+    key: keyof typeof DEFAULT_CUSTOM_THEME_COLORS,
+    value: string,
+  ) {
     SETTINGS.accessibility.state.customThemeColors = {
       ...SETTINGS.accessibility.state.customThemeColors,
       [key]: value,

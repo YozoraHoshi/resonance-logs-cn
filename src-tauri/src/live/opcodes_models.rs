@@ -1,5 +1,4 @@
 use crate::live::opcodes_models::class::ClassSpec;
-use crate::live::recount_names;
 use crate::live::skill_names;
 use blueprotobuf_lib::blueprotobuf::{EEntityType, SyncContainerData};
 use serde::{Deserialize, Serialize};
@@ -393,10 +392,6 @@ static BOSS_EXCLUSION_NAMES: LazyLock<HashSet<String>> = LazyLock::new(|| {
 
 impl Skill {
     pub fn get_skill_name(skill_uid: i64) -> String {
-        if let Some(name) = recount_names::lookup_name(skill_uid) {
-            return name;
-        }
-
         i32::try_from(skill_uid)
             .ok()
             .and_then(skill_names::lookup)

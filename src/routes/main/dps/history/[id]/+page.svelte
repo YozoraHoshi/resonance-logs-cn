@@ -2,12 +2,9 @@
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { commands } from "$lib/bindings";
-  import type {
-    ActorEncounterStatDto,
-    EncounterSummaryDto,
-    SkillsWindow,
-  } from "$lib/bindings";
-  import { getClassIcon, tooltip, CLASS_MAP } from "$lib/utils.svelte";
+  import type { EncounterSummaryDto } from "$lib/bindings";
+  import type { RawEntityData } from "$lib/api";
+  import { getClassIcon, tooltip } from "$lib/utils.svelte";
   import TableRowGlow from "$lib/components/table-row-glow.svelte";
   import AbbreviatedNumber from "$lib/components/abbreviated-number.svelte";
   import {
@@ -21,60 +18,145 @@
   import { settings, SETTINGS, DEFAULT_HISTORY_STATS } from "$lib/settings-store";
   import getDisplayName from "$lib/name-display";
   import { openUrl } from "@tauri-apps/plugin-opener";
+  import { computePlayerRowsFromEntities } from "$lib/live-derived";
+  import {
+    groupSkillsByRecount,
+    type RecountGroup,
+    type SkillDisplayRow,
+  } from "$lib/config/recount-table";
+
+  type HistorySkillType = "dps" | "heal" | "tanked";
+
+  type HistoryPlayerRow = {
+    uid: number;
+    name: string;
+    isLocalPlayer: boolean;
+    className: string;
+    classSpecName: string;
+    classDisplay: string;
+    abilityScore: number;
+    totalDmg: number;
+    dps: number;
+    tdps: number;
+    activeTimeMs: number;
+    dmgPct: number;
+    bossDmg: number;
+    bossDps: number;
+    bossDmgPct: number;
+    critRate: number;
+    critDmgRate: number;
+    luckyRate: number;
+    luckyDmgRate: number;
+    hits: number;
+    hitsPerMinute: number;
+    damageTaken: number;
+    tankedPS: number;
+    tankedPct: number;
+    critTakenRate: number;
+    hitsTaken: number;
+    healDealt: number;
+    hps: number;
+    healPct: number;
+    critHealRate: number;
+    hitsHeal: number;
+  };
+
+  type FlatSkillRow =
+    | { kind: "group"; key: string; depth: 0; row: RecountGroup }
+    | { kind: "skill"; key: string; depth: 0 | 1; row: SkillDisplayRow };
 
   // Get encounter ID from URL params
-  let encounterId = $derived(
-    $page.params.id ? parseInt($page.params.id) : null,
-  );
+  let encounterId = $derived($page.params.id ? parseInt($page.params.id) : null);
   let charId = $derived($page.url.searchParams.get("charId"));
-  let skillType = $derived($page.url.searchParams.get("skillType") ?? "dps");
-
-  // Class mapping functions
-  function getClassName(classId: number | null): string {
-    if (!classId) return "";
-    return CLASS_MAP[classId] ?? "";
-  }
+  let skillType = $derived(($page.url.searchParams.get("skillType") ?? "dps") as HistorySkillType);
 
   let encounter = $state<EncounterSummaryDto | null>(null);
-  let actors = $state<ActorEncounterStatDto[]>([]);
-  let players = $state<any[]>([]);
+  let rawEntities = $state<RawEntityData[]>([]);
+  let players = $state<HistoryPlayerRow[]>([]);
   let error = $state<string | null>(null);
   let isDeleting = $state(false);
   let showDeleteModal = $state(false);
-
-  // (SkillsWindow.currPlayer[0].classSpecName) only when the user has enabled Name - Spec display.
-  let isSpecLoading = $state(false);
-  let specsLoadedForEncounterId = $state<number | null>(null);
-  let needsSpecNames = $derived.by(() => {
-    const your = settings.state.history.general.showYourName;
-    const others = settings.state.history.general.showOthersName;
-    return String(your).includes("Spec") || String(others).includes("Spec");
-  });
+  let expandedGroups = $state<Set<number>>(new Set<number>());
 
   // Tab state for encounter view
   let activeTab = $state<"damage" | "tanked" | "healing">("damage");
-
-  const tabs: {
-    key: "damage" | "tanked" | "healing";
-    label: string;
-  }[] = [
+  const tabs: { key: "damage" | "tanked" | "healing"; label: string }[] = [
     { key: "damage", label: "伤害" },
     { key: "tanked", label: "承伤" },
     { key: "healing", label: "治疗" },
   ];
 
-  let encounterDurationMinutes = $derived.by(() => {
-    if (!encounter) return 0;
-    const durationSeconds = Math.max(
+  let encounterDurationSeconds = $derived.by(() => {
+    if (!encounter) return 1;
+    if (encounter.duration > 0) return Math.max(1, encounter.duration);
+    return Math.max(
       1,
       ((encounter.endedAtMs ?? Date.now()) - encounter.startedAtMs) / 1000,
     );
-    return Math.floor(durationSeconds / 60);
   });
 
-  // Skills view state
-  let skillsWindow = $state<SkillsWindow | null>(null);
-  let selectedPlayer = $state<any | null>(null);
+  let encounterDurationMinutes = $derived.by(() => Math.floor(encounterDurationSeconds / 60));
+
+  function buildHistoryPlayers(entities: RawEntityData[], durationSeconds: number): HistoryPlayerRow[] {
+    const elapsedMs = Math.max(1, Math.floor(durationSeconds * 1000));
+    const source = {
+      entities,
+      elapsedMs,
+      totalDmg: entities.reduce((sum, entity) => sum + (entity.damage?.total ?? 0), 0),
+      totalHeal: entities.reduce((sum, entity) => sum + (entity.healing?.total ?? 0), 0),
+      totalDmgBossOnly: entities.reduce((sum, entity) => sum + (entity.damageBossOnly?.total ?? 0), 0),
+    };
+
+    const dpsRows = computePlayerRowsFromEntities(source, "dps");
+    const healRows = computePlayerRowsFromEntities(source, "heal");
+    const tankRows = computePlayerRowsFromEntities(source, "tanked");
+    const dpsByUid = new Map(dpsRows.map((row) => [row.uid, row]));
+    const healByUid = new Map(healRows.map((row) => [row.uid, row]));
+    const tankByUid = new Map(tankRows.map((row) => [row.uid, row]));
+
+    return entities
+      .map((entity) => {
+        const dps = dpsByUid.get(entity.uid);
+        const heal = healByUid.get(entity.uid);
+        const tank = tankByUid.get(entity.uid);
+        const className = entity.className || "";
+        const classSpecName = entity.classSpecName || "";
+        return {
+          uid: entity.uid,
+          name: entity.name || `#${entity.uid}`,
+          isLocalPlayer: false,
+          className,
+          classSpecName,
+          classDisplay: className || "未知职业",
+          abilityScore: entity.abilityScore || 0,
+          totalDmg: dps?.totalDmg ?? 0,
+          dps: dps?.dps ?? 0,
+          tdps: dps?.tdps ?? 0,
+          activeTimeMs: dps?.activeTimeMs ?? 0,
+          dmgPct: dps?.dmgPct ?? 0,
+          bossDmg: dps?.bossDmg ?? 0,
+          bossDps: dps?.bossDps ?? 0,
+          bossDmgPct: dps?.bossDmgPct ?? 0,
+          critRate: dps?.critRate ?? 0,
+          critDmgRate: dps?.critDmgRate ?? 0,
+          luckyRate: dps?.luckyRate ?? 0,
+          luckyDmgRate: dps?.luckyDmgRate ?? 0,
+          hits: dps?.hits ?? 0,
+          hitsPerMinute: dps?.hitsPerMinute ?? 0,
+          damageTaken: tank?.totalDmg ?? 0,
+          tankedPS: tank?.dps ?? 0,
+          tankedPct: tank?.dmgPct ?? 0,
+          critTakenRate: tank?.critRate ?? 0,
+          hitsTaken: tank?.hits ?? 0,
+          healDealt: heal?.totalDmg ?? 0,
+          hps: heal?.dps ?? 0,
+          healPct: heal?.dmgPct ?? 0,
+          critHealRate: heal?.critRate ?? 0,
+          hitsHeal: heal?.hits ?? 0,
+        };
+      })
+      .filter((row) => row.totalDmg > 0 || row.healDealt > 0 || row.damageTaken > 0);
+  }
 
   // Filtered and sorted players based on active tab
   let displayedPlayers = $derived.by(() => {
@@ -92,89 +174,107 @@
     return players;
   });
 
-  // Calculate max values for relative to top settings
-  let maxDpsPlayer = $derived.by(() => {
-    return displayedPlayers.reduce(
-      (max, p) => Math.max(max, p.totalDmg || 0),
-      0,
-    );
+  let selectedPlayer = $derived.by(() => {
+    if (!charId) return null;
+    const playerUid = Number(charId);
+    if (!Number.isFinite(playerUid)) return null;
+    return players.find((p) => p.uid === playerUid) ?? null;
   });
 
-  let maxHealPlayer = $derived.by(() => {
-    return displayedPlayers.reduce(
-      (max, p) => Math.max(max, p.healDealt || 0),
-      0,
-    );
+  let selectedEntity = $derived.by(() => {
+    if (!charId) return null;
+    const playerUid = Number(charId);
+    if (!Number.isFinite(playerUid)) return null;
+    return rawEntities.find((entity) => entity.uid === playerUid) ?? null;
   });
 
-  let maxDpsSkill = $derived.by(() => {
-    if (!skillsWindow) return 0;
-    return skillsWindow.skillRows.reduce(
-      (max, s) => Math.max(max, s.totalDmg || 0),
-      0,
-    );
+  let skillGrouping = $derived.by(() => {
+    if (!selectedEntity) return { groups: [], ungrouped: [] };
+    const durationSecs = Math.max(1, encounterDurationSeconds);
+    const skills =
+      skillType === "heal"
+        ? selectedEntity.healSkills
+        : skillType === "tanked"
+          ? selectedEntity.takenSkills
+          : selectedEntity.dmgSkills;
+    const parentTotal =
+      skillType === "heal"
+        ? selectedEntity.healing.total
+        : skillType === "tanked"
+          ? selectedEntity.taken.total
+          : selectedEntity.damage.total;
+    return groupSkillsByRecount(skills, durationSecs, parentTotal);
   });
 
-  let maxHealSkill = $derived.by(() => {
-    if (!skillsWindow) return 0;
-    return skillsWindow.skillRows.reduce(
-      (max, s) => Math.max(max, s.totalDmg || 0),
-      0,
-    );
+  let flatSkillRows = $derived.by(() => {
+    const rows: FlatSkillRow[] = [];
+    for (const group of skillGrouping.groups) {
+      rows.push({
+        kind: "group",
+        key: `g-${group.recountId}`,
+        depth: 0,
+        row: group,
+      });
+      if (!expandedGroups.has(group.recountId)) continue;
+      for (const skill of group.skills) {
+        rows.push({
+          kind: "skill",
+          key: `gs-${group.recountId}-${skill.skillId}`,
+          depth: 1,
+          row: skill,
+        });
+      }
+    }
+    for (const skill of skillGrouping.ungrouped) {
+      rows.push({
+        kind: "skill",
+        key: `u-${skill.skillId}`,
+        depth: 0,
+        row: skill,
+      });
+    }
+    return rows;
   });
+
+  function rowTotalDmg(row: FlatSkillRow): number {
+    return row.row.totalDmg ?? 0;
+  }
+
+  function rowDmgPct(row: FlatSkillRow): number {
+    return row.row.dmgPct ?? 0;
+  }
+
+  function skillCellValue(row: FlatSkillRow, key: string): number {
+    const value = (row.row as Record<string, unknown>)[key];
+    return typeof value === "number" ? value : 0;
+  }
+
+  let maxDpsPlayer = $derived.by(() => displayedPlayers.reduce((max, p) => Math.max(max, p.totalDmg || 0), 0));
+  let maxHealPlayer = $derived.by(() => displayedPlayers.reduce((max, p) => Math.max(max, p.healDealt || 0), 0));
+  let maxTankedPlayer = $derived.by(() => displayedPlayers.reduce((max, p) => Math.max(max, p.damageTaken || 0), 0));
+  let maxSkillTotal = $derived.by(() => flatSkillRows.reduce((max, row) => Math.max(max, rowTotalDmg(row)), 0));
 
   // Get visible columns based on settings and active tab
   let visiblePlayerColumns = $derived.by(() => {
     if (activeTab === "healing") {
-      return historyHealPlayerColumns.filter(
-        (col) => settings.state.history.heal.players[col.key] ?? true,
-      );
+      return historyHealPlayerColumns.filter((col) => settings.state.history.heal.players[col.key] ?? true);
     } else if (activeTab === "tanked") {
-      return historyTankedPlayerColumns.filter(
-        (col) => settings.state.history.tanked.players[col.key] ?? true,
-      );
+      return historyTankedPlayerColumns.filter((col) => settings.state.history.tanked.players[col.key] ?? true);
     }
-    return historyDpsPlayerColumns.filter(
-      (col) => {
-        const defaultValue =
-          DEFAULT_HISTORY_STATS[col.key as keyof typeof DEFAULT_HISTORY_STATS] ??
-          true;
-        const setting =
-          settings.state.history.dps.players[
-            col.key as keyof typeof settings.state.history.dps.players
-          ];
-        return setting ?? defaultValue;
-      },
-    );
+    return historyDpsPlayerColumns.filter((col) => {
+      const defaultValue = DEFAULT_HISTORY_STATS[col.key as keyof typeof DEFAULT_HISTORY_STATS] ?? true;
+      const setting = settings.state.history.dps.players[col.key as keyof typeof settings.state.history.dps.players];
+      return setting ?? defaultValue;
+    });
   });
 
   let visibleSkillColumns = $derived.by(() => {
     if (skillType === "heal") {
-      return historyHealSkillColumns.filter(
-        (col) => settings.state.history.heal.skillBreakdown[col.key],
-      );
+      return historyHealSkillColumns.filter((col) => settings.state.history.heal.skillBreakdown[col.key]);
     } else if (skillType === "tanked") {
-      return historyTankedSkillColumns.filter(
-        (col) => settings.state.history.tanked.skillBreakdown[col.key],
-      );
+      return historyTankedSkillColumns.filter((col) => settings.state.history.tanked.skillBreakdown[col.key]);
     }
-    return historyDpsSkillColumns.filter(
-      (col) => settings.state.history.dps.skillBreakdown[col.key],
-    );
-  });
-
-  let maxTankedPlayer = $derived.by(() => {
-    return displayedPlayers.reduce(
-      (max, p) => Math.max(max, p.damageTaken || 0),
-      0,
-    );
-  });
-  let maxTankedSkill = $derived.by(() => {
-    if (!skillsWindow) return 0;
-    return skillsWindow.skillRows.reduce(
-      (max, s) => Math.max(max, s.totalDmg || 0),
-      0,
-    );
+    return historyDpsSkillColumns.filter((col) => settings.state.history.dps.skillBreakdown[col.key]);
   });
 
   const websiteBaseUrl = $derived.by(() => {
@@ -196,194 +296,45 @@
     }
   });
 
+  function toggleGroup(id: number) {
+    const next = new Set(expandedGroups);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    expandedGroups = next;
+  }
+
   async function loadEncounter() {
     if (!encounterId) return;
+    error = null;
+    expandedGroups = new Set<number>();
 
-    // Reset spec cache for this encounter load.
-    specsLoadedForEncounterId = null;
+    const [encounterRes, entitiesRes] = await Promise.all([
+      commands.getEncounterById(encounterId),
+      commands.getEncounterEntitiesRaw(encounterId),
+    ]);
 
-    // Load encounter details
-    const encounterRes = await commands.getEncounterById(encounterId);
-    console.log("encounter res", encounterRes);
-    if (encounterRes.status === "ok") {
-      encounter = encounterRes.data;
-      actors = encounterRes.data.actors ?? [];
-    } else {
+    if (encounterRes.status !== "ok") {
       error = String(encounterRes.error);
       return;
     }
-
-    const displayActors = actors;
-
-    const totalDmg = displayActors.reduce(
-      (sum, a) => sum + (a.damageDealt ?? 0),
-      0,
-    );
-    const totalBossDmg = displayActors.reduce(
-      (sum, a) => sum + (a.bossDamageDealt ?? 0),
-      0,
-    );
-    const totalDamageTaken = displayActors.reduce(
-      (sum, a) => sum + (a.damageTaken ?? 0),
-      0,
-    );
-    const totalHealing = displayActors.reduce(
-      (sum, a) => sum + (a.healDealt ?? 0),
-      0,
-    );
-
-    // Calculate duration for overall encounter
-    const durationSecs = Math.max(
-      1,
-      ((encounter.endedAtMs ?? Date.now()) - encounter.startedAtMs) / 1000,
-    );
-
-    players = displayActors.map((a) => {
-      const hits = a.hitsDealt || 0;
-      const hitsTaken = a.hitsTaken || 0;
-      const hitsHeal = a.hitsHeal || 0;
-      const className = getClassName(a.classId);
-      const dmgValue = a.damageDealt || 0;
-      const bossDmgValue = a.bossDamageDealt || 0;
-      const critTotal = a.critHitsDealt ? a.critTotalDealt || 0 : 0;
-      const luckyTotal = a.luckyHitsDealt ? a.luckyTotalDealt || 0 : 0;
-      const activeTimeMs = a.activeDmgTimeMs || 0;
-      const tdpsValue =
-        a.tdps ??
-        (activeTimeMs > 0
-          ? dmgValue / Math.max(activeTimeMs / 1000, 0.001)
-          : dmgValue / durationSecs);
-
-      return {
-        uid: a.actorId,
-        name: a.name ?? String(a.actorId),
-        isLocalPlayer: a.isLocalPlayer ?? false,
-        className,
-        classSpecName: "",
-        classDisplay: className || "未知职业",
-        abilityScore: a.abilityScore || 0,
-        totalDmg: dmgValue,
-        dps: dmgValue / durationSecs,
-        tdps: tdpsValue,
-        activeTimeMs,
-        dmgPct: totalDmg > 0 ? (dmgValue * 100) / totalDmg : 0,
-        bossDmg: bossDmgValue,
-        bossDps: bossDmgValue / durationSecs,
-        bossDmgPct: totalBossDmg > 0 ? (bossDmgValue * 100) / totalBossDmg : 0,
-        critRate: hits > 0 ? (a.critHitsDealt || 0) / hits : 0,
-        critDmgRate: dmgValue > 0 ? critTotal / dmgValue : 0,
-        luckyRate: hits > 0 ? (a.luckyHitsDealt || 0) / hits : 0,
-        luckyDmgRate: dmgValue > 0 ? luckyTotal / dmgValue : 0,
-        hits: hits,
-        hitsPerMinute: hits / (durationSecs / 60.0),
-        // Tanked stats
-        damageTaken: a.damageTaken || 0,
-        tankedPS: (a.damageTaken || 0) / durationSecs,
-        tankedPct:
-          totalDamageTaken > 0
-            ? ((a.damageTaken || 0) * 100) / totalDamageTaken
-            : 0,
-        critTakenRate: hitsTaken > 0 ? (a.critHitsTaken || 0) / hitsTaken : 0,
-        hitsTaken: hitsTaken,
-        // Healing stats
-        healDealt: a.healDealt || 0,
-        hps: (a.healDealt || 0) / durationSecs,
-        healPct:
-          totalHealing > 0 ? ((a.healDealt || 0) * 100) / totalHealing : 0,
-        critHealRate: hitsHeal > 0 ? (a.critHitsHeal || 0) / hitsHeal : 0,
-        hitsHeal: hitsHeal,
-      };
-    });
-  }
-
-  function preferredSkillTypeForSpec(p: any): "dps" | "heal" | "tanked" {
-    const heal = Number(p.healDealt ?? 0);
-    const dmg = Number(p.totalDmg ?? 0);
-    const tanked = Number(p.damageTaken ?? 0);
-    if (heal > 0) return "heal";
-    if (dmg <= 0 && tanked > 0) return "tanked";
-    return "dps";
-  }
-
-  async function fetchSpecName(
-    encId: number,
-    uid: number,
-    preferred: "dps" | "heal" | "tanked",
-  ): Promise<string> {
-    const attempts: ("dps" | "heal" | "tanked")[] = Array.from(
-      new Set([preferred, "dps", "heal", "tanked"]),
-    );
-
-    for (const t of attempts) {
-      const res = await commands.getEncounterPlayerSkills(encId, uid, t);
-      if (res.status !== "ok") continue;
-      const spec = res.data.currPlayer?.[0]?.classSpecName ?? "";
-      if (spec) return spec;
-    }
-    return "";
-  }
-
-  async function populatePlayerSpecsIfNeeded() {
-    if (!encounterId || !encounter) return;
-    if (!needsSpecNames) return;
-    if (isSpecLoading) return;
-    if (specsLoadedForEncounterId === encounterId) return;
-    if (!players || players.length === 0) return;
-
-    isSpecLoading = true;
-    try {
-      const updates = await Promise.all(
-        players.map(async (p) => {
-          if (p.classSpecName) return [p.uid, p.classSpecName] as const;
-          const preferred = preferredSkillTypeForSpec(p);
-          const spec = await fetchSpecName(encounterId, p.uid, preferred);
-          return [p.uid, spec] as const;
-        }),
-      );
-
-      const specByUid = new Map<number, string>(updates);
-      players = players.map((p) => ({
-        ...p,
-        classSpecName: specByUid.get(p.uid) ?? p.classSpecName ?? "",
-      }));
-      specsLoadedForEncounterId = encounterId;
-    } catch (e) {
-      console.error("Failed to populate class spec names for history view:", e);
-      // Leave specsLoadedForEncounterId unset so we can retry.
-    } finally {
-      isSpecLoading = false;
-    }
-  }
-
-  async function loadPlayerSkills() {
-    if (!encounterId || !charId) {
-      skillsWindow = null;
-      selectedPlayer = null;
+    if (entitiesRes.status !== "ok") {
+      error = String(entitiesRes.error);
       return;
     }
 
-    const playerUid = parseInt(charId);
-    const res = await commands.getEncounterPlayerSkills(
-      encounterId,
-      playerUid,
-      skillType,
-    );
-    if (res.status === "ok") {
-      console.log("skills", res);
-      skillsWindow = res.data;
-      const found = players.find((p) => p.uid === playerUid);
-      const specFromCurr = res.data.currPlayer?.[0]?.classSpecName ?? "";
-      if (found && specFromCurr) {
-        selectedPlayer = { ...found, classSpecName: specFromCurr };
-        players = players.map((p) =>
-          p.uid === playerUid ? { ...p, classSpecName: specFromCurr } : p,
-        );
-      } else {
-        selectedPlayer = found;
-      }
-    } else {
-      error = String(res.error);
-    }
+    encounter = encounterRes.data;
+    rawEntities = entitiesRes.data;
+    const durationSeconds =
+      encounterRes.data.duration > 0
+        ? Math.max(1, encounterRes.data.duration)
+        : Math.max(
+            1,
+            ((encounterRes.data.endedAtMs ?? Date.now()) - encounterRes.data.startedAtMs) / 1000,
+          );
+    players = buildHistoryPlayers(rawEntities, durationSeconds);
   }
 
   function viewPlayerSkills(playerUid: number, type = "dps") {
@@ -465,30 +416,6 @@
 
   $effect(() => {
     loadEncounter();
-  });
-
-  // If Name - Spec is enabled in Past Encounters settings, load missing spec names.
-  $effect(() => {
-    // reactive deps:
-    encounterId;
-    encounter;
-    charId;
-    needsSpecNames;
-    players.length;
-    if (!charId) {
-      populatePlayerSpecsIfNeeded();
-    }
-  });
-
-  $effect(() => {
-    // Re-run when charId changes
-    charId;
-    if (charId) {
-      loadPlayerSkills();
-    } else {
-      skillsWindow = null;
-      selectedPlayer = null;
-    }
   });
 
 </script>
@@ -665,15 +592,15 @@
           <tbody class="bg-background/40">
             {#each displayedPlayers as p (p.uid)}
               <tr
-                class="relative border-t border-border/40 hover:bg-muted/60 transition-colors {activeTab ===
-                'tanked'
-                  ? 'cursor-default'
-                  : 'cursor-pointer'}"
+                class="relative border-t border-border/40 hover:bg-muted/60 transition-colors cursor-pointer"
                 onclick={() =>
-                  activeTab !== "tanked" &&
                   viewPlayerSkills(
                     p.uid,
-                    activeTab === "healing" ? "heal" : "dps",
+                    activeTab === "healing"
+                      ? "heal"
+                      : activeTab === "tanked"
+                        ? "tanked"
+                        : "dps",
                   )}
               >
                 <td
@@ -759,7 +686,7 @@
           </tbody>
         </table>
     </div>
-  {:else if charId && skillsWindow && selectedPlayer}
+  {:else if charId && selectedPlayer && selectedEntity}
     <!-- Player Skills View -->
     <div class="mb-4">
       <div class="flex items-center gap-3 mb-2">
@@ -820,21 +747,33 @@
           </tr>
         </thead>
         <tbody class="bg-background/40">
-          {#each skillsWindow.skillRows as s (s.skillId)}
+          {#each flatSkillRows as item (item.key)}
             <tr
               class="relative border-t border-border/40 hover:bg-muted/60 transition-colors"
             >
               <td class="px-3 py-3 text-sm text-muted-foreground relative z-10"
-                >{s.name}</td
+              >
+                {#if item.kind === "group"}
+                  <button
+                    class="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                    onclick={() => toggleGroup(item.row.recountId)}
+                  >
+                    <span class="text-xs">{expandedGroups.has(item.row.recountId) ? "▼" : "▶"}</span>
+                    <span>{item.row.recountName}</span>
+                  </button>
+                {:else}
+                  <span class={item.depth > 0 ? "pl-5" : ""}>{item.row.name}</span>
+                {/if}
+              </td
               >
               {#each visibleSkillColumns as col (col.key)}
                 <td
                   class="px-3 py-3 text-right text-sm text-muted-foreground relative z-10"
                 >
                   {#if (col.key === "totalDmg" || col.key === "dps") && (skillType === "tanked" ? SETTINGS.history.general.state.shortenTps : SETTINGS.history.general.state.shortenDps)}
-                    <AbbreviatedNumber num={s[col.key] ?? 0} />
+                    <AbbreviatedNumber num={skillCellValue(item, col.key)} />
                   {:else}
-                    {col.format(s[col.key] ?? 0)}
+                    {col.format(skillCellValue(item, col.key))}
                   {/if}
                 </td>
               {/each}
@@ -842,18 +781,18 @@
                 className={selectedPlayer.className}
                 percentage={skillType === "heal"
                   ? SETTINGS.history.general.state.relativeToTopHealSkill &&
-                    maxHealSkill > 0
-                    ? (s.totalDmg / maxHealSkill) * 100
-                    : s.dmgPct
+                    maxSkillTotal > 0
+                    ? (rowTotalDmg(item) / maxSkillTotal) * 100
+                    : rowDmgPct(item)
                   : skillType === "tanked"
                     ? SETTINGS.history.general.state.relativeToTopTankedSkill &&
-                      maxTankedSkill > 0
-                      ? (s.totalDmg / maxTankedSkill) * 100
-                      : s.dmgPct
+                      maxSkillTotal > 0
+                      ? (rowTotalDmg(item) / maxSkillTotal) * 100
+                      : rowDmgPct(item)
                     : SETTINGS.history.general.state.relativeToTopDPSSkill &&
-                        maxDpsSkill > 0
-                      ? (s.totalDmg / maxDpsSkill) * 100
-                      : s.dmgPct}
+                        maxSkillTotal > 0
+                      ? (rowTotalDmg(item) / maxSkillTotal) * 100
+                      : rowDmgPct(item)}
               />
             </tr>
           {/each}

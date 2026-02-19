@@ -328,7 +328,32 @@ export const FONT_SIZE_LABELS: Record<string, string> = {
 };
 
 // Default custom theme colors (based on dark theme)
-export const DEFAULT_CUSTOM_THEME_COLORS: Record<string, string> = {
+export type CustomThemeColors = {
+  backgroundMain: string;
+  backgroundLive: string;
+  foreground: string;
+  surface: string;
+  surfaceForeground: string;
+  primary: string;
+  primaryForeground: string;
+  secondary: string;
+  secondaryForeground: string;
+  muted: string;
+  mutedForeground: string;
+  accent: string;
+  accentForeground: string;
+  destructive: string;
+  destructiveForeground: string;
+  border: string;
+  input: string;
+  tooltipBg: string;
+  tooltipBorder: string;
+  tooltipFg: string;
+  tableTextColor: string;
+  tableAbbreviatedColor: string;
+};
+
+export const DEFAULT_CUSTOM_THEME_COLORS: CustomThemeColors = {
   backgroundMain: 'rgba(33, 33, 33, 1)',
   backgroundLive: 'rgba(33, 33, 33, 1)',
   foreground: 'rgba(226, 226, 226, 1)',

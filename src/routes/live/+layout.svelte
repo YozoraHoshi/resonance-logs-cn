@@ -11,7 +11,7 @@
   import { onMount } from "svelte";
   import { SETTINGS } from "$lib/settings-store";
   import {
-    onPlayersUpdate,
+    onLiveData,
     onResetEncounter,
     onEncounterUpdate,
     onBossDeath,
@@ -29,9 +29,7 @@
   const scrollPositions = writable<Record<string, number>>({});
 
   import {
-    setDpsPlayers,
-    setHealPlayers,
-    setTankedPlayers,
+    setLiveData,
     clearMeterData,
     cleanupStores,
     setLiveDungeonLog,
@@ -75,20 +73,12 @@
     }
 
     try {
-      // Set up unified players listener
-      const playersUnlisten = await onPlayersUpdate((event) => {
+      // Set up unified live-data listener
+      const playersUnlisten = await onLiveData((event) => {
         if (isDestroyed) return;
-        // console.log("players websocket", event.payload)
         lastEventTime = Date.now();
         hadAnyEvent = true;
-
-        if (event.payload.metricType === "dps") {
-          setDpsPlayers(event.payload.playersWindow);
-        } else if (event.payload.metricType === "heal") {
-          setHealPlayers(event.payload.playersWindow);
-        } else if (event.payload.metricType === "tanked") {
-          setTankedPlayers(event.payload.playersWindow);
-        }
+        setLiveData(event.payload);
       });
 
       if (isDestroyed) {

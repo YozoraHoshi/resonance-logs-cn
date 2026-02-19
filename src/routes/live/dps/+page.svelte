@@ -2,20 +2,18 @@
   import { getClassIcon, tooltip } from "$lib/utils.svelte";
   import { goto } from "$app/navigation";
   import { settings, SETTINGS, DEFAULT_STATS } from "$lib/settings-store";
-  import { getDpsPlayers } from "$lib/stores/live-meter-store.svelte";
+  import { getLiveData } from "$lib/stores/live-meter-store.svelte";
+  import { computePlayerRows } from "$lib/live-derived";
   import TableRowGlow from "$lib/components/table-row-glow.svelte";
   import { historyDpsPlayerColumns } from "$lib/column-data";
   import AbbreviatedNumber from "$lib/components/abbreviated-number.svelte";
   import PercentFormat from "$lib/components/percent-format.svelte";
   import getDisplayName from "$lib/name-display";
 
-  // Create reactive references
-  let rawDpsData = $state(getDpsPlayers().playerRows);
-
-  // Update data when store changes
-  $effect(() => {
-    rawDpsData = getDpsPlayers().playerRows;
-  });
+  let liveData = $derived(getLiveData());
+  let rawDpsData = $derived(
+    liveData ? computePlayerRows(liveData, "dps") : [],
+  );
 
   // Sorting settings
   let sortKey = $derived(SETTINGS.live.sorting.dpsPlayers.state.sortKey);
@@ -64,8 +62,7 @@
 
   // Update maxDamage when data changes
   $effect(() => {
-    const players = getDpsPlayers().playerRows;
-    maxDamage = players.reduce(
+    maxDamage = rawDpsData.reduce(
       (max, p) => (p.totalDmg > max ? p.totalDmg : max),
       0,
     );
@@ -214,7 +211,7 @@
                   <AbbreviatedNumber
                     num={player.bossDmg}
                     suffixFontSize={tableSettings.abbreviatedFontSize}
-                    suffixColor={tableSettings.abbreviatedColor}
+                    suffixColor={customThemeColors.tableAbbreviatedColor}
                   />
                 {:else}
                   {player.bossDmg.toLocaleString()}

@@ -1,20 +1,18 @@
 <script lang="ts">
   import { getClassIcon, tooltip } from "$lib/utils.svelte";
   import { settings, SETTINGS } from "$lib/settings-store";
-  import { getTankedPlayers } from "$lib/stores/live-meter-store.svelte";
+  import { getLiveData } from "$lib/stores/live-meter-store.svelte";
+  import { computePlayerRows } from "$lib/live-derived";
   import TableRowGlow from "$lib/components/table-row-glow.svelte";
   import { liveTankedPlayerColumns } from "$lib/column-data";
   import AbbreviatedNumber from "$lib/components/abbreviated-number.svelte";
   import PercentFormat from "$lib/components/percent-format.svelte";
   import getDisplayName from "$lib/name-display";
 
-  // Create reactive data reference
-  let rawTankedData = $state(getTankedPlayers().playerRows);
-
-  // Update data when store changes
-  $effect(() => {
-    rawTankedData = getTankedPlayers().playerRows;
-  });
+  let liveData = $derived(getLiveData());
+  let rawTankedData = $derived(
+    liveData ? computePlayerRows(liveData, "tanked") : [],
+  );
 
   // Sorting settings
   let sortKey = $derived(SETTINGS.live.sorting.tankedPlayers.state.sortKey);
@@ -65,8 +63,7 @@
 
   // Update maxTaken when data changes
   $effect(() => {
-    const players = getTankedPlayers().playerRows;
-    maxTaken = players.reduce(
+    maxTaken = rawTankedData.reduce(
       (max, p) => (p.totalDmg > max ? p.totalDmg : max),
       0,
     );

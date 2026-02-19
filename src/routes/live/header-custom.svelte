@@ -18,18 +18,12 @@
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import {
-    onEncounterUpdate,
-    onResetEncounter,
-    resetEncounter,
-    togglePauseEncounter,
-    type HeaderInfo,
-  } from "$lib/api";
+  import { resetEncounter, togglePauseEncounter, type HeaderInfo } from "$lib/api";
   import { tooltip } from "$lib/utils.svelte";
   import AbbreviatedNumber from "$lib/components/abbreviated-number.svelte";
   import { emitTo } from "@tauri-apps/api/event";
   import { SETTINGS } from "$lib/settings-store";
-  import { getLiveDungeonLog } from "$lib/stores/live-meter-store.svelte";
+  import { getLiveData, getLiveDungeonLog } from "$lib/stores/live-meter-store.svelte";
   import { DUMMY_HEADER_INFO, DUMMY_SEGMENT_INFO } from "$lib/dummy-data";
 
   // Get header settings
@@ -37,6 +31,7 @@
 
   // Check if dummy data mode is enabled
   let useDummyData = $derived(SETTINGS.live.general.state.useDummyData);
+  let liveData = $derived(getLiveData());
 
   let fightStartTimestampMs = $state(0);
   let clientElapsedMs = $state(0);
@@ -96,55 +91,8 @@
   }
 
   onMount(() => {
-    let encounterUnlisten: (() => void) | null = null;
-    let resetUnlisten: (() => void) | null = null;
-    let isDestroyed = false;
-
-    onEncounterUpdate((event) => {
-      if (isDestroyed) return;
-      const newHeaderInfo = event.payload.headerInfo;
-      const newFightStartTimestamp = newHeaderInfo.fightStartTimestampMs;
-
-      if (
-        newFightStartTimestamp > 0 &&
-        newFightStartTimestamp !== fightStartTimestampMs
-      ) {
-        fightStartTimestampMs = newFightStartTimestamp;
-        clientElapsedMs = Date.now() - fightStartTimestampMs;
-      }
-
-      headerInfo = newHeaderInfo;
-      isEncounterPaused = event.payload.isPaused;
-
-      if (newFightStartTimestamp === 0) {
-        fightStartTimestampMs = 0;
-        clientElapsedMs = 0;
-      }
-    }).then((fn) => {
-      if (isDestroyed) {
-        fn();
-      } else {
-        encounterUnlisten = fn;
-      }
-    });
-
-    onResetEncounter(() => {
-      if (isDestroyed) return;
-      resetTimer();
-    }).then((fn) => {
-      if (isDestroyed) {
-        fn();
-      } else {
-        resetUnlisten = fn;
-      }
-    });
-
     animationFrameId = requestAnimationFrame(updateClientTimer);
-
     return () => {
-      isDestroyed = true;
-      if (encounterUnlisten) encounterUnlisten();
-      if (resetUnlisten) resetUnlisten();
       if (animationFrameId !== null) {
         cancelAnimationFrame(animationFrameId);
       }
@@ -171,6 +119,38 @@
     currentSegmentName: null,
   });
   let isEncounterPaused = $state(false);
+
+  $effect(() => {
+    // In dummy mode, state is entirely derived from DUMMY_HEADER_INFO.
+    if (useDummyData) return;
+
+    const data = liveData;
+    if (!data || data.fightStartTimestampMs <= 0) {
+      resetTimer();
+      isEncounterPaused = false;
+      return;
+    }
+
+    headerInfo = {
+      totalDps:
+        data.elapsedMs > 0 ? Number(data.totalDmg) / (Number(data.elapsedMs) / 1000) : 0,
+      totalDmg: Number(data.totalDmg),
+      elapsedMs: Number(data.elapsedMs),
+      fightStartTimestampMs: Number(data.fightStartTimestampMs),
+      bosses: data.bosses,
+      sceneId: data.sceneId,
+      sceneName: data.sceneName,
+      currentSegmentType: data.currentSegmentType,
+      currentSegmentName: data.currentSegmentName,
+    };
+
+    isEncounterPaused = !!data.isPaused;
+
+    if (fightStartTimestampMs !== Number(data.fightStartTimestampMs)) {
+      fightStartTimestampMs = Number(data.fightStartTimestampMs);
+      clientElapsedMs = Date.now() - fightStartTimestampMs;
+    }
+  });
 
   // Display values - use dummy data when enabled
   let displayHeaderInfo = $derived(

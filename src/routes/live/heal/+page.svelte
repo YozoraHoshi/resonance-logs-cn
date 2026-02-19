@@ -2,20 +2,18 @@
   import { getClassIcon, tooltip } from "$lib/utils.svelte";
   import { goto } from "$app/navigation";
   import { settings, SETTINGS } from "$lib/settings-store";
-  import { getHealPlayers } from "$lib/stores/live-meter-store.svelte";
+  import { getLiveData } from "$lib/stores/live-meter-store.svelte";
+  import { computePlayerRows } from "$lib/live-derived";
   import TableRowGlow from "$lib/components/table-row-glow.svelte";
   import { liveHealPlayerColumns } from "$lib/column-data";
   import AbbreviatedNumber from "$lib/components/abbreviated-number.svelte";
   import PercentFormat from "$lib/components/percent-format.svelte";
   import getDisplayName from "$lib/name-display";
 
-  // Create reactive data reference
-  let rawHealData = $state(getHealPlayers().playerRows);
-
-  // Update data when store changes
-  $effect(() => {
-    rawHealData = getHealPlayers().playerRows;
-  });
+  let liveData = $derived(getLiveData());
+  let rawHealData = $derived(
+    liveData ? computePlayerRows(liveData, "heal") : [],
+  );
 
   // Sorting settings
   let sortKey = $derived(SETTINGS.live.sorting.healPlayers.state.sortKey);
@@ -61,8 +59,7 @@
 
   // Update maxHeal when data changes
   $effect(() => {
-    const players = getHealPlayers().playerRows;
-    maxHeal = players.reduce(
+    maxHeal = rawHealData.reduce(
       (max, p) => (p.totalDmg > max ? p.totalDmg : max),
       0,
     );

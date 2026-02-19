@@ -62,7 +62,12 @@
 </script>
 
 <div class="ml-2 flex">
-  <img {@attach tooltip(() => classDisplay)} class="size-5 object-contain" src={getClassIcon(classIconDisplay())} />
+  <img
+    {@attach tooltip(() => classDisplay)}
+    class="size-5 object-contain"
+    src={getClassIcon(classIconDisplay())}
+    alt={classDisplay}
+  />
 
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <!-- svelte-ignore a11y_click_events_have_key_events -->

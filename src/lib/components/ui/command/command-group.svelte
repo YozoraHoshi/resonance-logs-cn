@@ -23,5 +23,9 @@
       {heading}
     </CommandPrimitive.GroupHeading>
   {/if}
-  <CommandPrimitive.GroupItems {children} />
+  {#if children}
+    <CommandPrimitive.GroupItems {children} />
+  {:else}
+    <CommandPrimitive.GroupItems />
+  {/if}
 </CommandPrimitive.Group>

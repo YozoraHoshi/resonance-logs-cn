@@ -581,7 +581,7 @@
           talentSpriteFile: def.talentSpriteFile,
           text: timeText,
           layer: buff.layer,
-          specialImages: specialImages.length > 0 ? specialImages : undefined,
+          ...(specialImages.length > 0 ? { specialImages } : {}),
         });
       } else {
         nextTextBuffs.push({
@@ -617,8 +617,9 @@
             text: "--",
             layer: 1,
             isPlaceholder: true,
-            specialImages:
-              placeholderSpecialImages.length > 0 ? placeholderSpecialImages : undefined,
+            ...(placeholderSpecialImages.length > 0
+              ? { specialImages: placeholderSpecialImages }
+              : {}),
           });
         } else {
           nextTextBuffs.push({

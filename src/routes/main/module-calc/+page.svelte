@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount } from "svelte";
   import { Button } from "$lib/components/ui/button";
   import CalculatorIcon from "virtual:icons/lucide/calculator";
   import RefreshCw from "virtual:icons/lucide/refresh-cw";

@@ -29,7 +29,7 @@
             </div>
             <div class="text-xs text-muted-foreground">配置ID: {mod.config_id} · UUID: {mod.uuid}</div>
             <div class="mt-2 text-sm">
-              {mod.parts.map((p) => `${p.name}+${p.value}`).join(", ")}
+              {mod.parts.map((p: { name: string; value: number }) => `${p.name}+${p.value}`).join(", ")}
             </div>
           </div>
         {/each}

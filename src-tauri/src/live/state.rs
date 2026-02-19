@@ -11,7 +11,7 @@ use crate::live::dungeon_log::{
     self, BattleStateMachine, DungeonLogRuntime, EncounterResetReason, SegmentType,
     SharedDungeonLog,
 };
-use crate::live::event_manager::{EventManager, MetricType};
+use crate::live::event_manager::EventManager;
 use crate::live::opcodes_models::Encounter;
 use blueprotobuf_lib::blueprotobuf;
 use blueprotobuf_lib::blueprotobuf::{
@@ -20,7 +20,7 @@ use blueprotobuf_lib::blueprotobuf::{
 use log::{info, trace, warn};
 use prost::Message;
 use serde::Serialize;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tauri::{AppHandle, Emitter, Manager};
@@ -109,8 +109,6 @@ pub struct AppState {
     pub encounter: Encounter,
     /// The event manager.
     pub event_manager: EventManager,
-    /// The set of skill subscriptions.
-    pub skill_subscriptions: HashSet<(i64, String)>,
     /// Skill cooldown map keyed by skill level ID.
     pub skill_cd_map: HashMap<i32, SkillCdState>,
     /// Ordered list of monitored skill IDs.
@@ -184,14 +182,6 @@ pub struct LiveStateSnapshot {
 #[derive(Debug, Clone)]
 pub enum LiveControlCommand {
     StateEvent(StateEvent),
-    SubscribePlayerSkill {
-        uid: i64,
-        skill_type: String,
-    },
-    UnsubscribePlayerSkill {
-        uid: i64,
-        skill_type: String,
-    },
     SetBossOnlyDps(bool),
     SetDungeonSegmentsEnabled(bool),
     SetEventUpdateRateMs(u64),
@@ -215,7 +205,6 @@ impl AppState {
         Self {
             encounter: Encounter::default(),
             event_manager: EventManager::new(),
-            skill_subscriptions: HashSet::new(),
             skill_cd_map: HashMap::new(),
             monitored_skill_ids: Vec::new(),
             monitored_buff_ids: Vec::new(),
@@ -637,12 +626,6 @@ impl AppStateManager {
             LiveControlCommand::StateEvent(event) => {
                 self.apply_event(state, event).await;
             }
-            LiveControlCommand::SubscribePlayerSkill { uid, skill_type } => {
-                state.skill_subscriptions.insert((uid, skill_type));
-            }
-            LiveControlCommand::UnsubscribePlayerSkill { uid, skill_type } => {
-                state.skill_subscriptions.remove(&(uid, skill_type));
-            }
             LiveControlCommand::SetBossOnlyDps(enabled) => {
                 state.boss_only_dps = enabled;
                 self.update_and_emit_events_with_state(state).await;
@@ -784,8 +767,6 @@ impl AppStateManager {
             state.event_manager.clear_dead_bosses();
         }
 
-        // Clear skill subscriptions
-        state.skill_subscriptions.clear();
         state.low_hp_bosses.clear();
         state.battle_state = BattleStateMachine::default();
     }
@@ -799,7 +780,6 @@ impl AppStateManager {
 
         // Reset combat state (live meter)
         state.encounter.reset_combat_state();
-        state.skill_subscriptions.clear();
 
         // Restore the original fight start time to preserve total encounter duration
         state.encounter.time_fight_start_ms = original_fight_start_ms;
@@ -1577,7 +1557,6 @@ impl AppStateManager {
             );
         }
         state.encounter.reset_combat_state();
-        state.skill_subscriptions.clear();
 
         if state.event_manager.should_emit_events() {
             state.event_manager.emit_encounter_reset();
@@ -1606,18 +1585,6 @@ impl AppStateManager {
         if is_manual {
             state.battle_state = BattleStateMachine::default();
         }
-    }
-
-    pub async fn subscribe_player_skill(&self, uid: i64, skill_type: String) -> Result<(), String> {
-        self.send_control(LiveControlCommand::SubscribePlayerSkill { uid, skill_type })
-    }
-
-    pub async fn unsubscribe_player_skill(
-        &self,
-        uid: i64,
-        skill_type: String,
-    ) -> Result<(), String> {
-        self.send_control(LiveControlCommand::UnsubscribePlayerSkill { uid, skill_type })
     }
 
     /// Get player name by UID from database
@@ -1904,14 +1871,11 @@ fn build_live_state_snapshot(state: &AppState) -> LiveStateSnapshot {
 impl AppStateManager {
     /// Updates and emits events.
     pub async fn update_and_emit_events_with_state(&self, state: &mut AppState) {
-        let encounter = state.encounter.clone();
-        let should_emit = state.event_manager.should_emit_events();
-        let boss_only = false; // Always emit full damage totals; boss damage is exposed separately.
-        let dungeon_ctx = dungeon_runtime_if_enabled(state);
-
-        if !should_emit {
+        if !state.event_manager.should_emit_events() {
             return;
         }
+
+        let dungeon_ctx = dungeon_runtime_if_enabled(state);
 
         let active_segment_snapshot = dungeon_ctx
             .as_ref()
@@ -1924,162 +1888,51 @@ impl AppStateManager {
                     .cloned()
             });
 
-        let (segment_timing, active_segment) = if let Some(segment) = active_segment_snapshot {
+        let active_segment = if let Some(segment) = active_segment_snapshot {
             let segment_type = match segment.segment_type {
                 SegmentType::Boss => "boss".to_string(),
                 SegmentType::Trash => "trash".to_string(),
             };
-
-            let start_ms = segment.started_at_ms.max(0) as u128;
-            let end_ms = segment
-                .ended_at_ms
-                .map(|t| t.max(0) as u128)
-                .unwrap_or(encounter.time_last_combat_packet_ms);
-            let elapsed_ms = end_ms.saturating_sub(start_ms);
-
-            (
-                Some((start_ms, elapsed_ms)),
-                Some((segment_type, segment.boss_name.clone())),
-            )
+            Some((segment_type, segment.boss_name.clone()))
         } else {
-            (None, None)
+            None
         };
 
-        let segment_elapsed_ms = segment_timing.map(|(_, elapsed)| elapsed);
-
-        let header_info_with_deaths =
-            crate::live::event_manager::generate_header_info(&encounter, boss_only, segment_timing);
-        let dps_players = crate::live::event_manager::generate_players_window_dps(
-            &encounter,
-            &state.entity_cache,
-            boss_only,
-            segment_elapsed_ms,
+        let mut payload = crate::live::event_manager::generate_live_data_payload(
+            &state.encounter,
+            active_segment.as_ref().map(|(segment_type, _)| segment_type.clone()),
+            active_segment.as_ref().and_then(|(_, segment_name)| segment_name.clone()),
         );
-        let heal_players = crate::live::event_manager::generate_players_window_heal(
-            &encounter,
-            &state.entity_cache,
-            segment_elapsed_ms,
-        );
-        let tanked_players = crate::live::event_manager::generate_players_window_tanked(
-            &encounter,
-            &state.entity_cache,
-            segment_elapsed_ms,
-        );
-        // Generate skill windows for all players
-        let mut dps_skill_windows = Vec::new();
-        let mut heal_skill_windows = Vec::new();
-        let mut tanked_skill_windows = Vec::new();
-        let mut subscribed_players = Vec::new();
 
-        for (&entity_uid, entity) in &encounter.entity_uid_to_entity {
-            let is_player = entity.entity_type == blueprotobuf::EEntityType::EntChar;
-            let has_dmg_skills = !entity.skill_uid_to_dmg_skill.is_empty();
-            let has_heal_skills = !entity.skill_uid_to_heal_skill.is_empty();
-            let has_taken_skills = !entity.skill_uid_to_taken_skill.is_empty();
-
-            if is_player && has_dmg_skills {
-                if let Some(skills_window) = crate::live::event_manager::generate_skills_window_dps(
-                    &encounter,
-                    &state.entity_cache,
-                    entity_uid,
-                    boss_only,
-                    segment_elapsed_ms,
-                ) {
-                    dps_skill_windows.push((entity_uid, skills_window));
-                }
-            }
-
-            if is_player && has_heal_skills {
-                if let Some(skills_window) = crate::live::event_manager::generate_skills_window_heal(
-                    &encounter,
-                    &state.entity_cache,
-                    entity_uid,
-                    segment_elapsed_ms,
-                ) {
-                    heal_skill_windows.push((entity_uid, skills_window));
-                }
-            }
-
-            if is_player && has_taken_skills {
-                if let Some(skills_window) =
-                    crate::live::event_manager::generate_skills_window_tanked(
-                        &encounter,
-                        &state.entity_cache,
-                        entity_uid,
-                        segment_elapsed_ms,
-                    )
-                {
-                    tanked_skill_windows.push((entity_uid, skills_window));
-                }
-            }
-
-            // Collect subscribed players for later emission
-            subscribed_players.push(entity_uid);
-        }
-        let (final_header_info, boss_deaths) =
-            if let Some((mut header_info, mut dead_bosses)) = header_info_with_deaths {
-                use std::collections::HashSet;
-
-                if let Some((segment_type, segment_name)) = &active_segment {
-                    header_info.current_segment_type = Some(segment_type.clone());
-                    header_info.current_segment_name = segment_name.clone();
+        let mut boss_deaths: Vec<(i64, String)> = Vec::new();
+        let current_time_ms = now_ms() as u128;
+        for boss in &mut payload.bosses {
+            let hp_percent = if let (Some(curr_hp), Some(max_hp)) = (boss.current_hp, boss.max_hp) {
+                if max_hp > 0 {
+                    curr_hp as f64 / max_hp as f64 * 100.0
                 } else {
-                    header_info.current_segment_type = None;
-                    header_info.current_segment_name = None;
+                    100.0
                 }
-
-                let mut dead_ids: HashSet<i64> = dead_bosses.iter().map(|(uid, _)| *uid).collect();
-                let current_time_ms = now_ms() as u128;
-
-                for boss in &mut header_info.bosses {
-                    let hp_percent =
-                        if let (Some(curr_hp), Some(max_hp)) = (boss.current_hp, boss.max_hp) {
-                            if max_hp > 0 {
-                                curr_hp as f64 / max_hp as f64 * 100.0
-                            } else {
-                                0.0
-                            }
-                        } else {
-                            100.0
-                        };
-
-                    if hp_percent < 5.0 {
-                        let entry = state
-                            .low_hp_bosses
-                            .entry(boss.uid)
-                            .or_insert(current_time_ms);
-                        if current_time_ms.saturating_sub(*entry) >= 5_000 {
-                            if dead_ids.insert(boss.uid) {
-                                dead_bosses.push((boss.uid, boss.name.clone()));
-                            }
-                        }
-                    } else {
-                        state.low_hp_bosses.remove(&boss.uid);
-                    }
-
-                    if dead_ids.contains(&boss.uid) {
-                        boss.current_hp = Some(0);
-                        state.low_hp_bosses.remove(&boss.uid);
-                    }
-                }
-
-                (Some(header_info), dead_bosses)
             } else {
-                (None, Vec::new())
+                100.0
             };
 
-        let skill_subscriptions_clone = state.skill_subscriptions.clone();
+            if hp_percent < 5.0 {
+                let entry = state.low_hp_bosses.entry(boss.uid).or_insert(current_time_ms);
+                if current_time_ms.saturating_sub(*entry) >= 5_000 {
+                    boss_deaths.push((boss.uid, boss.name.clone()));
+                    boss.current_hp = Some(0);
+                }
+            } else {
+                state.low_hp_bosses.remove(&boss.uid);
+            }
+        }
+
         let app_handle_opt = state.event_manager.get_app_handle();
         self.publish_snapshot_from_state(state);
 
         if let Some(app_handle) = app_handle_opt {
-            if let Some(header_info) = final_header_info {
-                let payload = crate::live::event_manager::EncounterUpdatePayload {
-                    header_info,
-                    is_paused: encounter.is_encounter_paused,
-                };
-                safe_emit(&app_handle, "encounter-update", payload);
-            }
+            safe_emit(&app_handle, "live-data", payload);
 
             if !boss_deaths.is_empty() {
                 let mut any_new_death = false;
@@ -2094,61 +1947,6 @@ impl AppStateManager {
                     dungeon_log::persist_segments(&state.dungeon_log, true);
                 }
                 self.publish_snapshot_from_state(state);
-            }
-
-            if !dps_players.player_rows.is_empty() {
-                let payload = crate::live::event_manager::PlayersUpdatePayload {
-                    metric_type: MetricType::Dps,
-                    players_window: dps_players,
-                };
-                safe_emit(&app_handle, "players-update", payload);
-            }
-
-            if !heal_players.player_rows.is_empty() {
-                let payload = crate::live::event_manager::PlayersUpdatePayload {
-                    metric_type: MetricType::Heal,
-                    players_window: heal_players,
-                };
-                safe_emit(&app_handle, "players-update", payload);
-            }
-
-            if !tanked_players.player_rows.is_empty() {
-                let payload = crate::live::event_manager::PlayersUpdatePayload {
-                    metric_type: MetricType::Tanked,
-                    players_window: tanked_players,
-                };
-                safe_emit(&app_handle, "players-update", payload);
-            }
-
-            for (entity_uid, skills_window) in &dps_skill_windows {
-                if skill_subscriptions_clone.contains(&(*entity_uid, "dps".to_string())) {
-                    let payload = crate::live::event_manager::SkillsUpdatePayload {
-                        metric_type: MetricType::Dps,
-                        player_uid: *entity_uid,
-                        skills_window: skills_window.clone(),
-                    };
-                    safe_emit(&app_handle, "skills-update", payload);
-                }
-            }
-            for (entity_uid, skills_window) in &heal_skill_windows {
-                if skill_subscriptions_clone.contains(&(*entity_uid, "heal".to_string())) {
-                    let payload = crate::live::event_manager::SkillsUpdatePayload {
-                        metric_type: MetricType::Heal,
-                        player_uid: *entity_uid,
-                        skills_window: skills_window.clone(),
-                    };
-                    safe_emit(&app_handle, "skills-update", payload);
-                }
-            }
-            for (entity_uid, skills_window) in &tanked_skill_windows {
-                if skill_subscriptions_clone.contains(&(*entity_uid, "tanked".to_string())) {
-                    let payload = crate::live::event_manager::SkillsUpdatePayload {
-                        metric_type: MetricType::Tanked,
-                        player_uid: *entity_uid,
-                        skills_window: skills_window.clone(),
-                    };
-                    safe_emit(&app_handle, "skills-update", payload);
-                }
             }
         }
 

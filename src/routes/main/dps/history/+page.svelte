@@ -257,13 +257,6 @@
 		loadEncounters(0);
 	}
 
-
-	function removeEncounterFilter(sceneName: string) {
-		selectedEncounters = selectedEncounters.filter((n) => n !== sceneName);
-		loadEncounters(0);
-	}
-
-
 	function toggleClassFilter(classId: number, checked: boolean) {
 		if (checked) {
 			if (!selectedClassIds.includes(classId)) {

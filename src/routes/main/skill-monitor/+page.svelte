@@ -80,7 +80,9 @@
     if (target < 0 || target >= ids.length) return ids;
     const next = [...ids];
     const temp = next[idx];
-    next[idx] = next[target];
+    const targetValue = next[target];
+    if (temp === undefined || targetValue === undefined) return ids;
+    next[idx] = targetValue;
     next[target] = temp;
     return next;
   }
