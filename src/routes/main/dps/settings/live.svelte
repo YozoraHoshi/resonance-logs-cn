@@ -4,7 +4,7 @@
   import SettingsSelect from "./settings-select.svelte";
   import SettingsSlider from "./settings-slider.svelte";
   import { SETTINGS } from "$lib/settings-store";
-  import { setWipeDetectionEnabled, setEventUpdateRateMs } from "$lib/api";
+  import { setEventUpdateRateMs } from "$lib/api";
   import ChevronDown from "virtual:icons/lucide/chevron-down";
   import {
     liveDpsPlayerColumns,
@@ -23,12 +23,6 @@
   let _mounted = false;
   onMount(() => {
     _mounted = true;
-  });
-
-  $effect(() => {
-    if (_mounted) {
-      void setWipeDetectionEnabled(SETTINGS.live.general.state.wipeDetection);
-    }
   });
 
   $effect(() => {
@@ -155,11 +149,6 @@
             description="将 DPS 显示为 5k、50k 等"
           />
           <!-- <SettingsSwitch bind:checked={SETTINGS.live.general.state.dungeonSegmentsEnabled} label="Dungeon Segments" description="Persist a dungeon-wide log with boss and trash segments" /> -->
-          <SettingsSwitch
-            bind:checked={SETTINGS.live.general.state.wipeDetection}
-            label="团灭检测"
-            description="队伍团灭（全员死亡）时自动拆分为新的尝试"
-          />
           <SettingsSlider
             bind:value={SETTINGS.live.general.state.eventUpdateRateMs}
             label="刷新频率"
