@@ -19,6 +19,7 @@
     onPauseEncounter,
     onDungeonLogUpdate,
   } from "$lib/api";
+  import { applyCustomFonts } from "$lib/font-loader";
   import { writable } from "svelte/store";
   import { beforeNavigate, afterNavigate } from "$app/navigation";
 
@@ -365,65 +366,15 @@
     }
   });
 
-  // Reactive custom fonts effect
   $effect(() => {
-    if (typeof document === "undefined") return;
-
-    const sansEnabled = SETTINGS.accessibility.state.customFontSansEnabled;
-    const sansName = SETTINGS.accessibility.state.customFontSansName;
-    const sansUrl = SETTINGS.accessibility.state.customFontSansUrl;
-
-    if (sansEnabled && sansName && sansUrl) {
-      // Check if font is already registered
-      if (!document.fonts.check(`12px "${sansName}"`)) {
-        const fontFace = new FontFace(sansName, `url(${sansUrl})`);
-        fontFace
-          .load()
-          .then((loadedFace) => {
-            document.fonts.add(loadedFace);
-          })
-          .catch(() => {});
-      }
-      document.documentElement.style.setProperty(
-        "--font-sans",
-        `"${sansName}", sans-serif`,
-      );
-    } else {
-      document.documentElement.style.setProperty(
-        "--font-sans",
-        '"Inter Variable", sans-serif',
-      );
-    }
-  });
-
-  $effect(() => {
-    if (typeof document === "undefined") return;
-
-    const monoEnabled = SETTINGS.accessibility.state.customFontMonoEnabled;
-    const monoName = SETTINGS.accessibility.state.customFontMonoName;
-    const monoUrl = SETTINGS.accessibility.state.customFontMonoUrl;
-
-    if (monoEnabled && monoName && monoUrl) {
-      // Check if font is already registered
-      if (!document.fonts.check(`12px "${monoName}"`)) {
-        const fontFace = new FontFace(monoName, `url(${monoUrl})`);
-        fontFace
-          .load()
-          .then((loadedFace) => {
-            document.fonts.add(loadedFace);
-          })
-          .catch(() => {});
-      }
-      document.documentElement.style.setProperty(
-        "--font-mono",
-        `"${monoName}", monospace`,
-      );
-    } else {
-      document.documentElement.style.setProperty(
-        "--font-mono",
-        '"Geist Mono Variable", monospace',
-      );
-    }
+    applyCustomFonts({
+      sansEnabled: SETTINGS.accessibility.state.customFontSansEnabled,
+      sansName: SETTINGS.accessibility.state.customFontSansName,
+      sansUrl: SETTINGS.accessibility.state.customFontSansUrl,
+      monoEnabled: SETTINGS.accessibility.state.customFontMonoEnabled,
+      monoName: SETTINGS.accessibility.state.customFontMonoName,
+      monoUrl: SETTINGS.accessibility.state.customFontMonoUrl,
+    });
   });
 
 </script>
@@ -431,7 +382,7 @@
 <!-- flex flex-col min-h-screen → makes the page stretch full height and stack header, body, and footer. -->
 <!-- flex-1 on <main> → makes the body expand to fill leftover space, pushing the footer down. -->
 <div
-  class="flex h-screen flex-col bg-background-live text-[13px] text-foreground rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6)]"
+  class="flex h-screen flex-col bg-background-live text-[13px] text-foreground font-sans rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6)]"
   style="padding: {SETTINGS.live.headerCustomization.state.windowPadding}px"
   data-tauri-drag-region
 >

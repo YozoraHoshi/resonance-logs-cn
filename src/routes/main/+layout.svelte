@@ -8,6 +8,7 @@
   import { goto } from "$app/navigation";
   import { SETTINGS } from '$lib/settings-store';
   import { commands } from "$lib/bindings";
+  import { applyCustomFonts } from "$lib/font-loader";
   import { getDefaultMonitoredBuffIds } from "$lib/skill-mappings";
   import { onMount } from 'svelte';
   import ToolSidebar from "./tool-sidebar.svelte";
@@ -107,6 +108,17 @@
     })();
   });
 
+  $effect(() => {
+    applyCustomFonts({
+      sansEnabled: SETTINGS.accessibility.state.customFontSansEnabled,
+      sansName: SETTINGS.accessibility.state.customFontSansName,
+      sansUrl: SETTINGS.accessibility.state.customFontSansUrl,
+      monoEnabled: SETTINGS.accessibility.state.customFontMonoEnabled,
+      monoName: SETTINGS.accessibility.state.customFontMonoName,
+      monoUrl: SETTINGS.accessibility.state.customFontMonoUrl,
+    });
+  });
+
   // Navigation listener is set up in onMount and properly cleaned up
   let navigateUnlisten: (() => void) | null = null;
 
@@ -134,7 +146,7 @@
       console.error('Failed to get app version', err);
     });
 
-    // Poll settings for background image and custom fonts
+    // Poll settings for background image
     const bgAndFontInterval = window.setInterval(() => {
       try {
         // Apply background image if enabled
@@ -158,38 +170,6 @@
           document.body.style.background = '';
           document.body.style.backgroundImage = '';
           document.body.style.backgroundColor = '';
-        }
-        // Apply custom fonts if enabled
-        const sansEnabled = SETTINGS.accessibility.state.customFontSansEnabled;
-        const sansName = SETTINGS.accessibility.state.customFontSansName;
-        const sansUrl = SETTINGS.accessibility.state.customFontSansUrl;
-        const monoEnabled = SETTINGS.accessibility.state.customFontMonoEnabled;
-        const monoName = SETTINGS.accessibility.state.customFontMonoName;
-        const monoUrl = SETTINGS.accessibility.state.customFontMonoUrl;
-
-        // Load custom fonts if URLs are set
-        if (sansEnabled && sansName && sansUrl) {
-          if (!document.fonts.check(`12px "${sansName}"`)) {
-            const fontFace = new FontFace(sansName, `url(${sansUrl})`);
-            fontFace.load().then((loadedFace) => {
-              document.fonts.add(loadedFace);
-            }).catch(() => {});
-          }
-          document.documentElement.style.setProperty('--font-sans', `"${sansName}", sans-serif`);
-        } else {
-          document.documentElement.style.setProperty('--font-sans', '"Inter Variable", sans-serif');
-        }
-
-        if (monoEnabled && monoName && monoUrl) {
-          if (!document.fonts.check(`12px "${monoName}"`)) {
-            const fontFace = new FontFace(monoName, `url(${monoUrl})`);
-            fontFace.load().then((loadedFace) => {
-              document.fonts.add(loadedFace);
-            }).catch(() => {});
-          }
-          document.documentElement.style.setProperty('--font-mono', `"${monoName}", monospace`);
-        } else {
-          document.documentElement.style.setProperty('--font-mono', '"Geist Mono Variable", monospace');
         }
       } catch (e) {
         // ignore
@@ -217,7 +197,7 @@
   }
 </script>
 
-<div class="flex h-screen bg-background-main text-foreground">
+<div class="flex h-screen bg-background-main text-foreground font-sans">
   <!-- Left Sidebar - Tool List -->
   <ToolSidebar />
 
