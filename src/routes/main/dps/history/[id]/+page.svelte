@@ -773,14 +773,47 @@
               >
                 {#if item.kind === "group"}
                   <button
-                    class="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                    class="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
                     onclick={() => toggleGroup(item.row.recountId)}
                   >
-                    <span class="text-xs">{expandedGroups.has(item.row.recountId) ? "▼" : "▶"}</span>
+                    <svg
+                      class="size-3 shrink-0 text-muted-foreground/70 transition-transform duration-150 {expandedGroups.has(
+                        item.row.recountId,
+                      )
+                        ? 'rotate-90'
+                        : ''}"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2.5"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
                     <span>{item.row.recountName}</span>
                   </button>
                 {:else}
-                  <span class={item.depth > 0 ? "pl-5" : ""}>{item.row.name}</span>
+                  <div
+                    class="inline-flex items-center gap-1.5"
+                    style="padding-left: {item.depth * 16}px;"
+                  >
+                    {#if item.depth > 0}
+                      <span class="w-3 shrink-0 flex justify-center">
+                        <span class="size-1 rounded-full bg-muted-foreground/35"></span>
+                      </span>
+                    {:else}
+                      <span class="w-3 shrink-0"></span>
+                    {/if}
+                    <span class="truncate">{item.row.name}</span>
+                    {#if item.row.showSkillId}
+                      <span class="text-[10px] text-muted-foreground/50 shrink-0">
+                        #{item.row.skillId}
+                      </span>
+                    {/if}
+                  </div>
                 {/if}
               </td
               >

@@ -46,9 +46,8 @@
       : { groups: [] as RecountGroup[], ungrouped: [] as SkillDisplayRow[] },
   );
 
-  let maxSkillValue = $state(0);
-  let SETTINGS_YOUR_NAME = $state(settings.state.live.general.showYourName);
-  let SETTINGS_OTHERS_NAME = $state(settings.state.live.general.showOthersName);
+  let SETTINGS_YOUR_NAME = $derived(settings.state.live.general.showYourName);
+  let SETTINGS_OTHERS_NAME = $derived(settings.state.live.general.showOthersName);
 
   let tableSettings = $derived(SETTINGS.live.tableCustomization.state);
   let customThemeColors = $derived(
@@ -150,17 +149,9 @@
     return rows;
   });
 
-  $effect(() => {
-    maxSkillValue = flatRows.reduce(
-      (max, row) => (row.totalDmg > max ? row.totalDmg : max),
-      0,
-    );
-  });
-
-  $effect(() => {
-    SETTINGS_YOUR_NAME = settings.state.live.general.showYourName;
-    SETTINGS_OTHERS_NAME = settings.state.live.general.showOthersName;
-  });
+  const maxSkillValue = $derived(
+    flatRows.reduce((max, row) => (row.totalDmg > max ? row.totalDmg : max), 0),
+  );
 
   let visibleSkillColumns = $derived.by(() => {
     const visible = historyDpsSkillColumns.filter(
@@ -235,13 +226,36 @@
                     : undefined}
                 disabled={!skill.isGroup}
               >
-                <span style="padding-left: {skill.depth * 12}px;"></span>
+                <span style="padding-left: {skill.depth * 16}px;"></span>
                 {#if skill.isGroup && skill.expandable}
-                  <span class="text-xs">{skill.expanded ? "▼" : "▶"}</span>
+                  <svg
+                    class="size-3 shrink-0 text-muted-foreground/70 transition-transform duration-150 {skill.expanded
+                      ? 'rotate-90'
+                      : ''}"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2.5"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                {:else if skill.depth > 0}
+                  <span class="w-3 shrink-0 flex justify-center">
+                    <span class="size-1 rounded-full bg-muted-foreground/35"></span>
+                  </span>
                 {:else}
-                  <span class="text-xs text-muted-foreground">•</span>
+                  <span class="w-3 shrink-0"></span>
                 {/if}
                 <span class="truncate">{skill.name}</span>
+                {#if skill.showSkillId}
+                  <span class="text-[10px] text-muted-foreground/50 shrink-0">
+                    #{skill.skillId}
+                  </span>
+                {/if}
               </button>
             </td>
             {#each visibleSkillColumns as col (col.key)}

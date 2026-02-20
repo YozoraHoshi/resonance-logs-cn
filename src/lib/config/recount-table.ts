@@ -13,6 +13,7 @@ export type RawSkillStatsLike = {
 export type SkillDisplayRow = {
   skillId: number;
   name: string;
+  showSkillId?: boolean;
   totalDmg: number;
   dps: number;
   dmgPct: number;
@@ -80,6 +81,12 @@ export function lookupDamageIdName(damageId: number): string {
   return damageAttrIdNames[String(damageId)] ?? `Unknown (${damageId})`;
 }
 
+export function lookupChildDamageIdName(damageId: number): string {
+  const individual = damageAttrIdNames[String(damageId)];
+  if (individual) return individual;
+  return lookupDamageIdName(damageId);
+}
+
 export function buildSkillDisplayRow(
   skillId: number,
   stats: RawSkillStatsLike,
@@ -145,6 +152,7 @@ export function groupSkillsByRecount(
 
     group.totalDmg += row.totalDmg;
     group.hits += row.hits;
+    row.name = lookupChildDamageIdName(skillId);
     group.skills.push(row);
   }
 
@@ -166,6 +174,13 @@ export function groupSkillsByRecount(
     group.luckyRate = rate(luckyHits, group.hits);
     group.luckyDmgRate = pct(luckyTotal, group.totalDmg);
     group.hitsPerMinute = perMinute(group.hits, elapsedSecs);
+    const nameCount = new Map<string, number>();
+    for (const skill of group.skills) {
+      nameCount.set(skill.name, (nameCount.get(skill.name) ?? 0) + 1);
+    }
+    for (const skill of group.skills) {
+      skill.showSkillId = (nameCount.get(skill.name) ?? 0) > 1;
+    }
     group.skills.sort((a, b) => b.totalDmg - a.totalDmg);
     return group;
   });
