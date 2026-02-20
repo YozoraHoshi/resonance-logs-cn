@@ -518,7 +518,7 @@ maxHp: number | null;
  * Whether the boss was defeated.
  */
 isDefeated: boolean }
-export type BuffDefinition = { baseId: number; name: string; spriteFile: string; talentName: string | null; talentSpriteFile: string | null; searchKeywords: string[] }
+export type BuffDefinition = { baseId: number; name: string; spriteFile: string; searchKeywords: string[] }
 export type BuffNameInfo = { baseId: number; name: string; hasSpriteFile: boolean }
 export type CombatState = "idle" | "inCombat"
 /**

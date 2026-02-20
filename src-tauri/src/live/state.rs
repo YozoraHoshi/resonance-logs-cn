@@ -1811,10 +1811,6 @@ fn process_buff_effect_bytes(
         .filter(|buff| {
             monitor_all_buff
                 || monitored_base_ids.contains(&buff.base_id)
-                || (buff.source_config_id != 0
-                    && crate::live::buff_names::get_related_base_ids(buff.source_config_id)
-                        .iter()
-                        .any(|id| monitored_base_ids.contains(id)))
         })
         .map(|buff| BuffUpdateState {
             buff_uuid: buff.buff_uuid,

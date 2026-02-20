@@ -184,10 +184,11 @@ export function createDefaultBuffGroup(
 
 export function createDefaultSkillMonitorProfile(
   name = "默认方案",
+  classKey = "wind_knight",
 ): SkillMonitorProfile {
   return {
     name,
-    selectedClass: "wind_knight",
+    selectedClass: classKey,
     monitoredSkillIds: [],
     monitoredBuffIds: [],
     buffPriorityIds: [],

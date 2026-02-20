@@ -37,7 +37,6 @@
     baseId: number;
     name: string;
     spriteFile: string;
-    talentSpriteFile: string | null;
     text: string;
     layer: number;
     isPlaceholder?: boolean;
@@ -578,7 +577,6 @@
           baseId,
           name,
           spriteFile: def.spriteFile,
-          talentSpriteFile: def.talentSpriteFile,
           text: timeText,
           layer: buff.layer,
           ...(specialImages.length > 0 ? { specialImages } : {}),
@@ -613,7 +611,6 @@
             baseId,
             name,
             spriteFile: def.spriteFile,
-            talentSpriteFile: def.talentSpriteFile,
             text: "--",
             layer: 1,
             isPlaceholder: true,
@@ -953,7 +950,7 @@
                     {/each}
                   {:else}
                     <img
-                      src={buff.talentSpriteFile ? `/images/talent/${buff.talentSpriteFile}` : `/images/buff/${buff.spriteFile}`}
+                      src={`/images/buff/${buff.spriteFile}`}
                       alt={buff.name}
                       class="buff-icon"
                     />
@@ -1026,7 +1023,7 @@
             {/each}
           {:else}
             <img
-              src={buff.talentSpriteFile ? `/images/talent/${buff.talentSpriteFile}` : `/images/buff/${buff.spriteFile}`}
+              src={`/images/buff/${buff.spriteFile}`}
               alt={buff.name}
               class="buff-icon"
             />

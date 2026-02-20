@@ -22,8 +22,12 @@
   let buffNames = $state(new Map<number, BuffNameInfo>());
   let buffSearch = $state("");
   let buffSearchResults = $state<BuffNameInfo[]>([]);
+  let globalPrioritySearch = $state("");
+  let globalPrioritySearchResults = $state<BuffNameInfo[]>([]);
   let groupSearchKeyword = $state<Record<string, string>>({});
   let groupSearchResults = $state<Record<string, BuffNameInfo[]>>({});
+  let groupPrioritySearchKeyword = $state<Record<string, string>>({});
+  let groupPrioritySearchResults = $state<Record<string, BuffNameInfo[]>>({});
   let resonanceSearch = $state("");
   onMount(() => {
     void (async () => {
@@ -61,9 +65,7 @@
   const buffGroups = $derived.by(() => ensureBuffGroups(activeProfile));
   const buffPriorityIds = $derived.by(() => {
     const selected = new Set(monitoredBuffIds);
-    const prioritized = (activeProfile.buffPriorityIds ?? []).filter((id) => selected.has(id));
-    const remaining = monitoredBuffIds.filter((id) => !prioritized.includes(id));
-    return [...prioritized, ...remaining];
+    return uniqueIds((activeProfile.buffPriorityIds ?? []).filter((id) => selected.has(id)));
   });
   const textBuffMaxVisible = $derived(
     Math.max(1, Math.min(20, activeProfile.textBuffMaxVisible ?? 10)),
@@ -92,9 +94,7 @@
       return uniqueIds(group.priorityBuffIds ?? []);
     }
     const inGroup = new Set(group.buffIds);
-    const prioritized = (group.priorityBuffIds ?? []).filter((id) => inGroup.has(id));
-    const remaining = group.buffIds.filter((id) => !prioritized.includes(id));
-    return [...prioritized, ...remaining];
+    return uniqueIds((group.priorityBuffIds ?? []).filter((id) => inGroup.has(id)));
   }
 
   function ensureBuffGroup(group: BuffGroup, index: number): BuffGroup {
@@ -243,8 +243,18 @@
     updateActiveProfile((profile) => ({
       ...profile,
       monitoredBuffIds: [...current, buffId],
-      buffPriorityIds: uniqueIds([...(profile.buffPriorityIds ?? []), buffId]),
     }));
+  }
+
+  function toggleGlobalPriority(buffId: number) {
+    updateActiveProfile((profile) => {
+      const current = uniqueIds(profile.buffPriorityIds ?? []);
+      const exists = current.includes(buffId);
+      return {
+        ...profile,
+        buffPriorityIds: exists ? current.filter((id) => id !== buffId) : [...current, buffId],
+      };
+    });
   }
 
   function isBuffSelected(buffId: number): boolean {
@@ -301,6 +311,19 @@
       const res = await commands.searchBuffsByName(keyword, 120);
       if (res.status !== "ok") return;
       buffSearchResults = res.data;
+    })();
+  });
+
+  $effect(() => {
+    const keyword = globalPrioritySearch.trim();
+    if (!keyword) {
+      globalPrioritySearchResults = [];
+      return;
+    }
+    void (async () => {
+      const res = await commands.searchBuffsByName(keyword, 120);
+      if (res.status !== "ok") return;
+      globalPrioritySearchResults = res.data;
     })();
   });
 
@@ -382,6 +405,12 @@
     const nextResults = { ...groupSearchResults };
     delete nextResults[groupId];
     groupSearchResults = nextResults;
+    const nextPriorityKeyword = { ...groupPrioritySearchKeyword };
+    delete nextPriorityKeyword[groupId];
+    groupPrioritySearchKeyword = nextPriorityKeyword;
+    const nextPriorityResults = { ...groupPrioritySearchResults };
+    delete nextPriorityResults[groupId];
+    groupPrioritySearchResults = nextPriorityResults;
   }
 
   function setGroupSearchKeyword(groupId: string, value: string) {
@@ -402,12 +431,42 @@
     return groupSearchKeyword[groupId] ?? "";
   }
 
+  function setGroupPrioritySearchKeyword(groupId: string, value: string) {
+    groupPrioritySearchKeyword = { ...groupPrioritySearchKeyword, [groupId]: value };
+    const keyword = value.trim();
+    if (!keyword) {
+      groupPrioritySearchResults = { ...groupPrioritySearchResults, [groupId]: [] };
+      return;
+    }
+    void (async () => {
+      const res = await commands.searchBuffsByName(keyword, 120);
+      if (res.status !== "ok") return;
+      groupPrioritySearchResults = { ...groupPrioritySearchResults, [groupId]: res.data };
+    })();
+  }
+
+  function getGroupPrioritySearchKeyword(groupId: string) {
+    return groupPrioritySearchKeyword[groupId] ?? "";
+  }
+
   function getGroupSearchResults(group: BuffGroup): BuffNameInfo[] {
     const results = groupSearchResults[group.id] ?? [];
     const ids = new Set<number>();
     return results.filter((item) => {
       if (ids.has(item.baseId)) return false;
       if (group.buffIds.includes(item.baseId)) return false;
+      if (group.priorityBuffIds.includes(item.baseId)) return false;
+      ids.add(item.baseId);
+      return true;
+    });
+  }
+
+  function getGroupPrioritySearchResults(group: BuffGroup): BuffNameInfo[] {
+    const results = groupPrioritySearchResults[group.id] ?? [];
+    const ids = new Set<number>();
+    return results.filter((item) => {
+      if (ids.has(item.baseId)) return false;
+      if (!group.monitorAll && !group.buffIds.includes(item.baseId)) return false;
       if (group.priorityBuffIds.includes(item.baseId)) return false;
       ids.add(item.baseId);
       return true;
@@ -428,7 +487,7 @@
           : [...group.buffIds, buffId],
         priorityBuffIds: exists
           ? group.priorityBuffIds.filter((id) => id !== buffId)
-          : uniqueIds([...group.priorityBuffIds, buffId]),
+          : group.priorityBuffIds,
       };
     });
   }
@@ -590,8 +649,40 @@
     <div class="space-y-2">
       <div class="text-xs font-medium text-foreground">全局 Buff 优先级</div>
       <p class="text-xs text-muted-foreground">
-        排在前面的 Buff 优先显示, 主要用于无图标buff的顺序
+        排在前面的 Buff 优先显示
       </p>
+      <input
+        class="w-full sm:w-72 rounded border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+        placeholder="搜索并添加到全局优先级"
+        bind:value={globalPrioritySearch}
+      />
+      {#if globalPrioritySearch.trim().length > 0 && globalPrioritySearchResults.length > 0}
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(50px,1fr))] gap-2">
+          {#each globalPrioritySearchResults as item (item.baseId)}
+            {@const iconBuff = availableBuffMap.get(item.baseId)}
+            {#if monitoredBuffIds.includes(item.baseId) && !buffPriorityIds.includes(item.baseId)}
+              <button
+                type="button"
+                class="rounded border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors p-1"
+                title={item.name}
+                onclick={() => toggleGlobalPriority(item.baseId)}
+              >
+                {#if iconBuff}
+                  <img
+                    src={`/images/buff/${iconBuff.spriteFile}`}
+                    alt={iconBuff.name}
+                    class="w-full h-10 object-contain"
+                  />
+                {:else}
+                  <div class="h-10 flex items-center justify-center text-[10px] text-muted-foreground">
+                    无图标
+                  </div>
+                {/if}
+              </button>
+            {/if}
+          {/each}
+        </div>
+      {/if}
       <div class="space-y-1">
         {#each buffPriorityIds as buffId, idx (buffId)}
           {@const iconBuff = availableBuffMap.get(buffId)}
@@ -600,9 +691,7 @@
             <span class="w-6 text-center text-xs text-muted-foreground">{idx + 1}</span>
             {#if iconBuff}
               <img
-                src={iconBuff.talentSpriteFile
-                  ? `/images/talent/${iconBuff.talentSpriteFile}`
-                  : `/images/buff/${iconBuff.spriteFile}`}
+                src={`/images/buff/${iconBuff.spriteFile}`}
                 alt={iconBuff.name}
                 class="size-6 object-contain"
               />
@@ -610,6 +699,13 @@
             <span class="flex-1 text-xs text-foreground truncate">
               {nameInfo?.name ?? iconBuff?.name ?? `#${buffId}`}
             </span>
+            <button
+              type="button"
+              class="text-xs px-2 py-0.5 rounded border border-border/60 hover:bg-muted/40"
+              onclick={() => toggleGlobalPriority(buffId)}
+            >
+              移除
+            </button>
             <button
               type="button"
               class="text-xs px-2 py-0.5 rounded border border-border/60 hover:bg-muted/40 disabled:opacity-50"
@@ -629,7 +725,7 @@
           </div>
         {/each}
         {#if buffPriorityIds.length === 0}
-          <div class="text-xs text-muted-foreground">请先在 Buff 监控里选择 Buff</div>
+          <div class="text-xs text-muted-foreground">未设置全局优先级，按后端默认顺序显示</div>
         {/if}
       </div>
     </div>
@@ -818,9 +914,7 @@
                       >
                         {#if iconBuff}
                           <img
-                            src={iconBuff.talentSpriteFile
-                              ? `/images/talent/${iconBuff.talentSpriteFile}`
-                              : `/images/buff/${iconBuff.spriteFile}`}
+                            src={`/images/buff/${iconBuff.spriteFile}`}
                             alt={iconBuff.name}
                             class="w-full h-10 object-contain"
                           />
@@ -849,9 +943,7 @@
                     >
                       {#if iconBuff}
                         <img
-                          src={iconBuff.talentSpriteFile
-                            ? `/images/talent/${iconBuff.talentSpriteFile}`
-                            : `/images/buff/${iconBuff.spriteFile}`}
+                          src={`/images/buff/${iconBuff.spriteFile}`}
                           alt={iconBuff.name}
                           class="w-full h-full object-contain"
                         />
@@ -868,6 +960,41 @@
                 </div>
                 <div class="space-y-1">
                   <div class="text-xs text-muted-foreground">分组内优先级</div>
+                  <div class="text-xs text-muted-foreground">
+                    可搜索组内 Buff 并添加到优先级列表
+                  </div>
+                  <input
+                    class="w-full sm:w-72 rounded border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="搜索并添加到优先级列表"
+                    value={getGroupPrioritySearchKeyword(group.id)}
+                    oninput={(event) =>
+                      setGroupPrioritySearchKeyword(group.id, (event.currentTarget as HTMLInputElement).value)}
+                  />
+                  {#if getGroupPrioritySearchResults(group).length > 0}
+                    <div class="grid grid-cols-[repeat(auto-fill,minmax(50px,1fr))] gap-2">
+                      {#each getGroupPrioritySearchResults(group).slice(0, 40) as item (item.baseId)}
+                        {@const iconBuff = availableBuffMap.get(item.baseId)}
+                        <button
+                          type="button"
+                          class="rounded border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors p-1"
+                          title={item.name}
+                          onclick={() => togglePriorityInGroup(group.id, item.baseId)}
+                        >
+                          {#if iconBuff}
+                            <img
+                              src={`/images/buff/${iconBuff.spriteFile}`}
+                              alt={iconBuff.name}
+                              class="w-full h-10 object-contain"
+                            />
+                          {:else}
+                            <div class="h-10 flex items-center justify-center text-[10px] text-muted-foreground">
+                              无图标
+                            </div>
+                          {/if}
+                        </button>
+                      {/each}
+                    </div>
+                  {/if}
                   {#each getGroupPriorityIds(group) as buffId, idx (buffId)}
                     {@const iconBuff = availableBuffMap.get(buffId)}
                     {@const nameInfo = buffNames.get(buffId)}
@@ -875,9 +1002,7 @@
                       <span class="w-6 text-center text-xs text-muted-foreground">{idx + 1}</span>
                       {#if iconBuff}
                         <img
-                          src={iconBuff.talentSpriteFile
-                            ? `/images/talent/${iconBuff.talentSpriteFile}`
-                            : `/images/buff/${iconBuff.spriteFile}`}
+                          src={`/images/buff/${iconBuff.spriteFile}`}
                           alt={iconBuff.name}
                           class="size-5 object-contain"
                         />
@@ -885,6 +1010,13 @@
                       <span class="flex-1 text-xs text-foreground truncate">
                         {nameInfo?.name ?? iconBuff?.name ?? `#${buffId}`}
                       </span>
+                      <button
+                        type="button"
+                        class="text-xs px-2 py-0.5 rounded border border-border/60 hover:bg-muted/40"
+                        onclick={() => togglePriorityInGroup(group.id, buffId)}
+                      >
+                        移除
+                      </button>
                       <button
                         type="button"
                         class="text-xs px-2 py-0.5 rounded border border-border/60 hover:bg-muted/40 disabled:opacity-50"
@@ -903,6 +1035,9 @@
                       </button>
                     </div>
                   {/each}
+                  {#if getGroupPriorityIds(group).length === 0}
+                    <div class="text-xs text-muted-foreground">未设置优先级，按后端默认顺序显示</div>
+                  {/if}
                 </div>
               </div>
             {:else}
@@ -929,9 +1064,7 @@
                       >
                         {#if iconBuff}
                           <img
-                            src={iconBuff.talentSpriteFile
-                              ? `/images/talent/${iconBuff.talentSpriteFile}`
-                              : `/images/buff/${iconBuff.spriteFile}`}
+                            src={`/images/buff/${iconBuff.spriteFile}`}
                             alt={iconBuff.name}
                             class="w-full h-10 object-contain"
                           />
@@ -953,9 +1086,7 @@
                       <span class="w-6 text-center text-xs text-muted-foreground">{idx + 1}</span>
                       {#if iconBuff}
                         <img
-                          src={iconBuff.talentSpriteFile
-                            ? `/images/talent/${iconBuff.talentSpriteFile}`
-                            : `/images/buff/${iconBuff.spriteFile}`}
+                          src={`/images/buff/${iconBuff.spriteFile}`}
                           alt={iconBuff.name}
                           class="size-5 object-contain"
                         />
@@ -1012,9 +1143,7 @@
                 {#if group.monitorAll}
                   {#each availableBuffs.slice(0, Math.max(6, group.columns * group.rows)) as buff (buff.baseId)}
                     <img
-                      src={buff.talentSpriteFile
-                        ? `/images/talent/${buff.talentSpriteFile}`
-                        : `/images/buff/${buff.spriteFile}`}
+                      src={`/images/buff/${buff.spriteFile}`}
                       alt={buff.name}
                       class="w-full aspect-square object-contain rounded border border-border/30 bg-muted/20"
                     />
@@ -1024,9 +1153,7 @@
                     {@const buff = availableBuffMap.get(buffId)}
                     {#if buff}
                       <img
-                        src={buff.talentSpriteFile
-                          ? `/images/talent/${buff.talentSpriteFile}`
-                          : `/images/buff/${buff.spriteFile}`}
+                        src={`/images/buff/${buff.spriteFile}`}
                         alt={buff.name}
                         class="w-full aspect-square object-contain rounded border border-border/30 bg-muted/20"
                       />
@@ -1231,14 +1358,12 @@
         >
           {#if iconBuff}
             <img
-              src={iconBuff.talentSpriteFile
-                ? `/images/talent/${iconBuff.talentSpriteFile}`
-                : `/images/buff/${iconBuff.spriteFile}`}
+              src={`/images/buff/${iconBuff.spriteFile}`}
               alt={iconBuff.name}
               class="w-full h-full object-contain aspect-square bg-muted/20"
             />
             <div class="absolute inset-x-0 bottom-0 bg-black/50 text-[10px] text-white px-1 py-0.5 truncate">
-              {iconBuff.talentName || iconBuff.name.slice(0, 6)}
+              {iconBuff.name.slice(0, 6)}
             </div>
           {:else}
             <div class="w-full h-full aspect-square flex items-center justify-center bg-muted/20 text-[11px] text-foreground p-1 text-center">
@@ -1267,18 +1392,16 @@
             <button
               type="button"
               class="relative rounded-md border border-border/60 overflow-hidden bg-muted/20 size-12 hover:border-border hover:bg-muted/30"
-              title={iconBuff.talentName ? `${iconBuff.talentName} - ${iconBuff.name}` : iconBuff.name}
+              title={iconBuff.name}
               onclick={() => toggleBuff(iconBuff.baseId)}
             >
               <img
-                src={iconBuff.talentSpriteFile
-                  ? `/images/talent/${iconBuff.talentSpriteFile}`
-                  : `/images/buff/${iconBuff.spriteFile}`}
+                src={`/images/buff/${iconBuff.spriteFile}`}
                 alt={iconBuff.name}
                 class="w-full h-full object-contain"
               />
               <div class="absolute inset-x-0 bottom-0 bg-black/60 text-[9px] text-white px-1 py-0.5 truncate">
-                {iconBuff.talentName || iconBuff.name.slice(0, 6)}
+                {iconBuff.name.slice(0, 6)}
               </div>
             </button>
           {:else}

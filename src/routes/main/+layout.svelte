@@ -51,11 +51,12 @@
       buffDisplayMode === "grouped"
         ? buffGroups.flatMap((group) => (group.monitorAll ? [] : group.buffIds))
         : [];
+    const defaultLinkedBuffIds = getDefaultMonitoredBuffIds(selectedClass);
     const mergedBuffIds = Array.from(
       new Set([
         ...monitoredBuffIds,
         ...groupBuffIds,
-        ...getDefaultMonitoredBuffIds(selectedClass),
+        ...defaultLinkedBuffIds,
       ]),
     );
     const mergedPriorityIds = Array.from(

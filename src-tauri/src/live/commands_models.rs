@@ -163,8 +163,6 @@ pub struct BuffDefinition {
     pub base_id: i32,
     pub name: String,
     pub sprite_file: String,
-    pub talent_name: Option<String>,
-    pub talent_sprite_file: Option<String>,
     pub search_keywords: Vec<String>,
 }
 

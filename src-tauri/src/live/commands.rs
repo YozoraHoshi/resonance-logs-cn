@@ -201,18 +201,11 @@ pub async fn get_available_buffs(
     let buffs = buff_names::get_buffs_with_sprites()
         .into_iter()
         .map(|entry| {
-            let mut search_keywords = vec![entry.name.clone()];
-            if let Some(talent_name) = entry.talent_name.clone() {
-                if !talent_name.is_empty() {
-                    search_keywords.push(talent_name);
-                }
-            }
+            let search_keywords = vec![entry.name.clone()];
             BuffDefinition {
                 base_id: entry.base_id,
                 name: entry.name,
                 sprite_file: entry.sprite_file,
-                talent_name: entry.talent_name,
-                talent_sprite_file: entry.talent_sprite_file,
                 search_keywords,
             }
         })
