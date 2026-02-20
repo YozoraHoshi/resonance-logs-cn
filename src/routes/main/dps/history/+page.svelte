@@ -7,13 +7,7 @@
 		EncounterSummaryDto,
 		EncounterFiltersDto,
 	} from "$lib/bindings";
-	import { getClassIcon, tooltip, CLASS_MAP } from "$lib/utils.svelte";
 	import UnifiedSearch from "$lib/components/unified-search.svelte";
-
-	const classOptions = Object.entries(CLASS_MAP).map(([id, name]) => ({
-		id: Number(id),
-		name,
-	}));
 
 	let encounters = $state<EncounterSummaryDto[]>([]);
 	let errorMsg = $state<string | null>(null);
@@ -123,17 +117,7 @@
 	let searchType = $state<"boss" | "player" | "encounter">("encounter");
 	let isLoadingBossNames = $state(false);
 
-	// Class filters
-	let selectedClassIds = $state<number[]>([]);
-	let showClassDropdown = $state(false);
 	let showFavoritesOnly = $state(false);
-	let classDropdownRef = $state<HTMLDivElement | null>(null);
-	let classButtonRef = $state<HTMLButtonElement | null>(null);
-
-	function getClassName(classId: number | null): string {
-		if (!classId) return "";
-		return CLASS_MAP[classId] ?? "";
-	}
 
 	async function loadSceneNames() {
 		try {
@@ -177,7 +161,6 @@
 				encounterNames: null,
 				playerNames:
 					selectedPlayerNames.length > 0 ? selectedPlayerNames : null,
-				classIds: selectedClassIds.length > 0 ? selectedClassIds : null,
 				dateFromMs: null,
 				dateToMs: null,
 				isFavorite: showFavoritesOnly ? true : null,
@@ -186,7 +169,6 @@
 			const hasFilters =
 				filterPayload.bossNames !== null ||
 				filterPayload.playerNames !== null ||
-				filterPayload.classIds !== null ||
 				filterPayload.isFavorite !== null;
 
 			const res = await commands.getRecentEncountersFiltered(
@@ -257,31 +239,9 @@
 		loadEncounters(0);
 	}
 
-	function toggleClassFilter(classId: number, checked: boolean) {
-		if (checked) {
-			if (!selectedClassIds.includes(classId)) {
-				selectedClassIds = [...selectedClassIds, classId];
-			}
-		} else {
-			selectedClassIds = selectedClassIds.filter((id) => id !== classId);
-		}
-		loadEncounters(0);
-	}
-
-	function removeClassFilter(classId: number) {
-		selectedClassIds = selectedClassIds.filter((id) => id !== classId);
-		loadEncounters(0);
-	}
-
-	function clearAllClassFilters() {
-		selectedClassIds = [];
-		loadEncounters(0);
-	}
-
 	function clearAllFilters() {
 		selectedBosses = [];
 		selectedPlayerNames = [];
-		selectedClassIds = [];
 		selectedEncounters = [];
 		showFavoritesOnly = false;
 		loadEncounters(0);
@@ -290,7 +250,6 @@
 	const hasActiveFilters = $derived(
 		selectedBosses.length > 0 ||
 			selectedPlayerNames.length > 0 ||
-			selectedClassIds.length > 0 ||
 			selectedEncounters.length > 0 ||
 			showFavoritesOnly,
 	);
@@ -310,25 +269,6 @@
 		);
 		pageSize = initialPageSize;
 		loadEncounters(initialPage);
-
-		function handleDocumentClick(event: MouseEvent) {
-			const target = event.target as HTMLElement;
-			if (
-				showClassDropdown &&
-				classDropdownRef &&
-				!classDropdownRef.contains(target) &&
-				classButtonRef &&
-				!classButtonRef.contains(target)
-			) {
-				showClassDropdown = false;
-			}
-		}
-
-		document.addEventListener("click", handleDocumentClick);
-
-		return () => {
-			document.removeEventListener("click", handleDocumentClick);
-		};
 	});
 
 	function fmtDuration(startMs: number, endMs?: number | null) {
@@ -387,80 +327,6 @@
 					onSelect={handleSearchSelect}
 					disabled={isLoadingBossNames}
 				/>
-			</div>
-
-			<!-- Class Filter Dropdown -->
-			<div class="relative">
-				<button
-					bind:this={classButtonRef}
-					onclick={() => (showClassDropdown = !showClassDropdown)}
-					class="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-popover hover:bg-muted/40 transition-colors text-sm text-muted-foreground hover:text-foreground"
-				>
-					<svg
-						class="w-4 h-4"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-						/>
-					</svg>
-					<span>职业</span>
-				</button>
-
-				{#if showClassDropdown}
-					<div
-						bind:this={classDropdownRef}
-						class="absolute right-0 z-20 mt-2 w-64 rounded-md border border-neutral-700 bg-neutral-900 shadow-xl"
-					>
-						<div class="p-3 space-y-1">
-							{#each classOptions as option}
-								<button
-									onclick={() =>
-										toggleClassFilter(
-											option.id,
-											!selectedClassIds.includes(
-												option.id,
-											),
-										)}
-									class="w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors {selectedClassIds.includes(
-										option.id,
-									)
-										? 'bg-primary/15 text-primary'
-										: 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'}"
-								>
-									<span>{option.name}</span>
-									{#if selectedClassIds.includes(option.id)}
-										<svg
-											class="w-4 h-4"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-										>
-											<path
-												fill-rule="evenodd"
-												d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-												clip-rule="evenodd"
-											/>
-										</svg>
-									{/if}
-								</button>
-							{/each}
-
-							{#if selectedClassIds.length > 0}
-								<button
-									onclick={clearAllClassFilters}
-									class="w-full px-3 py-2 text-sm text-muted-foreground hover:text-destructive transition-colors text-left"
-								>
-									清除职业筛选
-								</button>
-							{/if}
-						</div>
-					</div>
-				{/if}
 			</div>
 
 			<!-- Favorites Toggle -->
@@ -547,21 +413,6 @@
 							onclick={() => removePlayerNameFilter(player)}
 							class="text-muted-foreground/70 hover:text-destructive transition-colors"
 							aria-label={`移除 ${player} 筛选`}
-						>
-							✕
-						</button>
-					</span>
-				{/each}
-				{#each selectedClassIds as classId}
-					<span
-						class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-popover text-muted-foreground leading-tight border border-border/60"
-					>
-						<span class="text-muted-foreground/70">职业：</span>
-						{CLASS_MAP[classId]}
-						<button
-							onclick={() => removeClassFilter(classId)}
-							class="text-muted-foreground/70 hover:text-destructive transition-colors"
-							aria-label={`移除 ${CLASS_MAP[classId]} 筛选`}
 						>
 							✕
 						</button>
@@ -675,10 +526,6 @@
 						>战斗</th
 					>
 					<th
-						class="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[400px]"
-						>玩家</th
-					>
-					<th
 						class="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-12"
 						>时长</th
 					>
@@ -762,54 +609,6 @@
 									{/if}
 								</div>
 							</div>
-						</td>
-						<td
-							class="px-3 py-2 text-sm text-muted-foreground max-w-[400px]"
-						>
-							{#if enc.players.length > 0}
-								{@const sortedPlayers = [...enc.players].sort(
-									(a, b) => {
-										const aHasClass =
-											a.classId !== null &&
-											a.classId !== undefined &&
-											a.classId !== 0;
-										const bHasClass =
-											b.classId !== null &&
-											b.classId !== undefined &&
-											b.classId !== 0;
-										if (aHasClass && !bHasClass) return -1;
-										if (!aHasClass && bHasClass) return 1;
-										return 0;
-									},
-								)}
-								<div class="flex gap-1 items-center">
-									{#each sortedPlayers.slice(0, 8) as player}
-										<img
-											class="size-7 object-contain flex-shrink-0"
-											src={getClassIcon(
-												getClassName(player.classId),
-											)}
-											alt="职业图标"
-											{@attach tooltip(() =>
-												player.isLocalPlayer
-													? `${player.name}（你）`
-													: player.name,
-											)}
-										/>
-									{/each}
-									{#if enc.players.length > 8}
-										<span
-											class="text-xs text-muted-foreground ml-1"
-											>+{enc.players.length - 8} 更多</span
-										>
-									{/if}
-								</div>
-							{:else}
-								<span
-									class="text-muted-foreground text-xs opacity-70"
-									>无玩家</span
-								>
-							{/if}
 						</td>
 						<td class="px-3 py-2 text-sm text-muted-foreground"
 							>{fmtDuration(enc.startedAtMs, enc.endedAtMs)}</td

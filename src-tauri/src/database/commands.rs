@@ -31,8 +31,6 @@ pub struct EncounterSummaryDto {
     pub local_player_id: Option<i64>,
     /// A list of bosses in the encounter.
     pub bosses: Vec<BossSummaryDto>,
-    /// A list of players in the encounter.
-    pub players: Vec<PlayerInfoDto>,
     /// The encounter ID on the remote website/server after successful upload.
     pub remote_encounter_id: Option<i64>,
     /// Whether the encounter is favorited.
@@ -61,8 +59,6 @@ pub struct EncounterFiltersDto {
     pub player_name: Option<String>,
     /// A list of player names to filter by.
     pub player_names: Option<Vec<String>>,
-    /// A list of class IDs to filter by.
-    pub class_ids: Option<Vec<i32>>,
     /// The start date to filter by in milliseconds since the Unix epoch.
     pub date_from_ms: Option<i64>,
     /// The end date to filter by in milliseconds since the Unix epoch.
@@ -105,18 +101,6 @@ pub struct SceneNamesResult {
 pub struct PlayerNamesResult {
     /// A list of player names.
     pub names: Vec<String>,
-}
-
-/// Information about a player.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, PartialEq, Eq, Hash)]
-#[serde(rename_all = "camelCase")]
-pub struct PlayerInfoDto {
-    /// The name of the player.
-    pub name: String,
-    /// The class ID of the player.
-    pub class_id: Option<i32>,
-    /// Whether the player is the local player.
-    pub is_local_player: bool,
 }
 
 fn with_db<T, F>(f: F) -> Result<T, String>
@@ -347,7 +331,7 @@ pub fn get_recent_encounters_filtered(
     // Collect boss and player data for each encounter
     let mut mapped: Vec<EncounterSummaryDto> = Vec::new();
 
-    for (id, started, ended, td, th, scene_id, scene_name, duration, remote_id, is_fav, boss_json, player_json) in paged_rows {
+    for (id, started, ended, td, th, scene_id, scene_name, duration, remote_id, is_fav, boss_json, _) in paged_rows {
         let boss_entries: Vec<BossSummaryDto> = boss_json
             .as_ref()
             .and_then(|j| serde_json::from_str::<Vec<String>>(j).ok())
@@ -357,17 +341,6 @@ pub fn get_recent_encounters_filtered(
                 monster_name: name,
                 max_hp: None,
                 is_defeated: true,
-            })
-            .collect();
-        let player_data: Vec<PlayerInfoDto> = player_json
-            .as_ref()
-            .and_then(|j| serde_json::from_str::<Vec<String>>(j).ok())
-            .unwrap_or_default()
-            .into_iter()
-            .map(|name| PlayerInfoDto {
-                name,
-                class_id: None,
-                is_local_player: false,
             })
             .collect();
 
@@ -382,7 +355,6 @@ pub fn get_recent_encounters_filtered(
             duration,
             local_player_id: None,
             bosses: boss_entries,
-            players: player_data,
             remote_encounter_id: remote_id,
             is_favorite: is_fav != 0,
         });
@@ -519,7 +491,6 @@ pub fn get_encounter_by_id(encounter_id: i32) -> Result<EncounterSummaryDto, Str
         Option<i64>,
         i32,
         Option<String>,
-        Option<String>,
     ) = with_db(move |conn| {
         e::encounters
             .filter(e::id.eq(encounter_id))
@@ -536,7 +507,6 @@ pub fn get_encounter_by_id(encounter_id: i32) -> Result<EncounterSummaryDto, Str
                 e::remote_encounter_id,
                 e::is_favorite,
                 e::boss_names,
-                e::player_names,
             ))
             .first(conn)
             .map_err(|er| er.to_string())
@@ -554,18 +524,6 @@ pub fn get_encounter_by_id(encounter_id: i32) -> Result<EncounterSummaryDto, Str
         })
         .collect();
 
-    let players: Vec<PlayerInfoDto> = row.12
-        .as_ref()
-        .and_then(|j| serde_json::from_str::<Vec<String>>(j).ok())
-        .unwrap_or_default()
-        .into_iter()
-        .map(|name| PlayerInfoDto {
-            name,
-            class_id: None,
-            is_local_player: false,
-        })
-        .collect();
-
     Ok(EncounterSummaryDto {
         id: row.0,
         started_at_ms: row.1,
@@ -577,7 +535,6 @@ pub fn get_encounter_by_id(encounter_id: i32) -> Result<EncounterSummaryDto, Str
         duration: row.7,
         local_player_id: row.8,
         bosses: boss_names,
-        players,
         remote_encounter_id: row.9,
         is_favorite: row.10 != 0,
     })

@@ -551,10 +551,6 @@ playerName: string | null;
  */
 playerNames: string[] | null; 
 /**
- * A list of class IDs to filter by.
- */
-classIds: number[] | null; 
-/**
  * The start date to filter by in milliseconds since the Unix epoch.
  */
 dateFromMs: number | null; 
@@ -611,10 +607,6 @@ localPlayerId: number | null;
  */
 bosses: BossSummaryDto[]; 
 /**
- * A list of players in the encounter.
- */
-players: PlayerInfoDto[]; 
-/**
  * The encounter ID on the remote website/server after successful upload.
  */
 remoteEncounterId: number | null; 
@@ -626,22 +618,6 @@ export type GpuSupport = { cuda_available: boolean; opencl_available: boolean }
 export type ModuleInfo = { name: string; config_id: number; uuid: number; quality: number; parts: ModulePart[] }
 export type ModulePart = { id: number; name: string; value: number }
 export type ModuleSolution = { modules: ModuleInfo[]; score: number; attr_breakdown: Partial<{ [key in string]: number }> }
-/**
- * Information about a player.
- */
-export type PlayerInfoDto = { 
-/**
- * The name of the player.
- */
-name: string; 
-/**
- * The class ID of the player.
- */
-classId: number | null; 
-/**
- * Whether the player is the local player.
- */
-isLocalPlayer: boolean }
 /**
  * The result of a query for player names.
  */
