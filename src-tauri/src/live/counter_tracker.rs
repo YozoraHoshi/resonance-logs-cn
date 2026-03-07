@@ -1,5 +1,5 @@
-use crate::live::commands_models::CounterUpdateState;
 use crate::live::buff_monitor::{BuffChangeEvent, BuffChangeType};
+use crate::live::commands_models::CounterUpdateState;
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -93,7 +93,12 @@ impl BuffCounterTracker {
         );
     }
 
-    pub fn on_damage_event(&mut self, skill_key: i64, target_uid: i64, local_player_uid: i64) -> bool {
+    pub fn on_damage_event(
+        &mut self,
+        skill_key: i64,
+        target_uid: i64,
+        local_player_uid: i64,
+    ) -> bool {
         let mut changed = false;
         for rule in &self.rules {
             let is_match = match &rule.trigger {

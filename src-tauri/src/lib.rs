@@ -125,6 +125,7 @@ pub fn run() {
             if let Err(e) = crate::database::init_db() {
                 warn!(target: "app::db", "Failed to initialize database: {}", e);
             }
+            crate::database::startup_maintenance();
 
             // Check app updates
             // https://v2.tauri.app/plugin/updater/#checking-for-updates

@@ -17,6 +17,7 @@ use crate::database::schema as sch;
 use crate::live::opcodes_models::{Encounter, Entity};
 
 pub const MIGRATIONS: EmbeddedMigrations = diesel_migrations::embed_migrations!();
+const MAX_ENCOUNTER_HISTORY: i64 = 200;
 
 type DbTask = Box<dyn FnOnce(&mut SqliteConnection) + Send + 'static>;
 
@@ -155,6 +156,186 @@ pub fn init_db() -> Result<(), DbInitError> {
         .map_err(|_| DbInitError::Pool("db sender already initialized".to_string()))?;
 
     Ok(())
+}
+
+/// Schedules startup maintenance for encounter history without blocking app setup.
+pub fn startup_maintenance() {
+    db_send(|conn| {
+        if let Err(error) = prune_and_reindex_encounters(conn, MAX_ENCOUNTER_HISTORY) {
+            log::warn!(
+                target: "app::db",
+                "startup_maintenance_failed error={}",
+                error
+            );
+        }
+    });
+}
+
+fn set_foreign_keys(conn: &mut SqliteConnection, enabled: bool) -> Result<(), String> {
+    let pragma = if enabled {
+        "PRAGMA foreign_keys=ON;"
+    } else {
+        "PRAGMA foreign_keys=OFF;"
+    };
+
+    diesel::sql_query(pragma)
+        .execute(conn)
+        .map(|_| ())
+        .map_err(|error| error.to_string())
+}
+
+fn prune_and_reindex_encounters(conn: &mut SqliteConnection, keep: i64) -> Result<(), String> {
+    use sch::encounters::dsl as e;
+
+    let total = e::encounters
+        .count()
+        .get_result::<i64>(conn)
+        .map_err(|error| error.to_string())?;
+    if total <= keep {
+        return Ok(());
+    }
+
+    let delete_ids: Vec<i32> = e::encounters
+        .select(e::id)
+        .order((e::started_at_ms.desc(), e::id.desc()))
+        .offset(keep)
+        .load(conn)
+        .map_err(|error| error.to_string())?;
+    if delete_ids.is_empty() {
+        return Ok(());
+    }
+
+    let deleted = diesel::delete(e::encounters.filter(e::id.eq_any(&delete_ids)))
+        .execute(conn)
+        .map_err(|error| error.to_string())?;
+    log::info!(
+        target: "app::db",
+        "startup_maintenance_pruned total={} deleted={} keep={}",
+        total,
+        deleted,
+        keep
+    );
+
+    set_foreign_keys(conn, false)?;
+    let maintenance_result = conn
+        .transaction::<(), diesel::result::Error, _>(|tx| {
+            diesel::sql_query("DROP TABLE IF EXISTS temp_encounters_reindex;").execute(tx)?;
+            diesel::sql_query("DROP TABLE IF EXISTS temp_encounter_data_reindex;").execute(tx)?;
+
+            diesel::sql_query(
+                "CREATE TEMP TABLE temp_encounters_reindex AS
+                 SELECT
+                   ROW_NUMBER() OVER (ORDER BY started_at_ms ASC, id ASC) AS new_id,
+                   id AS old_id,
+                   started_at_ms,
+                   ended_at_ms,
+                   local_player_id,
+                   total_dmg,
+                   total_heal,
+                   scene_id,
+                   scene_name,
+                   duration,
+                   uploaded_at_ms,
+                   remote_encounter_id,
+                   is_favorite,
+                   is_manually_reset,
+                   boss_names,
+                   player_names
+                 FROM encounters;",
+            )
+            .execute(tx)?;
+
+            diesel::sql_query(
+                "CREATE TEMP TABLE temp_encounter_data_reindex AS
+                 SELECT
+                   te.new_id AS encounter_id,
+                   ed.data AS data
+                 FROM encounter_data ed
+                 JOIN temp_encounters_reindex te ON te.old_id = ed.encounter_id;",
+            )
+            .execute(tx)?;
+
+            diesel::sql_query("DELETE FROM encounter_data;").execute(tx)?;
+            diesel::sql_query("DELETE FROM encounters;").execute(tx)?;
+
+            diesel::sql_query(
+                "INSERT INTO encounters (
+                   id,
+                   started_at_ms,
+                   ended_at_ms,
+                   local_player_id,
+                   total_dmg,
+                   total_heal,
+                   scene_id,
+                   scene_name,
+                   duration,
+                   uploaded_at_ms,
+                   remote_encounter_id,
+                   is_favorite,
+                   is_manually_reset,
+                   boss_names,
+                   player_names
+                 )
+                 SELECT
+                   new_id,
+                   started_at_ms,
+                   ended_at_ms,
+                   local_player_id,
+                   total_dmg,
+                   total_heal,
+                   scene_id,
+                   scene_name,
+                   duration,
+                   uploaded_at_ms,
+                   remote_encounter_id,
+                   is_favorite,
+                   is_manually_reset,
+                   boss_names,
+                   player_names
+                 FROM temp_encounters_reindex
+                 ORDER BY new_id;",
+            )
+            .execute(tx)?;
+
+            diesel::sql_query(
+                "INSERT INTO encounter_data (encounter_id, data)
+                 SELECT encounter_id, data
+                 FROM temp_encounter_data_reindex
+                 ORDER BY encounter_id;",
+            )
+            .execute(tx)?;
+
+            diesel::sql_query("DELETE FROM sqlite_sequence WHERE name = 'encounters';")
+                .execute(tx)?;
+            diesel::sql_query(
+                "INSERT INTO sqlite_sequence (name, seq)
+                 SELECT 'encounters', COUNT(*)
+                 FROM encounters;",
+            )
+            .execute(tx)?;
+
+            diesel::sql_query("DROP TABLE temp_encounter_data_reindex;").execute(tx)?;
+            diesel::sql_query("DROP TABLE temp_encounters_reindex;").execute(tx)?;
+            Ok(())
+        })
+        .map_err(|error| error.to_string());
+    let foreign_key_result = set_foreign_keys(conn, true);
+
+    match (maintenance_result, foreign_key_result) {
+        (Ok(()), Ok(())) => {
+            log::info!(
+                target: "app::db",
+                "startup_maintenance_reindexed next_encounter_id={}",
+                keep + 1
+            );
+            Ok(())
+        }
+        (Err(error), Ok(())) => Err(error),
+        (Ok(()), Err(error)) => Err(format!("failed to restore foreign keys: {error}")),
+        (Err(error), Err(fk_error)) => Err(format!(
+            "{error}; failed to restore foreign keys: {fk_error}"
+        )),
+    }
 }
 
 pub fn flush_playerdata(player_id: i64, last_seen_ms: i64, vdata_bytes: Vec<u8>) {
