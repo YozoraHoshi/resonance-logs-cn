@@ -570,6 +570,12 @@
     "SpriteFile": null
   },
   {
+    "Id": 9607,
+    "Icon": "",
+    "NameDesign": "马破晓拖尾",
+    "SpriteFile": null
+  },
+  {
     "Id": 9701,
     "Icon": "",
     "NameDesign": "通用武器隐藏溶解出现轨道",
@@ -591,6 +597,24 @@
     "Id": 9802,
     "Icon": "",
     "NameDesign": "女通用死亡轨道",
+    "SpriteFile": null
+  },
+  {
+    "Id": 9901,
+    "Icon": "",
+    "NameDesign": "单手s3因子通用触发特效buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 9902,
+    "Icon": "",
+    "NameDesign": "双手s3因子通用触发特效buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 9903,
+    "Icon": "",
+    "NameDesign": "左手s3因子通用触发特效buff",
     "SpriteFile": null
   },
   {
@@ -1351,50 +1375,74 @@
   },
   {
     "Id": 35101,
+    "Icon": "buff_icon141",
+    "NameDesign": "塔塔大招增益",
+    "SpriteFile": "buff_icon141_5600724108719575042.png"
+  },
+  {
+    "Id": 35102,
     "Icon": "",
-    "NameDesign": "塔塔能量回复被动",
+    "NameDesign": "荒川之寂灭效果",
     "SpriteFile": null
   },
   {
-    "Id": 35201,
+    "Id": 35103,
     "Icon": "",
-    "NameDesign": "塔塔Ult生效",
+    "NameDesign": "无尽之炎魔效果",
     "SpriteFile": null
   },
   {
-    "Id": 35301,
+    "Id": 35104,
     "Icon": "",
-    "NameDesign": "EX技能释放检测",
+    "NameDesign": "狂热斩击吸血效果",
     "SpriteFile": null
   },
   {
-    "Id": 35401,
+    "Id": 35105,
     "Icon": "",
-    "NameDesign": "下落攻击表现buff",
+    "NameDesign": "如川流华斩伤转",
     "SpriteFile": null
   },
   {
-    "Id": 35501,
+    "Id": 35106,
+    "Icon": "buff_icon67",
+    "NameDesign": "如川流华斩吸血",
+    "SpriteFile": "buff_icon67_-4280229159913118012.png"
+  },
+  {
+    "Id": 35107,
     "Icon": "",
-    "NameDesign": "塔塔大招结束斧子变形回原样",
+    "NameDesign": "塔塔一刀流",
     "SpriteFile": null
   },
   {
-    "Id": 35601,
+    "Id": 35108,
     "Icon": "",
-    "NameDesign": "塔塔鬼人1技能Hit数判定buff",
+    "NameDesign": "塔塔二刀流",
     "SpriteFile": null
   },
   {
-    "Id": 35701,
+    "Id": 35109,
     "Icon": "",
-    "NameDesign": "鬼人1技能判定标记buff",
+    "NameDesign": "塔塔三刀流",
     "SpriteFile": null
   },
   {
-    "Id": 35801,
+    "Id": 35110,
     "Icon": "",
-    "NameDesign": "塔塔2技能聚怪",
+    "NameDesign": "赤红之地标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 35111,
+    "Icon": "",
+    "NameDesign": "斧风开始停止体力恢复",
+    "SpriteFile": null
+  },
+  {
+    "Id": 35112,
+    "Icon": "",
+    "NameDesign": "塔塔天生buff",
     "SpriteFile": null
   },
   {
@@ -2892,6 +2940,18 @@
     "SpriteFile": null
   },
   {
+    "Id": 55360,
+    "Icon": "",
+    "NameDesign": "吉他触发延后删除BUFF",
+    "SpriteFile": null
+  },
+  {
+    "Id": 55361,
+    "Icon": "",
+    "NameDesign": "激涌五重奏加生命波动效果",
+    "SpriteFile": null
+  },
+  {
     "Id": 55390,
     "Icon": "",
     "NameDesign": "烈焰音符标记",
@@ -3837,6 +3897,12 @@
     "Id": 510543,
     "Icon": "debuff_icon_23",
     "NameDesign": "D类-定身",
+    "SpriteFile": "debuff_icon_23_-6794389362246335844.png"
+  },
+  {
+    "Id": 510544,
+    "Icon": "debuff_icon_23",
+    "NameDesign": "D类-定身-巨塔boss用",
     "SpriteFile": "debuff_icon_23_-6794389362246335844.png"
   },
   {
@@ -5280,6 +5346,12 @@
     "SpriteFile": null
   },
   {
+    "Id": 683188,
+    "Icon": "",
+    "NameDesign": "载具-舞龙舞狮隐藏角色",
+    "SpriteFile": null
+  },
+  {
     "Id": 683189,
     "Icon": "",
     "NameDesign": "载具-猫车周期随机换表情",
@@ -5799,6 +5871,66 @@
     "Id": 683852,
     "Icon": "",
     "NameDesign": "麋鹿-2技能后1技能强化",
+    "SpriteFile": null
+  },
+  {
+    "Id": 684800,
+    "Icon": "",
+    "NameDesign": "舞龙舞狮-开启磁吸表现",
+    "SpriteFile": null
+  },
+  {
+    "Id": 684801,
+    "Icon": "",
+    "NameDesign": "舞龙舞狮-连接状态表现",
+    "SpriteFile": null
+  },
+  {
+    "Id": 684802,
+    "Icon": "",
+    "NameDesign": "舞龙舞狮-触发连接表现",
+    "SpriteFile": null
+  },
+  {
+    "Id": 684803,
+    "Icon": "",
+    "NameDesign": "舞龙舞狮-反重力",
+    "SpriteFile": null
+  },
+  {
+    "Id": 684804,
+    "Icon": "",
+    "NameDesign": "舞龙舞狮-弹射",
+    "SpriteFile": null
+  },
+  {
+    "Id": 684805,
+    "Icon": "",
+    "NameDesign": "舞狮-冲刺弹射",
+    "SpriteFile": null
+  },
+  {
+    "Id": 684806,
+    "Icon": "",
+    "NameDesign": "舞狮-叠层加速",
+    "SpriteFile": null
+  },
+  {
+    "Id": 684807,
+    "Icon": "",
+    "NameDesign": "舞龙舞狮-变身音效用",
+    "SpriteFile": null
+  },
+  {
+    "Id": 684808,
+    "Icon": "",
+    "NameDesign": "舞龙舞狮-磁吸音效用",
+    "SpriteFile": null
+  },
+  {
+    "Id": 684809,
+    "Icon": "",
+    "NameDesign": "舞龙舞狮-禁用乘客跳跃",
     "SpriteFile": null
   },
   {
@@ -7146,6 +7278,66 @@
     "SpriteFile": "talent_passive_icon_general_sup_grassarea_-2699280676978229692.png"
   },
   {
+    "Id": 702001,
+    "Icon": "",
+    "NameDesign": "S3幻境之种",
+    "SpriteFile": null
+  },
+  {
+    "Id": 702002,
+    "Icon": "",
+    "NameDesign": "S3幻境之种强化（怪物）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 702003,
+    "Icon": "buff_icon141",
+    "NameDesign": "S3乐章增益（一档）",
+    "SpriteFile": "buff_icon141_5600724108719575042.png"
+  },
+  {
+    "Id": 702004,
+    "Icon": "buff_icon141",
+    "NameDesign": "S3乐章增益（二档）",
+    "SpriteFile": "buff_icon141_5600724108719575042.png"
+  },
+  {
+    "Id": 702005,
+    "Icon": "buff_icon141",
+    "NameDesign": "S3乐章增益（三档）",
+    "SpriteFile": "buff_icon141_5600724108719575042.png"
+  },
+  {
+    "Id": 702006,
+    "Icon": "",
+    "NameDesign": "奇幻音符-音符场查找怪物",
+    "SpriteFile": null
+  },
+  {
+    "Id": 702007,
+    "Icon": "",
+    "NameDesign": "奇幻音符-怪物死亡掉落球",
+    "SpriteFile": null
+  },
+  {
+    "Id": 702008,
+    "Icon": "",
+    "NameDesign": "奇幻音符-跟随玩家移动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 702009,
+    "Icon": "",
+    "NameDesign": "S3副本开关打开后 给玩家上的buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 702010,
+    "Icon": "",
+    "NameDesign": "S3副本开关打开后 召唤跳舞娜宝",
+    "SpriteFile": null
+  },
+  {
     "Id": 705001,
     "Icon": "debuff_icon_4",
     "NameDesign": "寒霜食人魔冰霜buff",
@@ -7312,6 +7504,18 @@
     "Icon": "",
     "NameDesign": "姆克王召唤小弟上限",
     "SpriteFile": null
+  },
+  {
+    "Id": 705104,
+    "Icon": "buff_abnormal_icon_02",
+    "NameDesign": "毛球威慑怒吼",
+    "SpriteFile": "buff_abnormal_icon_02_-6301183379485455628.png"
+  },
+  {
+    "Id": 705105,
+    "Icon": "buff_hideseek_icon03",
+    "NameDesign": "毛球威慑怒吼增伤",
+    "SpriteFile": "buff_hideseek_icon03_-90999863635270254.png"
   },
   {
     "Id": 780001,
@@ -9198,6 +9402,186 @@
     "SpriteFile": null
   },
   {
+    "Id": 821053,
+    "Icon": "",
+    "NameDesign": "去二次元",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821054,
+    "Icon": "",
+    "NameDesign": "回一次元",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821055,
+    "Icon": "",
+    "NameDesign": "隐身-切次元用",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821056,
+    "Icon": "",
+    "NameDesign": "标记-小幻幻花",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821057,
+    "Icon": "",
+    "NameDesign": "S3巨塔初始buff-外（故障表现）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821058,
+    "Icon": "",
+    "NameDesign": "幻幻花为boss连线充能",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821059,
+    "Icon": "",
+    "NameDesign": "S3巨塔初始buff-内",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821060,
+    "Icon": "buff_blue_def",
+    "NameDesign": "幻幻花的庇护",
+    "SpriteFile": "buff_blue_def_-5154019358626773797.png"
+  },
+  {
+    "Id": 821061,
+    "Icon": "",
+    "NameDesign": "幻幻花初始buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821062,
+    "Icon": "",
+    "NameDesign": "跳转旋转激光",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821063,
+    "Icon": "",
+    "NameDesign": "幻幻花阻挡者",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821064,
+    "Icon": "",
+    "NameDesign": "是否被打断监控 ",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821065,
+    "Icon": "",
+    "NameDesign": "小怪阶段跳转",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821066,
+    "Icon": "",
+    "NameDesign": "友方机器人初始buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821067,
+    "Icon": "",
+    "NameDesign": "传送门特效·幻",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821068,
+    "Icon": "",
+    "NameDesign": "开门跳转",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821069,
+    "Icon": "",
+    "NameDesign": "回0阶段",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821070,
+    "Icon": "",
+    "NameDesign": "",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821071,
+    "Icon": "",
+    "NameDesign": "禁锢之花初始buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821072,
+    "Icon": "",
+    "NameDesign": "跳转buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821073,
+    "Icon": "",
+    "NameDesign": "圆柱召唤",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821074,
+    "Icon": "buff_red_movespeed",
+    "NameDesign": "幻觉",
+    "SpriteFile": "buff_red_movespeed_-5456597855619305564.png"
+  },
+  {
+    "Id": 821075,
+    "Icon": "",
+    "NameDesign": "切次元特效",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821076,
+    "Icon": "",
+    "NameDesign": "粘着弹",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821077,
+    "Icon": "",
+    "NameDesign": "引力",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821078,
+    "Icon": "buff_red_hp",
+    "NameDesign": "幻觉侵蚀",
+    "SpriteFile": "buff_red_hp_7631201784644749282.png"
+  },
+  {
+    "Id": 821079,
+    "Icon": "",
+    "NameDesign": "初始不可以打花花",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821080,
+    "Icon": "",
+    "NameDesign": "跳转buff1",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821081,
+    "Icon": "",
+    "NameDesign": "机器人锁血",
+    "SpriteFile": null
+  },
+  {
+    "Id": 821082,
+    "Icon": "",
+    "NameDesign": "扣0.05血",
+    "SpriteFile": null
+  },
+  {
     "Id": 821101,
     "Icon": "",
     "NameDesign": "无资源限制",
@@ -11028,6 +11412,120 @@
     "SpriteFile": "buff_red_heal_8598422908290767674.png"
   },
   {
+    "Id": 829100,
+    "Icon": "",
+    "NameDesign": "天生buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829101,
+    "Icon": "",
+    "NameDesign": "核心震荡中转buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829102,
+    "Icon": "",
+    "NameDesign": "核心震荡球体（困难）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829103,
+    "Icon": "",
+    "NameDesign": "核心震荡球体（噩梦）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829104,
+    "Icon": "",
+    "NameDesign": "电磁脉冲点名A",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829105,
+    "Icon": "",
+    "NameDesign": "电磁脉冲点名B",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829106,
+    "Icon": "",
+    "NameDesign": "电磁脉冲点名C",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829107,
+    "Icon": "",
+    "NameDesign": "电磁脉冲天生buffA",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829108,
+    "Icon": "",
+    "NameDesign": "电磁脉冲天生buffB",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829109,
+    "Icon": "",
+    "NameDesign": "电磁脉冲天生buffC",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829110,
+    "Icon": "",
+    "NameDesign": "A区域buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829111,
+    "Icon": "",
+    "NameDesign": "B区域buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829112,
+    "Icon": "",
+    "NameDesign": "C区域buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829113,
+    "Icon": "",
+    "NameDesign": "D区域buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829114,
+    "Icon": "",
+    "NameDesign": "Boss方位判断",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829115,
+    "Icon": "",
+    "NameDesign": "分摊",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829116,
+    "Icon": "",
+    "NameDesign": "幻分摊",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829117,
+    "Icon": "",
+    "NameDesign": "衰减",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829118,
+    "Icon": "",
+    "NameDesign": "幻衰减",
+    "SpriteFile": null
+  },
+  {
     "Id": 829901,
     "Icon": "",
     "NameDesign": "天赋引导-幸运",
@@ -11719,99 +12217,321 @@
   },
   {
     "Id": 833500,
-    "Icon": "buff_icon70",
-    "NameDesign": "动漫岛-淘汰标记",
-    "SpriteFile": "buff_icon70_8797511657054326474.png"
+    "Icon": "buff_icon77",
+    "NameDesign": "游星岛-参与活动1002【镭射回旋】标记",
+    "SpriteFile": "buff_icon77_-6801519758328782697.png"
   },
   {
     "Id": 833501,
-    "Icon": "",
-    "NameDesign": "动漫岛-空气墙专用",
-    "SpriteFile": null
+    "Icon": "buff_icon77",
+    "NameDesign": "游星岛-参与活动1003【游鱼暴走】标记",
+    "SpriteFile": "buff_icon77_-6801519758328782697.png"
   },
   {
     "Id": 833502,
-    "Icon": "",
-    "NameDesign": "动漫岛-范围标记",
-    "SpriteFile": null
+    "Icon": "buff_icon77",
+    "NameDesign": "游星岛-参与活动1004【一拳大作战】标记",
+    "SpriteFile": "buff_icon77_-6801519758328782697.png"
   },
   {
     "Id": 833503,
-    "Icon": "buff_icon70",
-    "NameDesign": "动漫岛-披萨随机标记",
-    "SpriteFile": "buff_icon70_8797511657054326474.png"
+    "Icon": "",
+    "NameDesign": "游星岛-参与活动1005【极限落潮】标记",
+    "SpriteFile": null
   },
   {
     "Id": 833504,
-    "Icon": "buff_icon70",
-    "NameDesign": "动漫岛-披萨叠层标记",
-    "SpriteFile": "buff_icon70_8797511657054326474.png"
+    "Icon": "",
+    "NameDesign": "游星岛-参与活动1006【浪花躲避球】标记",
+    "SpriteFile": null
   },
   {
     "Id": 833505,
-    "Icon": "",
-    "NameDesign": "动漫岛-泡泡载具",
-    "SpriteFile": null
+    "Icon": "buff_icon77",
+    "NameDesign": "游星岛-参与活动1007【异次元惩戒】标记",
+    "SpriteFile": "buff_icon77_-6801519758328782697.png"
   },
   {
     "Id": 833506,
     "Icon": "",
-    "NameDesign": "动漫岛-自杀标记",
+    "NameDesign": "游星岛-娜宝飞落地后自杀",
     "SpriteFile": null
   },
   {
     "Id": 833507,
     "Icon": "buff_icon65",
-    "NameDesign": "动漫岛-娜宝幻化",
+    "NameDesign": "游星岛-娜宝幻化",
     "SpriteFile": "buff_icon65_-4919578134379371611.png"
   },
   {
     "Id": 833508,
-    "Icon": "talent_passive_icon_general_dps_windspiral",
-    "NameDesign": "动漫岛-接鱼标记",
-    "SpriteFile": "talent_passive_icon_general_dps_windspiral_-2750583510728120713.png"
+    "Icon": "buff_passive_icon_dps_sacrificeconversion",
+    "NameDesign": "游星岛-游鱼暴走-接鱼数量提示",
+    "SpriteFile": "buff_passive_icon_dps_sacrificeconversion_7778307210175132825.png"
   },
   {
     "Id": 833509,
     "Icon": "",
-    "NameDesign": "动漫岛-接到鱼表现",
+    "NameDesign": "游星岛-游鱼暴走-接鱼表现",
     "SpriteFile": null
   },
   {
     "Id": 833510,
     "Icon": "",
-    "NameDesign": "动漫岛-接到罐子表现",
+    "NameDesign": "游星岛-游鱼暴走-接圆桶表现",
     "SpriteFile": null
   },
   {
     "Id": 833511,
     "Icon": "",
-    "NameDesign": "动漫岛-排球自buff",
+    "NameDesign": "游星岛-游鱼暴走-接圆桶数量提示",
     "SpriteFile": null
   },
   {
     "Id": 833512,
     "Icon": "",
-    "NameDesign": "动漫岛-接鱼篮子",
+    "NameDesign": "游星岛-接鱼篮子",
     "SpriteFile": null
   },
   {
     "Id": 833513,
-    "Icon": "buff_icon62",
-    "NameDesign": "动漫岛-排球手",
-    "SpriteFile": "buff_icon62_-5414963777781758270.png"
+    "Icon": "",
+    "NameDesign": "游星岛-浪花躲避球被击中淘汰",
+    "SpriteFile": null
   },
   {
     "Id": 833514,
     "Icon": "",
-    "NameDesign": "动漫岛-娜宝标记",
+    "NameDesign": "游星岛-娜宝标记",
     "SpriteFile": null
   },
   {
     "Id": 833515,
     "Icon": "",
-    "NameDesign": "动漫岛-失败标记",
+    "NameDesign": "游星岛-镭射回旋被击中淘汰",
     "SpriteFile": null
+  },
+  {
+    "Id": 833516,
+    "Icon": "buff_icon10",
+    "NameDesign": "游星岛-游戏报名通用buff",
+    "SpriteFile": "buff_icon10_-7088579813939069924.png"
+  },
+  {
+    "Id": 833517,
+    "Icon": "",
+    "NameDesign": "游星岛-红光板天生buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 833518,
+    "Icon": "buff_icon29",
+    "NameDesign": "游星岛-游星拾取加分",
+    "SpriteFile": "buff_icon29_-2251909499603183441.png"
+  },
+  {
+    "Id": 833519,
+    "Icon": "",
+    "NameDesign": "游星岛-游星表现（客户端）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 833520,
+    "Icon": "",
+    "NameDesign": "游星岛-红色地板",
+    "SpriteFile": null
+  },
+  {
+    "Id": 833521,
+    "Icon": "",
+    "NameDesign": "游星岛-红色地板溶解",
+    "SpriteFile": null
+  },
+  {
+    "Id": 833522,
+    "Icon": "",
+    "NameDesign": "游星岛-红色地板难度提高",
+    "SpriteFile": null
+  },
+  {
+    "Id": 833523,
+    "Icon": "",
+    "NameDesign": "游星岛-一拳大作战被击中淘汰",
+    "SpriteFile": null
+  },
+  {
+    "Id": 833524,
+    "Icon": "",
+    "NameDesign": "游星岛-一拳大作战击中加分",
+    "SpriteFile": null
+  },
+  {
+    "Id": 833525,
+    "Icon": "",
+    "NameDesign": "游星岛-极限落潮掉湖中淘汰",
+    "SpriteFile": null
+  },
+  {
+    "Id": 833530,
+    "Icon": "",
+    "NameDesign": "游星岛-小伊丢水球动作",
+    "SpriteFile": null
+  },
+  {
+    "Id": 833531,
+    "Icon": "",
+    "NameDesign": "游星岛-撒鱼动作",
+    "SpriteFile": null
+  },
+  {
+    "Id": 833532,
+    "Icon": "",
+    "NameDesign": "游星岛-添加撒鱼动作用buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 833533,
+    "Icon": "",
+    "NameDesign": "游星岛-添加丢水球动作用buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835000,
+    "Icon": "buff_icon40",
+    "NameDesign": "躲猫猫-潜行者变身状态-随机",
+    "SpriteFile": "buff_icon40_-7744225558946966884.png"
+  },
+  {
+    "Id": 833534,
+    "Icon": "",
+    "NameDesign": "游星岛-雷魔快打木桩出生buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835001,
+    "Icon": "",
+    "NameDesign": "躲猫猫-暂时废弃",
+    "SpriteFile": null
+  },
+  {
+    "Id": 833535,
+    "Icon": "",
+    "NameDesign": "游星岛-雷魔快打木桩受击计数",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835002,
+    "Icon": "buff_icon_quanneng",
+    "NameDesign": "躲猫猫-潜行者固定状态【技能栏变化】",
+    "SpriteFile": "buff_icon_quanneng_4262037214921802067.png"
+  },
+  {
+    "Id": 833536,
+    "Icon": "",
+    "NameDesign": "游星岛-雷魔快打-小金币拾取加分",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835003,
+    "Icon": "",
+    "NameDesign": "躲猫猫-幻变时刻禁魔",
+    "SpriteFile": null
+  },
+  {
+    "Id": 833537,
+    "Icon": "",
+    "NameDesign": "游星岛-雷魔快打-大金币拾取加分",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835004,
+    "Icon": "buff_talent_passive_icon_sup_control01",
+    "NameDesign": "躲猫猫-通用-禁止跑酷",
+    "SpriteFile": "buff_talent_passive_icon_sup_control01_5609452090819210916.png"
+  },
+  {
+    "Id": 833538,
+    "Icon": "",
+    "NameDesign": "游星岛-雷魔快打变身给技能",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835005,
+    "Icon": "buff_icon40",
+    "NameDesign": "躲猫猫-潜行者变身状态-点选",
+    "SpriteFile": "buff_icon40_-7744225558946966884.png"
+  },
+  {
+    "Id": 833539,
+    "Icon": "",
+    "NameDesign": "游星岛-雷魔快打木桩被脚踢爆大金币",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835006,
+    "Icon": "",
+    "NameDesign": "躲猫猫-点选高亮（程序用）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 833540,
+    "Icon": "",
+    "NameDesign": "游星岛-雷魔快打结束KO表现",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835007,
+    "Icon": "buff_icon01",
+    "NameDesign": "躲猫猫-逐影猎手天生buff-锁血+变身+上技能",
+    "SpriteFile": "buff_icon01_-8606171154650596355.png"
+  },
+  {
+    "Id": 833541,
+    "Icon": "buff_hideseek_icon12",
+    "NameDesign": "游星岛-雷魔快打道具-充能加倍",
+    "SpriteFile": "buff_hideseek_icon12_-2385457419463855088.png"
+  },
+  {
+    "Id": 835008,
+    "Icon": "talent_passive_icon_general_dps_thunderbird",
+    "NameDesign": "躲猫猫-潜行者幽灵buff-空技能+无敌+设阵营+虚体化",
+    "SpriteFile": "talent_passive_icon_general_dps_thunderbird_-3276686481378146780.png"
+  },
+  {
+    "Id": 833542,
+    "Icon": "buff_icon10",
+    "NameDesign": "游星岛-雷魔快打道具-积分加倍",
+    "SpriteFile": "buff_icon10_-7088579813939069924.png"
+  },
+  {
+    "Id": 835009,
+    "Icon": "",
+    "NameDesign": "躲猫猫-潜行者天生buff-锁血+空血变幽灵",
+    "SpriteFile": null
+  },
+  {
+    "Id": 833543,
+    "Icon": "buff_icon70",
+    "NameDesign": "游星岛-雷魔快打道具-大积分",
+    "SpriteFile": "buff_icon70_8797511657054326474.png"
+  },
+  {
+    "Id": 835010,
+    "Icon": "buff_icon12",
+    "NameDesign": "躲猫猫-潜行者-幻境靡音",
+    "SpriteFile": "buff_icon12_-4091296906905068644.png"
+  },
+  {
+    "Id": 833545,
+    "Icon": "",
+    "NameDesign": "游星岛-雷魔快打-叠层后掉落道具",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835011,
+    "Icon": "buff_icon12",
+    "NameDesign": "躲猫猫-逐影猎手-幻境靡音",
+    "SpriteFile": "buff_icon12_-4091296906905068644.png"
   },
   {
     "Id": 833550,
@@ -11820,10 +12540,22 @@
     "SpriteFile": "debuff_icon_38_-2226594174090587312.png"
   },
   {
+    "Id": 835012,
+    "Icon": "buff_hideseek_icon02",
+    "NameDesign": "躲猫猫-被探测术扫描",
+    "SpriteFile": "buff_hideseek_icon02_2281898910394841277.png"
+  },
+  {
     "Id": 833551,
     "Icon": "debuff_icon_38",
     "NameDesign": "搬运鱼",
     "SpriteFile": "debuff_icon_38_-2226594174090587312.png"
+  },
+  {
+    "Id": 835014,
+    "Icon": "buff_hideseek_icon06",
+    "NameDesign": "躲猫猫-极巨化",
+    "SpriteFile": "buff_hideseek_icon06_-8601781220436682847.png"
   },
   {
     "Id": 833552,
@@ -11832,10 +12564,22 @@
     "SpriteFile": "debuff_icon_38_-2226594174090587312.png"
   },
   {
+    "Id": 835015,
+    "Icon": "buff_hideseek_icon07",
+    "NameDesign": "躲猫猫-被世界困住",
+    "SpriteFile": "buff_hideseek_icon07_6865453468403821042.png"
+  },
+  {
     "Id": 833553,
     "Icon": "debuff_icon_38",
     "NameDesign": "搬运肉",
     "SpriteFile": "debuff_icon_38_-2226594174090587312.png"
+  },
+  {
+    "Id": 835016,
+    "Icon": "buff_talent_passive_icon_general_sup_flowerlimit",
+    "NameDesign": "躲猫猫-被迷雾困住",
+    "SpriteFile": "buff_talent_passive_icon_general_sup_flowerlimit_6171808906592601633.png"
   },
   {
     "Id": 833554,
@@ -11844,10 +12588,22 @@
     "SpriteFile": "debuff_icon_38_-2226594174090587312.png"
   },
   {
+    "Id": 835017,
+    "Icon": "buff_hideseek_icon03",
+    "NameDesign": "躲猫猫-反射盾",
+    "SpriteFile": "buff_hideseek_icon03_-90999863635270254.png"
+  },
+  {
     "Id": 833555,
     "Icon": "debuff_icon_38",
     "NameDesign": "搬运切好的肉",
     "SpriteFile": "debuff_icon_38_-2226594174090587312.png"
+  },
+  {
+    "Id": 835018,
+    "Icon": "buff_hideseek_icon04",
+    "NameDesign": "躲猫猫-无上限",
+    "SpriteFile": "buff_hideseek_icon04_687387163055640996.png"
   },
   {
     "Id": 833556,
@@ -11856,15 +12612,453 @@
     "SpriteFile": "debuff_icon_38_-2226594174090587312.png"
   },
   {
+    "Id": 835019,
+    "Icon": "buff_icon77",
+    "NameDesign": "躲猫猫-幸运硬币",
+    "SpriteFile": "buff_icon77_-6801519758328782697.png"
+  },
+  {
+    "Id": 835020,
+    "Icon": "buff_icon118",
+    "NameDesign": "躲猫猫-园艺师",
+    "SpriteFile": "buff_icon118_8234574729073632745.png"
+  },
+  {
+    "Id": 835021,
+    "Icon": "buff_hideseek_icon08",
+    "NameDesign": "躲猫猫-警备升级",
+    "SpriteFile": "buff_hideseek_icon08_8763399191853686264.png"
+  },
+  {
+    "Id": 835022,
+    "Icon": "buff_icon56",
+    "NameDesign": "躲猫猫-逐影猎手-疯狂时刻",
+    "SpriteFile": "buff_icon56_5491332621716727519.png"
+  },
+  {
+    "Id": 835023,
+    "Icon": "buff_icon55",
+    "NameDesign": "躲猫猫-逐影猎手-等待时刻",
+    "SpriteFile": "buff_icon55_-8718318834320803580.png"
+  },
+  {
+    "Id": 835024,
+    "Icon": "buff_icon57",
+    "NameDesign": "躲猫猫-潜行者-潜行时刻",
+    "SpriteFile": "buff_icon57_2142623665252311195.png"
+  },
+  {
+    "Id": 835025,
+    "Icon": "",
+    "NameDesign": "躲猫猫-转场屏幕特效",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835026,
+    "Icon": "buff_icon121",
+    "NameDesign": "躲猫猫-留影时刻-禁技能-设阵营",
+    "SpriteFile": "buff_icon121_-5584272227414012839.png"
+  },
+  {
+    "Id": 835027,
+    "Icon": "buff_icon56",
+    "NameDesign": "躲猫猫-潜行者-疯狂时刻",
+    "SpriteFile": "buff_icon56_5491332621716727519.png"
+  },
+  {
+    "Id": 835051,
+    "Icon": "buff_icon_baoji",
+    "NameDesign": "躲猫猫-土遁术",
+    "SpriteFile": "buff_icon_baoji_-2743581903288941163.png"
+  },
+  {
+    "Id": 835052,
+    "Icon": "head_photo_iruna",
+    "NameDesign": "躲猫猫-替身使者-艾露娜-检测buff",
+    "SpriteFile": "head_photo_iruna_1289271378037466346.png"
+  },
+  {
+    "Id": 835053,
+    "Icon": "head_photo_iruna",
+    "NameDesign": "躲猫猫-替身使者-艾露娜-生效buff",
+    "SpriteFile": "head_photo_iruna_1289271378037466346.png"
+  },
+  {
+    "Id": 835054,
+    "Icon": "head_photo_tina",
+    "NameDesign": "躲猫猫-替身使者-蒂娜-检测buff",
+    "SpriteFile": "head_photo_tina_-2055351073432645321.png"
+  },
+  {
+    "Id": 835055,
+    "Icon": "head_photo_tina",
+    "NameDesign": "躲猫猫-替身使者-蒂娜-生效buff",
+    "SpriteFile": "head_photo_tina_-2055351073432645321.png"
+  },
+  {
+    "Id": 835056,
+    "Icon": "head_photo_boyce",
+    "NameDesign": "躲猫猫-替身使者-博伊斯-检测buff",
+    "SpriteFile": "head_photo_boyce_911692752511217954.png"
+  },
+  {
+    "Id": 835057,
+    "Icon": "head_photo_boyce",
+    "NameDesign": "躲猫猫-替身使者-博伊斯-生效buff",
+    "SpriteFile": "head_photo_boyce_911692752511217954.png"
+  },
+  {
+    "Id": 835058,
+    "Icon": "head_photo_olvera",
+    "NameDesign": "躲猫猫-替身使者-奥尔维拉-检测buff",
+    "SpriteFile": "head_photo_olvera_7385302828048376204.png"
+  },
+  {
+    "Id": 835059,
+    "Icon": "head_photo_olvera",
+    "NameDesign": "躲猫猫-替身使者-奥尔维拉-变身",
+    "SpriteFile": "head_photo_olvera_7385302828048376204.png"
+  },
+  {
+    "Id": 835060,
+    "Icon": "buff_icon08",
+    "NameDesign": "躲猫猫-替身使者-奥尔维拉-可变身提示",
+    "SpriteFile": "buff_icon08_5301004452925753041.png"
+  },
+  {
+    "Id": 835061,
+    "Icon": "buff_hideseek_icon05",
+    "NameDesign": "躲猫猫-逐影猎手-杂物清理debuff",
+    "SpriteFile": "buff_hideseek_icon05_-1607390096414922178.png"
+  },
+  {
+    "Id": 835062,
+    "Icon": "buff_icon34",
+    "NameDesign": "躲猫猫-逐影猎手-慢潮汹涌减速",
+    "SpriteFile": "buff_icon34_1078629465928930115.png"
+  },
+  {
+    "Id": 835063,
+    "Icon": "buff_icon129",
+    "NameDesign": "躲猫猫-逐影猎手-冰墙减速",
+    "SpriteFile": "buff_icon129_-3870126473935157953.png"
+  },
+  {
+    "Id": 835064,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手-冰墙减速检测Buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835065,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手-追影扣血",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835066,
+    "Icon": "buff_abnormal_green_icon_link",
+    "NameDesign": "躲猫猫-逐影猎手-法法菈武器光环",
+    "SpriteFile": "buff_abnormal_green_icon_link_-3838509109469372250.png"
+  },
+  {
+    "Id": 835067,
+    "Icon": "buff_add_electricity",
+    "NameDesign": "躲猫猫-逐影猎手-天雷",
+    "SpriteFile": "buff_add_electricity_6523482634448637157.png"
+  },
+  {
+    "Id": 835068,
+    "Icon": "buff_icon141",
+    "NameDesign": "躲猫猫-逐影猎手-舞力值",
+    "SpriteFile": "buff_icon141_5600724108719575042.png"
+  },
+  {
+    "Id": 835069,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手-舞力值满给技能",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835070,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手-变幽灵强控1秒",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835071,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手-命运硬币回血",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835072,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手-命运硬币掉血",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835073,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手-命运硬币大回血",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835074,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手-追影命中回血",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835075,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手-琥珀",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835076,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手-蓝锥矿",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835077,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手-龙晶",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835078,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手-法法菈的庇护",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835079,
+    "Icon": "buff_icon62",
+    "NameDesign": "躲猫猫-逐影猎手-全场焦点",
+    "SpriteFile": "buff_icon62_-5414963777781758270.png"
+  },
+  {
+    "Id": 835080,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手-闪电熔岩",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835081,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手-舞力值天生buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835082,
+    "Icon": "",
+    "NameDesign": "躲猫猫-替身-一局只能用一次检测",
+    "SpriteFile": null
+  },
+  {
     "Id": 840001,
     "Icon": "",
     "NameDesign": "标记: 一阶段",
     "SpriteFile": null
   },
   {
+    "Id": 835083,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手-追影回血CD",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835084,
+    "Icon": "buff_icon121",
+    "NameDesign": "躲猫猫-逐影猎手-准备时刻",
+    "SpriteFile": "buff_icon121_-5584272227414012839.png"
+  },
+  {
+    "Id": 835085,
+    "Icon": "",
+    "NameDesign": "躲猫猫-潜行者-投影魔术回血",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835100,
+    "Icon": "buff_hideseek_icon09",
+    "NameDesign": "躲猫猫-隐身斗篷",
+    "SpriteFile": "buff_hideseek_icon09_-3841449382219299290.png"
+  },
+  {
+    "Id": 835101,
+    "Icon": "buff_hideseek_icon10",
+    "NameDesign": "躲猫猫-高速婆婆",
+    "SpriteFile": "buff_hideseek_icon10_-7486613635942760403.png"
+  },
+  {
+    "Id": 835102,
+    "Icon": "",
+    "NameDesign": "躲猫猫-小猪来咯",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835103,
+    "Icon": "buff_hideseek_icon12",
+    "NameDesign": "躲猫猫-极巨化",
+    "SpriteFile": "buff_hideseek_icon12_-2385457419463855088.png"
+  },
+  {
+    "Id": 835104,
+    "Icon": "buff_abnormal_purple_icon",
+    "NameDesign": "躲猫猫-小人国",
+    "SpriteFile": "buff_abnormal_purple_icon_-4977581894764365973.png"
+  },
+  {
     "Id": 840002,
     "Icon": "",
     "NameDesign": "一阶段: 辅助CD计时",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835105,
+    "Icon": "",
+    "NameDesign": "躲猫猫-弹簧床",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835106,
+    "Icon": "",
+    "NameDesign": "躲猫猫-小药瓶",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835107,
+    "Icon": "",
+    "NameDesign": "躲猫猫-大药瓶",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835108,
+    "Icon": "",
+    "NameDesign": "躲猫猫-空间转移",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835109,
+    "Icon": "buff_hideseek_icon13",
+    "NameDesign": "躲猫猫-离开星球表面",
+    "SpriteFile": "buff_hideseek_icon13_1307158914072255298.png"
+  },
+  {
+    "Id": 835110,
+    "Icon": "",
+    "NameDesign": "躲猫猫-刷新",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835111,
+    "Icon": "buff_talent_passive_icon_general_sup_flowerlimit",
+    "NameDesign": "躲猫猫-间谍",
+    "SpriteFile": "buff_talent_passive_icon_general_sup_flowerlimit_6171808906592601633.png"
+  },
+  {
+    "Id": 835113,
+    "Icon": "buff_icon87",
+    "NameDesign": "躲猫猫-场景玩法-吹风138°",
+    "SpriteFile": "buff_icon87_4441137545099076596.png"
+  },
+  {
+    "Id": 835114,
+    "Icon": "buff_icon87",
+    "NameDesign": "躲猫猫-场景玩法-吹风159°",
+    "SpriteFile": "buff_icon87_4441137545099076596.png"
+  },
+  {
+    "Id": 835115,
+    "Icon": "",
+    "NameDesign": "躲猫猫-场景玩法-传送门表现（客户端）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835116,
+    "Icon": "buff_icon40",
+    "NameDesign": "躲猫猫-场景玩法-潜行者传送CD",
+    "SpriteFile": "buff_icon40_-7744225558946966884.png"
+  },
+  {
+    "Id": 835117,
+    "Icon": "",
+    "NameDesign": "躲猫猫-娜宝监视官发现目标表现",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835118,
+    "Icon": "",
+    "NameDesign": "躲猫猫-同阵营透视（程序用）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835119,
+    "Icon": "buff_icon87",
+    "NameDesign": "躲猫猫-场景玩法-寒风压暗表现",
+    "SpriteFile": "buff_icon87_4441137545099076596.png"
+  },
+  {
+    "Id": 835120,
+    "Icon": "",
+    "NameDesign": "躲猫猫-场景玩法-弹簧-40米",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835121,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "躲猫猫-场景玩法-弹簧-CD",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 835122,
+    "Icon": "",
+    "NameDesign": "躲猫猫-场景玩法-弹簧-25米",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835123,
+    "Icon": "",
+    "NameDesign": "躲猫猫-场景玩法-弹簧-可跳跃箭头表现",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835124,
+    "Icon": "",
+    "NameDesign": "躲猫猫-场景玩法-弹簧-10米",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835200,
+    "Icon": "",
+    "NameDesign": "躲猫猫-道具球-隐身斗篷",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835201,
+    "Icon": "",
+    "NameDesign": "躲猫猫-道具球-高速移动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835202,
+    "Icon": "",
+    "NameDesign": "躲猫猫-道具球-小猪来咯",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835203,
+    "Icon": "",
+    "NameDesign": "躲猫猫-道具球-极巨化",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835204,
+    "Icon": "",
+    "NameDesign": "躲猫猫-道具球-小人国",
     "SpriteFile": null
   },
   {
@@ -11874,9 +13068,21 @@
     "SpriteFile": null
   },
   {
+    "Id": 835205,
+    "Icon": "",
+    "NameDesign": "躲猫猫-道具球-弹簧床",
+    "SpriteFile": null
+  },
+  {
     "Id": 840005,
     "Icon": "",
     "NameDesign": "提示UI显示BUFF",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835206,
+    "Icon": "",
+    "NameDesign": "躲猫猫-道具球-小药瓶",
     "SpriteFile": null
   },
   {
@@ -11886,9 +13092,21 @@
     "SpriteFile": null
   },
   {
+    "Id": 835207,
+    "Icon": "",
+    "NameDesign": "躲猫猫-道具球-大药瓶",
+    "SpriteFile": null
+  },
+  {
     "Id": 840007,
     "Icon": "",
     "NameDesign": "点名分摊锁定表现",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835208,
+    "Icon": "",
+    "NameDesign": "躲猫猫-道具球-空间转移",
     "SpriteFile": null
   },
   {
@@ -11898,15 +13116,45 @@
     "SpriteFile": "buff_abnormal_icon_-7224232056957210398.png"
   },
   {
+    "Id": 835209,
+    "Icon": "",
+    "NameDesign": "躲猫猫-道具球-离开星球表面",
+    "SpriteFile": null
+  },
+  {
+    "Id": 840009,
+    "Icon": "",
+    "NameDesign": "S3蒂娜-柜子天生BUFF",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835210,
+    "Icon": "",
+    "NameDesign": "躲猫猫-道具球-刷新技能",
+    "SpriteFile": null
+  },
+  {
     "Id": 840010,
     "Icon": "buff_dungeons_xushi",
     "NameDesign": "虚蚀侵蚀-传染BUFF",
     "SpriteFile": "buff_dungeons_xushi_-643188952745794338.png"
   },
   {
+    "Id": 835211,
+    "Icon": "",
+    "NameDesign": "躲猫猫-道具球-间谍",
+    "SpriteFile": null
+  },
+  {
     "Id": 840011,
     "Icon": "",
     "NameDesign": "虚蚀侵蚀技能",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835300,
+    "Icon": "",
+    "NameDesign": "技能测试",
     "SpriteFile": null
   },
   {
@@ -11916,15 +13164,33 @@
     "SpriteFile": null
   },
   {
+    "Id": 835301,
+    "Icon": "",
+    "NameDesign": "技能测试2",
+    "SpriteFile": null
+  },
+  {
     "Id": 840013,
     "Icon": "buff_abnormal_icon_01",
     "NameDesign": "已经被传染过的BUFF标记",
     "SpriteFile": "buff_abnormal_icon_01_8866330207186446735.png"
   },
   {
+    "Id": 835302,
+    "Icon": "",
+    "NameDesign": "技能测试3",
+    "SpriteFile": null
+  },
+  {
     "Id": 840014,
     "Icon": "",
     "NameDesign": "蒂娜BOSS-解毒计时",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835400,
+    "Icon": "",
+    "NameDesign": "躲猫猫-潜行者灵光随机buff",
     "SpriteFile": null
   },
   {
@@ -11934,10 +13200,34 @@
     "SpriteFile": null
   },
   {
+    "Id": 835401,
+    "Icon": "buff_hideseek_icon09",
+    "NameDesign": "躲猫猫-B级魔法斗篷",
+    "SpriteFile": "buff_hideseek_icon09_-3841449382219299290.png"
+  },
+  {
     "Id": 840021,
     "Icon": "",
     "NameDesign": "蒂娜BOSS-分身移动总BUFF",
     "SpriteFile": null
+  },
+  {
+    "Id": 835402,
+    "Icon": "buff_hideseek_icon09",
+    "NameDesign": "躲猫猫-A级魔法斗篷",
+    "SpriteFile": "buff_hideseek_icon09_-3841449382219299290.png"
+  },
+  {
+    "Id": 840022,
+    "Icon": "",
+    "NameDesign": "S3-蒂娜天生BUFF",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835403,
+    "Icon": "buff_hideseek_icon09",
+    "NameDesign": "躲猫猫-S级魔法斗篷",
+    "SpriteFile": "buff_hideseek_icon09_-3841449382219299290.png"
   },
   {
     "Id": 840101,
@@ -11946,10 +13236,22 @@
     "SpriteFile": null
   },
   {
+    "Id": 835404,
+    "Icon": "buff_blue_movespeed",
+    "NameDesign": "躲猫猫-B级魔法靴",
+    "SpriteFile": "buff_blue_movespeed_4016095574016347854.png"
+  },
+  {
     "Id": 840201,
     "Icon": "",
     "NameDesign": "标记: 三阶段",
     "SpriteFile": null
+  },
+  {
+    "Id": 835405,
+    "Icon": "buff_blue_movespeed",
+    "NameDesign": "躲猫猫-A级魔法靴",
+    "SpriteFile": "buff_blue_movespeed_4016095574016347854.png"
   },
   {
     "Id": 840301,
@@ -11958,10 +13260,22 @@
     "SpriteFile": null
   },
   {
+    "Id": 835406,
+    "Icon": "buff_blue_movespeed",
+    "NameDesign": "躲猫猫-S级魔法靴",
+    "SpriteFile": "buff_blue_movespeed_4016095574016347854.png"
+  },
+  {
     "Id": 840401,
     "Icon": "buff_abnormal_red_icon_03",
     "NameDesign": "虚蚀BUFF-英雄难度",
     "SpriteFile": "buff_abnormal_red_icon_03_-6411525200381862591.png"
+  },
+  {
+    "Id": 835407,
+    "Icon": "buff_blue_heal",
+    "NameDesign": "躲猫猫-B级魔法创口贴",
+    "SpriteFile": "buff_blue_heal_-5712323321751886046.png"
   },
   {
     "Id": 840402,
@@ -11970,10 +13284,22 @@
     "SpriteFile": "buff_abnormal_red_icon_03_-6411525200381862591.png"
   },
   {
+    "Id": 835408,
+    "Icon": "buff_blue_heal",
+    "NameDesign": "躲猫猫-A级魔法创口贴",
+    "SpriteFile": "buff_blue_heal_-5712323321751886046.png"
+  },
+  {
     "Id": 840501,
     "Icon": "",
     "NameDesign": "蒂娜BOSS被动",
     "SpriteFile": null
+  },
+  {
+    "Id": 835409,
+    "Icon": "buff_blue_heal",
+    "NameDesign": "躲猫猫-S级魔法创口贴",
+    "SpriteFile": "buff_blue_heal_-5712323321751886046.png"
   },
   {
     "Id": 840601,
@@ -11982,10 +13308,22 @@
     "SpriteFile": null
   },
   {
+    "Id": 835410,
+    "Icon": "buff_blue_cd",
+    "NameDesign": "躲猫猫-B级魔法沙漏",
+    "SpriteFile": "buff_blue_cd_-8175755454109992172.png"
+  },
+  {
     "Id": 840701,
     "Icon": "",
     "NameDesign": "虚蚀战场领域BUFF",
     "SpriteFile": null
+  },
+  {
+    "Id": 835411,
+    "Icon": "buff_blue_cd",
+    "NameDesign": "躲猫猫-A级魔法沙漏",
+    "SpriteFile": "buff_blue_cd_-8175755454109992172.png"
   },
   {
     "Id": 840801,
@@ -11994,15 +13332,357 @@
     "SpriteFile": null
   },
   {
+    "Id": 835412,
+    "Icon": "buff_blue_cd",
+    "NameDesign": "躲猫猫-S级魔法沙漏",
+    "SpriteFile": "buff_blue_cd_-8175755454109992172.png"
+  },
+  {
     "Id": 840802,
     "Icon": "",
     "NameDesign": "蒂娜分身初始移动限制BUFF",
     "SpriteFile": null
   },
   {
+    "Id": 835413,
+    "Icon": "buff_icon71",
+    "NameDesign": "躲猫猫-B级悠悠球",
+    "SpriteFile": "buff_icon71_-6952099111454679120.png"
+  },
+  {
     "Id": 840901,
     "Icon": "",
     "NameDesign": "虚蚀旗帜初始BUFF",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835414,
+    "Icon": "buff_icon71",
+    "NameDesign": "躲猫猫-A级悠悠球",
+    "SpriteFile": "buff_icon71_-6952099111454679120.png"
+  },
+  {
+    "Id": 835415,
+    "Icon": "buff_icon71",
+    "NameDesign": "躲猫猫-S级悠悠球",
+    "SpriteFile": "buff_icon71_-6952099111454679120.png"
+  },
+  {
+    "Id": 835416,
+    "Icon": "toy_buff_general",
+    "NameDesign": "躲猫猫-B级超高级幸运",
+    "SpriteFile": "toy_buff_general_-448119693827793626.png"
+  },
+  {
+    "Id": 835417,
+    "Icon": "toy_buff_general",
+    "NameDesign": "躲猫猫-A级超高级幸运",
+    "SpriteFile": "toy_buff_general_-448119693827793626.png"
+  },
+  {
+    "Id": 835418,
+    "Icon": "toy_buff_general",
+    "NameDesign": "躲猫猫-S级超高级幸运",
+    "SpriteFile": "toy_buff_general_-448119693827793626.png"
+  },
+  {
+    "Id": 835419,
+    "Icon": "buff_icon135",
+    "NameDesign": "躲猫猫-B级反射镜",
+    "SpriteFile": "buff_icon135_1192987653471362194.png"
+  },
+  {
+    "Id": 835420,
+    "Icon": "buff_icon135",
+    "NameDesign": "躲猫猫-A级反射镜",
+    "SpriteFile": "buff_icon135_1192987653471362194.png"
+  },
+  {
+    "Id": 835421,
+    "Icon": "buff_icon135",
+    "NameDesign": "躲猫猫-S级反射镜",
+    "SpriteFile": "buff_icon135_1192987653471362194.png"
+  },
+  {
+    "Id": 835451,
+    "Icon": "",
+    "NameDesign": "躲猫猫-魔法斗篷随机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835452,
+    "Icon": "",
+    "NameDesign": "躲猫猫-魔法靴随机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835453,
+    "Icon": "",
+    "NameDesign": "躲猫猫-魔法创口贴随机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835454,
+    "Icon": "",
+    "NameDesign": "躲猫猫-魔法沙漏随机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835455,
+    "Icon": "",
+    "NameDesign": "躲猫猫-悠悠球随机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835456,
+    "Icon": "",
+    "NameDesign": "躲猫猫-超高级幸运随机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835457,
+    "Icon": "",
+    "NameDesign": "躲猫猫-反射镜随机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835493,
+    "Icon": "",
+    "NameDesign": "躲猫猫-魔法沙漏CD",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835494,
+    "Icon": "",
+    "NameDesign": "躲猫猫-魔法创口贴CD",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835495,
+    "Icon": "",
+    "NameDesign": "躲猫猫-魔法靴CD",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835496,
+    "Icon": "",
+    "NameDesign": "躲猫猫-B级魔法靴-加速效果",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835497,
+    "Icon": "",
+    "NameDesign": "躲猫猫-A级魔法靴-加速效果",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835498,
+    "Icon": "",
+    "NameDesign": "躲猫猫-S级魔法靴-加速效果",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835499,
+    "Icon": "",
+    "NameDesign": "躲猫猫-魔法斗篷CD",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835500,
+    "Icon": "",
+    "NameDesign": "躲猫猫-逐影猎手灵光随机buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835501,
+    "Icon": "buff_blue_hp",
+    "NameDesign": "躲猫猫-B级嗜影指环",
+    "SpriteFile": "buff_blue_hp_5186678679856357195.png"
+  },
+  {
+    "Id": 835502,
+    "Icon": "buff_blue_hp",
+    "NameDesign": "躲猫猫-A级嗜影指环",
+    "SpriteFile": "buff_blue_hp_5186678679856357195.png"
+  },
+  {
+    "Id": 835503,
+    "Icon": "buff_blue_hp",
+    "NameDesign": "躲猫猫-S级嗜影指环",
+    "SpriteFile": "buff_blue_hp_5186678679856357195.png"
+  },
+  {
+    "Id": 835504,
+    "Icon": "buff_icon95",
+    "NameDesign": "躲猫猫-B级缝影针",
+    "SpriteFile": "buff_icon95_8911048358441726081.png"
+  },
+  {
+    "Id": 835505,
+    "Icon": "buff_icon95",
+    "NameDesign": "躲猫猫-A级缝影针",
+    "SpriteFile": "buff_icon95_8911048358441726081.png"
+  },
+  {
+    "Id": 835506,
+    "Icon": "buff_icon95",
+    "NameDesign": "躲猫猫-S级缝影针",
+    "SpriteFile": "buff_icon95_8911048358441726081.png"
+  },
+  {
+    "Id": 835507,
+    "Icon": "buff_icon46",
+    "NameDesign": "躲猫猫-B级膨胀空间",
+    "SpriteFile": "buff_icon46_-1663981419845847260.png"
+  },
+  {
+    "Id": 835508,
+    "Icon": "buff_icon46",
+    "NameDesign": "躲猫猫-A级膨胀空间",
+    "SpriteFile": "buff_icon46_-1663981419845847260.png"
+  },
+  {
+    "Id": 835509,
+    "Icon": "buff_icon46",
+    "NameDesign": "躲猫猫-S级膨胀空间",
+    "SpriteFile": "buff_icon46_-1663981419845847260.png"
+  },
+  {
+    "Id": 835510,
+    "Icon": "buff_icon125",
+    "NameDesign": "躲猫猫-B级织影线",
+    "SpriteFile": "buff_icon125_-2222945160737973152.png"
+  },
+  {
+    "Id": 835511,
+    "Icon": "buff_icon125",
+    "NameDesign": "躲猫猫-A级织影线",
+    "SpriteFile": "buff_icon125_-2222945160737973152.png"
+  },
+  {
+    "Id": 835512,
+    "Icon": "buff_icon125",
+    "NameDesign": "躲猫猫-S级织影线",
+    "SpriteFile": "buff_icon125_-2222945160737973152.png"
+  },
+  {
+    "Id": 835513,
+    "Icon": "buff_icon63",
+    "NameDesign": "躲猫猫-B级穿隧效应",
+    "SpriteFile": "buff_icon63_-5490064174354652907.png"
+  },
+  {
+    "Id": 835514,
+    "Icon": "buff_icon63",
+    "NameDesign": "躲猫猫-A级穿隧效应",
+    "SpriteFile": "buff_icon63_-5490064174354652907.png"
+  },
+  {
+    "Id": 835515,
+    "Icon": "buff_icon63",
+    "NameDesign": "躲猫猫-S级穿隧效应",
+    "SpriteFile": "buff_icon63_-5490064174354652907.png"
+  },
+  {
+    "Id": 835516,
+    "Icon": "buff_icon121",
+    "NameDesign": "躲猫猫-B级完美女仆",
+    "SpriteFile": "buff_icon121_-5584272227414012839.png"
+  },
+  {
+    "Id": 835517,
+    "Icon": "buff_icon121",
+    "NameDesign": "躲猫猫-A级完美女仆",
+    "SpriteFile": "buff_icon121_-5584272227414012839.png"
+  },
+  {
+    "Id": 835518,
+    "Icon": "buff_icon121",
+    "NameDesign": "躲猫猫-S级完美女仆",
+    "SpriteFile": "buff_icon121_-5584272227414012839.png"
+  },
+  {
+    "Id": 835519,
+    "Icon": "buff_icon153",
+    "NameDesign": "躲猫猫-B级无影手镯",
+    "SpriteFile": "buff_icon153_4974622711736833835.png"
+  },
+  {
+    "Id": 835520,
+    "Icon": "buff_icon153",
+    "NameDesign": "躲猫猫-A级无影手镯",
+    "SpriteFile": "buff_icon153_4974622711736833835.png"
+  },
+  {
+    "Id": 835521,
+    "Icon": "buff_icon153",
+    "NameDesign": "躲猫猫-S级无影手镯",
+    "SpriteFile": "buff_icon153_4974622711736833835.png"
+  },
+  {
+    "Id": 835551,
+    "Icon": "",
+    "NameDesign": "躲猫猫-嗜影指环随机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835552,
+    "Icon": "",
+    "NameDesign": "躲猫猫-缝影针随机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835553,
+    "Icon": "",
+    "NameDesign": "躲猫猫-膨胀空间随机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835554,
+    "Icon": "",
+    "NameDesign": "躲猫猫-织影线随机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835555,
+    "Icon": "",
+    "NameDesign": "躲猫猫-穿隧效应随机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835556,
+    "Icon": "",
+    "NameDesign": "躲猫猫-完美女仆随机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835557,
+    "Icon": "",
+    "NameDesign": "躲猫猫-无影手镯随机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 835596,
+    "Icon": "buff_hideseek_icon07",
+    "NameDesign": "躲猫猫-B级完美女仆-时停效果",
+    "SpriteFile": "buff_hideseek_icon07_6865453468403821042.png"
+  },
+  {
+    "Id": 835597,
+    "Icon": "buff_hideseek_icon07",
+    "NameDesign": "躲猫猫-A级完美女仆-时停效果",
+    "SpriteFile": "buff_hideseek_icon07_6865453468403821042.png"
+  },
+  {
+    "Id": 835598,
+    "Icon": "buff_hideseek_icon07",
+    "NameDesign": "躲猫猫-S级完美女仆-时停效果",
+    "SpriteFile": "buff_hideseek_icon07_6865453468403821042.png"
+  },
+  {
+    "Id": 835599,
+    "Icon": "",
+    "NameDesign": "躲猫猫-灵光迸发检测buff",
     "SpriteFile": null
   },
   {
@@ -12076,6 +13756,156 @@
     "Icon": "buff_abnormal_icon_02",
     "NameDesign": "蓄力前刺目标标记锁定",
     "SpriteFile": "buff_abnormal_icon_02_-6301183379485455628.png"
+  },
+  {
+    "Id": 841505,
+    "Icon": "",
+    "NameDesign": "S3蒂娜-柜子保护",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841506,
+    "Icon": "",
+    "NameDesign": "S3蒂娜-柜子保护罩",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841507,
+    "Icon": "",
+    "NameDesign": "S3蒂娜-柜子被诅咒BUFF",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841508,
+    "Icon": "",
+    "NameDesign": "S3蒂娜-玩家被诅咒",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841509,
+    "Icon": "",
+    "NameDesign": "S3蒂娜-无敌斩标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841510,
+    "Icon": "",
+    "NameDesign": "S3蒂娜-无敌斩总领",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841511,
+    "Icon": "",
+    "NameDesign": "S3蒂娜-场中怪物标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841512,
+    "Icon": "",
+    "NameDesign": "十字瞄准预警",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841513,
+    "Icon": "",
+    "NameDesign": "S3蒂娜-士官长天生BUFF",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841514,
+    "Icon": "",
+    "NameDesign": "S3蒂娜-平民血越少移速越慢",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841515,
+    "Icon": "",
+    "NameDesign": "S3-转阶段监控BUFF",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841516,
+    "Icon": "",
+    "NameDesign": "幻幻花材质",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841517,
+    "Icon": "",
+    "NameDesign": "S3-蒂娜巨大化天生BUFF",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841518,
+    "Icon": "",
+    "NameDesign": "S3-蒂娜P2机制流程",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841519,
+    "Icon": "buff_abnormal_icon",
+    "NameDesign": "S3-红光束缚",
+    "SpriteFile": "buff_abnormal_icon_-7224232056957210398.png"
+  },
+  {
+    "Id": 841520,
+    "Icon": "buff_hideseek_icon12",
+    "NameDesign": "S3蒂娜-三阶段增伤",
+    "SpriteFile": "buff_hideseek_icon12_-2385457419463855088.png"
+  },
+  {
+    "Id": 841521,
+    "Icon": "",
+    "NameDesign": "平民移除自己BUFF",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841522,
+    "Icon": "buff_abnormal_icon_02",
+    "NameDesign": "虚蚀威压-玩家被压制BUFF",
+    "SpriteFile": "buff_abnormal_icon_02_-6301183379485455628.png"
+  },
+  {
+    "Id": 841523,
+    "Icon": "",
+    "NameDesign": "S3-蒂娜无敌斩难度控制",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841524,
+    "Icon": "",
+    "NameDesign": "S3-蒂娜无敌斩-易伤",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841525,
+    "Icon": "",
+    "NameDesign": "S3蒂娜披萨期间禁冲锋",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841526,
+    "Icon": "buff_red_atk",
+    "NameDesign": "S3-蒂娜环形斩, 减攻",
+    "SpriteFile": "buff_red_atk_3284302867017518745.png"
+  },
+  {
+    "Id": 841527,
+    "Icon": "",
+    "NameDesign": "S3-剑士天生BUFF",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841528,
+    "Icon": "",
+    "NameDesign": "平民嘲讽剑士",
+    "SpriteFile": null
+  },
+  {
+    "Id": 841529,
+    "Icon": "",
+    "NameDesign": "S3蒂娜-诅咒预BUFF  用于应对BUG提前配置",
+    "SpriteFile": null
   },
   {
     "Id": 841601,
@@ -13200,6 +15030,42 @@
     "SpriteFile": null
   },
   {
+    "Id": 851840,
+    "Icon": "",
+    "NameDesign": "追上玩家-队长",
+    "SpriteFile": null
+  },
+  {
+    "Id": 851841,
+    "Icon": "",
+    "NameDesign": "追上玩家-跟班",
+    "SpriteFile": null
+  },
+  {
+    "Id": 851842,
+    "Icon": "",
+    "NameDesign": "达雅表演动作",
+    "SpriteFile": null
+  },
+  {
+    "Id": 851843,
+    "Icon": "",
+    "NameDesign": "给追兵加速buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 851844,
+    "Icon": "",
+    "NameDesign": "追兵甩子弹",
+    "SpriteFile": null
+  },
+  {
+    "Id": 851845,
+    "Icon": "",
+    "NameDesign": "达雅烟雾弹",
+    "SpriteFile": null
+  },
+  {
     "Id": 851851,
     "Icon": "",
     "NameDesign": "商人天生buff",
@@ -13389,6 +15255,186 @@
     "Id": 852202,
     "Icon": "",
     "NameDesign": "虚蚀怪物出生地点标记小",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852203,
+    "Icon": "debuff_icon_17",
+    "NameDesign": "织梦师眩晕",
+    "SpriteFile": "debuff_icon_17_-4998991083182462306.png"
+  },
+  {
+    "Id": 852204,
+    "Icon": "",
+    "NameDesign": "织梦师战斗对话",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852205,
+    "Icon": "",
+    "NameDesign": "神官霍拉斯禁忌领域护盾",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852206,
+    "Icon": "debuff_icon_38",
+    "NameDesign": "神官霍拉斯减速领域",
+    "SpriteFile": "debuff_icon_38_-2226594174090587312.png"
+  },
+  {
+    "Id": 852207,
+    "Icon": "debuff_icon_17",
+    "NameDesign": "神官霍拉斯光球眩晕",
+    "SpriteFile": "debuff_icon_17_-4998991083182462306.png"
+  },
+  {
+    "Id": 852208,
+    "Icon": "",
+    "NameDesign": "神官霍拉斯无效信条消除博伊斯施法",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852209,
+    "Icon": "",
+    "NameDesign": "神官霍拉斯禁忌领域DOT",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852210,
+    "Icon": "",
+    "NameDesign": "神官霍拉斯战斗对话1",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852211,
+    "Icon": "",
+    "NameDesign": "神官霍拉斯战斗对话2",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852212,
+    "Icon": "",
+    "NameDesign": "神官霍拉斯转场血量检测",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852213,
+    "Icon": "",
+    "NameDesign": "神官霍拉斯转场血量检测2",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852214,
+    "Icon": "",
+    "NameDesign": "织梦师血量检测对话1",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852215,
+    "Icon": "",
+    "NameDesign": "织梦师血量检测对话2",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852216,
+    "Icon": "",
+    "NameDesign": "我是博伊斯我免疫所有控制",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852217,
+    "Icon": "",
+    "NameDesign": "我是博伊斯我吃无效信条了要喊台词",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852218,
+    "Icon": "",
+    "NameDesign": "助战织梦师演出技能对话",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852219,
+    "Icon": "debuff_icon_17",
+    "NameDesign": "织梦师眩晕超级加长版",
+    "SpriteFile": "debuff_icon_17_-4998991083182462306.png"
+  },
+  {
+    "Id": 852220,
+    "Icon": "",
+    "NameDesign": "莱纳开场和死亡对话",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852221,
+    "Icon": "",
+    "NameDesign": "莱纳血量检测",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852222,
+    "Icon": "",
+    "NameDesign": "莱纳血量检测对话",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852223,
+    "Icon": "",
+    "NameDesign": "莱纳开场无敌",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852224,
+    "Icon": "",
+    "NameDesign": "贡纳无敌",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852225,
+    "Icon": "",
+    "NameDesign": "贡纳倒地演出",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852226,
+    "Icon": "",
+    "NameDesign": "贡纳隐身",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852227,
+    "Icon": "",
+    "NameDesign": "裁定执行者开局扔炸弹1",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852228,
+    "Icon": "",
+    "NameDesign": "精英蟹蛛悠悠球预警圈标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852229,
+    "Icon": "",
+    "NameDesign": "裁定执行者开局玩家不进仇恨",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852230,
+    "Icon": "",
+    "NameDesign": "裁定执行者开局扔炸弹2",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852231,
+    "Icon": "",
+    "NameDesign": "裁定执行者开局不让玩家移动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 852232,
+    "Icon": "",
+    "NameDesign": "贡纳任务-娜宝开场无敌",
     "SpriteFile": null
   },
   {
@@ -14265,6 +16311,18 @@
     "Id": 855194,
     "Icon": "",
     "NameDesign": "投掷手雷延迟打击点buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 855195,
+    "Icon": "",
+    "NameDesign": "与全场连线",
+    "SpriteFile": null
+  },
+  {
+    "Id": 855196,
+    "Icon": "",
+    "NameDesign": "被连线增伤无敌",
     "SpriteFile": null
   },
   {
@@ -15340,6 +17398,12 @@
     "Icon": "com_affix_tanhuang",
     "NameDesign": "衰弱链接-降低攻击力",
     "SpriteFile": "com_affix_tanhuang_3881051662128163272.png"
+  },
+  {
+    "Id": 873601,
+    "Icon": "",
+    "NameDesign": "奇幻音符触发",
+    "SpriteFile": null
   },
   {
     "Id": 880001,
@@ -19014,6 +21078,12 @@
     "SpriteFile": null
   },
   {
+    "Id": 881563,
+    "Icon": "",
+    "NameDesign": "列阵无敌2",
+    "SpriteFile": null
+  },
+  {
     "Id": 881600,
     "Icon": "good",
     "NameDesign": "追击表现buff",
@@ -19693,9 +21763,9 @@
   },
   {
     "Id": 881758,
-    "Icon": "",
+    "Icon": "buff_red_atk",
     "NameDesign": "炸蛇蛋大师难度专属减攻",
-    "SpriteFile": null
+    "SpriteFile": "buff_red_atk_3284302867017518745.png"
   },
   {
     "Id": 881759,
@@ -22146,6 +24216,12 @@
     "SpriteFile": null
   },
   {
+    "Id": 882662,
+    "Icon": "",
+    "NameDesign": "小幻幻花爆一下",
+    "SpriteFile": null
+  },
+  {
     "Id": 882700,
     "Icon": "",
     "NameDesign": "钩锁-点位-持续（前端）",
@@ -23358,6 +25434,1572 @@
     "SpriteFile": null
   },
   {
+    "Id": 883300,
+    "Icon": "",
+    "NameDesign": "大师1踩地板",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883301,
+    "Icon": "",
+    "NameDesign": "大师6踩地板",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883302,
+    "Icon": "",
+    "NameDesign": "正常踩地板",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883303,
+    "Icon": "",
+    "NameDesign": "手炮点名-单点",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883304,
+    "Icon": "",
+    "NameDesign": "手炮点名-跟踪",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883305,
+    "Icon": "",
+    "NameDesign": "大师肩部激光",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883306,
+    "Icon": "",
+    "NameDesign": "蒸汽标记buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883307,
+    "Icon": "",
+    "NameDesign": "P1蒸汽buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883308,
+    "Icon": "",
+    "NameDesign": "火龙卷标记buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883309,
+    "Icon": "",
+    "NameDesign": "P1火龙卷buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883310,
+    "Icon": "",
+    "NameDesign": "堵口红水晶buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883311,
+    "Icon": "",
+    "NameDesign": "1级蒸汽标识",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883312,
+    "Icon": "",
+    "NameDesign": "2级蒸汽标识",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883313,
+    "Icon": "",
+    "NameDesign": "3级蒸汽标识",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883314,
+    "Icon": "",
+    "NameDesign": "BOSS标记buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883315,
+    "Icon": "buff_icon60",
+    "NameDesign": "BOSS过热-攻击力提升",
+    "SpriteFile": "buff_icon60_4361050395306886430.png"
+  },
+  {
+    "Id": 883316,
+    "Icon": "",
+    "NameDesign": "普困蒸汽热浪",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883317,
+    "Icon": "",
+    "NameDesign": "大师蒸汽热浪",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883318,
+    "Icon": "",
+    "NameDesign": "用于机制结束蒸汽检测buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883319,
+    "Icon": "",
+    "NameDesign": "蒸汽火龙卷检测buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883320,
+    "Icon": "",
+    "NameDesign": "火龙卷dummy标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883321,
+    "Icon": "",
+    "NameDesign": "远离dummy标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883322,
+    "Icon": "",
+    "NameDesign": "远离dummy引爆",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883323,
+    "Icon": "",
+    "NameDesign": "蒸汽口反选标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883324,
+    "Icon": "",
+    "NameDesign": "蒸汽口可分摊标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883325,
+    "Icon": "",
+    "NameDesign": "蒸汽机制进行中标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883326,
+    "Icon": "",
+    "NameDesign": "分摊轰炸dummy-添加至dummy-buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883327,
+    "Icon": "",
+    "NameDesign": "分摊破口检测",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883328,
+    "Icon": "",
+    "NameDesign": "BOSS转场无敌buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883329,
+    "Icon": "",
+    "NameDesign": "转场火龙卷标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883330,
+    "Icon": "",
+    "NameDesign": "转场火龙卷触发buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883331,
+    "Icon": "",
+    "NameDesign": "转场小怪标记+移除发事件",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883332,
+    "Icon": "",
+    "NameDesign": "转场处理成功boss触发buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883333,
+    "Icon": "",
+    "NameDesign": "转场处理失败boss触发buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883334,
+    "Icon": "",
+    "NameDesign": "钢铁捕食标记buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883335,
+    "Icon": "",
+    "NameDesign": "月环捕食状态buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883336,
+    "Icon": "",
+    "NameDesign": "跳跃点标记buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883337,
+    "Icon": "",
+    "NameDesign": "组合技判定buff-存在则扇形",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883338,
+    "Icon": "",
+    "NameDesign": "组合技分摊buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883339,
+    "Icon": "",
+    "NameDesign": "组合技分散buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883340,
+    "Icon": "",
+    "NameDesign": "组合技场中对象标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883341,
+    "Icon": "",
+    "NameDesign": "火龙卷子弹标记buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883342,
+    "Icon": "buff_icon_fire",
+    "NameDesign": "玩家撞球易伤buff",
+    "SpriteFile": "buff_icon_fire_8027272648318724048.png"
+  },
+  {
+    "Id": 883343,
+    "Icon": "",
+    "NameDesign": "红水晶标记buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883344,
+    "Icon": "buff_abnormal_icon",
+    "NameDesign": "追击平A减速",
+    "SpriteFile": "buff_abnormal_icon_-7224232056957210398.png"
+  },
+  {
+    "Id": 883345,
+    "Icon": "",
+    "NameDesign": "红水晶拾取buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883346,
+    "Icon": "",
+    "NameDesign": "场中偏移点标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883347,
+    "Icon": "",
+    "NameDesign": "炮台组装虚拟体集合buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883348,
+    "Icon": "",
+    "NameDesign": "掉落电能",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883349,
+    "Icon": "",
+    "NameDesign": "零件2掉落buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883350,
+    "Icon": "",
+    "NameDesign": "零件3掉落buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883351,
+    "Icon": "",
+    "NameDesign": "电能添加buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883352,
+    "Icon": "",
+    "NameDesign": "零件2添加buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883353,
+    "Icon": "",
+    "NameDesign": "零件3添加buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883354,
+    "Icon": "",
+    "NameDesign": "组装叠层buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883355,
+    "Icon": "",
+    "NameDesign": "炮台标记buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883356,
+    "Icon": "",
+    "NameDesign": "零件标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883357,
+    "Icon": "",
+    "NameDesign": "转场失败白屏",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883358,
+    "Icon": "",
+    "NameDesign": "转场失败核爆",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883359,
+    "Icon": "",
+    "NameDesign": "转阶段火龙卷",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883360,
+    "Icon": "",
+    "NameDesign": "转阶段火龙卷dummy标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883361,
+    "Icon": "",
+    "NameDesign": "转阶段火龙卷子弹目标标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883362,
+    "Icon": "",
+    "NameDesign": "转阶段成功判定buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883363,
+    "Icon": "",
+    "NameDesign": "转阶段失败判定buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883364,
+    "Icon": "",
+    "NameDesign": "副本爬墙恢复buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883365,
+    "Icon": "",
+    "NameDesign": "捕食释放钢铁标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883366,
+    "Icon": "",
+    "NameDesign": "大师捕食标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883367,
+    "Icon": "",
+    "NameDesign": "矿车标记buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883368,
+    "Icon": "",
+    "NameDesign": "堵口蒸汽标记buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883369,
+    "Icon": "",
+    "NameDesign": "可牵引炮台标记-血量低于10移动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883370,
+    "Icon": "",
+    "NameDesign": "炮台血量小于10%跟随移动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883371,
+    "Icon": "",
+    "NameDesign": "炮台连线",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883372,
+    "Icon": "",
+    "NameDesign": "护盾-炮台100%护盾",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883373,
+    "Icon": "buff_red_movespeed",
+    "NameDesign": "炮台叠层减速",
+    "SpriteFile": "buff_red_movespeed_-5456597855619305564.png"
+  },
+  {
+    "Id": 883374,
+    "Icon": "",
+    "NameDesign": "电能光点",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883375,
+    "Icon": "",
+    "NameDesign": "炮台充能中转buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883376,
+    "Icon": "",
+    "NameDesign": "炮台充能通信buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883377,
+    "Icon": "",
+    "NameDesign": "转阶段boss充能通信",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883378,
+    "Icon": "",
+    "NameDesign": "牵引炮台标记及通信",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883379,
+    "Icon": "",
+    "NameDesign": "玩家开炮扳机标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883380,
+    "Icon": "",
+    "NameDesign": "开炮扳机通信",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883381,
+    "Icon": "",
+    "NameDesign": "BOSS过热锁",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883382,
+    "Icon": "",
+    "NameDesign": "开门蒸汽扩散通信",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883383,
+    "Icon": "",
+    "NameDesign": "开门蒸汽标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883384,
+    "Icon": "",
+    "NameDesign": "门无敌",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883500,
+    "Icon": "",
+    "NameDesign": "测试-格子矩阵",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883501,
+    "Icon": "",
+    "NameDesign": "测试-替换学习玩家技能",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883502,
+    "Icon": "",
+    "NameDesign": "测试-QTE宽松判定buff（+0.6s）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883503,
+    "Icon": "",
+    "NameDesign": "测试-连续播3下QTE",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883504,
+    "Icon": "",
+    "NameDesign": "测试-QTE判定buff（+0.3s）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883505,
+    "Icon": "",
+    "NameDesign": "表现-白色聚光灯",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883506,
+    "Icon": "",
+    "NameDesign": "表现-金色聚光灯",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883507,
+    "Icon": "",
+    "NameDesign": "表现-海水倒灌屏幕特效",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883508,
+    "Icon": "",
+    "NameDesign": "娜宝-变量管理（海底舞会逻辑）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883509,
+    "Icon": "",
+    "NameDesign": "玩家-QTE处理（海底舞会逻辑）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883521,
+    "Icon": "",
+    "NameDesign": "跳舞模板1（海底舞会逻辑）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883531,
+    "Icon": "",
+    "NameDesign": "测试-节拍器（BPM125）4/4",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883532,
+    "Icon": "",
+    "NameDesign": "通用-该buff销毁时自杀",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883533,
+    "Icon": "",
+    "NameDesign": "娜宝分身-天生buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883600,
+    "Icon": "",
+    "NameDesign": "标记-深海娜宝天生标记（唯一）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883601,
+    "Icon": "",
+    "NameDesign": "玩家-娜宝死刑锁定标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883602,
+    "Icon": "buff_abnormal_green_icon",
+    "NameDesign": "玩家-双响·冰",
+    "SpriteFile": "buff_abnormal_green_icon_-1700399986040854037.png"
+  },
+  {
+    "Id": 883603,
+    "Icon": "buff_abnormal_green_icon_link",
+    "NameDesign": "玩家-双响·水",
+    "SpriteFile": "buff_abnormal_green_icon_link_-3838509109469372250.png"
+  },
+  {
+    "Id": 883604,
+    "Icon": "",
+    "NameDesign": "玩家-音符变色标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883605,
+    "Icon": "",
+    "NameDesign": "娜宝-双元素强力引力",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883606,
+    "Icon": "",
+    "NameDesign": "冰球-天生标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883607,
+    "Icon": "",
+    "NameDesign": "水泡-天生标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883608,
+    "Icon": "",
+    "NameDesign": "标记-分摊人数不足炸塔",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883609,
+    "Icon": "",
+    "NameDesign": "玩家-冰光束锁定点名",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883610,
+    "Icon": "",
+    "NameDesign": "玩家-水光束锁定点名",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883611,
+    "Icon": "",
+    "NameDesign": "前端-冰浪预警",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883612,
+    "Icon": "",
+    "NameDesign": "前端-水浪预警",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883613,
+    "Icon": "",
+    "NameDesign": "玩家-屏幕结冰特效预警",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883614,
+    "Icon": "",
+    "NameDesign": "玩家-屏幕水花特效预警",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883615,
+    "Icon": "buff_red_atk",
+    "NameDesign": "机制-降低玩家伤害",
+    "SpriteFile": "buff_red_atk_3284302867017518745.png"
+  },
+  {
+    "Id": 883616,
+    "Icon": "",
+    "NameDesign": "音响-天生buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883617,
+    "Icon": "",
+    "NameDesign": "音响-冰能量吸收（通用）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883618,
+    "Icon": "",
+    "NameDesign": "音响-水能量吸收（通用）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883619,
+    "Icon": "",
+    "NameDesign": "音响-已经添加过能量标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883620,
+    "Icon": "",
+    "NameDesign": "占位音响-天生标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883621,
+    "Icon": "",
+    "NameDesign": "玩家-点名召唤冰球水泡（伤害）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883622,
+    "Icon": "",
+    "NameDesign": "玩家-无敌buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883623,
+    "Icon": "",
+    "NameDesign": "通用-不选中不掉血不进仇恨",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883624,
+    "Icon": "",
+    "NameDesign": "娜宝-查找音响充能冰粒子",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883625,
+    "Icon": "",
+    "NameDesign": "娜宝-查找音响充能水粒子",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883626,
+    "Icon": "",
+    "NameDesign": "娜宝-查找音响充能双重",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883627,
+    "Icon": "",
+    "NameDesign": "音响-双重能量吸收",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883628,
+    "Icon": "",
+    "NameDesign": "玩家-转阶段秒杀判定",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883629,
+    "Icon": "",
+    "NameDesign": "玩家-转阶段屏幕特效",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883630,
+    "Icon": "",
+    "NameDesign": "娜宝-召唤双激光",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883631,
+    "Icon": "",
+    "NameDesign": "娜宝-召唤冰水地板",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883632,
+    "Icon": "",
+    "NameDesign": "娜宝-摇滚阶段管理（伤害）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883633,
+    "Icon": "",
+    "NameDesign": "标记-Rock橙色板子",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883634,
+    "Icon": "",
+    "NameDesign": "标记-Rock紫色板子",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883635,
+    "Icon": "",
+    "NameDesign": "玩家-Rock橙色护盾",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883636,
+    "Icon": "",
+    "NameDesign": "玩家-Rock紫色护盾",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883637,
+    "Icon": "",
+    "NameDesign": "音波球-销毁表现橙色",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883638,
+    "Icon": "",
+    "NameDesign": "音波球-销毁表现紫色",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883639,
+    "Icon": "",
+    "NameDesign": "玩家-发射泡泡技能（通用？）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883641,
+    "Icon": "",
+    "NameDesign": "娜宝-转阶段叠层计数用",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883642,
+    "Icon": "",
+    "NameDesign": "Rock音响-冰属性标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883643,
+    "Icon": "",
+    "NameDesign": "Rock音响-水属性标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883644,
+    "Icon": "",
+    "NameDesign": "Rock音响-天生buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883645,
+    "Icon": "",
+    "NameDesign": "Rock音响-随机冰or水",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883646,
+    "Icon": "",
+    "NameDesign": "Rock玩家-点名召唤冰球水泡（伤害）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883647,
+    "Icon": "",
+    "NameDesign": "Rock娜宝-机制结束易伤",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883648,
+    "Icon": "",
+    "NameDesign": "Rock玩家-破韧效率提升",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883649,
+    "Icon": "",
+    "NameDesign": "Rock音响-被摧毁并计数（冰）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883650,
+    "Icon": "debuff_icon_21",
+    "NameDesign": "Rock娜宝-摧毁音响计分",
+    "SpriteFile": "debuff_icon_21_4048755028164793716.png"
+  },
+  {
+    "Id": 883651,
+    "Icon": "",
+    "NameDesign": "前端-冰浪预警（低难度）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883652,
+    "Icon": "",
+    "NameDesign": "前端-水浪预警（低难度）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883653,
+    "Icon": "",
+    "NameDesign": "Rock音响-被摧毁并计数（水）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883654,
+    "Icon": "",
+    "NameDesign": "标记-p2机制用",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883699,
+    "Icon": "",
+    "NameDesign": "奇幻粒子-销毁表现",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883701,
+    "Icon": "",
+    "NameDesign": "唤潮者-治疗buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883702,
+    "Icon": "buff_icon_ray",
+    "NameDesign": "眼球-水削弱负面",
+    "SpriteFile": "buff_icon_ray_8475430372570355973.png"
+  },
+  {
+    "Id": 883703,
+    "Icon": "",
+    "NameDesign": "蟹蛛-死亡生成污染区域",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883704,
+    "Icon": "",
+    "NameDesign": "蛛丝表现特效",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883705,
+    "Icon": "debuff_icon_23",
+    "NameDesign": "蟹蛛-缚丝叠层buff",
+    "SpriteFile": "debuff_icon_23_-6794389362246335844.png"
+  },
+  {
+    "Id": 883706,
+    "Icon": "",
+    "NameDesign": "蟹蛛-易伤效果",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883800,
+    "Icon": "",
+    "NameDesign": "boss获得强化对玩家施加屏幕效果",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883801,
+    "Icon": "",
+    "NameDesign": "黑白闪",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883802,
+    "Icon": "",
+    "NameDesign": "伤痕表现分发器",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883803,
+    "Icon": "buff_abnormal_red_icon_03",
+    "NameDesign": "创口撕裂",
+    "SpriteFile": "buff_abnormal_red_icon_03_-6411525200381862591.png"
+  },
+  {
+    "Id": 883804,
+    "Icon": "buff_red_def",
+    "NameDesign": "胸肋骨折",
+    "SpriteFile": "buff_red_def_2516734868688990745.png"
+  },
+  {
+    "Id": 883805,
+    "Icon": "debuff_icon_26",
+    "NameDesign": "气息紊乱",
+    "SpriteFile": "debuff_icon_26_-5029207101154716445.png"
+  },
+  {
+    "Id": 883806,
+    "Icon": "",
+    "NameDesign": "创口撕裂bossui",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883807,
+    "Icon": "",
+    "NameDesign": "胸肋骨折bossui",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883808,
+    "Icon": "",
+    "NameDesign": "气息紊乱bossui",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883809,
+    "Icon": "",
+    "NameDesign": "三合一bossui",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883810,
+    "Icon": "",
+    "NameDesign": "风球表现分发器和检测判定",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883811,
+    "Icon": "buff_abnormal_progress_down",
+    "NameDesign": "风球标记",
+    "SpriteFile": "buff_abnormal_progress_down_4224198597987494029.png"
+  },
+  {
+    "Id": 883812,
+    "Icon": "",
+    "NameDesign": "风球范围检测",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883813,
+    "Icon": "",
+    "NameDesign": "BOSS吃到球buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883814,
+    "Icon": "",
+    "NameDesign": "龙卷被踩标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883815,
+    "Icon": "",
+    "NameDesign": "树边缘光",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883816,
+    "Icon": "",
+    "NameDesign": "果树治疗",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883817,
+    "Icon": "",
+    "NameDesign": "树cd",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883818,
+    "Icon": "",
+    "NameDesign": "树触发",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883819,
+    "Icon": "debuff_icon_23",
+    "NameDesign": "定身",
+    "SpriteFile": "debuff_icon_23_-6794389362246335844.png"
+  },
+  {
+    "Id": 883820,
+    "Icon": "",
+    "NameDesign": "啃咬预警标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883821,
+    "Icon": "",
+    "NameDesign": "携带伤痕标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883822,
+    "Icon": "",
+    "NameDesign": "boss定时扑杀",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883823,
+    "Icon": "",
+    "NameDesign": "即将释放扑杀",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883824,
+    "Icon": "",
+    "NameDesign": "树检测附近玩家加buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883825,
+    "Icon": "",
+    "NameDesign": "玩家在树旁边",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883826,
+    "Icon": "talent_passive_icon_general_dps_windspiral",
+    "NameDesign": "boss转阶段白盾",
+    "SpriteFile": "talent_passive_icon_general_dps_windspiral_-2750583510728120713.png"
+  },
+  {
+    "Id": 883827,
+    "Icon": "",
+    "NameDesign": "boss知道玩家在树旁边",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883828,
+    "Icon": "",
+    "NameDesign": "大点名",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883829,
+    "Icon": "",
+    "NameDesign": "",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883830,
+    "Icon": "buff_icon_wind",
+    "NameDesign": "逐渐减速",
+    "SpriteFile": "buff_icon_wind_-889979784163162446.png"
+  },
+  {
+    "Id": 883831,
+    "Icon": "buff_abnormal_red_icon_03",
+    "NameDesign": "创口撕裂造假",
+    "SpriteFile": "buff_abnormal_red_icon_03_-6411525200381862591.png"
+  },
+  {
+    "Id": 883832,
+    "Icon": "",
+    "NameDesign": "玩家删树buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883833,
+    "Icon": "buff_blue_movespeed",
+    "NameDesign": "加速buff-英雄本",
+    "SpriteFile": "buff_blue_movespeed_4016095574016347854.png"
+  },
+  {
+    "Id": 883834,
+    "Icon": "",
+    "NameDesign": "阻挡雾",
+    "SpriteFile": null
+  },
+  {
+    "Id": 883901,
+    "Icon": "",
+    "NameDesign": "自爆蜂查找玩家",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884100,
+    "Icon": "",
+    "NameDesign": "场景物件通用buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884101,
+    "Icon": "",
+    "NameDesign": "蓝塔（激活中）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884102,
+    "Icon": "",
+    "NameDesign": "蓝塔（激活完成）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884103,
+    "Icon": "",
+    "NameDesign": "金塔（激活完成）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884104,
+    "Icon": "",
+    "NameDesign": "蓝塔待转化状态",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884105,
+    "Icon": "",
+    "NameDesign": "激光杀炮点名",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884106,
+    "Icon": "",
+    "NameDesign": "蓝塔进度条（激活中）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884107,
+    "Icon": "",
+    "NameDesign": "检测三连棋子",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884108,
+    "Icon": "",
+    "NameDesign": "蓝塔协议触发（自身）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884109,
+    "Icon": "",
+    "NameDesign": "金塔协议触发（自身）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884110,
+    "Icon": "",
+    "NameDesign": "触发场域湮灭（场景）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884111,
+    "Icon": "",
+    "NameDesign": "场域湮灭（玩家）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884112,
+    "Icon": "",
+    "NameDesign": "停滞虚弱（场景）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884113,
+    "Icon": "",
+    "NameDesign": "停滞虚弱（玩家）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884114,
+    "Icon": "buff_red_atk",
+    "NameDesign": "神罚代理者BOSS停滞虚弱debuff",
+    "SpriteFile": "buff_red_atk_3284302867017518745.png"
+  },
+  {
+    "Id": 884115,
+    "Icon": "",
+    "NameDesign": "棋子生成器（普通）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884116,
+    "Icon": "",
+    "NameDesign": "棋子生成器（外围4个标记）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884117,
+    "Icon": "",
+    "NameDesign": "棋子生成器（左中）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884118,
+    "Icon": "",
+    "NameDesign": "棋子生成器（右中）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884119,
+    "Icon": "",
+    "NameDesign": "棋子生成器（中下）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884120,
+    "Icon": "",
+    "NameDesign": "棋子生成器（正中）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884121,
+    "Icon": "",
+    "NameDesign": "随机周围格子召唤棋子（通用）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884122,
+    "Icon": "",
+    "NameDesign": "生成棋子",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884123,
+    "Icon": "",
+    "NameDesign": "生成转化区域",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884124,
+    "Icon": "",
+    "NameDesign": "浮游炮出生buff（直线）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884125,
+    "Icon": "",
+    "NameDesign": "被乱射浮游炮锁定标记（玩家）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884126,
+    "Icon": "",
+    "NameDesign": "被乱射浮游炮锁定2层已被2个炮台锁定（玩家）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884127,
+    "Icon": "",
+    "NameDesign": "浮游炮出生buff（跟踪）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884128,
+    "Icon": "",
+    "NameDesign": "BOSS错乱阶段",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884129,
+    "Icon": "",
+    "NameDesign": "能量柱点名（玩家挂）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884130,
+    "Icon": "",
+    "NameDesign": "屏幕错误表现（玩家挂）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884131,
+    "Icon": "",
+    "NameDesign": "原始塔添加环形子弹",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884132,
+    "Icon": "",
+    "NameDesign": "神罚代理者各种初始化",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884134,
+    "Icon": "",
+    "NameDesign": "棋盘辅助线显示",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884135,
+    "Icon": "",
+    "NameDesign": "普攻激光",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884136,
+    "Icon": "",
+    "NameDesign": "冲锋分身出场表现",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884137,
+    "Icon": "",
+    "NameDesign": "1个棋格显示（金色）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884138,
+    "Icon": "",
+    "NameDesign": "1个棋格显示（蓝色）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884139,
+    "Icon": "",
+    "NameDesign": "棋子dummy（纯tag)",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884140,
+    "Icon": "buff_red_atk",
+    "NameDesign": "玩家debuff",
+    "SpriteFile": "buff_red_atk_3284302867017518745.png"
+  },
+  {
+    "Id": 884141,
+    "Icon": "",
+    "NameDesign": "能量柱点名短时（玩家挂）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884142,
+    "Icon": "",
+    "NameDesign": "倾斜能量球",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884143,
+    "Icon": "",
+    "NameDesign": "BOSS智能强化",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884144,
+    "Icon": "",
+    "NameDesign": "BOSS召唤网格浮游炮",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884145,
+    "Icon": "",
+    "NameDesign": "召唤棋子（随机四角位置生成棋子）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884146,
+    "Icon": "",
+    "NameDesign": "棋子dummy标记（1号）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884147,
+    "Icon": "",
+    "NameDesign": "棋子dummy标记（2号）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884148,
+    "Icon": "",
+    "NameDesign": "棋子dummy标记（3号）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884149,
+    "Icon": "",
+    "NameDesign": "棋子dummy标记（4号）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884150,
+    "Icon": "",
+    "NameDesign": "棋子dummy标记（5号）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884151,
+    "Icon": "",
+    "NameDesign": "棋子dummy标记（6号）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884152,
+    "Icon": "",
+    "NameDesign": "棋子dummy标记（7号）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884153,
+    "Icon": "",
+    "NameDesign": "棋子dummy标记（8号）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884154,
+    "Icon": "",
+    "NameDesign": "棋子dummy标记（9号）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884155,
+    "Icon": "",
+    "NameDesign": "棋子四角dummy标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884156,
+    "Icon": "",
+    "NameDesign": "标的棋子标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884157,
+    "Icon": "",
+    "NameDesign": "召唤棋子（四角其中一个为基准，给周围一格生成棋子 包括斜着的）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884158,
+    "Icon": "",
+    "NameDesign": "召唤棋子（四角其中一个为基准，给周围一格生成棋子只有横竖）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884159,
+    "Icon": "",
+    "NameDesign": "召唤棋子（四角其中一个为基准，给对角线的棋子 加近距离生成buff）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884160,
+    "Icon": "",
+    "NameDesign": "召唤棋子（随机横竖一条线召唤棋子）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884161,
+    "Icon": "",
+    "NameDesign": "召唤棋子（随机斜一条线召唤棋子）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884162,
+    "Icon": "",
+    "NameDesign": "点名半场冲锋（左侧）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884163,
+    "Icon": "",
+    "NameDesign": "点名半场冲锋（右侧）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884164,
+    "Icon": "",
+    "NameDesign": "塔爆炸预警",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884165,
+    "Icon": "",
+    "NameDesign": "findactor环形范围测试",
+    "SpriteFile": null
+  },
+  {
     "Id": 900101,
     "Icon": "",
     "NameDesign": "生存机制之龙卷风",
@@ -24069,43 +27711,43 @@
     "Id": 960070,
     "Icon": "skill_icons_toy_snowlight",
     "NameDesign": "跑酷技能-冰爆",
-    "SpriteFile": "skill_icons_toy_snowlight_7339379448739251343.png"
+    "SpriteFile": null
   },
   {
     "Id": 960071,
     "Icon": "weapon_cannongun_skill_passive",
     "NameDesign": "跑酷技能-落雷",
-    "SpriteFile": "weapon_cannongun_skill_passive_-6237720947652677173.png"
+    "SpriteFile": null
   },
   {
     "Id": 960072,
     "Icon": "skill_vehicle_pathfinding",
     "NameDesign": "跑酷技能-烟雾弹",
-    "SpriteFile": "skill_vehicle_pathfinding_4514917272155507859.png"
+    "SpriteFile": null
   },
   {
     "Id": 960073,
     "Icon": "skill_icons_toy_spring001",
     "NameDesign": "跑酷技能-弹簧床",
-    "SpriteFile": "skill_icons_toy_spring001_-935480440245181602.png"
+    "SpriteFile": null
   },
   {
     "Id": 960074,
     "Icon": "weapon_cannongun_skill_01",
     "NameDesign": "跑酷技能-爆炸",
-    "SpriteFile": "weapon_cannongun_skill_01_-6146821180118772023.png"
+    "SpriteFile": null
   },
   {
     "Id": 960075,
     "Icon": "weapon_fh-01_kx07",
     "NameDesign": "跑酷技能-恢复体能",
-    "SpriteFile": "weapon_fh-01_kx07_-6626360985139412137.png"
+    "SpriteFile": null
   },
   {
     "Id": 960076,
     "Icon": "weapon_jd-01_kx05",
     "NameDesign": "跑酷技能-虚化",
-    "SpriteFile": "weapon_jd-01_kx05_-5638428109704730981.png"
+    "SpriteFile": null
   },
   {
     "Id": 960100,
@@ -25233,31 +28875,31 @@
     "Id": 960923,
     "Icon": "skill_icons_relax_13",
     "NameDesign": "塔防本-召唤火焰炮台",
-    "SpriteFile": "skill_icons_relax_13_-9143312248559266670.png"
+    "SpriteFile": null
   },
   {
     "Id": 960924,
     "Icon": "skill_icons_relax_12",
     "NameDesign": "塔防本-召唤弹幕炮台",
-    "SpriteFile": "skill_icons_relax_12_2997089091705775781.png"
+    "SpriteFile": null
   },
   {
     "Id": 960925,
     "Icon": "skill_icons_relax_11",
     "NameDesign": "塔防本-召唤天火炮台",
-    "SpriteFile": "skill_icons_relax_11_2942497741074292924.png"
+    "SpriteFile": null
   },
   {
     "Id": 960926,
     "Icon": "skill_icons_relax_14",
     "NameDesign": "塔防本-召唤减速装置",
-    "SpriteFile": "skill_icons_relax_14_-2144881560590045368.png"
+    "SpriteFile": null
   },
   {
     "Id": 960927,
     "Icon": "skill_icons_relax_15",
     "NameDesign": "塔防本-召唤引力装置",
-    "SpriteFile": "skill_icons_relax_15_667914238563882151.png"
+    "SpriteFile": null
   },
   {
     "Id": 960928,
@@ -25443,13 +29085,13 @@
     "Id": 965206,
     "Icon": "skill_icons_toy_statue",
     "NameDesign": "烟火大会-金光闪闪",
-    "SpriteFile": "skill_icons_toy_statue_2337371434366309081.png"
+    "SpriteFile": null
   },
   {
     "Id": 965207,
     "Icon": "skill_icons_toy_statue",
     "NameDesign": "烟火大会-银光熠熠",
-    "SpriteFile": "skill_icons_toy_statue_2337371434366309081.png"
+    "SpriteFile": null
   },
   {
     "Id": 965208,
@@ -25668,6 +29310,426 @@
     "SpriteFile": null
   },
   {
+    "Id": 965350,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-烟花底座-控制buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965352,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-点燃烟花指令buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965353,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-烟花底座-叠层标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965355,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-填充红色烟花",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965356,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-填充绿色烟花",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965357,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-填充蓝色烟花",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965365,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-身上有红色烟花-标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965366,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-身上有绿色烟花-标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965367,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-身上有蓝色烟花-标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965368,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-隔一段时间获得一个随机烟花标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965369,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-烟花特效鉴赏-不要给玩家添加这个buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965370,
+    "Icon": "",
+    "NameDesign": "春节-元宵泡点-元宵灯笼-叠层标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965371,
+    "Icon": "",
+    "NameDesign": "春节-元宵泡点-每隔100秒获得一个碎片",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965373,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-释放烟花全体获得额外积分",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965374,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-获得额外积分",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965380,
+    "Icon": "",
+    "NameDesign": "春节-福袋活动-层数标记-中枢控制",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965381,
+    "Icon": "",
+    "NameDesign": "春节-福袋活动-福袋01",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965382,
+    "Icon": "",
+    "NameDesign": "春节-福袋活动-福袋02",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965383,
+    "Icon": "",
+    "NameDesign": "春节-福袋活动-福袋03",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965384,
+    "Icon": "",
+    "NameDesign": "春节-福袋活动-福袋04",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965385,
+    "Icon": "",
+    "NameDesign": "春节-福袋活动-福袋05",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965386,
+    "Icon": "",
+    "NameDesign": "春节-福袋活动-分享叠层标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965390,
+    "Icon": "",
+    "NameDesign": "春节-年兽-年兽踩头弹射",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965391,
+    "Icon": "",
+    "NameDesign": "春节-年兽-年兽踩头弹射-小",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965392,
+    "Icon": "",
+    "NameDesign": "春节-年兽-踩头扣2%血量",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965393,
+    "Icon": "",
+    "NameDesign": "春节-年兽-踩头扣100%血量",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965394,
+    "Icon": "",
+    "NameDesign": "春节-年兽-双倍打击效果",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965395,
+    "Icon": "",
+    "NameDesign": "春节-年兽-受击中控",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965396,
+    "Icon": "",
+    "NameDesign": "春节-年兽-初始锁血100%",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965400,
+    "Icon": "",
+    "NameDesign": "春节-年兽-爆竹技能加攻-叠层",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965401,
+    "Icon": "",
+    "NameDesign": "春节-年兽-玩家管理buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965402,
+    "Icon": "",
+    "NameDesign": "春节-年兽-学习基础爆竹技能",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965403,
+    "Icon": "",
+    "NameDesign": "春节-年兽-学习超级爆竹技能",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965404,
+    "Icon": "",
+    "NameDesign": "春节-年兽-学习导弹爆竹技能",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965410,
+    "Icon": "",
+    "NameDesign": "春节-年兽-红圈技能-转圈标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965411,
+    "Icon": "",
+    "NameDesign": "春节-年兽-红圈技能-结束标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965412,
+    "Icon": "",
+    "NameDesign": "春节-年兽-红圈技能-end/turn随机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965413,
+    "Icon": "",
+    "NameDesign": "春节-年兽-绿圈技能-回血标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965414,
+    "Icon": "",
+    "NameDesign": "春节-年兽-绿圈技能-年兽回血",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965415,
+    "Icon": "",
+    "NameDesign": "春节-年兽-蓝圈技能-在玩家脚下招落雷",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965416,
+    "Icon": "",
+    "NameDesign": "春节-年兽-技能中控",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965417,
+    "Icon": "",
+    "NameDesign": "春节-年兽-红状态-标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965418,
+    "Icon": "",
+    "NameDesign": "春节-年兽-绿状态-标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965419,
+    "Icon": "",
+    "NameDesign": "春节-年兽-蓝状态-标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965420,
+    "Icon": "",
+    "NameDesign": "春节-年兽-黄状态-标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965421,
+    "Icon": "",
+    "NameDesign": "春节-年兽-5秒后切换状态",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965422,
+    "Icon": "",
+    "NameDesign": "春节-年兽-玩家持有红爆竹-标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965423,
+    "Icon": "",
+    "NameDesign": "春节-年兽-玩家持有绿爆竹-标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965424,
+    "Icon": "",
+    "NameDesign": "春节-年兽-玩家持有蓝爆竹-标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965425,
+    "Icon": "",
+    "NameDesign": "春节-年兽-玩家持有黄爆竹-标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965426,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-完成填充获得额外积分",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965427,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-完成发射检测周围玩家给额外积分",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965428,
+    "Icon": "",
+    "NameDesign": "春节-烟花泡点-获得发射额外积分",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965429,
+    "Icon": "",
+    "NameDesign": "春节-元宵泡点-释放灯笼给额外积分",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965430,
+    "Icon": "buff_icon_fire",
+    "NameDesign": "春节-年兽-红圈技能-着火",
+    "SpriteFile": "buff_icon_fire_8027272648318724048.png"
+  },
+  {
+    "Id": 965431,
+    "Icon": "buff_icon_ray",
+    "NameDesign": "春节-年兽-蓝圈技能-被落雷击中",
+    "SpriteFile": "buff_icon_ray_8475430372570355973.png"
+  },
+  {
+    "Id": 965432,
+    "Icon": "",
+    "NameDesign": "春节-元宵泡点-22s后删除自己",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965433,
+    "Icon": "",
+    "NameDesign": "春节-红圈技能-检测不动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965434,
+    "Icon": "",
+    "NameDesign": "春节-年兽-只会受到爆竹伤害",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965800,
+    "Icon": "",
+    "NameDesign": "仪仗队巡游-变身管理",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965802,
+    "Icon": "",
+    "NameDesign": "仪仗队巡游-表现测试",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965803,
+    "Icon": "",
+    "NameDesign": "仪仗队巡游-变身-指挥",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965804,
+    "Icon": "",
+    "NameDesign": "仪仗队巡游-变身-号",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965805,
+    "Icon": "",
+    "NameDesign": "仪仗队巡游-变身-钢琴",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965806,
+    "Icon": "",
+    "NameDesign": "仪仗队巡游-变身-鼓",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965807,
+    "Icon": "",
+    "NameDesign": "仪仗队巡游-变身-管乐",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965808,
+    "Icon": "",
+    "NameDesign": "仪仗队巡游-变身-镲",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965809,
+    "Icon": "",
+    "NameDesign": "仪仗队巡游-变身-游行",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965900,
+    "Icon": "",
+    "NameDesign": "动漫岛-广场舞泡点-跳舞给额外积分",
+    "SpriteFile": null
+  },
+  {
+    "Id": 965901,
+    "Icon": "",
+    "NameDesign": "动漫岛-广场舞泡点-发射检测删除额外积分buff",
+    "SpriteFile": null
+  },
+  {
     "Id": 970001,
     "Icon": "",
     "NameDesign": "玩具通用buff：屏蔽移动禁止跳跃",
@@ -25713,13 +29775,13 @@
     "Id": 971004,
     "Icon": "skill_icons_toy_statue",
     "NameDesign": "金色雕像-给玩家提供喜气",
-    "SpriteFile": "skill_icons_toy_statue_2337371434366309081.png"
+    "SpriteFile": null
   },
   {
     "Id": 971005,
     "Icon": "skill_icons_toy_statue",
     "NameDesign": "金色雕像-变成金色材质",
-    "SpriteFile": "skill_icons_toy_statue_2337371434366309081.png"
+    "SpriteFile": null
   },
   {
     "Id": 971006,
@@ -25731,13 +29793,13 @@
     "Id": 971007,
     "Icon": "skill_icons_toy_statue",
     "NameDesign": "银色雕像-给玩家提供喜气",
-    "SpriteFile": "skill_icons_toy_statue_2337371434366309081.png"
+    "SpriteFile": null
   },
   {
     "Id": 971008,
     "Icon": "skill_icons_toy_statue",
     "NameDesign": "银色雕像-变成银色材质",
-    "SpriteFile": "skill_icons_toy_statue_2337371434366309081.png"
+    "SpriteFile": null
   },
   {
     "Id": 971009,
@@ -25971,6 +30033,30 @@
     "Id": 972036,
     "Icon": "buff_talent_skill_370101",
     "NameDesign": "使用玩具-艾露娜麻将",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 972037,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具·金币发射器",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 972038,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具·烟花冲天炮",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 972039,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "情人节玩具·爱心射线",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 972041,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "情人节玩具·爱意满满",
     "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
   },
   {
@@ -26290,6 +30376,132 @@
     "Icon": "buff_talent_skill_370101",
     "NameDesign": "艾露娜麻将-变身层数标记",
     "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973090,
+    "Icon": "buff_icon_ice",
+    "NameDesign": "春节玩具-金币发射器-金币命中标记",
+    "SpriteFile": "buff_icon_ice_-7089793419979648869.png"
+  },
+  {
+    "Id": 973091,
+    "Icon": "",
+    "NameDesign": "金币用标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 973092,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具-烟花冲天炮-升空",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973093,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具-烟花冲天炮-爆炸",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973094,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具-烟花冲天炮-红",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973095,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具-烟花冲天炮-绿",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973096,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具-烟花冲天炮-蓝",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973097,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具-烟花冲天炮-黄",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973098,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具-烟花冲天炮-紫",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973099,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具-烟花冲天炮-粉",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973100,
+    "Icon": "",
+    "NameDesign": "情人节玩具-爱心射线-技能计数",
+    "SpriteFile": null
+  },
+  {
+    "Id": 973101,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "情人节玩具-爱心眼效果",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973102,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "情人节玩具-爱心效果",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973103,
+    "Icon": "",
+    "NameDesign": "春节玩具-金币发射器-死亡标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 973104,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具-金币发射器-环身1",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973105,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具-金币发射器-环身2",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973106,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具-金币发射器-环身3",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973107,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具-金币发射器-环身4",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973108,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具-金币发射器-环身5",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973109,
+    "Icon": "buff_talent_skill_370101",
+    "NameDesign": "春节玩具-金币发射器-环身6",
+    "SpriteFile": "buff_talent_skill_370101_200823560598363666.png"
+  },
+  {
+    "Id": 973110,
+    "Icon": "buff_icon123",
+    "NameDesign": "春节玩具-技能效果-静止不动",
+    "SpriteFile": "buff_icon123_-1760136086545391503.png"
   },
   {
     "Id": 974001,
@@ -26736,6 +30948,54 @@
     "SpriteFile": null
   },
   {
+    "Id": 990112,
+    "Icon": "",
+    "NameDesign": "山怪首领-狂暴增益",
+    "SpriteFile": null
+  },
+  {
+    "Id": 990113,
+    "Icon": "",
+    "NameDesign": "山怪首领-散落子弹",
+    "SpriteFile": null
+  },
+  {
+    "Id": 990114,
+    "Icon": "",
+    "NameDesign": "山怪首领-场景压暗",
+    "SpriteFile": null
+  },
+  {
+    "Id": 990115,
+    "Icon": "",
+    "NameDesign": "山怪首领-阶段标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 990116,
+    "Icon": "",
+    "NameDesign": "山怪首领-氛围buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 990117,
+    "Icon": "",
+    "NameDesign": "山怪首领-玩家落火",
+    "SpriteFile": null
+  },
+  {
+    "Id": 990118,
+    "Icon": "",
+    "NameDesign": "山怪首领-氛围buff2",
+    "SpriteFile": null
+  },
+  {
+    "Id": 990119,
+    "Icon": "",
+    "NameDesign": "山怪首领进狂暴",
+    "SpriteFile": null
+  },
+  {
     "Id": 990201,
     "Icon": "",
     "NameDesign": "姆克兵长攻击力加成BUFF",
@@ -26937,6 +31197,42 @@
     "Id": 990510,
     "Icon": "",
     "NameDesign": "蟹蛛王天生BUFF",
+    "SpriteFile": null
+  },
+  {
+    "Id": 990511,
+    "Icon": "",
+    "NameDesign": "掠食蟹蛛-连线",
+    "SpriteFile": null
+  },
+  {
+    "Id": 990512,
+    "Icon": "",
+    "NameDesign": "掠食蟹蛛-连线2",
+    "SpriteFile": null
+  },
+  {
+    "Id": 990513,
+    "Icon": "",
+    "NameDesign": "掠食蟹蛛-吸人",
+    "SpriteFile": null
+  },
+  {
+    "Id": 990514,
+    "Icon": "",
+    "NameDesign": "掠食蟹蛛-控人",
+    "SpriteFile": null
+  },
+  {
+    "Id": 990515,
+    "Icon": "",
+    "NameDesign": "掠食蟹蛛-子弹连线",
+    "SpriteFile": null
+  },
+  {
+    "Id": 990516,
+    "Icon": "",
+    "NameDesign": "掠食蟹蛛-全体预警",
     "SpriteFile": null
   },
   {
@@ -28521,6 +32817,18 @@
     "Id": 996301,
     "Icon": "",
     "NameDesign": "切磋范围",
+    "SpriteFile": null
+  },
+  {
+    "Id": 996401,
+    "Icon": "",
+    "NameDesign": "锁定地刺BUFF",
+    "SpriteFile": null
+  },
+  {
+    "Id": 996402,
+    "Icon": "",
+    "NameDesign": "高原野猪王护盾",
     "SpriteFile": null
   },
   {
@@ -30474,6 +34782,24 @@
     "SpriteFile": null
   },
   {
+    "Id": 997823,
+    "Icon": "",
+    "NameDesign": "沉梦之面·回响——伤害缓存（怪物用-词缀）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 997824,
+    "Icon": "",
+    "NameDesign": "沉梦之面·回响——伤害缓存（怪物用-伤害）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 997825,
+    "Icon": "",
+    "NameDesign": "沉梦之面·回响——受到伤害（玩家）",
+    "SpriteFile": null
+  },
+  {
     "Id": 998000,
     "Icon": "buff_icon26",
     "NameDesign": "肉鸽本-货币",
@@ -32292,6 +36618,12 @@
     "SpriteFile": "buff_icon17_1115824928838207817.png"
   },
   {
+    "Id": 2010003,
+    "Icon": "buff_food_up",
+    "NameDesign": "丰收宴-力智敏",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
     "Id": 2010010,
     "Icon": "",
     "NameDesign": "信息面板属性测试属性+1",
@@ -32498,7 +36830,7 @@
   {
     "Id": 2031003,
     "Icon": "",
-    "NameDesign": "战斧-力量",
+    "NameDesign": "双斧-敏捷",
     "SpriteFile": null
   },
   {
@@ -32636,49 +36968,49 @@
   {
     "Id": 2032011,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻Lv1",
+    "NameDesign": "S1-物攻Lv1",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032012,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻Lv2",
+    "NameDesign": "S1-物攻Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032013,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻Lv3",
+    "NameDesign": "S1-物攻Lv3",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032014,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻Lv4",
+    "NameDesign": "S1-物攻Lv4",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032015,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻Lv5",
+    "NameDesign": "S1-物攻Lv5",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032016,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻Lv6",
+    "NameDesign": "S1-物攻Lv6",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032017,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻Lv7",
+    "NameDesign": "S1-物攻Lv7",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032018,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻Lv8",
+    "NameDesign": "S1-物攻Lv8",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
@@ -32690,49 +37022,49 @@
   {
     "Id": 2032021,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻Lv1",
+    "NameDesign": "S1-魔攻Lv1",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032022,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻Lv2",
+    "NameDesign": "S1-魔攻Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032023,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻Lv3",
+    "NameDesign": "S1-魔攻Lv3",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032024,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻Lv4",
+    "NameDesign": "S1-魔攻Lv4",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032025,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻Lv5",
+    "NameDesign": "S1-魔攻Lv5",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032026,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻Lv6",
+    "NameDesign": "S1-魔攻Lv6",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032027,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻Lv7",
+    "NameDesign": "S1-魔攻Lv7",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032028,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻Lv8",
+    "NameDesign": "S1-魔攻Lv8",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
@@ -32744,49 +37076,49 @@
   {
     "Id": 2032031,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲Lv1",
+    "NameDesign": "S1-护甲Lv1",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032032,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲Lv2",
+    "NameDesign": "S1-护甲Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032033,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲Lv3",
+    "NameDesign": "S1-护甲Lv3",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032034,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲Lv4",
+    "NameDesign": "S1-护甲Lv4",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032035,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲Lv5",
+    "NameDesign": "S1-护甲Lv5",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032036,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲Lv6",
+    "NameDesign": "S1-护甲Lv6",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032037,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲Lv7",
+    "NameDesign": "S1-护甲Lv7",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032038,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲Lv8",
+    "NameDesign": "S1-护甲Lv8",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
@@ -32798,49 +37130,49 @@
   {
     "Id": 2032041,
     "Icon": "buff_food_up",
-    "NameDesign": "耐力Lv1",
+    "NameDesign": "S1-耐力Lv1",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032042,
     "Icon": "buff_food_up",
-    "NameDesign": "生命Lv2",
+    "NameDesign": "S1-耐力Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032043,
     "Icon": "buff_food_up",
-    "NameDesign": "生命Lv3",
+    "NameDesign": "S1-耐力Lv3",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032044,
     "Icon": "buff_food_up",
-    "NameDesign": "生命Lv4",
+    "NameDesign": "S1-耐力Lv4",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032045,
     "Icon": "buff_food_up",
-    "NameDesign": "生命Lv5",
+    "NameDesign": "S1-耐力Lv5",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032046,
     "Icon": "buff_food_up",
-    "NameDesign": "生命Lv6",
+    "NameDesign": "S1-耐力Lv6",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032047,
     "Icon": "buff_food_up",
-    "NameDesign": "生命Lv7",
+    "NameDesign": "S1-耐力Lv7",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032048,
     "Icon": "buff_food_up",
-    "NameDesign": "生命Lv8",
+    "NameDesign": "S1-耐力Lv8",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
@@ -32852,49 +37184,49 @@
   {
     "Id": 2032051,
     "Icon": "buff_food_up",
-    "NameDesign": "生命恢复Lv1",
+    "NameDesign": "S1-生命恢复Lv1",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032052,
     "Icon": "buff_food_up",
-    "NameDesign": "生命恢复Lv2",
+    "NameDesign": "S1-生命恢复Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032053,
     "Icon": "buff_food_up",
-    "NameDesign": "生命恢复Lv3",
+    "NameDesign": "S1-生命恢复Lv3",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032054,
     "Icon": "buff_food_up",
-    "NameDesign": "生命恢复Lv4",
+    "NameDesign": "S1-生命恢复Lv4",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032055,
     "Icon": "buff_food_up",
-    "NameDesign": "生命恢复Lv5",
+    "NameDesign": "S1-生命恢复Lv5",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032056,
     "Icon": "buff_food_up",
-    "NameDesign": "生命恢复Lv6",
+    "NameDesign": "S1-生命恢复Lv6",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032057,
     "Icon": "buff_food_up",
-    "NameDesign": "生命恢复Lv7",
+    "NameDesign": "S1-生命恢复Lv7",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032058,
     "Icon": "buff_food_up",
-    "NameDesign": "生命恢复Lv8",
+    "NameDesign": "S1-生命恢复Lv8",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
@@ -32906,13 +37238,13 @@
   {
     "Id": 2032065,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻+精英增伤Lv1",
+    "NameDesign": "S1-物攻+精英增伤Lv1",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032067,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻+精英增伤Lv2",
+    "NameDesign": "S1-物攻+精英增伤Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
@@ -32924,13 +37256,13 @@
   {
     "Id": 2032075,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻+精英增伤Lv1",
+    "NameDesign": "S1-魔攻+精英增伤Lv1",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032077,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻+精英增伤Lv2",
+    "NameDesign": "S1-魔攻+精英增伤Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
@@ -32942,301 +37274,553 @@
   {
     "Id": 2032086,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲+精英减伤Lv1",
+    "NameDesign": "S1-护甲+精英减伤Lv1",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032088,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲+精英减伤Lv2",
+    "NameDesign": "S1-护甲+精英减伤Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032111,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻Lv1",
+    "NameDesign": "[S2]物攻Lv1——",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032112,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻Lv2",
+    "NameDesign": "[S2]物攻Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032113,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻Lv3",
+    "NameDesign": "[S2]物攻Lv3",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032114,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻Lv4",
+    "NameDesign": "[S2]物攻Lv4",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032115,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻Lv5",
+    "NameDesign": "[S2]物攻Lv5",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032116,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻Lv6",
+    "NameDesign": "[S2]物攻Lv6",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032121,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻Lv1",
+    "NameDesign": "[S2]魔攻Lv1——",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032122,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻Lv2",
+    "NameDesign": "[S2]魔攻Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032123,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻Lv3",
+    "NameDesign": "[S2]魔攻Lv3",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032124,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻Lv4",
+    "NameDesign": "[S2]魔攻Lv4",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032125,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻Lv5",
+    "NameDesign": "[S2]魔攻Lv5",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032126,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻Lv6",
+    "NameDesign": "[S2]魔攻Lv6",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032131,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲Lv1",
+    "NameDesign": "[S2]护甲Lv1——",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032132,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲Lv2",
+    "NameDesign": "[S2]护甲Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032133,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲Lv3",
+    "NameDesign": "[S2]护甲Lv3",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032134,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲Lv4",
+    "NameDesign": "[S2]护甲Lv4",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032135,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲Lv5",
+    "NameDesign": "[S2]护甲Lv5",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032136,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲Lv6",
+    "NameDesign": "[S2]护甲Lv6",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032141,
     "Icon": "buff_food_up",
-    "NameDesign": "生命Lv1",
+    "NameDesign": "[S2]耐力Lv1——",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032142,
     "Icon": "buff_food_up",
-    "NameDesign": "生命Lv2",
+    "NameDesign": "[S2]耐力Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032143,
     "Icon": "buff_food_up",
-    "NameDesign": "生命Lv3",
+    "NameDesign": "[S2]耐力Lv3",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032144,
     "Icon": "buff_food_up",
-    "NameDesign": "生命Lv4",
+    "NameDesign": "[S2]耐力Lv4",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032145,
     "Icon": "buff_food_up",
-    "NameDesign": "生命Lv5",
+    "NameDesign": "[S2]耐力Lv5",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032146,
     "Icon": "buff_food_up",
-    "NameDesign": "生命Lv6",
+    "NameDesign": "[S2]耐力Lv6",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032151,
     "Icon": "buff_food_up",
-    "NameDesign": "生命恢复Lv1",
+    "NameDesign": "[S2]生命恢复Lv1——",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032152,
     "Icon": "buff_food_up",
-    "NameDesign": "生命恢复Lv2",
+    "NameDesign": "[S2]生命恢复Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032153,
     "Icon": "buff_food_up",
-    "NameDesign": "生命恢复Lv3",
+    "NameDesign": "[S2]生命恢复Lv3",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032154,
     "Icon": "buff_food_up",
-    "NameDesign": "生命恢复Lv4",
+    "NameDesign": "[S2]生命恢复Lv4",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032155,
     "Icon": "buff_food_up",
-    "NameDesign": "生命恢复Lv5",
+    "NameDesign": "[S2]生命恢复Lv5",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032156,
     "Icon": "buff_food_up",
-    "NameDesign": "生命恢复Lv6",
+    "NameDesign": "[S2]生命恢复Lv6",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032161,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻+精英增伤Lv1",
+    "NameDesign": "[S2]物攻+精英增伤Lv1——",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032162,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻+精英增伤Lv2",
+    "NameDesign": "[S2]物攻+精英增伤Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032163,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻+精英增伤Lv3",
+    "NameDesign": "[S2]物攻+精英增伤Lv3",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032164,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻+精英增伤Lv4",
+    "NameDesign": "[S2]物攻+精英增伤Lv4",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032165,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻+精英增伤Lv5",
+    "NameDesign": "[S2]物攻+精英增伤Lv5",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032166,
     "Icon": "buff_food_up",
-    "NameDesign": "物攻+精英增伤Lv6",
+    "NameDesign": "[S2]物攻+精英增伤Lv6",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032171,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻+精英增伤Lv1",
+    "NameDesign": "[S2]魔攻+精英增伤Lv1——",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032172,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻+精英增伤Lv2",
+    "NameDesign": "[S2]魔攻+精英增伤Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032173,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻+精英增伤Lv3",
+    "NameDesign": "[S2]魔攻+精英增伤Lv3",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032174,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻+精英增伤Lv4",
+    "NameDesign": "[S2]魔攻+精英增伤Lv4",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032175,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻+精英增伤Lv5",
+    "NameDesign": "[S2]魔攻+精英增伤Lv5",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032176,
     "Icon": "buff_food_up",
-    "NameDesign": "魔攻+精英增伤Lv6",
+    "NameDesign": "[S2]魔攻+精英增伤Lv6",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032181,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲+精英减伤Lv1",
+    "NameDesign": "[S2]护甲+精英减伤Lv1——",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032182,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲+精英减伤Lv2",
+    "NameDesign": "[S2]护甲+精英减伤Lv2",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032183,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲+精英减伤Lv3",
+    "NameDesign": "[S2]护甲+精英减伤Lv3",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032184,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲+精英减伤Lv4",
+    "NameDesign": "[S2]护甲+精英减伤Lv4",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032185,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲+精英减伤Lv5",
+    "NameDesign": "[S2]护甲+精英减伤Lv5",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
     "Id": 2032186,
     "Icon": "buff_food_up",
-    "NameDesign": "护甲+精英减伤Lv6",
+    "NameDesign": "[S2]护甲+精英减伤Lv6",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032211,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】物攻Lv1——",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032212,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】物攻Lv2",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032213,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】物攻Lv3",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032214,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】物攻Lv4",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032215,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】物攻Lv5",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032216,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】物攻Lv6",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032221,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】魔攻Lv1——",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032222,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】魔攻Lv2",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032223,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】魔攻Lv3",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032224,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】魔攻Lv4",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032225,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】魔攻Lv5",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032226,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】魔攻Lv6",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032231,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】护甲Lv1——",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032232,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】护甲Lv2",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032233,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】护甲Lv3",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032234,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】护甲Lv4",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032235,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】护甲Lv5",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032236,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】护甲Lv6",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032241,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】耐力Lv1——",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032242,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】耐力Lv2",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032243,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】耐力Lv3",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032244,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】耐力Lv4",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032245,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】耐力Lv5",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032246,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】耐力Lv6",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032251,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】生命恢复Lv1——",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032252,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】生命恢复Lv2",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032253,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】生命恢复Lv3",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032254,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】生命恢复Lv4",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032255,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】生命恢复Lv5",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032256,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】生命恢复Lv6",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032261,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】物攻+精英增伤Lv1——",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032262,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】物攻+精英增伤Lv2",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032263,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】物攻+精英增伤Lv3",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032264,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】物攻+精英增伤Lv4",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032271,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】魔攻+精英增伤Lv1——",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032272,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】魔攻+精英增伤Lv2",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032273,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】魔攻+精英增伤Lv3",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032274,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】魔攻+精英增伤Lv4",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032281,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】护甲+精英减伤Lv1——",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032282,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】护甲+精英减伤Lv2",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032283,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】护甲+精英减伤Lv3",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2032284,
+    "Icon": "buff_food_up",
+    "NameDesign": "【S3】护甲+精英减伤Lv4",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
@@ -33254,35 +37838,53 @@
   {
     "Id": 2033011,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·火Lv1",
+    "NameDesign": "S1-元素强度·火Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033012,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·火Lv2",
+    "NameDesign": "S1-元素强度·火Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033013,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·火Lv3",
+    "NameDesign": "S1-元素强度·火Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033014,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·火Lv3",
+    "NameDesign": "S2-元素强度·火Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033015,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·火Lv3",
+    "NameDesign": "S2-元素强度·火Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033016,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素强度·火Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033017,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·火Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033018,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·火Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033019,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素强度·火Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33296,35 +37898,53 @@
   {
     "Id": 2033021,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·冰Lv1",
+    "NameDesign": "S1-元素强度·冰Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033022,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·冰Lv2",
+    "NameDesign": "S1-元素强度·冰Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033023,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·冰Lv3",
+    "NameDesign": "S1-元素强度·冰Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033024,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·冰Lv3",
+    "NameDesign": "S2-元素强度·冰Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033025,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·冰Lv3",
+    "NameDesign": "S2-元素强度·冰Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033026,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素强度·冰Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033027,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·冰Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033028,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·冰Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033029,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素强度·冰Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33338,35 +37958,53 @@
   {
     "Id": 2033031,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·森Lv1",
+    "NameDesign": "S1-元素强度·森Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033032,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·森Lv2",
+    "NameDesign": "S1-元素强度·森Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033033,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·森Lv3",
+    "NameDesign": "S1-元素强度·森Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033034,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·森Lv3",
+    "NameDesign": "S2-元素强度·森Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033035,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·森Lv3",
+    "NameDesign": "S2-元素强度·森Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033036,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素强度·森Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033037,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·森Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033038,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·森Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033039,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素强度·森Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33380,35 +38018,53 @@
   {
     "Id": 2033041,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·岩Lv1",
+    "NameDesign": "S1-元素强度·岩Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033042,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·岩Lv2",
+    "NameDesign": "S1-元素强度·岩Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033043,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·岩Lv3",
+    "NameDesign": "S1-元素强度·岩Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033044,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·岩Lv3",
+    "NameDesign": "S2-元素强度·岩Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033045,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·岩Lv3",
+    "NameDesign": "S2-元素强度·岩Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033046,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素强度·岩Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033047,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·岩Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033048,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·岩Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033049,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素强度·岩Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33422,35 +38078,53 @@
   {
     "Id": 2033051,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·风Lv1",
+    "NameDesign": "S1-元素强度·风Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033052,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·风Lv2",
+    "NameDesign": "S1-元素强度·风Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033053,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·风Lv3",
+    "NameDesign": "S1-元素强度·风Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033054,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·风Lv3",
+    "NameDesign": "S2-元素强度·风Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033055,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·风Lv3",
+    "NameDesign": "S2-元素强度·风Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033056,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素强度·风Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033057,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·风Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033058,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·风Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033059,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素强度·风Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33464,35 +38138,53 @@
   {
     "Id": 2033061,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·雷Lv1",
+    "NameDesign": "S1-元素强度·雷Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033062,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·雷Lv2",
+    "NameDesign": "S1-元素强度·雷Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033063,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·雷Lv3",
+    "NameDesign": "S1-元素强度·雷Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033064,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·雷Lv3",
+    "NameDesign": "S2-元素强度·雷Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033065,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·雷Lv3",
+    "NameDesign": "S2-元素强度·雷Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033066,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素强度·雷Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033067,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·雷Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033068,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·雷Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033069,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素强度·雷Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33506,35 +38198,53 @@
   {
     "Id": 2033071,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·光Lv1",
+    "NameDesign": "S1-元素强度·光Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033072,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·光Lv2",
+    "NameDesign": "S1-元素强度·光Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033073,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·光Lv3",
+    "NameDesign": "S1-元素强度·光Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033074,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·光Lv3",
+    "NameDesign": "S2-元素强度·光Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033075,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·光Lv3",
+    "NameDesign": "S2-元素强度·光Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033076,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素强度·光Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033077,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·光Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033078,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·光Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033079,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素强度·光Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33548,35 +38258,53 @@
   {
     "Id": 2033081,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·暗Lv1",
+    "NameDesign": "S1-元素强度·暗Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033082,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·暗Lv2",
+    "NameDesign": "S1-元素强度·暗Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033083,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·暗Lv3",
+    "NameDesign": "S1-元素强度·暗Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033084,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·暗Lv3",
+    "NameDesign": "S2-元素强度·暗Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033085,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素强度·暗Lv3",
+    "NameDesign": "S2-元素强度·暗Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033086,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素强度·暗Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033087,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·暗Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033088,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素强度·暗Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033089,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素强度·暗Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33590,35 +38318,53 @@
   {
     "Id": 2033091,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·火Lv1",
+    "NameDesign": "S1-元素抗性·火Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033092,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·火Lv2",
+    "NameDesign": "S1-元素抗性·火Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033093,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·火Lv3",
+    "NameDesign": "S1-元素抗性·火Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033094,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·火Lv3",
+    "NameDesign": "S2-元素抗性·火Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033095,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·火Lv3",
+    "NameDesign": "S2-元素抗性·火Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033096,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素抗性·火Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033097,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·火Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033098,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·火Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033099,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素抗性·火Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33632,35 +38378,53 @@
   {
     "Id": 2033101,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·冰Lv1",
+    "NameDesign": "S1-元素抗性·冰Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033102,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·冰Lv2",
+    "NameDesign": "S1-元素抗性·冰Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033103,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·冰Lv3",
+    "NameDesign": "S1-元素抗性·冰Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033104,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·冰Lv3",
+    "NameDesign": "S2-元素抗性·冰Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033105,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·冰Lv3",
+    "NameDesign": "S2-元素抗性·冰Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033106,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素抗性·冰Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033107,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·冰Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033108,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·冰Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033109,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素抗性·冰Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33674,35 +38438,53 @@
   {
     "Id": 2033111,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·森Lv1",
+    "NameDesign": "S1-元素抗性·森Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033112,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·森Lv2",
+    "NameDesign": "S1-元素抗性·森Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033113,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·森Lv3",
+    "NameDesign": "S1-元素抗性·森Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033114,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·森Lv3",
+    "NameDesign": "S2-元素抗性·森Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033115,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·森Lv3",
+    "NameDesign": "S2-元素抗性·森Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033116,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素抗性·森Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033117,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·森Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033118,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·森Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033119,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素抗性·森Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33716,35 +38498,53 @@
   {
     "Id": 2033121,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·岩Lv1",
+    "NameDesign": "S1-元素抗性·岩Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033122,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·岩Lv2",
+    "NameDesign": "S1-元素抗性·岩Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033123,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·岩Lv3",
+    "NameDesign": "S1-元素抗性·岩Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033124,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·岩Lv3",
+    "NameDesign": "S2-元素抗性·岩Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033125,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·岩Lv3",
+    "NameDesign": "S2-元素抗性·岩Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033126,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素抗性·岩Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033127,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·岩Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033128,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·岩Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033129,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素抗性·岩Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33758,35 +38558,53 @@
   {
     "Id": 2033131,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·风Lv1",
+    "NameDesign": "S1-元素抗性·风Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033132,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·风Lv2",
+    "NameDesign": "S1-元素抗性·风Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033133,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·风Lv3",
+    "NameDesign": "S1-元素抗性·风Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033134,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·风Lv3",
+    "NameDesign": "S2-元素抗性·风Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033135,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·风Lv3",
+    "NameDesign": "S2-元素抗性·风Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033136,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素抗性·风Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033137,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·风Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033138,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·风Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033139,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素抗性·风Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33800,35 +38618,53 @@
   {
     "Id": 2033141,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·雷Lv1",
+    "NameDesign": "S1-元素抗性·雷Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033142,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·雷Lv2",
+    "NameDesign": "S1-元素抗性·雷Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033143,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·雷Lv3",
+    "NameDesign": "S1-元素抗性·雷Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033144,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·雷Lv3",
+    "NameDesign": "S2-元素抗性·雷Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033145,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·雷Lv3",
+    "NameDesign": "S2-元素抗性·雷Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033146,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素抗性·雷Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033147,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·雷Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033148,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·雷Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033149,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素抗性·雷Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33842,35 +38678,53 @@
   {
     "Id": 2033151,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·光Lv1",
+    "NameDesign": "S1-元素抗性·光Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033152,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·光Lv2",
+    "NameDesign": "S1-元素抗性·光Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033153,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·光Lv3",
+    "NameDesign": "S1-元素抗性·光Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033154,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·光Lv3",
+    "NameDesign": "S2-元素抗性·光Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033155,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·光Lv3",
+    "NameDesign": "S2-元素抗性·光Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033156,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素抗性·光Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033157,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·光Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033158,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·光Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033159,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素抗性·光Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33884,35 +38738,53 @@
   {
     "Id": 2033161,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv1",
+    "NameDesign": "S1-元素抗性·暗Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033162,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv2",
+    "NameDesign": "S1-元素抗性·暗Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033163,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv3",
+    "NameDesign": "S1-元素抗性·暗Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033164,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv3",
+    "NameDesign": "S2-元素抗性·暗Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033165,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv3",
+    "NameDesign": "S2-元素抗性·暗Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033166,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "S2-元素抗性·暗Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033167,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·暗Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033168,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "元素抗性·暗Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033169,
     "Icon": "buff_agentia_up",
     "NameDesign": "元素抗性·暗Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
@@ -33925,38 +38797,56 @@
   },
   {
     "Id": 2033171,
-    "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv1",
-    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+    "Icon": "",
+    "NameDesign": "",
+    "SpriteFile": null
   },
   {
     "Id": 2033172,
-    "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv1",
-    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+    "Icon": "",
+    "NameDesign": "",
+    "SpriteFile": null
   },
   {
     "Id": 2033173,
-    "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv1",
-    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+    "Icon": "",
+    "NameDesign": "",
+    "SpriteFile": null
   },
   {
     "Id": 2033174,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv1",
+    "NameDesign": "S2-物理增效强度Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033175,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv1",
+    "NameDesign": "S2-物理增效强度Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033176,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv1",
+    "NameDesign": "S2-物理增效强度Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033177,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "物理增效强度Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033178,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "物理增效强度Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033179,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "物理增效强度Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
@@ -33967,38 +38857,56 @@
   },
   {
     "Id": 2033181,
-    "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv1",
-    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+    "Icon": "",
+    "NameDesign": "",
+    "SpriteFile": null
   },
   {
     "Id": 2033182,
-    "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv1",
-    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+    "Icon": "",
+    "NameDesign": "",
+    "SpriteFile": null
   },
   {
     "Id": 2033183,
-    "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv1",
-    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+    "Icon": "",
+    "NameDesign": "",
+    "SpriteFile": null
   },
   {
     "Id": 2033184,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv1",
+    "NameDesign": "S2-魔法增效强度Lv1",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033185,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv1",
+    "NameDesign": "S2-魔法增效强度Lv2",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
     "Id": 2033186,
     "Icon": "buff_agentia_up",
-    "NameDesign": "元素抗性·暗Lv1",
+    "NameDesign": "S2-魔法增效强度Lv3",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033187,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "魔法增效强度Lv1",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033188,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "魔法增效强度Lv2",
+    "SpriteFile": "buff_agentia_up_5235727564720852572.png"
+  },
+  {
+    "Id": 2033189,
+    "Icon": "buff_agentia_up",
+    "NameDesign": "魔法增效强度Lv3",
     "SpriteFile": "buff_agentia_up_5235727564720852572.png"
   },
   {
@@ -34548,6 +39456,12 @@
     "SpriteFile": "buff_passive_icon_general_dps_pursue_6462059645409661485.png"
   },
   {
+    "Id": 2110049,
+    "Icon": "buff_abnormal_icon_02",
+    "NameDesign": "机械故障",
+    "SpriteFile": "buff_abnormal_icon_02_-6301183379485455628.png"
+  },
+  {
     "Id": 2110050,
     "Icon": "buff_abnormal_icon_02",
     "NameDesign": "元素凝滞",
@@ -35043,6 +39957,108 @@
     "Id": 2110135,
     "Icon": "",
     "NameDesign": "罗罗拉-主动记时",
+    "SpriteFile": null
+  },
+  {
+    "Id": 2110136,
+    "Icon": "",
+    "NameDesign": "罗罗拉-玩家身上监控",
+    "SpriteFile": null
+  },
+  {
+    "Id": 2110137,
+    "Icon": "buff_icon136",
+    "NameDesign": "丹佛-主动BUFF",
+    "SpriteFile": "buff_icon136_3861372500749577434.png"
+  },
+  {
+    "Id": 2110138,
+    "Icon": "buff_add_wind",
+    "NameDesign": "风雷之力",
+    "SpriteFile": "buff_add_wind_7800918135607765176.png"
+  },
+  {
+    "Id": 2110139,
+    "Icon": "",
+    "NameDesign": "幻祸娜宝-增幅自己",
+    "SpriteFile": null
+  },
+  {
+    "Id": 2110140,
+    "Icon": "buff_icon136",
+    "NameDesign": "巨塔BOSS-全队属性增幅",
+    "SpriteFile": "buff_icon136_3861372500749577434.png"
+  },
+  {
+    "Id": 2110141,
+    "Icon": "buff_icon_jingtong",
+    "NameDesign": "高原蜘蛛王-主动",
+    "SpriteFile": "buff_icon_jingtong_1164198787517617145.png"
+  },
+  {
+    "Id": 2110142,
+    "Icon": "buff_icon60",
+    "NameDesign": "高原大胖子主动",
+    "SpriteFile": "buff_icon60_4361050395306886430.png"
+  },
+  {
+    "Id": 2110143,
+    "Icon": "buff_icon03",
+    "NameDesign": "眼球王-主动buff",
+    "SpriteFile": "buff_icon03_-2986389424547005470.png"
+  },
+  {
+    "Id": 2110144,
+    "Icon": "buff_hideseek_icon12",
+    "NameDesign": "高原野猪王-主动",
+    "SpriteFile": "buff_hideseek_icon12_-2385457419463855088.png"
+  },
+  {
+    "Id": 2110145,
+    "Icon": "buff_talent_passive_icon_general_dps_swordbullet",
+    "NameDesign": "毛球王-主动",
+    "SpriteFile": "buff_talent_passive_icon_general_dps_swordbullet_-8311806042915117004.png"
+  },
+  {
+    "Id": 2110146,
+    "Icon": "",
+    "NameDesign": "精英蜘蛛-主动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 2110147,
+    "Icon": "",
+    "NameDesign": "高原精英野猪-主动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 2110148,
+    "Icon": "",
+    "NameDesign": "毛球精英-主动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 2110149,
+    "Icon": "buff_passive_icon_general_tank_tough",
+    "NameDesign": "精英巨魔-主动",
+    "SpriteFile": "buff_passive_icon_general_tank_tough_7885942538072038414.png"
+  },
+  {
+    "Id": 2110150,
+    "Icon": "",
+    "NameDesign": "眼球精英-主动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 2110151,
+    "Icon": "",
+    "NameDesign": "眼球王光环",
+    "SpriteFile": null
+  },
+  {
+    "Id": 2110152,
+    "Icon": "",
+    "NameDesign": "丹佛引力",
     "SpriteFile": null
   },
   {
@@ -37014,6 +42030,12 @@
     "SpriteFile": "fahuan550_2503545620821595806.png"
   },
   {
+    "Id": 2202541,
+    "Icon": "",
+    "NameDesign": "共生之息-最大生命值提升",
+    "SpriteFile": "fahuan550_2503545620821595806.png"
+  },
+  {
     "Id": 2202550,
     "Icon": "",
     "NameDesign": "共生延长",
@@ -38103,6 +43125,12 @@
     "Id": 2204152,
     "Icon": "",
     "NameDesign": "冻结星辰-冰陨石减伤BUFF",
+    "SpriteFile": "talent_passive_icon_general_dps_luckandcri_-3138000845652143501.png"
+  },
+  {
+    "Id": 2204153,
+    "Icon": "",
+    "NameDesign": "在目标脚下召唤一个陨石-冻结星辰",
     "SpriteFile": "talent_passive_icon_general_dps_luckandcri_-3138000845652143501.png"
   },
   {
@@ -40194,6 +45222,12 @@
     "SpriteFile": "gita1336_-546540430641009254.png"
   },
   {
+    "Id": 2207372,
+    "Icon": "",
+    "NameDesign": "不屈谐音添加坚韧和弦",
+    "SpriteFile": "gita1336_-546540430641009254.png"
+  },
+  {
     "Id": 2207380,
     "Icon": "",
     "NameDesign": "挥击回涌",
@@ -40468,6 +45502,600 @@
     "Icon": "buff_icon79",
     "NameDesign": "螺旋炎奏效果",
     "SpriteFile": "buff_icon79_5426953679584839511.png"
+  },
+  {
+    "Id": 2208010,
+    "Icon": "",
+    "NameDesign": "(走配表这里没逻辑)",
+    "SpriteFile": null
+  },
+  {
+    "Id": 2208020,
+    "Icon": "",
+    "NameDesign": "(走配表这里没逻辑)",
+    "SpriteFile": null
+  },
+  {
+    "Id": 2208030,
+    "Icon": "",
+    "NameDesign": "业火连击",
+    "SpriteFile": "shuangfu302_-6856224810333726538.png"
+  },
+  {
+    "Id": 2208031,
+    "Icon": "buff_icon76",
+    "NameDesign": "业火连击倒计时",
+    "SpriteFile": "buff_icon76_5868701287325723997.png"
+  },
+  {
+    "Id": 2208032,
+    "Icon": "",
+    "NameDesign": "炎魔增加业火连击buff时长",
+    "SpriteFile": "shuangfu302_-6856224810333726538.png"
+  },
+  {
+    "Id": 2208040,
+    "Icon": "",
+    "NameDesign": "红莲",
+    "SpriteFile": "shuangfu303_-6071156897983607265.png"
+  },
+  {
+    "Id": 2208050,
+    "Icon": "",
+    "NameDesign": "绯炎追命",
+    "SpriteFile": "shuangfu304_-4752409059908344481.png"
+  },
+  {
+    "Id": 2208051,
+    "Icon": "",
+    "NameDesign": "绯炎追命子BUFF",
+    "SpriteFile": "shuangfu304_-4752409059908344481.png"
+  },
+  {
+    "Id": 2208060,
+    "Icon": "",
+    "NameDesign": "荒魂·破",
+    "SpriteFile": "shuangfu305_-7351905991044442284.png"
+  },
+  {
+    "Id": 2208070,
+    "Icon": "",
+    "NameDesign": "红莲双极",
+    "SpriteFile": "shuangfu306_1469404845953130158.png"
+  },
+  {
+    "Id": 2208080,
+    "Icon": "",
+    "NameDesign": "炎魂刻印",
+    "SpriteFile": "shuangfu307_6195644401845369028.png"
+  },
+  {
+    "Id": 2208090,
+    "Icon": "",
+    "NameDesign": "荒魂·疾",
+    "SpriteFile": "shuangfu308_6271132668027518806.png"
+  },
+  {
+    "Id": 2208100,
+    "Icon": "",
+    "NameDesign": "灭烬之悟",
+    "SpriteFile": "shuangfu309_-6413302405197465846.png"
+  },
+  {
+    "Id": 2208110,
+    "Icon": "",
+    "NameDesign": "红莲灭烬之悟",
+    "SpriteFile": "shuangfu310_-5548534239347090564.png"
+  },
+  {
+    "Id": 2208120,
+    "Icon": "",
+    "NameDesign": "绯炎追命飞腾",
+    "SpriteFile": "shuangfu311_-4390105621298517971.png"
+  },
+  {
+    "Id": 2208130,
+    "Icon": "",
+    "NameDesign": "塔塔Rank判定-无相专精流",
+    "SpriteFile": "shuangfu312_-7390683048772311116.png"
+  },
+  {
+    "Id": 2208131,
+    "Icon": "",
+    "NameDesign": "Rank逻辑和显示-无相专精流",
+    "SpriteFile": "shuangfu312_-7390683048772311116.png"
+  },
+  {
+    "Id": 2208140,
+    "Icon": "",
+    "NameDesign": "炽热之契",
+    "SpriteFile": "shuangfu313_7344609750541970317.png"
+  },
+  {
+    "Id": 2208141,
+    "Icon": "",
+    "NameDesign": "炽热之契子BUFF",
+    "SpriteFile": "shuangfu313_7344609750541970317.png"
+  },
+  {
+    "Id": 2208150,
+    "Icon": "",
+    "NameDesign": "监控荒川之寂灭添加/rank提升-飞腾炎华",
+    "SpriteFile": "shuangfu314_456390558786505264.png"
+  },
+  {
+    "Id": 2208151,
+    "Icon": "",
+    "NameDesign": "飞腾炎华派生",
+    "SpriteFile": "shuangfu314_456390558786505264.png"
+  },
+  {
+    "Id": 2208152,
+    "Icon": "",
+    "NameDesign": "飞腾炎华元素增伤",
+    "SpriteFile": "shuangfu314_456390558786505264.png"
+  },
+  {
+    "Id": 2208160,
+    "Icon": "",
+    "NameDesign": "无相减少指定技能组CD最长的技能CD-时轮回溯",
+    "SpriteFile": "shuangfu315_3395463920483623527.png"
+  },
+  {
+    "Id": 2208170,
+    "Icon": "",
+    "NameDesign": "炽炎状态专精技能加引燃-炽焰",
+    "SpriteFile": "shuangfu316_-6549373701705945965.png"
+  },
+  {
+    "Id": 2208171,
+    "Icon": "",
+    "NameDesign": "专精技能造成伤害，叠引燃-炽焰",
+    "SpriteFile": "shuangfu316_-6549373701705945965.png"
+  },
+  {
+    "Id": 2208172,
+    "Icon": "",
+    "NameDesign": "引燃buff效果-炽焰",
+    "SpriteFile": "shuangfu316_-6549373701705945965.png"
+  },
+  {
+    "Id": 2208180,
+    "Icon": "",
+    "NameDesign": "引燃叠层概率计数-炽焰炎爆",
+    "SpriteFile": "shuangfu317_6042906635792004042.png"
+  },
+  {
+    "Id": 2208181,
+    "Icon": "",
+    "NameDesign": "炼狱火车效果-炽焰炎爆",
+    "SpriteFile": "shuangfu317_6042906635792004042.png"
+  },
+  {
+    "Id": 2208182,
+    "Icon": "",
+    "NameDesign": "炼狱火车触发计次-炽焰炎爆",
+    "SpriteFile": "shuangfu317_6042906635792004042.png"
+  },
+  {
+    "Id": 2208190,
+    "Icon": "",
+    "NameDesign": "炼狱火车可以幸运一击，伤害增加-幸运炎爆",
+    "SpriteFile": "shuangfu318_-7124736638917428800.png"
+  },
+  {
+    "Id": 2208200,
+    "Icon": "",
+    "NameDesign": "炽焰突袭减CD-荒川突袭",
+    "SpriteFile": "shuangfu319_-7483091062004570178.png"
+  },
+  {
+    "Id": 2208210,
+    "Icon": "",
+    "NameDesign": "时轮幸魂",
+    "SpriteFile": "shuangfu320_-3139401705317482643.png"
+  },
+  {
+    "Id": 2208220,
+    "Icon": "",
+    "NameDesign": "时轮敏魂",
+    "SpriteFile": "shuangfu321_-2846011813378625530.png"
+  },
+  {
+    "Id": 2208230,
+    "Icon": "",
+    "NameDesign": "炽焰突袭回复损失炎魂-魂归",
+    "SpriteFile": "shuangfu322_-2154018977745117190.png"
+  },
+  {
+    "Id": 2208240,
+    "Icon": "",
+    "NameDesign": "旋风斩命中目标加燃烧-双重炽焰",
+    "SpriteFile": "shuangfu323_-1040512578132115524.png"
+  },
+  {
+    "Id": 2208250,
+    "Icon": "",
+    "NameDesign": "暴怒劈斩加地火流星",
+    "SpriteFile": "shuangfu324_4927356752473123861.png"
+  },
+  {
+    "Id": 2208251,
+    "Icon": "",
+    "NameDesign": "地火流星召唤兽",
+    "SpriteFile": "shuangfu324_4927356752473123861.png"
+  },
+  {
+    "Id": 2208260,
+    "Icon": "",
+    "NameDesign": "无上战域",
+    "SpriteFile": "shuangfu325_1639148389304013273.png"
+  },
+  {
+    "Id": 2208270,
+    "Icon": "",
+    "NameDesign": "荒川终景",
+    "SpriteFile": "shuangfu326_-5542334325512820313.png"
+  },
+  {
+    "Id": 2208271,
+    "Icon": "",
+    "NameDesign": "荒川终景子BUFF",
+    "SpriteFile": "shuangfu326_-5542334325512820313.png"
+  },
+  {
+    "Id": 2208280,
+    "Icon": "",
+    "NameDesign": "三刀流成功判定-专精无相火斩",
+    "SpriteFile": "shuangfu327_4627627066522273519.png"
+  },
+  {
+    "Id": 2208281,
+    "Icon": "",
+    "NameDesign": "刀数判定-专精无相火斩",
+    "SpriteFile": "shuangfu327_4627627066522273519.png"
+  },
+  {
+    "Id": 2208290,
+    "Icon": "",
+    "NameDesign": "精通转三刀流概率-无相火斩精通",
+    "SpriteFile": "shuangfu328_619996992613869099.png"
+  },
+  {
+    "Id": 2208300,
+    "Icon": "",
+    "NameDesign": "连打无相",
+    "SpriteFile": "shuangfu329_270719907217083196.png"
+  },
+  {
+    "Id": 2208301,
+    "Icon": "",
+    "NameDesign": "连打无相子BUFF",
+    "SpriteFile": "shuangfu329_270719907217083196.png"
+  },
+  {
+    "Id": 2208310,
+    "Icon": "",
+    "NameDesign": "三刀流触发忽视物理防御-无相火斩·破",
+    "SpriteFile": "shuangfu330_-441553709471701586.png"
+  },
+  {
+    "Id": 2208320,
+    "Icon": "",
+    "NameDesign": "三刀流触发幸运一击概率-无相火斩·幸",
+    "SpriteFile": "shuangfu331_-1971329198217311880.png"
+  },
+  {
+    "Id": 2208330,
+    "Icon": "",
+    "NameDesign": "三刀流触发属性增伤-无相火斩·炎",
+    "SpriteFile": "shuangfu332_2125399849664793231.png"
+  },
+  {
+    "Id": 2208340,
+    "Icon": "",
+    "NameDesign": "普攻特攻三刀判定-破攻无相火斩",
+    "SpriteFile": "shuangfu333_4569297845133318833.png"
+  },
+  {
+    "Id": 2208350,
+    "Icon": "",
+    "NameDesign": "鸿运连刃",
+    "SpriteFile": "shuangfu334_1620403063338480305.png"
+  },
+  {
+    "Id": 2208351,
+    "Icon": "",
+    "NameDesign": "鸿运连刃子BUFF",
+    "SpriteFile": "shuangfu334_1620403063338480305.png"
+  },
+  {
+    "Id": 2208360,
+    "Icon": "",
+    "NameDesign": "根据rank等级为三刀流增伤-无相火斩连打",
+    "SpriteFile": "shuangfu335_5585095095983100886.png"
+  },
+  {
+    "Id": 2208370,
+    "Icon": "",
+    "NameDesign": "寂灭业火",
+    "SpriteFile": "shuangfu336_-4823544891319313441.png"
+  },
+  {
+    "Id": 2208371,
+    "Icon": "",
+    "NameDesign": "寂灭业火子BUFF",
+    "SpriteFile": "shuangfu336_-4823544891319313441.png"
+  },
+  {
+    "Id": 2208380,
+    "Icon": "",
+    "NameDesign": "rank提升减少荒川之寂灭CD-荒川瞬息",
+    "SpriteFile": "shuangfu337_-7486768755483884135.png"
+  },
+  {
+    "Id": 2208390,
+    "Icon": "",
+    "NameDesign": "焚攻",
+    "SpriteFile": "shuangfu338_-4117113061862107962.png"
+  },
+  {
+    "Id": 2208400,
+    "Icon": "",
+    "NameDesign": "多元斩击",
+    "SpriteFile": "shuangfu339_-7180698373553533509.png"
+  },
+  {
+    "Id": 2208410,
+    "Icon": "",
+    "NameDesign": "炎魂攻魄",
+    "SpriteFile": "shuangfu340_2555877866254226.png"
+  },
+  {
+    "Id": 2208420,
+    "Icon": "",
+    "NameDesign": "星火",
+    "SpriteFile": "shuangfu341_-9181221501276128510.png"
+  },
+  {
+    "Id": 2208421,
+    "Icon": "",
+    "NameDesign": "星火子BUFF",
+    "SpriteFile": "shuangfu341_-9181221501276128510.png"
+  },
+  {
+    "Id": 2208430,
+    "Icon": "",
+    "NameDesign": "狂战池子积攒-赤红专精流",
+    "SpriteFile": "shuangfu342_8755052147204917988.png"
+  },
+  {
+    "Id": 2208440,
+    "Icon": "",
+    "NameDesign": "魂焰",
+    "SpriteFile": "shuangfu343_9145741074134540861.png"
+  },
+  {
+    "Id": 2208441,
+    "Icon": "",
+    "NameDesign": "魂焰子BUFF",
+    "SpriteFile": "shuangfu343_9145741074134540861.png"
+  },
+  {
+    "Id": 2208450,
+    "Icon": "",
+    "NameDesign": "怒焰狂锐之一",
+    "SpriteFile": "shuangfu344_-4452784411976691381.png"
+  },
+  {
+    "Id": 2208451,
+    "Icon": "",
+    "NameDesign": "怒焰狂锐之一子BUFF",
+    "SpriteFile": "shuangfu344_-4452784411976691381.png"
+  },
+  {
+    "Id": 2208460,
+    "Icon": "",
+    "NameDesign": "赤红之地·炎魂",
+    "SpriteFile": "shuangfu345_-4683440941011154849.png"
+  },
+  {
+    "Id": 2208470,
+    "Icon": "",
+    "NameDesign": "赤红之地·迅捷",
+    "SpriteFile": "shuangfu346_-205518321422300641.png"
+  },
+  {
+    "Id": 2208480,
+    "Icon": "",
+    "NameDesign": "强化无羁坠星-赤红之地的坠星一式",
+    "SpriteFile": "shuangfu347_7290520020879029734.png"
+  },
+  {
+    "Id": 2208481,
+    "Icon": "",
+    "NameDesign": "赤红之地区域上标记-赤红之地的坠星一式",
+    "SpriteFile": "shuangfu347_7290520020879029734.png"
+  },
+  {
+    "Id": 2208482,
+    "Icon": "",
+    "NameDesign": "处于赤红之地区域内标记-赤红之地的坠星一式",
+    "SpriteFile": "shuangfu347_7290520020879029734.png"
+  },
+  {
+    "Id": 2208483,
+    "Icon": "",
+    "NameDesign": "替换荒川之寂灭-赤红之地的坠星一式",
+    "SpriteFile": "shuangfu347_7290520020879029734.png"
+  },
+  {
+    "Id": 2208484,
+    "Icon": "buff_icon107",
+    "NameDesign": "炎魔天落杀计数-赤红之地的坠星一式",
+    "SpriteFile": "buff_icon107_-460670577510026337.png"
+  },
+  {
+    "Id": 2208490,
+    "Icon": "",
+    "NameDesign": "怒焰狂锐之二",
+    "SpriteFile": "shuangfu348_-8175406292326790907.png"
+  },
+  {
+    "Id": 2208500,
+    "Icon": "",
+    "NameDesign": "赤红之地的坠星二式",
+    "SpriteFile": "shuangfu349_8183868018539129092.png"
+  },
+  {
+    "Id": 2208510,
+    "Icon": "",
+    "NameDesign": "消耗炎魂/赤痕回复无羁和强化无羁CD-坠星宿命",
+    "SpriteFile": "shuangfu350_4511283376309918484.png"
+  },
+  {
+    "Id": 2208520,
+    "Icon": "",
+    "NameDesign": "赤红破斩",
+    "SpriteFile": "shuangfu351_8291038059830524537.png"
+  },
+  {
+    "Id": 2208530,
+    "Icon": "",
+    "NameDesign": "炎魔显现",
+    "SpriteFile": "shuangfu352_-4110513195625845820.png"
+  },
+  {
+    "Id": 2208540,
+    "Icon": "",
+    "NameDesign": "赤红专注",
+    "SpriteFile": "shuangfu353_1448312791521358191.png"
+  },
+  {
+    "Id": 2208550,
+    "Icon": "",
+    "NameDesign": "流川如华斩充能-如川流华回转",
+    "SpriteFile": "shuangfu354_8287819619603499070.png"
+  },
+  {
+    "Id": 2208551,
+    "Icon": "buff_talent_passive_icon_general_sup_grassdammastery",
+    "NameDesign": "流川如华斩后迷狂炎舞增伤-如川流华回转",
+    "SpriteFile": "buff_talent_passive_icon_general_sup_grassdammastery_-1936469726004328399.png"
+  },
+  {
+    "Id": 2208560,
+    "Icon": "",
+    "NameDesign": "特攻刷新免费流川如华斩-如川流华瞬息",
+    "SpriteFile": "shuangfu355_4527660200468586845.png"
+  },
+  {
+    "Id": 2208561,
+    "Icon": "",
+    "NameDesign": "免费流川如华斩生效-如川流华瞬息",
+    "SpriteFile": "shuangfu355_4527660200468586845.png"
+  },
+  {
+    "Id": 2208570,
+    "Icon": "",
+    "NameDesign": "无尽之炎魔加满业火，且期间不删除业火-炎魔极意",
+    "SpriteFile": "shuangfu356_2934076728104733883.png"
+  },
+  {
+    "Id": 2208571,
+    "Icon": "",
+    "NameDesign": "维持业火检测buff时间最大-炎魔极意",
+    "SpriteFile": "shuangfu356_2934076728104733883.png"
+  },
+  {
+    "Id": 2208580,
+    "Icon": "",
+    "NameDesign": "赤红暴击",
+    "SpriteFile": "shuangfu357_5903541921163145859.png"
+  },
+  {
+    "Id": 2208590,
+    "Icon": "",
+    "NameDesign": "赤红贯穿",
+    "SpriteFile": "shuangfu358_2130988305466432454.png"
+  },
+  {
+    "Id": 2208600,
+    "Icon": "",
+    "NameDesign": "强化炎魔天落杀-连段之无羁坠星",
+    "SpriteFile": "shuangfu359_9201038596761185659.png"
+  },
+  {
+    "Id": 2208610,
+    "Icon": "",
+    "NameDesign": "猩红之悟",
+    "SpriteFile": "shuangfu360_2934122298532524987.png"
+  },
+  {
+    "Id": 2208620,
+    "Icon": "",
+    "NameDesign": "迷狂炎舞派生-炎舞的最后一斩",
+    "SpriteFile": "shuangfu361_-8410215615197729333.png"
+  },
+  {
+    "Id": 2208621,
+    "Icon": "buff_icon35",
+    "NameDesign": "迷狂炎舞派生计数-炎舞的最后一斩",
+    "SpriteFile": "buff_icon35_-2745477810329229779.png"
+  },
+  {
+    "Id": 2208622,
+    "Icon": "",
+    "NameDesign": "迷狂炎舞·终式派生-炎舞的最后一斩",
+    "SpriteFile": "shuangfu361_-8410215615197729333.png"
+  },
+  {
+    "Id": 2208630,
+    "Icon": "",
+    "NameDesign": "迷狂炎舞三刀流判定-炎舞无相火斩",
+    "SpriteFile": "shuangfu362_4569252799937714136.png"
+  },
+  {
+    "Id": 2208640,
+    "Icon": "",
+    "NameDesign": "迷狂炎舞段数判定-迷狂劈杀连招",
+    "SpriteFile": "shuangfu363_-4233446065110307977.png"
+  },
+  {
+    "Id": 2208641,
+    "Icon": "",
+    "NameDesign": "迷狂炎舞结束后增伤-迷狂劈杀连招",
+    "SpriteFile": "shuangfu363_-4233446065110307977.png"
+  },
+  {
+    "Id": 2208650,
+    "Icon": "",
+    "NameDesign": "大红莲丸触发逻辑-炎舞的血脉奥义",
+    "SpriteFile": "shuangfu364_6636090993631443010.png"
+  },
+  {
+    "Id": 2208651,
+    "Icon": "buff_icon107",
+    "NameDesign": "大红莲丸计数-炎舞的血脉奥义",
+    "SpriteFile": "buff_icon107_-460670577510026337.png"
+  },
+  {
+    "Id": 2208652,
+    "Icon": "",
+    "NameDesign": "大红莲丸派生-炎舞的血脉奥义",
+    "SpriteFile": "shuangfu364_6636090993631443010.png"
+  },
+  {
+    "Id": 2208660,
+    "Icon": "",
+    "NameDesign": "炎舞的急速奥义",
+    "SpriteFile": "shuangfu365_2552774699774963930.png"
+  },
+  {
+    "Id": 2208670,
+    "Icon": "",
+    "NameDesign": "怒焰奥义",
+    "SpriteFile": "shuangfu366_6446555465290641028.png"
   },
   {
     "Id": 2300010,
@@ -40944,10 +46572,40 @@
     "SpriteFile": "common_icon03_8900073195624449876.png"
   },
   {
+    "Id": 2400003,
+    "Icon": "common_icon03",
+    "NameDesign": "物理伤害加成",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2400004,
+    "Icon": "common_icon03",
+    "NameDesign": "魔法伤害加成",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
     "Id": 2401010,
     "Icon": "common_icon01",
     "NameDesign": "（唯一）刀意回复速度加快",
     "SpriteFile": "common_icon01_-8742976987847836312.png"
+  },
+  {
+    "Id": 2401020,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2401030,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2401040,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
   },
   {
     "Id": 2401110,
@@ -41043,6 +46701,24 @@
     "Id": 2401271,
     "Icon": "common_icon03",
     "NameDesign": "【S2套装4B】",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2402010,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2402020,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2402030,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
     "SpriteFile": "common_icon03_8900073195624449876.png"
   },
   {
@@ -41154,6 +46830,18 @@
     "SpriteFile": "common_icon01_-8742976987847836312.png"
   },
   {
+    "Id": 2403010,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2403020,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
     "Id": 2403110,
     "Icon": "common_icon01",
     "NameDesign": "（唯一）风环冲击消耗",
@@ -41254,6 +46942,24 @@
     "Icon": "common_icon03",
     "NameDesign": "【S2套装4B】",
     "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2404010,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2404020,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2404030,
+    "Icon": "common_icon01",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon01_-8742976987847836312.png"
   },
   {
     "Id": 2404110,
@@ -41373,6 +47079,30 @@
     "Id": 2404280,
     "Icon": "common_icon03",
     "NameDesign": "愈合海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2405010,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2405020,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2405030,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2405040,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
     "SpriteFile": "common_icon03_8900073195624449876.png"
   },
   {
@@ -41706,6 +47436,30 @@
     "SpriteFile": "common_icon01_-8742976987847836312.png"
   },
   {
+    "Id": 2408010,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2408020,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2408021,
+    "Icon": "",
+    "NameDesign": "",
+    "SpriteFile": null
+  },
+  {
+    "Id": 2408030,
+    "Icon": "common_icon01",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon01_-8742976987847836312.png"
+  },
+  {
     "Id": 2408110,
     "Icon": "common_icon03",
     "NameDesign": "（唯一）【套装2A】聚合乐章，增幅节拍伤害",
@@ -41782,6 +47536,30 @@
     "Icon": "",
     "NameDesign": "【S2套装4B】-子BUFF",
     "SpriteFile": null
+  },
+  {
+    "Id": 2409010,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2409020,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2409030,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
+  },
+  {
+    "Id": 2409040,
+    "Icon": "common_icon03",
+    "NameDesign": "海武",
+    "SpriteFile": "common_icon03_8900073195624449876.png"
   },
   {
     "Id": 3000010,
@@ -43020,6 +48798,12 @@
     "SpriteFile": null
   },
   {
+    "Id": 3050011,
+    "Icon": "",
+    "NameDesign": "因子失效描述",
+    "SpriteFile": null
+  },
+  {
     "Id": 3050020,
     "Icon": "",
     "NameDesign": "雷影G2",
@@ -43065,6 +48849,12 @@
     "Id": 3050080,
     "Icon": "",
     "NameDesign": "雷影G8",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3050081,
+    "Icon": "",
+    "NameDesign": "进战后不移动加充能",
     "SpriteFile": null
   },
   {
@@ -43260,6 +49050,72 @@
     "SpriteFile": null
   },
   {
+    "Id": 3050400,
+    "Icon": "",
+    "NameDesign": "真实因子-居合直接附加雷切子弹",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3050401,
+    "Icon": "",
+    "NameDesign": "下一次居合附带雷切子弹",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3050410,
+    "Icon": "",
+    "NameDesign": "真实因子-充能加雷之印上限和当前值",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3050411,
+    "Icon": "",
+    "NameDesign": "雷之印上限+1，同时获得1雷之印",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3050420,
+    "Icon": "",
+    "NameDesign": "真实因子-终极大招暴击增加",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3050421,
+    "Icon": "",
+    "NameDesign": "终极大招暴击率增加生效",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3050430,
+    "Icon": "",
+    "NameDesign": "真实因子-回复刀意，获得电荷之种",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3050440,
+    "Icon": "",
+    "NameDesign": "真实因子-镰刀幸运翻倍，持续10秒",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3050441,
+    "Icon": "buff_talent_passive_icon_general_sup_flowerlimit",
+    "NameDesign": "镰刀的幸运翻倍生效",
+    "SpriteFile": "buff_talent_passive_icon_general_sup_flowerlimit_6171808906592601633.png"
+  },
+  {
+    "Id": 3050450,
+    "Icon": "",
+    "NameDesign": "真实因子-触发雷霆之镰",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3050451,
+    "Icon": "",
+    "NameDesign": "雷霆之镰触发生效",
+    "SpriteFile": null
+  },
+  {
     "Id": 3051010,
     "Icon": "",
     "NameDesign": "青岚G1",
@@ -43305,6 +49161,12 @@
     "Id": 3051080,
     "Icon": "",
     "NameDesign": "青岚G8",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3051081,
+    "Icon": "",
+    "NameDesign": "位移超过5米充能生效",
     "SpriteFile": null
   },
   {
@@ -43455,6 +49317,54 @@
     "Id": 3051310,
     "Icon": "",
     "NameDesign": "风怒可以叠加3层，同比提升效果",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3051400,
+    "Icon": "",
+    "NameDesign": "真实因子-缩减风姿卓绝1秒CD",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3051410,
+    "Icon": "",
+    "NameDesign": "真实因子-触发龙击炮",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3051420,
+    "Icon": "",
+    "NameDesign": "真实因子-触发大风环",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3051430,
+    "Icon": "",
+    "NameDesign": "真实因子-特攻加暴击概率",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3051431,
+    "Icon": "buff_icon111",
+    "NameDesign": "特攻暴击概率增加生效",
+    "SpriteFile": "buff_icon111_7912745329572909674.png"
+  },
+  {
+    "Id": 3051440,
+    "Icon": "",
+    "NameDesign": "真实因子-消耗追击身法，加一倍幸运快照",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3051441,
+    "Icon": "",
+    "NameDesign": "消耗追击身法时，快照幸运翻倍",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3051450,
+    "Icon": "",
+    "NameDesign": "真实因子-给锐利冲击充能",
     "SpriteFile": null
   },
   {
@@ -43692,6 +49602,84 @@
     "SpriteFile": null
   },
   {
+    "Id": 3052400,
+    "Icon": "",
+    "NameDesign": "冰魔真实因子-增加冰矛伤害",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3052401,
+    "Icon": "",
+    "NameDesign": "下次冰之灌注期间增伤加上限",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3052402,
+    "Icon": "",
+    "NameDesign": "冰之灌注期间增伤加上限",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3052410,
+    "Icon": "",
+    "NameDesign": "冰魔真实因子-额外冰风暴",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3052411,
+    "Icon": "",
+    "NameDesign": "冰风暴增伤",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3052420,
+    "Icon": "",
+    "NameDesign": "冰魔真实因子-多一个水球",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3052430,
+    "Icon": "",
+    "NameDesign": "冰魔真实因子-刷水龙卷cd",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3052431,
+    "Icon": "",
+    "NameDesign": "刷新水龙卷cd,提高水龙卷伤害",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3052440,
+    "Icon": "",
+    "NameDesign": "冰魔真实因子-增加玄冰上限.减少消耗",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3052441,
+    "Icon": "",
+    "NameDesign": "增加玄冰上限,减少消耗",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3052450,
+    "Icon": "",
+    "NameDesign": "冰魔真实因子-幸运冰箭",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3052451,
+    "Icon": "",
+    "NameDesign": "下次冰之灌注期间冰箭幸运",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3052452,
+    "Icon": "",
+    "NameDesign": "冰之灌注期间冰箭幸运",
+    "SpriteFile": null
+  },
+  {
     "Id": 3053010,
     "Icon": "",
     "NameDesign": "神射G1",
@@ -43908,6 +49896,78 @@
     "SpriteFile": null
   },
   {
+    "Id": 3053400,
+    "Icon": "",
+    "NameDesign": "神射真实因子-额外野狼",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3053401,
+    "Icon": "",
+    "NameDesign": "野狼增伤",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3053410,
+    "Icon": "",
+    "NameDesign": "神射真实因子-箭雨回满光能且大幅提升上限",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3053411,
+    "Icon": "buff_icon33",
+    "NameDesign": "下次箭雨期间增加光能上限",
+    "SpriteFile": "buff_icon33_7881267815136294621.png"
+  },
+  {
+    "Id": 3053412,
+    "Icon": "buff_icon139",
+    "NameDesign": "增加光能上限并回满光能",
+    "SpriteFile": "buff_icon139_303035123959415504.png"
+  },
+  {
+    "Id": 3053420,
+    "Icon": "",
+    "NameDesign": "神射真实因子-增加暴风箭矢伤害",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3053421,
+    "Icon": "",
+    "NameDesign": "暴风箭矢必爆增伤",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3053430,
+    "Icon": "",
+    "NameDesign": "神射真实因子-自动聚能射击",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3053440,
+    "Icon": "",
+    "NameDesign": "神射真实因子-多一只鸟",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3053441,
+    "Icon": "",
+    "NameDesign": "猎鹰出击增伤",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3053450,
+    "Icon": "",
+    "NameDesign": "神射真实因子-多一次天界雄鹰",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3053451,
+    "Icon": "",
+    "NameDesign": "天界雄鹰增伤",
+    "SpriteFile": null
+  },
+  {
     "Id": 3054010,
     "Icon": "",
     "NameDesign": "神盾G1",
@@ -43953,6 +50013,12 @@
     "Id": 3054080,
     "Icon": "",
     "NameDesign": "神盾G8",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3054091,
+    "Icon": "",
+    "NameDesign": "",
     "SpriteFile": null
   },
   {
@@ -44145,6 +50211,60 @@
     "Id": 3054350,
     "Icon": "",
     "NameDesign": "裁决现在消耗所有光明能量，先锋追击暴击时获得圣令；裁决梦境伤害+",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3054400,
+    "Icon": "",
+    "NameDesign": "S3-触发炽热清算；炽热清算伤害+",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3054410,
+    "Icon": "",
+    "NameDesign": "S3-下一个圣环大小翻倍，治疗+当前最大生命值",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3054411,
+    "Icon": "",
+    "NameDesign": "下一个圣环翻倍",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3054420,
+    "Icon": "",
+    "NameDesign": "S3-获得光明圣盾N",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3054430,
+    "Icon": "",
+    "NameDesign": "S3-受到伤害增加，伤害增加；持续一段时间",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3054431,
+    "Icon": "",
+    "NameDesign": "受到伤害增加，伤害增加",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3054440,
+    "Icon": "",
+    "NameDesign": "S3-下次造成伤害时，触发圣剑；圣剑附加生命百分比伤害",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3054441,
+    "Icon": "",
+    "NameDesign": "触发圣剑；圣剑附加生命百分比伤害",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3054450,
+    "Icon": "",
+    "NameDesign": "S3-终极技能剩余冷却时间减少1",
     "SpriteFile": null
   },
   {
@@ -44379,6 +50499,72 @@
     "Id": 3055351,
     "Icon": "",
     "NameDesign": "岩元素攻击+",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3055360,
+    "Icon": "",
+    "NameDesign": "S3-下一次添加护盾时，最终护盾+++",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3055361,
+    "Icon": "",
+    "NameDesign": "下一次添加护盾时，最终护盾+++",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3055370,
+    "Icon": "",
+    "NameDesign": "S3-触发地崩山摧；地崩山摧+",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3055371,
+    "Icon": "",
+    "NameDesign": "触发地崩山摧；地崩山摧+",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3055380,
+    "Icon": "",
+    "NameDesign": "S3-缩减巨岩躯体、勇者壁垒剩余冷却时间1",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3055390,
+    "Icon": "",
+    "NameDesign": "S3-生命上限+N；可以叠加N",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3055391,
+    "Icon": "",
+    "NameDesign": "最大生命值+1%，最多叠加N层",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3055400,
+    "Icon": "",
+    "NameDesign": "S3-触发格挡反击；格挡反击伤害+",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3055401,
+    "Icon": "",
+    "NameDesign": "触发格挡反击；格挡反击伤害+",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3055410,
+    "Icon": "",
+    "NameDesign": "S3-一段时间内格挡减伤-50%，所有职业技能最终伤害+100%",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3055411,
+    "Icon": "",
+    "NameDesign": "一段时间内格挡减伤-50%，所有职业技能最终伤害+100%",
     "SpriteFile": null
   },
   {
@@ -44628,6 +50814,54 @@
     "SpriteFile": null
   },
   {
+    "Id": 3056380,
+    "Icon": "",
+    "NameDesign": "S3-获得能量",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3056390,
+    "Icon": "",
+    "NameDesign": "S3-持续时间内；施法速度+N",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3056391,
+    "Icon": "",
+    "NameDesign": "施法速度+N",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3056400,
+    "Icon": "",
+    "NameDesign": "S3-缩减自然庇护剩余冷却时间",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3056410,
+    "Icon": "",
+    "NameDesign": "S3-立即获得1个蓝花",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3056411,
+    "Icon": "buff_blue_def",
+    "NameDesign": "蓝色花株【慰藉启示】",
+    "SpriteFile": "buff_blue_def_-5154019358626773797.png"
+  },
+  {
+    "Id": 3056420,
+    "Icon": "",
+    "NameDesign": "S3-触发一次群体滋养",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3056430,
+    "Icon": "",
+    "NameDesign": "S3-缩减森之祈愿剩余冷却时间",
+    "SpriteFile": null
+  },
+  {
     "Id": 3057010,
     "Icon": "",
     "NameDesign": "灵魂G1",
@@ -44691,6 +50925,12 @@
     "Id": 3057100,
     "Icon": "",
     "NameDesign": "灵魂G10",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3057101,
+    "Icon": "",
+    "NameDesign": "进战后站立不动充能",
     "SpriteFile": null
   },
   {
@@ -44877,6 +51117,60 @@
     "Id": 3057310,
     "Icon": "",
     "NameDesign": "愈合乐章造成伤害，智力+1",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3057400,
+    "Icon": "",
+    "NameDesign": "真实因子-触发安可琴弦",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3057410,
+    "Icon": "",
+    "NameDesign": "真实因子-下一次聚合乐章消耗所有豆，根据豆增伤",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3057411,
+    "Icon": "buff_icon17",
+    "NameDesign": "下一次聚合乐章增伤",
+    "SpriteFile": "buff_icon17_1115824928838207817.png"
+  },
+  {
+    "Id": 3057420,
+    "Icon": "",
+    "NameDesign": "真实因子-触发烈焰狂想",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3057430,
+    "Icon": "",
+    "NameDesign": "真实因子-触发激涌五重奏",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3057431,
+    "Icon": "",
+    "NameDesign": "激涌治疗治疗效果",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3057440,
+    "Icon": "",
+    "NameDesign": "真实因子-召唤一个音箱",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3057450,
+    "Icon": "",
+    "NameDesign": "真实因子-触发安可琴弦",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3057451,
+    "Icon": "",
+    "NameDesign": "消耗豆的时候回复一颗豆",
     "SpriteFile": null
   },
   {
@@ -45102,6 +51396,198 @@
     "SpriteFile": null
   },
   {
+    "Id": 3059260,
+    "Icon": "",
+    "NameDesign": "赤焰稳态G1",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3059270,
+    "Icon": "",
+    "NameDesign": "赤焰稳态G2",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3059271,
+    "Icon": "",
+    "NameDesign": "迷狂炎舞霸体",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060010,
+    "Icon": "",
+    "NameDesign": "赤焰G1",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060020,
+    "Icon": "",
+    "NameDesign": "赤焰G2",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060030,
+    "Icon": "",
+    "NameDesign": "赤焰G3",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060040,
+    "Icon": "",
+    "NameDesign": "赤焰G4",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060041,
+    "Icon": "",
+    "NameDesign": "荒川期间回能",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060050,
+    "Icon": "",
+    "NameDesign": "赤焰G5",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060060,
+    "Icon": "",
+    "NameDesign": "赤焰G6",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060070,
+    "Icon": "",
+    "NameDesign": "赤焰G7",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060080,
+    "Icon": "",
+    "NameDesign": "赤焰G8",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060090,
+    "Icon": "",
+    "NameDesign": "赤焰G9",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060100,
+    "Icon": "",
+    "NameDesign": "赤焰G10",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060101,
+    "Icon": "",
+    "NameDesign": "赤焰G10-子BUFF",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060102,
+    "Icon": "",
+    "NameDesign": "进战后站立不动充能",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060110,
+    "Icon": "",
+    "NameDesign": "赤焰G11",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060120,
+    "Icon": "",
+    "NameDesign": "赤焰狂想G1",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060130,
+    "Icon": "",
+    "NameDesign": "赤焰狂想G2",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060140,
+    "Icon": "",
+    "NameDesign": "赤焰狂想G3",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060150,
+    "Icon": "",
+    "NameDesign": "赤焰狂想G4",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060400,
+    "Icon": "",
+    "NameDesign": "真实因子-触发炎魂回复",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060401,
+    "Icon": "buff_icon128",
+    "NameDesign": "回复炎魂效果",
+    "SpriteFile": "buff_icon128_-1480430308293986765.png"
+  },
+  {
+    "Id": 3060410,
+    "Icon": "",
+    "NameDesign": "真实因子-强化下一次斧风",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060411,
+    "Icon": "buff_talent_skill_360105",
+    "NameDesign": "斧风强化标记",
+    "SpriteFile": "buff_talent_skill_360105_1823713201894588300.png"
+  },
+  {
+    "Id": 3060420,
+    "Icon": "",
+    "NameDesign": "真实因子-触发无相火斩最终伤害增加",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060421,
+    "Icon": "buff_talent_passive_icon_general_sup_grassdammastery",
+    "NameDesign": "无相火斩最终伤害",
+    "SpriteFile": "buff_talent_passive_icon_general_sup_grassdammastery_-1936469726004328399.png"
+  },
+  {
+    "Id": 3060430,
+    "Icon": "",
+    "NameDesign": "真实因子-触发大红莲丸，增伤buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060431,
+    "Icon": "",
+    "NameDesign": "大红莲丸增伤",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060440,
+    "Icon": "",
+    "NameDesign": "真实因子-触发迷狂炎舞最终伤害增加",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3060441,
+    "Icon": "buff_talent_passive_icon_general_sup_grassdammastery",
+    "NameDesign": "迷狂炎舞最终伤害",
+    "SpriteFile": "buff_talent_passive_icon_general_sup_grassdammastery_-1936469726004328399.png"
+  },
+  {
+    "Id": 3060450,
+    "Icon": "",
+    "NameDesign": "真实因子-减少0.5秒大招CD",
+    "SpriteFile": null
+  },
+  {
     "Id": 3100010,
     "Icon": "",
     "NameDesign": "极限本掉率提高-战甲",
@@ -45285,6 +51771,30 @@
     "Id": 3200035,
     "Icon": "",
     "NameDesign": "卷心菜精英1-被动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3200036,
+    "Icon": "",
+    "NameDesign": "丹佛-被动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3200037,
+    "Icon": "",
+    "NameDesign": "幻祸娜宝-被动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3200038,
+    "Icon": "",
+    "NameDesign": "巨塔BOSS-被动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3200039,
+    "Icon": "",
+    "NameDesign": "高原精英野猪-被动",
     "SpriteFile": null
   },
   {
@@ -45588,6 +52098,108 @@
     "SpriteFile": null
   },
   {
+    "Id": 3210180,
+    "Icon": "",
+    "NameDesign": "风龙-被动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3210181,
+    "Icon": "",
+    "NameDesign": "风龙-被动叠层",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3210190,
+    "Icon": "",
+    "NameDesign": "高原蜘蛛王-被动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3210191,
+    "Icon": "buff_icon03",
+    "NameDesign": "急速精通牛逼",
+    "SpriteFile": "buff_icon03_-2986389424547005470.png"
+  },
+  {
+    "Id": 3210200,
+    "Icon": "",
+    "NameDesign": "大胖子-被动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3210201,
+    "Icon": "",
+    "NameDesign": "大胖子-被动叠满",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3210210,
+    "Icon": "",
+    "NameDesign": "眼球王-被动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3210211,
+    "Icon": "buff_icon03",
+    "NameDesign": "眼球王-被动叠层",
+    "SpriteFile": "buff_icon03_-2986389424547005470.png"
+  },
+  {
+    "Id": 3210220,
+    "Icon": "",
+    "NameDesign": "高原野猪王-被动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3210221,
+    "Icon": "buff_hideseek_icon12",
+    "NameDesign": "精神抖擞",
+    "SpriteFile": "buff_hideseek_icon12_-2385457419463855088.png"
+  },
+  {
+    "Id": 3210222,
+    "Icon": "buff_hideseek_icon11",
+    "NameDesign": "绝境逢生",
+    "SpriteFile": "buff_hideseek_icon11_364131334589324662.png"
+  },
+  {
+    "Id": 3210223,
+    "Icon": "",
+    "NameDesign": "绝境逢生-触发buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3210230,
+    "Icon": "",
+    "NameDesign": "毛球王-被动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3210231,
+    "Icon": "",
+    "NameDesign": "毛球王-AOE",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3210240,
+    "Icon": "",
+    "NameDesign": "蜘蛛精英-被动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3210241,
+    "Icon": "",
+    "NameDesign": "蜘蛛精英-AOE",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3210242,
+    "Icon": "",
+    "NameDesign": "蜘蛛精英-自身增益",
+    "SpriteFile": null
+  },
+  {
     "Id": 5000001,
     "Icon": "",
     "NameDesign": "遭受赫鲁加蛊惑buff",
@@ -45615,6 +52227,12 @@
     "Id": 5000005,
     "Icon": "",
     "NameDesign": "变身卷心菜",
+    "SpriteFile": null
+  },
+  {
+    "Id": 5000006,
+    "Icon": "",
+    "NameDesign": "50%触发场景事件",
     "SpriteFile": null
   },
   {
@@ -46080,6 +52698,84 @@
     "SpriteFile": null
   },
   {
+    "Id": 5009205,
+    "Icon": "",
+    "NameDesign": "冰之玉响-场景压暗效果",
+    "SpriteFile": null
+  },
+  {
+    "Id": 5009206,
+    "Icon": "",
+    "NameDesign": "冰之玉响-变身博伊斯",
+    "SpriteFile": null
+  },
+  {
+    "Id": 5009207,
+    "Icon": "",
+    "NameDesign": "冰之玉响-霍拉斯心魔",
+    "SpriteFile": null
+  },
+  {
+    "Id": 5009208,
+    "Icon": "",
+    "NameDesign": "冰之玉响-场景恢复效果",
+    "SpriteFile": null
+  },
+  {
+    "Id": 5009209,
+    "Icon": "",
+    "NameDesign": "冰之玉响-被打至跪地",
+    "SpriteFile": null
+  },
+  {
+    "Id": 5009210,
+    "Icon": "",
+    "NameDesign": "冰之玉响-锁血",
+    "SpriteFile": null
+  },
+  {
+    "Id": 5009211,
+    "Icon": "",
+    "NameDesign": "冰之玉响-打下灯光",
+    "SpriteFile": null
+  },
+  {
+    "Id": 5009212,
+    "Icon": "",
+    "NameDesign": "冰之玉响-冰龙常驻表现+回满血",
+    "SpriteFile": null
+  },
+  {
+    "Id": 5009213,
+    "Icon": "",
+    "NameDesign": "冰之玉响-冰龙复活标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 5009214,
+    "Icon": "",
+    "NameDesign": "冰之玉响-博伊斯复活标记",
+    "SpriteFile": null
+  },
+  {
+    "Id": 5009215,
+    "Icon": "",
+    "NameDesign": "冰之玉响-看过场禁止移动",
+    "SpriteFile": null
+  },
+  {
+    "Id": 5009216,
+    "Icon": "",
+    "NameDesign": "冰之玉响-被冰龙冰冻",
+    "SpriteFile": null
+  },
+  {
+    "Id": 5009217,
+    "Icon": "",
+    "NameDesign": "空冠之座-变身莱纳",
+    "SpriteFile": null
+  },
+  {
     "Id": 7000001,
     "Icon": "",
     "NameDesign": "环境特效标准风无落叶",
@@ -46488,6 +53184,30 @@
     "SpriteFile": null
   },
   {
+    "Id": 7000236,
+    "Icon": "",
+    "NameDesign": "春节-年兽活动-红色区域",
+    "SpriteFile": null
+  },
+  {
+    "Id": 7000237,
+    "Icon": "",
+    "NameDesign": "春节-年兽活动-绿色区域",
+    "SpriteFile": null
+  },
+  {
+    "Id": 7000238,
+    "Icon": "",
+    "NameDesign": "春节-年兽活动-蓝色区域",
+    "SpriteFile": null
+  },
+  {
+    "Id": 7000239,
+    "Icon": "",
+    "NameDesign": "春节-年兽活动-黄色区域",
+    "SpriteFile": null
+  },
+  {
     "Id": 7000240,
     "Icon": "",
     "NameDesign": "减速冰面-8006A",
@@ -46755,6 +53475,24 @@
     "Id": 7003106,
     "Icon": "",
     "NameDesign": "深水水花拖尾",
+    "SpriteFile": null
+  },
+  {
+    "Id": 7020190,
+    "Icon": "",
+    "NameDesign": "躲猫猫议会大厅大门",
+    "SpriteFile": null
+  },
+  {
+    "Id": 7020191,
+    "Icon": "",
+    "NameDesign": "躲猫猫议会大厅大门打开过程",
+    "SpriteFile": null
+  },
+  {
+    "Id": 7020192,
+    "Icon": "",
+    "NameDesign": "躲猫猫议会大厅大门-打开待机",
     "SpriteFile": null
   },
   {
@@ -47643,6 +54381,18 @@
     "Id": 7100014,
     "Icon": "",
     "NameDesign": "得高分圈消失",
+    "SpriteFile": null
+  },
+  {
+    "Id": 7100015,
+    "Icon": "",
+    "NameDesign": "喧春灯笼-升空",
+    "SpriteFile": null
+  },
+  {
+    "Id": 7100016,
+    "Icon": "",
+    "NameDesign": "喧春灯笼-静止",
     "SpriteFile": null
   },
   {
@@ -48705,6 +55455,144 @@
     "Id": 7920116,
     "Icon": "",
     "NameDesign": "高原大世界弹簧-静止",
+    "SpriteFile": null
+  },
+  {
+    "Id": 7920117,
+    "Icon": "",
+    "NameDesign": "摩天轮旋转动画buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 7920201,
+    "Icon": "",
+    "NameDesign": "日麻玩法桌桌面表现Buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 7920202,
+    "Icon": "",
+    "NameDesign": "日麻玩法桌角色表现Buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8000000,
+    "Icon": "",
+    "NameDesign": "角色-通用吉他待机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8000001,
+    "Icon": "",
+    "NameDesign": "角色-通用吉他演奏",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8000002,
+    "Icon": "",
+    "NameDesign": "吉他-通用待机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8000003,
+    "Icon": "",
+    "NameDesign": "吉他-通用演奏",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8000004,
+    "Icon": "",
+    "NameDesign": "占位",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8000005,
+    "Icon": "",
+    "NameDesign": "占位",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8000006,
+    "Icon": "",
+    "NameDesign": "占位",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8000007,
+    "Icon": "",
+    "NameDesign": "占位",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8010000,
+    "Icon": "",
+    "NameDesign": "角色-通用键盘待机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8010001,
+    "Icon": "",
+    "NameDesign": "角色-通用键盘演奏",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8010002,
+    "Icon": "",
+    "NameDesign": "键盘-通用待机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8010003,
+    "Icon": "",
+    "NameDesign": "键盘-通用演奏",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8010004,
+    "Icon": "",
+    "NameDesign": "占位",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8010005,
+    "Icon": "",
+    "NameDesign": "占位",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8010006,
+    "Icon": "",
+    "NameDesign": "占位",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8010007,
+    "Icon": "",
+    "NameDesign": "占位",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8030000,
+    "Icon": "",
+    "NameDesign": "角色-通用架子鼓待机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8030001,
+    "Icon": "",
+    "NameDesign": "角色-通用架子鼓演奏",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8030002,
+    "Icon": "",
+    "NameDesign": "架子鼓-通用待机",
+    "SpriteFile": null
+  },
+  {
+    "Id": 8030003,
+    "Icon": "",
+    "NameDesign": "架子鼓-通用演奏",
     "SpriteFile": null
   }
 ]

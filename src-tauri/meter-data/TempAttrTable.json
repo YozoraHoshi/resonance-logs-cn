@@ -3624,57 +3624,6 @@
     "AttrDesc": "全子弹大小",
     "AttrIcon": ""
   },
-  "90307": {
-    "Id": 90307,
-    "Name": "【法环】特攻消耗",
-    "Desc": "【法环】特攻消耗",
-    "AttrType": 302,
-    "LogicType": 1,
-    "AttrParams": [
-      1507,
-      1518,
-      1530,
-      1541
-    ],
-    "LowerLimit": 0,
-    "UpperLimit": 10000,
-    "IsSyncClient": true,
-    "AttrDesc": "全子弹大小",
-    "AttrIcon": ""
-  },
-  "90308": {
-    "Id": 90308,
-    "Name": "【法环】禁用终极技能",
-    "Desc": "【法环】禁用终极技能",
-    "AttrType": 509,
-    "LogicType": 1,
-    "AttrParams": [
-      1509,
-      1527,
-      1528
-    ],
-    "LowerLimit": 0,
-    "UpperLimit": 10000,
-    "IsSyncClient": true,
-    "AttrDesc": "全子弹大小",
-    "AttrIcon": ""
-  },
-  "90309": {
-    "Id": 90309,
-    "Name": "【剑盾】炽热清算加速",
-    "Desc": "【剑盾】炽热清算加速",
-    "AttrType": 700,
-    "LogicType": 1,
-    "AttrParams": [
-      2413,
-      2426
-    ],
-    "LowerLimit": 0,
-    "UpperLimit": 10000,
-    "IsSyncClient": true,
-    "AttrDesc": "全子弹大小",
-    "AttrIcon": ""
-  },
   "90310": {
     "Id": 90310,
     "Name": "【剑盾】圣剑消耗",
@@ -3723,6 +3672,190 @@
     "AttrDesc": "全子弹大小",
     "AttrIcon": ""
   },
+  "90307": {
+    "Id": 90307,
+    "Name": "【法环】特攻消耗",
+    "Desc": "【法环】特攻消耗",
+    "AttrType": 302,
+    "LogicType": 1,
+    "AttrParams": [
+      1507,
+      1518,
+      1530,
+      1541
+    ],
+    "LowerLimit": 0,
+    "UpperLimit": 10000,
+    "IsSyncClient": true,
+    "AttrDesc": "全子弹大小",
+    "AttrIcon": ""
+  },
+  "90313": {
+    "Id": 90313,
+    "Name": "如川流华斩战斗资源消耗",
+    "Desc": "如川流华斩战斗资源消耗",
+    "AttrType": 302,
+    "LogicType": 1,
+    "AttrParams": [
+      1616
+    ],
+    "LowerLimit": 0,
+    "UpperLimit": 10000,
+    "IsSyncClient": true,
+    "AttrDesc": "全子弹大小",
+    "AttrIcon": ""
+  },
+  "90308": {
+    "Id": 90308,
+    "Name": "【法环】禁用终极技能",
+    "Desc": "【法环】禁用终极技能",
+    "AttrType": 509,
+    "LogicType": 1,
+    "AttrParams": [
+      1509,
+      1527,
+      1528
+    ],
+    "LowerLimit": 0,
+    "UpperLimit": 10000,
+    "IsSyncClient": true,
+    "AttrDesc": "全子弹大小",
+    "AttrIcon": ""
+  },
+  "90309": {
+    "Id": 90309,
+    "Name": "【剑盾】炽热清算加速",
+    "Desc": "【剑盾】炽热清算加速",
+    "AttrType": 700,
+    "LogicType": 1,
+    "AttrParams": [
+      2413,
+      2426
+    ],
+    "LowerLimit": 0,
+    "UpperLimit": 10000,
+    "IsSyncClient": true,
+    "AttrDesc": "全子弹大小",
+    "AttrIcon": ""
+  },
+  "90314": {
+    "Id": 90314,
+    "Name": "血槽积攒效率",
+    "Desc": "血槽积攒效率",
+    "AttrType": 301,
+    "LogicType": 2,
+    "AttrParams": [
+      13011
+    ],
+    "LowerLimit": -99999,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "全子弹大小",
+    "AttrIcon": ""
+  },
+  "90315": {
+    "Id": 90315,
+    "Name": "【双斧】专精技能攻速",
+    "Desc": "【双斧】专精技能攻速",
+    "AttrType": 700,
+    "LogicType": 1,
+    "AttrParams": [
+      1615,
+      1612,
+      1608,
+      1607,
+      1617,
+      1613,
+      1614,
+      1616,
+      1621
+    ],
+    "LowerLimit": -10000,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "全子弹大小",
+    "AttrIcon": ""
+  },
+  "90316": {
+    "Id": 90316,
+    "Name": "【双斧】迷狂炎舞攻速",
+    "Desc": "【双斧】迷狂炎舞攻速",
+    "AttrType": 700,
+    "LogicType": 1,
+    "AttrParams": [
+      1613
+    ],
+    "LowerLimit": -10000,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "全子弹大小",
+    "AttrIcon": ""
+  },
+  "90317": {
+    "Id": 90317,
+    "Name": "炽焰突袭/暴怒劈斩/旋风斩CD",
+    "Desc": "炽焰突袭/暴怒劈斩/旋风斩CD",
+    "AttrType": 103,
+    "LogicType": 1,
+    "AttrParams": [
+      1607,
+      1608,
+      1609,
+      1610,
+      1611,
+      1612
+    ],
+    "LowerLimit": -99999,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "全子弹大小",
+    "AttrIcon": ""
+  },
+  "90318": {
+    "Id": 90318,
+    "Name": "血槽消耗归0",
+    "Desc": "血槽消耗归0",
+    "AttrType": 302,
+    "LogicType": 2,
+    "AttrParams": [
+      13021
+    ],
+    "LowerLimit": -99999,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "全子弹大小",
+    "AttrIcon": ""
+  },
+  "90319": {
+    "Id": 90319,
+    "Name": "如川流华斩充能层数",
+    "Desc": "如川流华斩充能层数、",
+    "AttrType": 352,
+    "LogicType": 1,
+    "AttrParams": [
+      1616
+    ],
+    "LowerLimit": 0,
+    "UpperLimit": 2,
+    "IsSyncClient": true,
+    "AttrDesc": "全子弹大小",
+    "AttrIcon": ""
+  },
+  "90320": {
+    "Id": 90320,
+    "Name": "赤红积攒效率",
+    "Desc": "赤红积攒效率",
+    "AttrType": 301,
+    "LogicType": 2,
+    "AttrParams": [
+      13021
+    ],
+    "LowerLimit": -99999,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "全子弹大小",
+    "AttrIcon": ""
+  },
   "92000": {
     "Id": 92000,
     "Name": "全移动速度加值",
@@ -3737,8 +3870,8 @@
     "LowerLimit": -99999,
     "UpperLimit": 99999,
     "IsSyncClient": true,
-    "AttrDesc": "全子弹大小",
-    "AttrIcon": ""
+    "AttrDesc": "",
+    "AttrIcon": "ui/atlas/weaponhero/new/common_icon21"
   },
   "92001": {
     "Id": 92001,
@@ -4156,7 +4289,8 @@
       4543,
       4544,
       4545,
-      4546
+      4546,
+      4547
     ],
     "LowerLimit": -99999,
     "UpperLimit": 99999,
@@ -4266,6 +4400,21 @@
     ],
     "LowerLimit": -99999,
     "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "全子弹大小",
+    "AttrIcon": ""
+  },
+  "93001": {
+    "Id": 93001,
+    "Name": "【隐雾猎场】禁止释放治疗技能",
+    "Desc": "【隐雾猎场】禁止释放治疗技能",
+    "AttrType": 509,
+    "LogicType": 3,
+    "AttrParams": [
+      1003
+    ],
+    "LowerLimit": 0,
+    "UpperLimit": 1,
     "IsSyncClient": true,
     "AttrDesc": "全子弹大小",
     "AttrIcon": ""
@@ -4607,6 +4756,123 @@
     "IsSyncClient": true,
     "AttrDesc": "全子弹大小",
     "AttrIcon": ""
+  },
+  "98981": {
+    "Id": 98981,
+    "Name": "S1赛季强度",
+    "Desc": "",
+    "AttrType": 0,
+    "LogicType": 0,
+    "AttrParams": [],
+    "LowerLimit": 0,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "全子弹大小",
+    "AttrIcon": ""
+  },
+  "98982": {
+    "Id": 98982,
+    "Name": "S2赛季强度-幻梦强度",
+    "Desc": "",
+    "AttrType": 0,
+    "LogicType": 0,
+    "AttrParams": [],
+    "LowerLimit": 0,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "",
+    "AttrIcon": "ui/atlas/weaponhero/new/common_icon01"
+  },
+  "98983": {
+    "Id": 98983,
+    "Name": "S3赛季强度",
+    "Desc": "",
+    "AttrType": 3,
+    "LogicType": 5,
+    "AttrParams": [],
+    "LowerLimit": 0,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "",
+    "AttrIcon": "ui/atlas/weaponhero/new/common_icon01"
+  },
+  "98984": {
+    "Id": 98984,
+    "Name": "S4赛季强度",
+    "Desc": "",
+    "AttrType": 3,
+    "LogicType": 5,
+    "AttrParams": [],
+    "LowerLimit": 0,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "",
+    "AttrIcon": "ui/atlas/weaponhero/new/common_icon01"
+  },
+  "98985": {
+    "Id": 98985,
+    "Name": "S5赛季强度",
+    "Desc": "",
+    "AttrType": 3,
+    "LogicType": 5,
+    "AttrParams": [],
+    "LowerLimit": 0,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "",
+    "AttrIcon": "ui/atlas/weaponhero/new/common_icon01"
+  },
+  "98986": {
+    "Id": 98986,
+    "Name": "S6赛季强度",
+    "Desc": "",
+    "AttrType": 3,
+    "LogicType": 5,
+    "AttrParams": [],
+    "LowerLimit": 0,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "",
+    "AttrIcon": "ui/atlas/weaponhero/new/common_icon01"
+  },
+  "98987": {
+    "Id": 98987,
+    "Name": "S7赛季强度",
+    "Desc": "",
+    "AttrType": 3,
+    "LogicType": 5,
+    "AttrParams": [],
+    "LowerLimit": 0,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "",
+    "AttrIcon": "ui/atlas/weaponhero/new/common_icon01"
+  },
+  "98988": {
+    "Id": 98988,
+    "Name": "S8赛季强度",
+    "Desc": "",
+    "AttrType": 3,
+    "LogicType": 5,
+    "AttrParams": [],
+    "LowerLimit": 0,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "",
+    "AttrIcon": "ui/atlas/weaponhero/new/common_icon01"
+  },
+  "98989": {
+    "Id": 98989,
+    "Name": "S9赛季强度",
+    "Desc": "",
+    "AttrType": 3,
+    "LogicType": 5,
+    "AttrParams": [],
+    "LowerLimit": 0,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "",
+    "AttrIcon": "ui/atlas/weaponhero/new/common_icon01"
   },
   "98991": {
     "Id": 98991,
@@ -5186,6 +5452,21 @@
       2235
     ],
     "LowerLimit": -99999,
+    "UpperLimit": 99999,
+    "IsSyncClient": true,
+    "AttrDesc": "全子弹大小",
+    "AttrIcon": ""
+  },
+  "99045": {
+    "Id": 99045,
+    "Name": "急速精通牛逼层数",
+    "Desc": "急速精通牛逼层数",
+    "AttrType": 503,
+    "LogicType": 4,
+    "AttrParams": [
+      3210191
+    ],
+    "LowerLimit": -2,
     "UpperLimit": 99999,
     "IsSyncClient": true,
     "AttrDesc": "全子弹大小",
