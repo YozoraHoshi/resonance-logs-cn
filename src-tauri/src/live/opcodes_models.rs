@@ -452,6 +452,7 @@ pub mod attr_type {
     pub const ATTR_PHYSICAL_ATTACK: i32 = 0x106; // Physical attack stat
     pub const ATTR_MAGIC_ATTACK: i32 = 0x107; // Magic attack stat
     pub const ATTR_WEAPON_TYPE: i32 = 0x108; // Weapon type or stance
+    pub const ATTR_HATE_LIST: i32 = 0x1da; // Monster hate/aggro list
     pub const ATTR_MOUNT_STATUS: i32 = 0x226; // Mount/vehicle status flag
     pub const ATTR_MOUNT_TIMESTAMP: i32 = 0x228; // Mount activation timestamp
     pub const ATTR_MOUNT_SPEED: i32 = 0x22a; // Mount speed or ID

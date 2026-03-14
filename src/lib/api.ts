@@ -113,6 +113,16 @@ export type BossBuffUpdatePayload = {
   buffs: BuffUpdateState[];
 };
 
+export type HateEntry = {
+  uid: number;
+  hateVal: number;
+};
+
+export type HateListUpdatePayload = {
+  bossUid: number;
+  entries: HateEntry[];
+};
+
 export type CounterUpdateState = {
   ruleId: number;
   linkedBuffId: number;
@@ -220,6 +230,11 @@ export const onBossBuffUpdate = (
   handler: (event: Event<BossBuffUpdatePayload>) => void
 ): Promise<UnlistenFn> =>
   listen<BossBuffUpdatePayload>("boss-buff-update", handler);
+
+export const onHateListUpdate = (
+  handler: (event: Event<HateListUpdatePayload>) => void
+): Promise<UnlistenFn> =>
+  listen<HateListUpdatePayload>("hate-list-update", handler);
 
 export const onBuffCounterUpdate = (
   handler: (event: Event<BuffCounterUpdatePayload>) => void

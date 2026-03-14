@@ -155,20 +155,24 @@ export type CustomPanelStyle = {
 
 export type MonsterOverlayPositions = {
   monsterBuffPanel: Point;
+  hatePanel: Point;
 };
 
 export type MonsterOverlaySizes = {
   monsterBuffPanelScale: number;
+  hatePanelScale: number;
 };
 
 export type MonsterMonitorConfig = {
   enabled: boolean;
+  hateListEnabled: boolean;
   monitoredBuffIds: number[];
   selfAppliedBuffIds: number[];
   buffAliases: BuffAliasMap;
   overlayPositions: MonsterOverlayPositions;
   overlaySizes: MonsterOverlaySizes;
   panelStyle: CustomPanelStyle;
+  hatePanelStyle: CustomPanelStyle;
 };
 
 export type TextBuffPanelDisplayMode = "modern" | "classic";
@@ -299,12 +303,14 @@ function createDefaultCustomPanelStyle(): CustomPanelStyle {
 function createDefaultMonsterOverlayPositions(): MonsterOverlayPositions {
   return {
     monsterBuffPanel: { x: 40, y: 40 },
+    hatePanel: { x: 40, y: 300 },
   };
 }
 
 function createDefaultMonsterOverlaySizes(): MonsterOverlaySizes {
   return {
     monsterBuffPanelScale: 1,
+    hatePanelScale: 1,
   };
 }
 
@@ -370,12 +376,14 @@ export function createDefaultSkillMonitorProfile(
 export function createDefaultMonsterMonitorConfig(): MonsterMonitorConfig {
   return {
     enabled: false,
+    hateListEnabled: false,
     monitoredBuffIds: [],
     selfAppliedBuffIds: [],
     buffAliases: {},
     overlayPositions: createDefaultMonsterOverlayPositions(),
     overlaySizes: createDefaultMonsterOverlaySizes(),
     panelStyle: createDefaultCustomPanelStyle(),
+    hatePanelStyle: createDefaultCustomPanelStyle(),
   };
 }
 

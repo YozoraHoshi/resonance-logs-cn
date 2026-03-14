@@ -3,6 +3,7 @@ use crate::live::{
     commands_models::{
         BossBuffUpdatePayload, BuffCounterUpdatePayload, BuffUpdatePayload,
         FightResourceUpdatePayload, PanelAttrUpdatePayload, SkillCdUpdatePayload,
+        HateListUpdatePayload,
     },
     event_manager::{BossDeathPayload, EncounterUpdatePayload, SceneChangePayload},
     event_manager::{OutboundEvent, safe_emit_to},
@@ -410,6 +411,14 @@ fn flush_outbound_events(app_handle: &AppHandle, state: &mut AppState) {
                     crate::WINDOW_MONSTER_OVERLAY_LABEL,
                     "boss-buff-update",
                     BossBuffUpdatePayload { boss_uid, buffs },
+                );
+            }
+            OutboundEvent::HateListUpdate { boss_uid, entries } => {
+                safe_emit_to(
+                    app_handle,
+                    crate::WINDOW_MONSTER_OVERLAY_LABEL,
+                    "hate-list-update",
+                    HateListUpdatePayload { boss_uid, entries },
                 );
             }
             OutboundEvent::BuffCounterUpdate(counters) => {

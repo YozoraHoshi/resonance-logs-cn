@@ -1054,6 +1054,20 @@ impl AppStateManager {
 
         state.event_manager.emit_live_data(payload);
 
+        for (&boss_uid, entity) in &state.encounter.entity_uid_to_entity {
+            if !entity.is_boss() {
+                continue;
+            }
+
+            let entries = state
+                .attr_store
+                .hate_lists()
+                .get(&boss_uid)
+                .cloned()
+                .unwrap_or_default();
+            state.event_manager.emit_hate_list_update(boss_uid, entries);
+        }
+
         if !boss_deaths.is_empty() {
             for (boss_uid, boss_name) in boss_deaths {
                 let first_time = state.event_manager.emit_boss_death(boss_name, boss_uid);

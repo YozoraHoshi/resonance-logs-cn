@@ -1,5 +1,9 @@
 <script lang="ts">
   import { SETTINGS, type SkillMonitorProfile } from "$lib/settings-store";
+  import {
+    DEFAULT_MONSTER_OVERLAY_POSITIONS,
+    DEFAULT_MONSTER_OVERLAY_SIZES,
+  } from "./monster-constants";
   import type { GhostArea } from "./monster-types";
 
   function getActiveSkillMonitorProfile(): SkillMonitorProfile | null {
@@ -30,6 +34,15 @@
     };
 
     const { overlayPositions, overlaySizes, overlayVisibility } = profile;
+    const monsterMonitor = SETTINGS.monsterMonitor.state;
+    const monsterOverlayPositions = {
+      ...DEFAULT_MONSTER_OVERLAY_POSITIONS,
+      ...(monsterMonitor.overlayPositions ?? {}),
+    };
+    const monsterOverlaySizes = {
+      ...DEFAULT_MONSTER_OVERLAY_SIZES,
+      ...(monsterMonitor.overlaySizes ?? {}),
+    };
 
     if (overlayVisibility.showSkillCdGroup) {
       pushArea("skillCdGroup", "技能CD区", overlayPositions.skillCdGroup.x, overlayPositions.skillCdGroup.y, 280, 118, overlaySizes.skillCdGroupScale);
@@ -45,6 +58,18 @@
     }
 
     pushArea("textBuffPanel", "无图标Buff区", overlayPositions.textBuffPanel.x, overlayPositions.textBuffPanel.y, 240, 130, overlaySizes.textBuffPanelScale);
+
+    if (monsterMonitor.hateListEnabled) {
+      pushArea(
+        "monsterHatePanel",
+        "仇恨区",
+        monsterOverlayPositions.hatePanel.x,
+        monsterOverlayPositions.hatePanel.y,
+        240,
+        150,
+        monsterOverlaySizes.hatePanelScale,
+      );
+    }
 
     if (profile.buffDisplayMode === "grouped") {
       for (const group of profile.buffGroups) {

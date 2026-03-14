@@ -1,5 +1,6 @@
 // NOTE: opcodes_process works on Encounter directly; avoid importing opcodes_models at top-level.
 use crate::database::{flush_playerdata, now_ms};
+use crate::live::commands_models::HateEntry;
 use crate::live::damage_id;
 use crate::live::dungeon_log::{BattleStateMachine, EncounterResetReason};
 use crate::live::entity_attr_store::EntityAttrStore;
@@ -840,6 +841,34 @@ fn decode_varint_i64(raw: &[u8]) -> Option<i64> {
         .map(|v| v as i64)
 }
 
+#[derive(Clone, PartialEq, prost::Message)]
+struct HateInfoWire {
+    #[prost(int64, tag = "1")]
+    uuid: i64,
+    #[prost(uint32, tag = "2")]
+    hate_val: u32,
+}
+
+fn parse_hate_list_into(raw: &[u8], entries: &mut Vec<HateEntry>) -> Option<()> {
+    let mut buf = raw;
+    entries.clear();
+
+    while buf.has_remaining() {
+        let tag = prost::encoding::decode_varint(&mut buf).ok()?;
+        if tag != 0x0A {
+            return None;
+        }
+
+        let entry = <HateInfoWire as prost::Message>::decode_length_delimited(&mut buf).ok()?;
+        entries.push(HateEntry {
+            uid: entry.uuid >> 16,
+            hate_val: entry.hate_val,
+        });
+    }
+
+    Some(())
+}
+
 fn decode_varint_i64_or_default(raw: Option<&[u8]>) -> i64 {
     raw.and_then(decode_varint_i64).unwrap_or(0)
 }
@@ -944,6 +973,14 @@ fn process_monster_attrs(
             monster_entity.monster_name_packet = Some(name.clone());
             if monster_entity.monster_type_id.is_none() {
                 monster_entity.name = name;
+            }
+            continue;
+        }
+
+        if attr_id == attr_type::ATTR_HATE_LIST {
+            if let Some(raw) = raw_bytes_opt {
+                let hate_list = attr_store.hate_list_mut(target_uid);
+                let _ = parse_hate_list_into(raw, hate_list);
             }
             continue;
         }

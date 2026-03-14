@@ -6,6 +6,10 @@ import {
   MIN_MONSTER_PANEL_SCALE,
 } from "./monster-constants";
 import { monsterRuntime } from "./monster-runtime.svelte.js";
+import type {
+  MonsterDragTarget,
+  MonsterResizeTarget,
+} from "./monster-types";
 
 function patchMonsterMonitor(
   updater: (state: typeof SETTINGS.monsterMonitor.state) => Partial<typeof SETTINGS.monsterMonitor.state>,
@@ -24,13 +28,17 @@ export function setMonsterOverlayWindow(
 }
 
 export function getMonsterOverlayPositions() {
-  return SETTINGS.monsterMonitor.state.overlayPositions
-    ?? DEFAULT_MONSTER_OVERLAY_POSITIONS;
+  return {
+    ...DEFAULT_MONSTER_OVERLAY_POSITIONS,
+    ...(SETTINGS.monsterMonitor.state.overlayPositions ?? {}),
+  };
 }
 
 export function getMonsterOverlaySizes() {
-  return SETTINGS.monsterMonitor.state.overlaySizes
-    ?? DEFAULT_MONSTER_OVERLAY_SIZES;
+  return {
+    ...DEFAULT_MONSTER_OVERLAY_SIZES,
+    ...(SETTINGS.monsterMonitor.state.overlaySizes ?? {}),
+  };
 }
 
 export function getMonsterPanelPosition() {
@@ -41,8 +49,21 @@ export function getMonsterPanelScale() {
   return getMonsterOverlaySizes().monsterBuffPanelScale;
 }
 
+export function getHatePanelPosition() {
+  return getMonsterOverlayPositions().hatePanel;
+}
+
+export function getHatePanelScale() {
+  return getMonsterOverlaySizes().hatePanelScale;
+}
+
 export function monsterPanelStyle() {
   return SETTINGS.monsterMonitor.state.panelStyle;
+}
+
+export function hatePanelStyle() {
+  return SETTINGS.monsterMonitor.state.hatePanelStyle
+    ?? SETTINGS.monsterMonitor.state.panelStyle;
 }
 
 export function setMonsterPanelPosition(nextPos: { x: number; y: number }) {
@@ -63,6 +84,24 @@ export function setMonsterPanelScale(value: number) {
   }));
 }
 
+export function setHatePanelPosition(nextPos: { x: number; y: number }) {
+  patchMonsterMonitor(() => ({
+    overlayPositions: {
+      ...getMonsterOverlayPositions(),
+      hatePanel: nextPos,
+    },
+  }));
+}
+
+export function setHatePanelScale(value: number) {
+  patchMonsterMonitor(() => ({
+    overlaySizes: {
+      ...getMonsterOverlaySizes(),
+      hatePanelScale: clampPanelScale(value),
+    },
+  }));
+}
+
 export async function setMonsterEditMode(editing: boolean) {
   monsterRuntime.isEditing = editing;
   if (monsterRuntime.currentWindow) {
@@ -72,12 +111,14 @@ export async function setMonsterEditMode(editing: boolean) {
 
 export function startMonsterDrag(
   event: PointerEvent,
+  target: MonsterDragTarget,
   startPos: { x: number; y: number },
 ) {
   if (!monsterRuntime.isEditing) return;
   event.preventDefault();
   event.stopPropagation();
   monsterRuntime.dragState = {
+    target,
     startX: event.clientX,
     startY: event.clientY,
     startPos,
@@ -86,12 +127,14 @@ export function startMonsterDrag(
 
 export function startMonsterResize(
   event: PointerEvent,
+  target: MonsterResizeTarget,
   startValue: number,
 ) {
   if (!monsterRuntime.isEditing) return;
   event.preventDefault();
   event.stopPropagation();
   monsterRuntime.resizeState = {
+    target,
     startX: event.clientX,
     startY: event.clientY,
     startValue,
@@ -102,17 +145,26 @@ export function onGlobalPointerMove(event: PointerEvent) {
   if (monsterRuntime.dragState) {
     const deltaX = event.clientX - monsterRuntime.dragState.startX;
     const deltaY = event.clientY - monsterRuntime.dragState.startY;
-    setMonsterPanelPosition({
+    const nextPos = {
       x: Math.max(0, Math.round(monsterRuntime.dragState.startPos.x + deltaX)),
       y: Math.max(0, Math.round(monsterRuntime.dragState.startPos.y + deltaY)),
-    });
+    };
+    if (monsterRuntime.dragState.target.kind === "buffPanel") {
+      setMonsterPanelPosition(nextPos);
+    } else {
+      setHatePanelPosition(nextPos);
+    }
   }
 
   if (monsterRuntime.resizeState) {
     const deltaX = event.clientX - monsterRuntime.resizeState.startX;
     const deltaY = event.clientY - monsterRuntime.resizeState.startY;
     const delta = (deltaX + deltaY) / 300;
-    setMonsterPanelScale(monsterRuntime.resizeState.startValue + delta);
+    if (monsterRuntime.resizeState.target.kind === "buffPanel") {
+      setMonsterPanelScale(monsterRuntime.resizeState.startValue + delta);
+    } else {
+      setHatePanelScale(monsterRuntime.resizeState.startValue + delta);
+    }
   }
 }
 

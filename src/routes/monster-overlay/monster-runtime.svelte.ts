@@ -1,8 +1,9 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { BuffUpdateState } from "$lib/api";
+import type { BuffUpdateState, HateEntry } from "$lib/api";
 import type {
   MonsterBossBuffSection,
   MonsterDragState,
+  MonsterHateSection,
   MonsterResizeState,
 } from "./monster-types";
 
@@ -13,7 +14,9 @@ export const monsterRuntime = $state({
   isMounted: false,
   rafId: null as number | null,
   bossBuffMap: new Map<number, Map<number, BuffUpdateState>>(),
+  bossHateMap: new Map<number, HateEntry[]>(),
   bossSections: [] as MonsterBossBuffSection[],
+  hateSections: [] as MonsterHateSection[],
   isEditing: false,
   dragState: null as MonsterDragState | null,
   resizeState: null as MonsterResizeState | null,
@@ -21,6 +24,10 @@ export const monsterRuntime = $state({
 
 export function monsterBossSections() {
   return monsterRuntime.bossSections;
+}
+
+export function monsterHateSections() {
+  return monsterRuntime.hateSections;
 }
 
 export function isMonsterEditing() {

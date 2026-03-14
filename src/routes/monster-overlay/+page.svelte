@@ -1,11 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { SETTINGS } from "$lib/settings-store";
   import EditBanner from "./EditBanner.svelte";
   import GhostOverlay from "./GhostOverlay.svelte";
   import MonsterBuffPanel from "./MonsterBuffPanel.svelte";
+  import MonsterHatePanel from "./MonsterHatePanel.svelte";
   import { initMonsterOverlay, isMonsterEditing } from "./monster-state.svelte.js";
 
   const editing = $derived(isMonsterEditing());
+  const hateEnabled = $derived(SETTINGS.monsterMonitor.state.hateListEnabled);
 
   onMount(initMonsterOverlay);
 </script>
@@ -17,6 +20,9 @@
   {/if}
 
   <MonsterBuffPanel />
+  {#if hateEnabled}
+    <MonsterHatePanel />
+  {/if}
 </div>
 
 <style>

@@ -12,6 +12,7 @@
   import { SETTINGS, ensureBuffAliases } from "$lib/settings-store";
 
   type SearchTarget = "global" | "self";
+  type MonsterMonitorTab = "buff" | "hate";
 
   const availableBuffDefinitions = getAvailableBuffDefinitions();
   const availableBuffMap = new Map<number, BuffDefinition>(
@@ -20,10 +21,14 @@
 
   let searchKeyword = $state("");
   let searchTarget = $state<SearchTarget>("self");
+  let activeTab = $state<MonsterMonitorTab>("buff");
 
   const monsterMonitor = $derived(SETTINGS.monsterMonitor.state);
   const buffAliases = $derived.by(() =>
     ensureBuffAliases(monsterMonitor.buffAliases),
+  );
+  const hatePanelStyle = $derived.by(() =>
+    monsterMonitor.hatePanelStyle ?? monsterMonitor.panelStyle,
   );
   const globalBuffIds = $derived(monsterMonitor.monitoredBuffIds);
   const selfAppliedBuffIds = $derived(monsterMonitor.selfAppliedBuffIds);
@@ -104,6 +109,19 @@
     }));
   }
 
+  function updateHatePanelStyle<K extends keyof typeof hatePanelStyle>(
+    key: K,
+    value: (typeof hatePanelStyle)[K],
+  ) {
+    updateMonsterMonitor((state) => ({
+      ...state,
+      hatePanelStyle: {
+        ...(state.hatePanelStyle ?? state.panelStyle),
+        [key]: value,
+      },
+    }));
+  }
+
   function isSelectedInCurrentTarget(buffId: number) {
     return searchTarget === "global"
       ? globalBuffIds.includes(buffId)
@@ -131,7 +149,35 @@
     </div>
   </section>
 
-  <section class="rounded-xl border border-border/60 bg-card/60 p-5 space-y-5">
+  <section class="rounded-xl border border-border/60 bg-card/60 p-2">
+    <div class="flex flex-wrap gap-2">
+      <button
+        type="button"
+        class="px-3 py-2 rounded-lg text-sm font-medium border transition-colors {activeTab === 'buff'
+          ? 'bg-primary text-primary-foreground border-primary'
+          : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
+        onclick={() => {
+          activeTab = "buff";
+        }}
+      >
+        Buff 监控
+      </button>
+      <button
+        type="button"
+        class="px-3 py-2 rounded-lg text-sm font-medium border transition-colors {activeTab === 'hate'
+          ? 'bg-primary text-primary-foreground border-primary'
+          : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
+        onclick={() => {
+          activeTab = "hate";
+        }}
+      >
+        仇恨列表
+      </button>
+    </div>
+  </section>
+
+  {#if activeTab === "buff"}
+    <section class="rounded-xl border border-border/60 bg-card/60 p-5 space-y-5">
     <div class="space-y-1">
       <h2 class="text-base font-semibold text-foreground">Buff 搜索与选择</h2>
     </div>
@@ -371,7 +417,121 @@
         />
       </label>
     </div>
-  </section>
+    </section>
+  {:else}
+    <section class="rounded-xl border border-border/60 bg-card/60 p-5 space-y-5">
+      <div class="space-y-1">
+        <h2 class="text-base font-semibold text-foreground">仇恨列表显示</h2>
+        <p class="text-sm text-muted-foreground">独立启用怪物仇恨面板，并单独配置它的样式。</p>
+      </div>
+
+      <div class="flex justify-start">
+        <div class="min-w-[220px]">
+          <SettingsSwitch
+            label="启用仇恨列表"
+            bind:checked={SETTINGS.monsterMonitor.state.hateListEnabled}
+          />
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-xl border border-border/60 bg-card/60 p-5 space-y-5">
+      <div class="space-y-1">
+        <h2 class="text-base font-semibold text-foreground">仇恨面板样式</h2>
+      </div>
+
+      <div class="grid gap-4 lg:grid-cols-3">
+        <label class="style-field">
+          <span>行间距</span>
+          <input
+            type="range"
+            min="0"
+            max="24"
+            value={hatePanelStyle.gap}
+            oninput={(event) =>
+              updateHatePanelStyle(
+                "gap",
+                Number.parseInt((event.currentTarget as HTMLInputElement).value, 10),
+              )}
+          />
+          <strong>{hatePanelStyle.gap}px</strong>
+        </label>
+
+        <label class="style-field">
+          <span>列间距</span>
+          <input
+            type="range"
+            min="0"
+            max="40"
+            value={hatePanelStyle.columnGap}
+            oninput={(event) =>
+              updateHatePanelStyle(
+                "columnGap",
+                Number.parseInt((event.currentTarget as HTMLInputElement).value, 10),
+              )}
+          />
+          <strong>{hatePanelStyle.columnGap}px</strong>
+        </label>
+
+        <label class="style-field">
+          <span>字号</span>
+          <input
+            type="range"
+            min="10"
+            max="28"
+            value={hatePanelStyle.fontSize}
+            oninput={(event) =>
+              updateHatePanelStyle(
+                "fontSize",
+                Number.parseInt((event.currentTarget as HTMLInputElement).value, 10),
+              )}
+          />
+          <strong>{hatePanelStyle.fontSize}px</strong>
+        </label>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-3">
+        <label class="color-field">
+          <span>名称颜色</span>
+          <input
+            type="color"
+            value={hatePanelStyle.nameColor}
+            oninput={(event) =>
+              updateHatePanelStyle(
+                "nameColor",
+                (event.currentTarget as HTMLInputElement).value,
+              )}
+          />
+        </label>
+
+        <label class="color-field">
+          <span>数值颜色</span>
+          <input
+            type="color"
+            value={hatePanelStyle.valueColor}
+            oninput={(event) =>
+              updateHatePanelStyle(
+                "valueColor",
+                (event.currentTarget as HTMLInputElement).value,
+              )}
+          />
+        </label>
+
+        <label class="color-field">
+          <span>进度条颜色</span>
+          <input
+            type="color"
+            value={hatePanelStyle.progressColor}
+            oninput={(event) =>
+              updateHatePanelStyle(
+                "progressColor",
+                (event.currentTarget as HTMLInputElement).value,
+              )}
+          />
+        </label>
+      </div>
+    </section>
+  {/if}
 </div>
 
 <style>
