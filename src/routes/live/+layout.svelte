@@ -14,7 +14,6 @@
     onLiveData,
     onResetEncounter,
     onEncounterUpdate,
-    onBossDeath,
     onSceneChange,
     onPauseEncounter,
   } from "$lib/api";
@@ -138,27 +137,6 @@
         return;
       }
 
-      // Set up boss death listener
-      const bossDeathUnlisten = await onBossDeath((event) => {
-        if (isDestroyed) return;
-        // Treat boss death as a keep-alive
-        lastEventTime = Date.now();
-        hadAnyEvent = true;
-        notificationToast?.showToast(
-          "notice",
-          `${event.payload.bossName} defeated!`,
-        );
-      });
-
-      if (isDestroyed) {
-        playersUnlisten();
-        resetUnlisten();
-        encounterUnlisten();
-        bossDeathUnlisten();
-        listenersSetupInProgress = false;
-        return;
-      }
-
       // Set up scene change listener
       const sceneChangeUnlisten = await onSceneChange((event) => {
         if (isDestroyed) return;
@@ -173,7 +151,6 @@
         playersUnlisten();
         resetUnlisten();
         encounterUnlisten();
-        bossDeathUnlisten();
         sceneChangeUnlisten();
         listenersSetupInProgress = false;
         return;
@@ -191,7 +168,6 @@
         playersUnlisten();
         resetUnlisten();
         encounterUnlisten();
-        bossDeathUnlisten();
         sceneChangeUnlisten();
         pauseUnlisten();
         listenersSetupInProgress = false;
@@ -210,9 +186,6 @@
         } catch {}
         try {
           encounterUnlisten();
-        } catch {}
-        try {
-          bossDeathUnlisten();
         } catch {}
         try {
           sceneChangeUnlisten();
