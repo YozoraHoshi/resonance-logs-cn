@@ -5,6 +5,7 @@ const CLASS_LABELS_ZH: Record<string, string> = {
   "Wind Knight": "青岚骑士",
   Marksman: "神射手",
   "Frost Mage": "冰魔导师",
+  "Flame Berserker": "赤炎狂战士",
   "Verdant Oracle": "森语者",
   "Beat Performer": "灵魂乐手",
 };
@@ -21,6 +22,8 @@ const SPEC_LABELS_ZH: Record<string, string> = {
   Falconry: "鹰弓",
   Icicle: "冰矛",
   Frostbeam: "射线",
+  Voidflame: "无相流",
+  Blazecrimson: "赤红流",
   Smite: "惩击",
   Lifebind: "愈合",
   Recovery: "防盾",

@@ -497,6 +497,7 @@ pub mod class {
     pub const UNKNOWN: i32 = 0;
     pub const STORMBLADE: i32 = 1;
     pub const FROST_MAGE: i32 = 2;
+    pub const FLAME_BERSERKER: i32 = 3;
     pub const WIND_KNIGHT: i32 = 4;
     pub const VERDANT_ORACLE: i32 = 5;
     pub const HEAVY_GUARDIAN: i32 = 9;
@@ -508,6 +509,7 @@ pub mod class {
         String::from(match id {
             STORMBLADE => "Stormblade",
             FROST_MAGE => "Frost Mage",
+            FLAME_BERSERKER => "Flame Berserker",
             WIND_KNIGHT => "Wind Knight",
             VERDANT_ORACLE => "Verdant Oracle",
             HEAVY_GUARDIAN => "Heavy Guardian",
@@ -528,6 +530,9 @@ pub mod class {
         // Frost Mage
         Icicle,
         Frostbeam,
+        // Flame Berserker
+        Voidflame,
+        Blazecrimson,
         // Wind Knight
         Vanguard,
         Skyward,
@@ -556,6 +561,9 @@ pub mod class {
             120901 | 120902 => ClassSpec::Icicle,
             1241 => ClassSpec::Frostbeam,
 
+            1605 => ClassSpec::Voidflame,
+            1606 => ClassSpec::Blazecrimson,
+
             1405 | 1418 => ClassSpec::Vanguard,
             1419 => ClassSpec::Skyward,
 
@@ -581,6 +589,7 @@ pub mod class {
         match class_spec {
             ClassSpec::Iaido | ClassSpec::Moonstrike => STORMBLADE,
             ClassSpec::Icicle | ClassSpec::Frostbeam => FROST_MAGE,
+            ClassSpec::Voidflame | ClassSpec::Blazecrimson => FLAME_BERSERKER,
             ClassSpec::Vanguard | ClassSpec::Skyward => WIND_KNIGHT,
             ClassSpec::Smite | ClassSpec::Lifebind => VERDANT_ORACLE,
             ClassSpec::Earthfort | ClassSpec::Block => HEAVY_GUARDIAN,
@@ -598,6 +607,8 @@ pub mod class {
             ClassSpec::Moonstrike => "Moonstrike",
             ClassSpec::Icicle => "Icicle",
             ClassSpec::Frostbeam => "Frostbeam",
+            ClassSpec::Voidflame => "Voidflame",
+            ClassSpec::Blazecrimson => "Blazecrimson",
             ClassSpec::Vanguard => "Vanguard",
             ClassSpec::Skyward => "Skyward",
             ClassSpec::Smite => "Smite",

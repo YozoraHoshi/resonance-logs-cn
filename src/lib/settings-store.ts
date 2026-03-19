@@ -413,6 +413,7 @@ const DEFAULT_GENERAL_SETTINGS = {
 export const DEFAULT_CLASS_COLORS: Record<string, string> = {
   "Stormblade": "#674598",
   "Frost Mage": "#4de3d1",
+  "Flame Berserker": "#e64a19",
   "Wind Knight": "#0099c6",
   "Verdant Oracle": "#66aa00",
   "Heavy Guardian": "#b38915",
@@ -424,6 +425,7 @@ export const DEFAULT_CLASS_COLORS: Record<string, string> = {
 export const CLASS_SPEC_MAP: Record<string, string> = {
   "Iaido": "Stormblade", "Moonstrike": "Stormblade",
   "Icicle": "Frost Mage", "Frostbeam": "Frost Mage",
+  "Voidflame": "Flame Berserker", "Blazecrimson": "Flame Berserker",
   "Vanguard": "Wind Knight", "Skyward": "Wind Knight",
   "Smite": "Verdant Oracle", "Lifebind": "Verdant Oracle",
   "Earthfort": "Heavy Guardian", "Block": "Heavy Guardian",
@@ -439,6 +441,8 @@ export const DEFAULT_CLASS_SPEC_COLORS: Record<string, string> = {
   "Iaido": "#9b6cf0", "Moonstrike": "#4a2f80",
   // Frost Mage
   "Icicle": "#8ff7ee", "Frostbeam": "#2fbfb3",
+  // Flame Berserker
+  "Voidflame": "#ff6d3a", "Blazecrimson": "#c41e00",
   // Wind Knight
   "Vanguard": "#4ddff6", "Skyward": "#006b8f",
   // Verdant Oracle

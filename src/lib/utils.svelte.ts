@@ -15,6 +15,7 @@ import { SETTINGS, DEFAULT_CLASS_COLORS, DEFAULT_CLASS_SPEC_COLORS, CLASS_SPEC_M
 export const CLASS_MAP: Record<number, string> = {
   1: 'Stormblade',
   2: 'Frost Mage',
+  3: 'Flame Berserker',
   4: 'Wind Knight',
   5: 'Verdant Oracle',
   9: 'Heavy Guardian',
