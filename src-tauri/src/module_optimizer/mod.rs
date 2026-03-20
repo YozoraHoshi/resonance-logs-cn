@@ -293,14 +293,6 @@ fn from_ffi_solutions(solutions: Vec<ModuleSolutionFfi>) -> Vec<ModuleSolution> 
         .collect()
 }
 
-pub fn is_cuda_available() -> bool {
-    bridge::ffi::test_cuda_ffi() == 1
-}
-
-pub fn is_opencl_available() -> bool {
-    bridge::ffi::test_opencl_ffi() == 1
-}
-
 pub fn check_gpu_support() -> GpuSupport {
     let info = bridge::ffi::check_gpu_support_ffi();
     GpuSupport {
