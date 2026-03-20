@@ -41,6 +41,8 @@
   let lastOverlayVisibleState: boolean | null = null;
   let lastMonsterMonitorSyncKey = "";
   let lastMonsterOverlayVisibleState: boolean | null = null;
+  let monitorSyncTimer: ReturnType<typeof setTimeout> | null = null;
+  let monsterSyncTimer: ReturnType<typeof setTimeout> | null = null;
 
   $effect(() => {
     const enabled = SETTINGS.skillMonitor.state.enabled;
@@ -105,26 +107,36 @@
       activeCounterRuleIds,
     });
 
+    if (monitorSyncKey !== lastMonitorSyncKey) {
+      if (monitorSyncTimer) {
+        clearTimeout(monitorSyncTimer);
+      }
+      monitorSyncTimer = setTimeout(() => {
+        void (async () => {
+          try {
+            lastMonitorSyncKey = monitorSyncKey;
+            if (enabled) {
+              await commands.setMonitorAllBuff(anyGroupMonitorAll);
+              await commands.setMonitoredSkills(monitoredSkillIds);
+              await commands.setMonitoredBuffs(mergedBuffIds);
+              await setMonitoredPanelAttrs(monitoredPanelAttrIds);
+              await commands.setBuffCounterRules(enabledCounterRules);
+            } else {
+              await commands.setMonitorAllBuff(false);
+              await commands.setMonitoredSkills([]);
+              await commands.setMonitoredBuffs([]);
+              await setMonitoredPanelAttrs([]);
+              await commands.setBuffCounterRules([]);
+            }
+          } catch (error) {
+            console.error("[skill-monitor] failed to sync monitor state", error);
+          }
+        })();
+      }, 50);
+    }
+
     void (async () => {
       try {
-        // Avoid spamming backend monitor commands when only overlay layout changes.
-        if (monitorSyncKey !== lastMonitorSyncKey) {
-          lastMonitorSyncKey = monitorSyncKey;
-          if (enabled) {
-            await commands.setMonitorAllBuff(anyGroupMonitorAll);
-            await commands.setMonitoredSkills(monitoredSkillIds);
-            await commands.setMonitoredBuffs(mergedBuffIds);
-            await setMonitoredPanelAttrs(monitoredPanelAttrIds);
-            await commands.setBuffCounterRules(enabledCounterRules);
-          } else {
-            await commands.setMonitorAllBuff(false);
-            await commands.setMonitoredSkills([]);
-            await commands.setMonitoredBuffs([]);
-            await setMonitoredPanelAttrs([]);
-            await commands.setBuffCounterRules([]);
-          }
-        }
-
         const overlayWindow = await WebviewWindow.getByLabel("game-overlay");
         if (overlayWindow) {
           if (lastOverlayVisibleState !== enabled) {
@@ -153,20 +165,31 @@
       selfAppliedBuffIds,
     });
 
+    if (monsterMonitorSyncKey !== lastMonsterMonitorSyncKey) {
+      if (monsterSyncTimer) {
+        clearTimeout(monsterSyncTimer);
+      }
+      monsterSyncTimer = setTimeout(() => {
+        void (async () => {
+          try {
+            lastMonsterMonitorSyncKey = monsterMonitorSyncKey;
+            if (enabled) {
+              await commands.setBossMonitoredBuffs(
+                monitoredBuffIds,
+                selfAppliedBuffIds,
+              );
+            } else {
+              await commands.setBossMonitoredBuffs([], []);
+            }
+          } catch (error) {
+            console.error("[monster-monitor] failed to sync monster monitor state", error);
+          }
+        })();
+      }, 50);
+    }
+
     void (async () => {
       try {
-        if (monsterMonitorSyncKey !== lastMonsterMonitorSyncKey) {
-          lastMonsterMonitorSyncKey = monsterMonitorSyncKey;
-          if (enabled) {
-            await commands.setBossMonitoredBuffs(
-              monitoredBuffIds,
-              selfAppliedBuffIds,
-            );
-          } else {
-            await commands.setBossMonitoredBuffs([], []);
-          }
-        }
-
         const monsterOverlayWindow = await WebviewWindow.getByLabel("monster-overlay");
         if (monsterOverlayWindow) {
           if (lastMonsterOverlayVisibleState !== enabled) {
@@ -270,6 +293,14 @@
 
     // Cleanup on unmount
     return () => {
+      if (monitorSyncTimer) {
+        clearTimeout(monitorSyncTimer);
+        monitorSyncTimer = null;
+      }
+      if (monsterSyncTimer) {
+        clearTimeout(monsterSyncTimer);
+        monsterSyncTimer = null;
+      }
       if (navigateUnlisten) {
         navigateUnlisten();
         navigateUnlisten = null;

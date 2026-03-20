@@ -130,7 +130,11 @@ pub fn set_monitored_buffs(
     buff_base_ids: Vec<i32>,
     state_manager: tauri::State<'_, AppStateManager>,
 ) -> Result<(), String> {
-    info!("[buff] set monitored buffs: {:?}", buff_base_ids);
+    info!(
+        target: "app::live",
+        "[buff] set monitored buffs: {:?}",
+        buff_base_ids
+    );
     state_manager.set_monitored_buffs(buff_base_ids)?;
     Ok(())
 }
@@ -143,6 +147,7 @@ pub fn set_boss_monitored_buffs(
     state_manager: tauri::State<'_, AppStateManager>,
 ) -> Result<(), String> {
     info!(
+        target: "app::live",
         "[boss-buff] set monitored buffs: global={:?} self_applied={:?}",
         global_ids, self_applied_ids
     );
@@ -157,7 +162,11 @@ pub fn set_monitored_panel_attrs(
     attr_ids: Vec<i32>,
     state_manager: tauri::State<'_, AppStateManager>,
 ) -> Result<(), String> {
-    info!("[panel-attr] set monitored attrs: {:?}", attr_ids);
+    info!(
+        target: "app::live",
+        "[panel-attr] set monitored attrs: {:?}",
+        attr_ids
+    );
     state_manager.set_monitored_panel_attrs(attr_ids)?;
     Ok(())
 }
@@ -173,7 +182,11 @@ pub fn set_monitored_skills(
         return Err("最多监控10个技能".to_string());
     }
 
-    info!("[skill-cd] set monitored skills: {:?}", skill_level_ids);
+    info!(
+        target: "app::live",
+        "[skill-cd] set monitored skills: {:?}",
+        skill_level_ids
+    );
 
     state_manager.set_monitored_skills(skill_level_ids)?;
     Ok(())
@@ -185,7 +198,11 @@ pub fn set_monitor_all_buff(
     monitor_all_buff: bool,
     state_manager: tauri::State<'_, AppStateManager>,
 ) -> Result<(), String> {
-    info!("[monitor-buff] set monitorAllBuff: {:?}", monitor_all_buff);
+    info!(
+        target: "app::live",
+        "[monitor-buff] set monitorAllBuff: {:?}",
+        monitor_all_buff
+    );
     state_manager.set_monitor_all_buff(monitor_all_buff)?;
     Ok(())
 }
@@ -196,7 +213,7 @@ pub fn set_buff_counter_rules(
     rules: Vec<crate::live::counter_tracker::CounterRule>,
     state_manager: tauri::State<'_, AppStateManager>,
 ) -> Result<(), String> {
-    info!("[buff-counter] set rules: {}", rules.len());
+    info!(target: "app::live", "[buff-counter] set rules: {}", rules.len());
     state_manager.set_buff_counter_rules(rules)?;
     Ok(())
 }
