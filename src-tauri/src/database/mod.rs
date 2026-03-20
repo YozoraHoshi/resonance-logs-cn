@@ -192,12 +192,18 @@ fn prune_and_reindex_encounters(conn: &mut SqliteConnection, keep: i64) -> Resul
         .count()
         .get_result::<i64>(conn)
         .map_err(|error| error.to_string())?;
-    if total <= keep {
+    let non_favorite_total = e::encounters
+        .filter(e::is_favorite.eq(0))
+        .count()
+        .get_result::<i64>(conn)
+        .map_err(|error| error.to_string())?;
+    if non_favorite_total <= keep {
         return Ok(());
     }
 
     let delete_ids: Vec<i32> = e::encounters
         .select(e::id)
+        .filter(e::is_favorite.eq(0))
         .order((e::started_at_ms.desc(), e::id.desc()))
         .offset(keep)
         .load(conn)
@@ -209,12 +215,15 @@ fn prune_and_reindex_encounters(conn: &mut SqliteConnection, keep: i64) -> Resul
     let deleted = diesel::delete(e::encounters.filter(e::id.eq_any(&delete_ids)))
         .execute(conn)
         .map_err(|error| error.to_string())?;
+    let favorites_preserved = total - non_favorite_total;
     log::info!(
         target: "app::db",
-        "startup_maintenance_pruned total={} deleted={} keep={}",
+        "startup_maintenance_pruned total={} non_favorite_total={} deleted={} keep={} favorites_preserved={}",
         total,
+        non_favorite_total,
         deleted,
-        keep
+        keep,
+        favorites_preserved
     );
 
     set_foreign_keys(conn, false)?;
@@ -327,10 +336,11 @@ fn prune_and_reindex_encounters(conn: &mut SqliteConnection, keep: i64) -> Resul
 
     match (maintenance_result, foreign_key_result) {
         (Ok(()), Ok(())) => {
+            let remaining = keep + favorites_preserved;
             log::info!(
                 target: "app::db",
                 "startup_maintenance_reindexed next_encounter_id={}",
-                keep + 1
+                remaining + 1
             );
             Ok(())
         }
