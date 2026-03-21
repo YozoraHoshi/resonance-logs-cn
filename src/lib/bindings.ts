@@ -415,6 +415,17 @@ async createDiagnosticsBundle(destinationPath: string | null) : Promise<Result<s
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Checks for updates when the main window is ready to receive the event.
+ */
+async triggerUpdateCheck() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("trigger_update_check") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async checkGpuSupport() : Promise<GpuSupport> {
     return await TAURI_INVOKE("check_gpu_support");
 },

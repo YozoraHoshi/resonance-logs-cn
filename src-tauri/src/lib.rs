@@ -81,6 +81,7 @@ pub fn run() {
             packets::npcap::check_npcap_status,
             debug_commands::open_log_dir,
             debug_commands::create_diagnostics_bundle,
+            trigger_update_check,
             module_optimizer::commands::check_gpu_support,
             module_optimizer::commands::get_latest_modules,
             module_optimizer::commands::optimize_latest_modules,
@@ -129,19 +130,6 @@ pub fn run() {
                 warn!(target: "app::db", "Failed to initialize database: {}", e);
             }
             crate::database::startup_maintenance();
-
-            // Check app updates
-            // https://v2.tauri.app/plugin/updater/#checking-for-updates
-            // Only run updater checks on Windows builds.
-            #[cfg(windows)]
-            {
-                let handle = app.handle().clone();
-                tauri::async_runtime::spawn(async move {
-                    if let Err(e) = crate::check_for_updates(handle).await {
-                        warn!("Updater check failed: {}", e);
-                    }
-                });
-            }
 
             // Install panic hook to create a crash dump file when the app panics.
             // This is installed after logs so we can use the configured logger.
@@ -411,6 +399,22 @@ fn run_command_silently(cmd: &mut Command) -> std::io::Result<std::process::Exit
 // This runs only on Windows builds (guarded where it is invoked).
 #[cfg(windows)]
 use tauri_plugin_updater::UpdaterExt;
+
+/// Checks for updates when the main window is ready to receive the event.
+#[tauri::command]
+#[specta::specta]
+async fn trigger_update_check(app: tauri::AppHandle) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        check_for_updates(app).await.map_err(|e| e.to_string())
+    }
+
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        Ok(())
+    }
+}
 
 #[cfg(windows)]
 async fn check_for_updates(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
