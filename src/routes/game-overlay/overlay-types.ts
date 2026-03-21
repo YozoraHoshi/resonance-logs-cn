@@ -24,6 +24,21 @@ export type IconBuffDisplay = {
   specialImages?: string[];
 };
 
+export type SkillDurationState = {
+  skillId: number;
+  startedAtMs: number;
+  durationMs: number;
+  beginTime: number;
+};
+
+export type SkillDurationDisplay = {
+  skillId: number;
+  name: string;
+  imagePath?: string;
+  text: string;
+  isPlaceholder?: boolean;
+};
+
 export type TextBuffRowDisplay = {
   key: string;
   label: string;
@@ -44,10 +59,14 @@ export type PanelAreaDisplayRow = {
 export type DragTarget =
   | {
       kind: "group";
-      key: keyof Omit<OverlayPositions, "iconBuffPositions" | "categoryIconPositions">;
+      key: keyof Omit<
+        OverlayPositions,
+        "iconBuffPositions" | "skillDurationPositions" | "categoryIconPositions"
+      >;
     }
   | { kind: "customPanelGroup"; groupId: string }
   | { kind: "iconBuff"; baseId: number }
+  | { kind: "skillDuration"; skillId: number }
   | { kind: "categoryIcon"; categoryKey: BuffCategoryKey }
   | { kind: "buffGroup"; groupId: string }
   | { kind: "individualAllGroup" };
@@ -62,10 +81,14 @@ export type DragState = {
 export type ResizeTarget =
   | {
       kind: "group";
-      key: keyof Omit<OverlaySizes, "iconBuffSizes" | "categoryIconSizes">;
+      key: keyof Omit<
+        OverlaySizes,
+        "iconBuffSizes" | "skillDurationSizes" | "categoryIconSizes"
+      >;
     }
   | { kind: "customPanelGroup"; groupId: string }
   | { kind: "iconBuff"; baseId: number }
+  | { kind: "skillDuration"; skillId: number }
   | { kind: "categoryIcon"; categoryKey: BuffCategoryKey }
   | { kind: "buffGroup"; groupId: string }
   | { kind: "individualAllGroup" };

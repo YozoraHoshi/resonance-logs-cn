@@ -1,16 +1,23 @@
 <script lang="ts">
   interface Props {
     showSkillCdGroup: boolean;
+    showSkillDurationGroup: boolean;
     showResourceGroup: boolean;
     showPanelAttrGroup: boolean;
     showCustomPanelGroup: boolean;
     toggleOverlaySectionVisibility: (
-      key: "showSkillCdGroup" | "showResourceGroup" | "showPanelAttrGroup" | "showCustomPanelGroup",
+      key:
+        | "showSkillCdGroup"
+        | "showSkillDurationGroup"
+        | "showResourceGroup"
+        | "showPanelAttrGroup"
+        | "showCustomPanelGroup",
     ) => void;
   }
 
   let {
     showSkillCdGroup,
+    showSkillDurationGroup,
     showResourceGroup,
     showPanelAttrGroup,
     showCustomPanelGroup,
@@ -22,7 +29,7 @@
   <div>
     <h2 class="text-base font-semibold text-foreground">Overlay 区域显示</h2>
     <p class="text-xs text-muted-foreground">
-      可分别控制技能区和资源区是否显示（按方案保存）
+      可分别控制技能区、持续时间技能区和资源区是否显示（按方案保存）
     </p>
   </div>
   <div class="space-y-2">
@@ -35,6 +42,15 @@
         onclick={() => toggleOverlaySectionVisibility("showSkillCdGroup")}
       >
         技能CD区：{showSkillCdGroup ? "显示" : "隐藏"}
+      </button>
+      <button
+        type="button"
+        class="px-3 py-2 rounded-lg text-sm font-medium border transition-colors {showSkillDurationGroup
+          ? 'bg-primary text-primary-foreground border-primary'
+          : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
+        onclick={() => toggleOverlaySectionVisibility("showSkillDurationGroup")}
+      >
+        技能持续区：{showSkillDurationGroup ? "显示" : "隐藏"}
       </button>
       <button
         type="button"

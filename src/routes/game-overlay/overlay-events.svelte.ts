@@ -1,5 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { findAnySkillByBaseId } from "$lib/skill-mappings";
 import {
   onBuffCounterUpdate,
   onBuffUpdate,
@@ -25,6 +26,8 @@ import {
 } from "./overlay-utils";
 import {
   activeProfile,
+  monitoredSkillDurationIds,
+  selectedClassKey,
   updateActiveProfile,
 } from "./overlay-profile.svelte.js";
 import { overlayRuntime } from "./overlay-runtime.svelte.js";
@@ -79,11 +82,32 @@ export function initOverlay() {
   });
   const unlistenCd = onSkillCdUpdate((event) => {
     const next = new Map(overlayRuntime.cdMap);
+    const nextDurationMap = new Map(overlayRuntime.skillDurationMap);
+    const classKey = selectedClassKey();
+    const durationSkillIds = new Set(monitoredSkillDurationIds());
     for (const cd of event.payload.skillCds) {
       const baseId = Math.floor(cd.skillLevelId / 100);
       next.set(baseId, cd);
+      if (!durationSkillIds.has(baseId)) continue;
+      const skill = findAnySkillByBaseId(classKey, baseId);
+      const effectDurationMs = skill?.effectDurationMs;
+      if (!effectDurationMs || cd.beginTime <= 0) continue;
+      const currentDuration = nextDurationMap.get(baseId);
+      if (currentDuration?.beginTime === cd.beginTime) continue;
+      nextDurationMap.set(baseId, {
+        skillId: baseId,
+        startedAtMs: cd.receivedAt || Date.now(),
+        durationMs: effectDurationMs,
+        beginTime: cd.beginTime,
+      });
+    }
+    for (const skillId of nextDurationMap.keys()) {
+      if (!durationSkillIds.has(skillId)) {
+        nextDurationMap.delete(skillId);
+      }
     }
     overlayRuntime.cdMap = next;
+    overlayRuntime.skillDurationMap = nextDurationMap;
   });
   const unlistenRes = onFightResUpdate((event) => {
     overlayRuntime.fightResValues = event.payload.fightRes.values;
@@ -137,17 +161,22 @@ function ensureActiveProfileDefaults() {
   if (
     profile &&
     (!profile.overlayPositions ||
+      profile.overlayPositions.skillDurationPositions === undefined ||
       !profile.overlaySizes ||
+      profile.overlaySizes.skillDurationSizes === undefined ||
       !profile.overlayVisibility ||
+      profile.overlayVisibility.showSkillDurationGroup === undefined ||
       !profile.buffDisplayMode ||
       !profile.buffGroups ||
       !profile.customPanelGroups ||
       !profile.customPanelStyle ||
       !profile.textBuffPanelStyle ||
-      !profile.textBuffMaxVisible)
+      !profile.textBuffMaxVisible ||
+      profile.monitoredSkillDurationIds === undefined)
   ) {
     updateActiveProfile((profile) => ({
       ...profile,
+      monitoredSkillDurationIds: profile.monitoredSkillDurationIds ?? [],
       overlayPositions: ensureOverlayPositions(profile),
       overlaySizes: ensureOverlaySizes(profile),
       overlayVisibility: ensureOverlayVisibility(profile),

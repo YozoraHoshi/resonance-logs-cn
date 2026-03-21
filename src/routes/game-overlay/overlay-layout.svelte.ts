@@ -4,7 +4,11 @@ import {
 } from "./overlay-constants";
 import { type BuffCategoryKey } from "$lib/config/buff-name-table";
 import { activeProfile, updateActiveProfile } from "./overlay-profile.svelte.js";
-import { iconDisplayBuffs, overlayRuntime } from "./overlay-runtime.svelte.js";
+import {
+  iconDisplayBuffs,
+  overlayRuntime,
+  skillDurationDisplays,
+} from "./overlay-runtime.svelte.js";
 import type { DragTarget, IconBuffDisplay, ResizeTarget } from "./overlay-types";
 import {
   ensureBuffGroups,
@@ -16,11 +20,11 @@ import {
 
 type OverlayPositionKey = keyof Omit<
   typeof DEFAULT_OVERLAY_POSITIONS,
-  "iconBuffPositions" | "categoryIconPositions"
+  "iconBuffPositions" | "skillDurationPositions" | "categoryIconPositions"
 >;
 type OverlaySizeKey = keyof Omit<
   typeof DEFAULT_OVERLAY_SIZES,
-  "iconBuffSizes" | "categoryIconSizes"
+  "iconBuffSizes" | "skillDurationSizes" | "categoryIconSizes"
 >;
 
 function clampGroupScale(value: number) {
@@ -126,6 +130,20 @@ export function getIconBuffPosition(baseId: number) {
   };
 }
 
+export function getSkillDurationPosition(skillId: number, fallbackIndex = 0) {
+  const positions = getOverlayPositions();
+  const cached = positions.skillDurationPositions[skillId];
+  if (cached) return cached;
+  const idx = skillDurationDisplays().findIndex((skill) => skill.skillId === skillId);
+  const resolvedIndex = idx >= 0 ? idx : fallbackIndex;
+  return {
+    x: DEFAULT_OVERLAY_POSITIONS.specialBuffGroup.x + (resolvedIndex % 6) * 60,
+    y:
+      DEFAULT_OVERLAY_POSITIONS.specialBuffGroup.y +
+      Math.floor(resolvedIndex / 6) * 72,
+  };
+}
+
 export function getCategoryIconPosition(
   categoryKey: BuffCategoryKey,
   fallbackIndex = 0,
@@ -170,6 +188,10 @@ export function getIconBuffSize(baseId: number): number {
   return getOverlaySizes().iconBuffSizes[baseId] ?? 44;
 }
 
+export function getSkillDurationSize(skillId: number): number {
+  return getOverlaySizes().skillDurationSizes[skillId] ?? 44;
+}
+
 export function getCategoryIconSize(categoryKey: BuffCategoryKey): number {
   return getOverlaySizes().categoryIconSizes?.[categoryKey] ?? 44;
 }
@@ -188,6 +210,17 @@ export function setIconBuffSize(baseId: number, value: number) {
     iconBuffSizes: {
       ...sizes.iconBuffSizes,
       [baseId]: nextValue,
+    },
+  }));
+}
+
+export function setSkillDurationSize(skillId: number, value: number) {
+  const nextValue = clampIconSize(value);
+  updateOverlaySizes((sizes) => ({
+    ...sizes,
+    skillDurationSizes: {
+      ...sizes.skillDurationSizes,
+      [skillId]: nextValue,
     },
   }));
 }
@@ -211,6 +244,19 @@ export function setIconBuffPosition(
     iconBuffPositions: {
       ...positions.iconBuffPositions,
       [baseId]: nextPos,
+    },
+  }));
+}
+
+export function setSkillDurationPosition(
+  skillId: number,
+  nextPos: { x: number; y: number },
+) {
+  updateOverlayPositions((positions) => ({
+    ...positions,
+    skillDurationPositions: {
+      ...positions.skillDurationPositions,
+      [skillId]: nextPos,
     },
   }));
 }
@@ -353,6 +399,11 @@ export function onGlobalPointerMove(e: PointerEvent) {
         overlayRuntime.resizeState.target.categoryKey,
         overlayRuntime.resizeState.startValue + delta / 2,
       );
+    } else if (overlayRuntime.resizeState.target.kind === "skillDuration") {
+      setSkillDurationSize(
+        overlayRuntime.resizeState.target.skillId,
+        overlayRuntime.resizeState.startValue + delta / 2,
+      );
     } else {
       setIconBuffSize(
         overlayRuntime.resizeState.target.baseId,
@@ -391,6 +442,8 @@ export function onGlobalPointerMove(e: PointerEvent) {
     setBuffGroupPosition(overlayRuntime.dragState.target.groupId, nextPos);
   } else if (overlayRuntime.dragState.target.kind === "categoryIcon") {
     setCategoryIconPosition(overlayRuntime.dragState.target.categoryKey, nextPos);
+  } else if (overlayRuntime.dragState.target.kind === "skillDuration") {
+    setSkillDurationPosition(overlayRuntime.dragState.target.skillId, nextPos);
   } else {
     setIconBuffPosition(overlayRuntime.dragState.target.baseId, nextPos);
   }

@@ -49,6 +49,7 @@ export function ensureOverlayPositions(
     customPanelGroup:
       current?.customPanelGroup ?? DEFAULT_OVERLAY_POSITIONS.customPanelGroup,
     iconBuffPositions: current?.iconBuffPositions ?? {},
+    skillDurationPositions: current?.skillDurationPositions ?? {},
     categoryIconPositions: current?.categoryIconPositions ?? {},
   };
 }
@@ -83,6 +84,7 @@ export function ensureOverlaySizes(profile: SkillMonitorProfile): OverlaySizes {
       240,
     ),
     iconBuffSizes: current?.iconBuffSizes ?? {},
+    skillDurationSizes: current?.skillDurationSizes ?? {},
     categoryIconSizes: current?.categoryIconSizes ?? {},
   };
 }
@@ -95,6 +97,9 @@ export function ensureOverlayVisibility(
     showSkillCdGroup:
       current?.showSkillCdGroup ??
       DEFAULT_OVERLAY_VISIBILITY.showSkillCdGroup,
+    showSkillDurationGroup:
+      current?.showSkillDurationGroup ??
+      DEFAULT_OVERLAY_VISIBILITY.showSkillDurationGroup,
     showResourceGroup:
       current?.showResourceGroup ??
       DEFAULT_OVERLAY_VISIBILITY.showResourceGroup,

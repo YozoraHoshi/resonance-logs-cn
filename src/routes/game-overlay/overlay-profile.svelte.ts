@@ -17,6 +17,7 @@ import {
   ensureBuffGroups,
   ensureCustomPanelGroups,
   ensureCustomPanelStyle,
+  ensureOverlayVisibility,
   ensureTextBuffPanelStyle,
 } from "./overlay-utils";
 
@@ -42,6 +43,9 @@ const _buffAliases = $derived.by(() =>
 );
 const _monitoredSkillIds = $derived.by(
   () => _activeProfile?.monitoredSkillIds ?? [],
+);
+const _monitoredSkillDurationIds = $derived.by(
+  () => _activeProfile?.monitoredSkillDurationIds ?? [],
 );
 const _monitoredBuffIds = $derived.by(
   () => _activeProfile?.monitoredBuffIds ?? [],
@@ -69,8 +73,10 @@ const _buffDisplayMode = $derived.by(
 const _textBuffMaxVisible = $derived.by(() =>
   Math.max(1, Math.min(20, _activeProfile?.textBuffMaxVisible ?? 10)),
 );
-const _overlayVisibility = $derived.by(
-  () => _activeProfile?.overlayVisibility ?? DEFAULT_OVERLAY_VISIBILITY,
+const _overlayVisibility = $derived.by(() =>
+  _activeProfile
+    ? ensureOverlayVisibility(_activeProfile)
+    : DEFAULT_OVERLAY_VISIBILITY,
 );
 const _customPanelStyle = $derived.by<CustomPanelStyle>(() =>
   ensureCustomPanelStyle(_activeProfile),
@@ -129,6 +135,10 @@ export function buffAliases() {
 
 export function monitoredSkillIds() {
   return _monitoredSkillIds;
+}
+
+export function monitoredSkillDurationIds() {
+  return _monitoredSkillDurationIds;
 }
 
 export function monitoredBuffIds() {

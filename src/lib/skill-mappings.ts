@@ -11,6 +11,7 @@ export type SkillDisplayInfo = {
   imagePath: string;
   maxCharges?: number;
   maxValidCdTime?: number;
+  effectDurationMs?: number;
   resourceRequirement?: ResourceRequirement;
 };
 
@@ -108,6 +109,10 @@ export function getCounterRules(): CounterRulePreset[] {
 
 export function getSkillsByClass(classKey: string): SkillDefinition[] {
   return CLASS_SKILL_CONFIGS[classKey]?.skills ?? [];
+}
+
+export function getDurationSkillsByClass(classKey: string): SkillDefinition[] {
+  return getSkillsByClass(classKey).filter((skill) => skill.effectDurationMs !== undefined);
 }
 
 export function findSkillById(

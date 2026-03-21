@@ -121,6 +121,7 @@ export type OverlayPositions = {
   panelAttrGroup: Point;
   customPanelGroup: Point;
   iconBuffPositions: Record<number, Point>;
+  skillDurationPositions: Record<number, Point>;
   categoryIconPositions?: Partial<Record<BuffCategoryKey, Point>>;
 };
 
@@ -134,11 +135,13 @@ export type OverlaySizes = {
   panelAttrFontSize: number;
   panelAttrColumnGap: number;
   iconBuffSizes: Record<number, number>;
+  skillDurationSizes: Record<number, number>;
   categoryIconSizes?: Partial<Record<BuffCategoryKey, number>>;
 };
 
 export type OverlayVisibility = {
   showSkillCdGroup: boolean;
+  showSkillDurationGroup: boolean;
   showResourceGroup: boolean;
   showPanelAttrGroup: boolean;
   showCustomPanelGroup: boolean;
@@ -234,6 +237,7 @@ export type SkillMonitorProfile = {
   name: string;
   selectedClass: string;
   monitoredSkillIds: number[];
+  monitoredSkillDurationIds: number[];
   monitoredBuffIds: number[];
   monitoredBuffCategories?: BuffCategoryKey[];
   monitoredPanelAttrs: PanelAttrConfig[];
@@ -273,6 +277,7 @@ function createDefaultOverlayPositions(): OverlayPositions {
     panelAttrGroup: { x: 700, y: 40 },
     customPanelGroup: { x: 700, y: 280 },
     iconBuffPositions: {},
+    skillDurationPositions: {},
     categoryIconPositions: {},
   };
 }
@@ -288,6 +293,7 @@ function createDefaultOverlaySizes(): OverlaySizes {
     panelAttrFontSize: 14,
     panelAttrColumnGap: 12,
     iconBuffSizes: {},
+    skillDurationSizes: {},
     categoryIconSizes: {},
   };
 }
@@ -295,6 +301,7 @@ function createDefaultOverlaySizes(): OverlaySizes {
 function createDefaultOverlayVisibility(): OverlayVisibility {
   return {
     showSkillCdGroup: true,
+    showSkillDurationGroup: true,
     showResourceGroup: true,
     showPanelAttrGroup: true,
     showCustomPanelGroup: true,
@@ -382,6 +389,7 @@ export function createDefaultSkillMonitorProfile(
     name,
     selectedClass: classKey,
     monitoredSkillIds: [],
+    monitoredSkillDurationIds: [],
     monitoredBuffIds: [],
     monitoredBuffCategories: [],
     monitoredPanelAttrs: AVAILABLE_PANEL_ATTRS.map((item) => ({ ...item })),

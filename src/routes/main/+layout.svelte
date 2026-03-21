@@ -49,6 +49,11 @@
     const activeProfile = getActiveSkillMonitorProfile();
     const selectedClass = activeProfile?.selectedClass ?? "wind_knight";
     const monitoredSkillIds = activeProfile?.monitoredSkillIds ?? [];
+    const monitoredSkillDurationIds =
+      activeProfile?.monitoredSkillDurationIds ?? [];
+    const mergedSkillIds = Array.from(
+      new Set([...monitoredSkillIds, ...monitoredSkillDurationIds]),
+    );
     const monitoredBuffIds = expandBuffSelection(
       activeProfile?.monitoredBuffIds ?? [],
       activeProfile?.monitoredBuffCategories,
@@ -102,7 +107,7 @@
       }));
     const monitorSyncKey = JSON.stringify({
       enabled,
-      monitoredSkillIds,
+      mergedSkillIds,
       mergedBuffIds,
       monitoredPanelAttrIds,
       anyGroupMonitorAll,
@@ -119,7 +124,7 @@
             lastMonitorSyncKey = monitorSyncKey;
             if (enabled) {
               await commands.setMonitorAllBuff(anyGroupMonitorAll);
-              await commands.setMonitoredSkills(monitoredSkillIds);
+              await commands.setMonitoredSkills(mergedSkillIds);
               await commands.setMonitoredBuffs(mergedBuffIds);
               await setMonitoredPanelAttrs(monitoredPanelAttrIds);
               await commands.setBuffCounterRules(enabledCounterRules);

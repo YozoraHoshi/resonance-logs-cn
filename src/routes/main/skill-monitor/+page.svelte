@@ -41,6 +41,7 @@
     findResonanceSkill,
     getCounterRules,
     getClassConfigs,
+    getDurationSkillsByClass,
     getSkillsByClass,
     searchResonanceSkills,
   } from "$lib/skill-mappings";
@@ -82,7 +83,11 @@
   );
   const selectedClassKey = $derived(activeProfile.selectedClass);
   const classSkills = $derived(getSkillsByClass(selectedClassKey));
+  const durationSkills = $derived(getDurationSkillsByClass(selectedClassKey));
   const monitoredSkillIds = $derived(activeProfile.monitoredSkillIds);
+  const monitoredSkillDurationIds = $derived(
+    activeProfile.monitoredSkillDurationIds ?? [],
+  );
   const monitoredBuffIds = $derived(activeProfile.monitoredBuffIds);
   const monitoredBuffCategories = $derived.by(() =>
     normalizeBuffCategoryKeys(activeProfile.monitoredBuffCategories),
@@ -108,6 +113,9 @@
   );
   const showSkillCdGroup = $derived(
     activeProfile.overlayVisibility?.showSkillCdGroup ?? true,
+  );
+  const showSkillDurationGroup = $derived(
+    activeProfile.overlayVisibility?.showSkillDurationGroup ?? true,
   );
   const showResourceGroup = $derived(
     activeProfile.overlayVisibility?.showResourceGroup ?? true,
@@ -327,6 +335,8 @@
         Math.min(240, Math.round(current?.panelAttrColumnGap ?? 12)),
       ),
       iconBuffSizes: current?.iconBuffSizes ?? {},
+      skillDurationSizes: current?.skillDurationSizes ?? {},
+      categoryIconSizes: current?.categoryIconSizes ?? {},
     };
   }
 
@@ -382,6 +392,7 @@
       ...profile,
       selectedClass: classKey,
       monitoredSkillIds: [],
+      monitoredSkillDurationIds: [],
     }));
   }
 
@@ -406,6 +417,21 @@
     return monitoredSkillIds.includes(skillId);
   }
 
+  function toggleSkillDuration(skillId: number) {
+    const current = monitoredSkillDurationIds;
+    const exists = current.includes(skillId);
+    updateActiveProfile((profile) => ({
+      ...profile,
+      monitoredSkillDurationIds: exists
+        ? current.filter((id) => id !== skillId)
+        : [...current, skillId],
+    }));
+  }
+
+  function isDurationSelected(skillId: number): boolean {
+    return monitoredSkillDurationIds.includes(skillId);
+  }
+
   const filteredResonanceSkills = $derived.by(() =>
     searchResonanceSkills(resonanceSearch),
   );
@@ -419,6 +445,13 @@
 
   function clearSkills() {
     updateActiveProfile((profile) => ({ ...profile, monitoredSkillIds: [] }));
+  }
+
+  function clearSkillDurations() {
+    updateActiveProfile((profile) => ({
+      ...profile,
+      monitoredSkillDurationIds: [],
+    }));
   }
 
   function clearBuffs() {
@@ -599,13 +632,20 @@
   }
 
   function setOverlaySectionVisibility(
-    key: "showSkillCdGroup" | "showResourceGroup" | "showPanelAttrGroup" | "showCustomPanelGroup",
+    key:
+      | "showSkillCdGroup"
+      | "showSkillDurationGroup"
+      | "showResourceGroup"
+      | "showPanelAttrGroup"
+      | "showCustomPanelGroup",
     checked: boolean,
   ) {
     updateActiveProfile((profile) => ({
       ...profile,
       overlayVisibility: {
         showSkillCdGroup: profile.overlayVisibility?.showSkillCdGroup ?? true,
+        showSkillDurationGroup:
+          profile.overlayVisibility?.showSkillDurationGroup ?? true,
         showResourceGroup: profile.overlayVisibility?.showResourceGroup ?? true,
         showPanelAttrGroup: profile.overlayVisibility?.showPanelAttrGroup ?? true,
         showCustomPanelGroup: profile.overlayVisibility?.showCustomPanelGroup ?? true,
@@ -615,10 +655,17 @@
   }
 
   function toggleOverlaySectionVisibility(
-    key: "showSkillCdGroup" | "showResourceGroup" | "showPanelAttrGroup" | "showCustomPanelGroup",
+    key:
+      | "showSkillCdGroup"
+      | "showSkillDurationGroup"
+      | "showResourceGroup"
+      | "showPanelAttrGroup"
+      | "showCustomPanelGroup",
   ) {
     const current = key === "showSkillCdGroup"
       ? showSkillCdGroup
+      : key === "showSkillDurationGroup"
+      ? showSkillDurationGroup
       : key === "showResourceGroup"
       ? showResourceGroup
       : key === "showPanelAttrGroup"
@@ -1244,14 +1291,19 @@
       {classConfigs}
       {selectedClassKey}
       {classSkills}
+      {durationSkills}
       {monitoredSkillIds}
+      {monitoredSkillDurationIds}
       {resonanceSearch}
       {filteredResonanceSkills}
       {selectedResonanceSkills}
       {setSelectedClass}
       {toggleSkill}
       {isSelected}
+      {toggleSkillDuration}
+      {isDurationSelected}
       {clearSkills}
+      {clearSkillDurations}
       {setResonanceSearch}
     />
   {:else if activeTab === "buff"}
@@ -1369,6 +1421,7 @@
   {:else}
     <TabOverlay
       {showSkillCdGroup}
+      {showSkillDurationGroup}
       {showResourceGroup}
       {showPanelAttrGroup}
       {showCustomPanelGroup}

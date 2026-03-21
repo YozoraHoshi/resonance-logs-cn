@@ -11,6 +11,8 @@ import type {
   IconBuffDisplay,
   ResizeState,
   SkillDisplay,
+  SkillDurationDisplay,
+  SkillDurationState,
   TextBuffDisplay,
 } from "./overlay-types";
 
@@ -22,6 +24,8 @@ export const overlayRuntime = $state({
   rafId: null as number | null,
   cdMap: new Map<number, SkillCdState>(),
   displayMap: new Map<number, SkillDisplay>(),
+  skillDurationMap: new Map<number, SkillDurationState>(),
+  skillDurationDisplays: [] as SkillDurationDisplay[],
   fightResValues: [] as number[],
   buffMap: new Map<number, BuffUpdateState>(),
   activeBuffIds: new Set<number>(),
@@ -43,6 +47,14 @@ export function cdMap() {
 
 export function displayMap() {
   return overlayRuntime.displayMap;
+}
+
+export function skillDurationMap() {
+  return overlayRuntime.skillDurationMap;
+}
+
+export function skillDurationDisplays() {
+  return overlayRuntime.skillDurationDisplays;
 }
 
 export function fightResValues() {

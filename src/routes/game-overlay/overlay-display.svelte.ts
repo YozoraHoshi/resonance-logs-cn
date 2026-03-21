@@ -1,11 +1,22 @@
-import { findSpecialBuffDisplays, getCounterRules } from "$lib/skill-mappings";
+import {
+  findAnySkillByBaseId,
+  findSpecialBuffDisplays,
+  getCounterRules,
+} from "$lib/skill-mappings";
 import {
   getBuffCategoryLabel,
   getBuffIdsByCategory,
   resolveBuffCategoryKey,
   resolveBuffDisplayName,
 } from "$lib/config/buff-name-table";
-import type { CustomPanelDisplayRow, IconBuffDisplay, SkillDisplay, TextBuffDisplay } from "./overlay-types";
+import type {
+  CustomPanelDisplayRow,
+  IconBuffDisplay,
+  SkillDisplay,
+  SkillDurationDisplay,
+  SkillDurationState,
+  TextBuffDisplay,
+} from "./overlay-types";
 import {
   buildBuffTextRow,
   buildPanelAreaRows,
@@ -27,6 +38,7 @@ import {
   enabledPanelAttrs,
   monitoredBuffCategories,
   monitoredBuffIds,
+  monitoredSkillDurationIds,
   selectedClassKey,
   textBuffMaxVisible,
 } from "./overlay-profile.svelte.js";
@@ -263,6 +275,8 @@ export function updateDisplay() {
   const nextIconBuffs: IconBuffDisplay[] = [];
   const nextTextBuffs: TextBuffDisplay[] = [];
   const nextCustomPanelRowsByGroup = new Map<string, CustomPanelDisplayRow[]>();
+  const nextSkillDurationMap = new Map<number, SkillDurationState>();
+  const nextSkillDurationDisplays: SkillDurationDisplay[] = [];
 
   for (const [baseId, buff] of overlayRuntime.buffMap) {
     if (skippedInlineBuffIds.has(baseId)) continue;
@@ -378,6 +392,38 @@ export function updateDisplay() {
     }
   }
 
+  for (const skillId of monitoredSkillDurationIds()) {
+    const skill = findAnySkillByBaseId(classKey, skillId);
+    if (!skill) continue;
+    const durationState = overlayRuntime.skillDurationMap.get(skillId);
+    if (durationState) {
+      const remaining = Math.max(
+        0,
+        durationState.startedAtMs + durationState.durationMs - now,
+      );
+      if (remaining > 0) {
+        nextSkillDurationMap.set(skillId, durationState);
+        nextSkillDurationDisplays.push({
+          skillId,
+          name: skill.name,
+          imagePath: skill.imagePath,
+          text: formatTimerText(remaining),
+        });
+        continue;
+      }
+    }
+
+    if (overlayRuntime.isEditing) {
+      nextSkillDurationDisplays.push({
+        skillId,
+        name: skill.name,
+        imagePath: skill.imagePath,
+        text: "--",
+        isPlaceholder: true,
+      });
+    }
+  }
+
   for (const group of panelGroups) {
     const nextRows: CustomPanelDisplayRow[] = [];
     for (const entry of group.entries) {
@@ -397,6 +443,8 @@ export function updateDisplay() {
   overlayRuntime.activeBuffIds = nextActiveBuffIds;
   overlayRuntime.buffDurationPercents = nextBuffDurationPercents;
   overlayRuntime.displayMap = nextDisplayMap;
+  overlayRuntime.skillDurationMap = nextSkillDurationMap;
+  overlayRuntime.skillDurationDisplays = nextSkillDurationDisplays;
   overlayRuntime.iconDisplayBuffs = nextIconBuffs;
   overlayRuntime.textBuffs = nextTextBuffs;
   overlayRuntime.customPanelRowsByGroup = nextCustomPanelRowsByGroup;

@@ -7,6 +7,7 @@
   import PanelAttrGroup from "./PanelAttrGroup.svelte";
   import ResourceGroup from "./ResourceGroup.svelte";
   import SkillCdGroup from "./SkillCdGroup.svelte";
+  import SkillDurationDisplay from "./SkillDurationDisplay.svelte";
   import TextBuffPanel from "./TextBuffPanel.svelte";
   import {
     buffDisplayMode,
@@ -29,6 +30,10 @@
 
   {#if visibility.showSkillCdGroup}
     <SkillCdGroup />
+  {/if}
+
+  {#if visibility.showSkillDurationGroup}
+    <SkillDurationDisplay />
   {/if}
 
   {#if visibility.showResourceGroup}
