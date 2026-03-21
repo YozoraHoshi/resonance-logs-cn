@@ -46,6 +46,7 @@ export type DragTarget =
       kind: "group";
       key: keyof Omit<OverlayPositions, "iconBuffPositions" | "categoryIconPositions">;
     }
+  | { kind: "customPanelGroup"; groupId: string }
   | { kind: "iconBuff"; baseId: number }
   | { kind: "categoryIcon"; categoryKey: BuffCategoryKey }
   | { kind: "buffGroup"; groupId: string }
@@ -63,6 +64,7 @@ export type ResizeTarget =
       kind: "group";
       key: keyof Omit<OverlaySizes, "iconBuffSizes" | "categoryIconSizes">;
     }
+  | { kind: "customPanelGroup"; groupId: string }
   | { kind: "iconBuff"; baseId: number }
   | { kind: "categoryIcon"; categoryKey: BuffCategoryKey }
   | { kind: "buffGroup"; groupId: string }

@@ -22,11 +22,13 @@
   import {
     AVAILABLE_PANEL_ATTRS,
     createDefaultBuffGroup,
+    createDefaultCustomPanelGroup,
     createDefaultSkillMonitorProfile,
     ensureBuffAliases,
     SETTINGS,
     type BuffDisplayMode,
     type BuffGroup,
+    type CustomPanelGroup,
     type CustomPanelStyle,
     type InlineBuffEntry,
     type PanelAttrConfig,
@@ -141,7 +143,7 @@
   const textBuffMaxVisible = $derived(
     Math.max(1, Math.min(20, activeProfile.textBuffMaxVisible ?? 10)),
   );
-  const inlineBuffEntries = $derived.by(() => ensureInlineBuffEntries(activeProfile));
+  const customPanelGroups = $derived.by(() => ensureCustomPanelGroups(activeProfile));
   const panelAreaRowOrder = $derived.by(() => ensurePanelAreaRowOrder(activeProfile));
   const filteredInlineBuffSearchResults = $derived.by(() => {
     const ids = new Set<number>();
@@ -236,6 +238,50 @@
         : (entry.label ?? ""),
       format: entry.format ?? "timer",
     }));
+  }
+
+  function ensureCustomPanelEntries(entries: InlineBuffEntry[] | undefined): InlineBuffEntry[] {
+    return (entries ?? []).map((entry, idx) => ({
+      id: entry.id ?? `inline_${idx + 1}`,
+      sourceType: entry.sourceType ?? "buff",
+      sourceId: entry.sourceId,
+      label: entry.sourceType === "counter"
+        ? (entry.label ?? `计数器 ${entry.sourceId}`)
+        : (entry.label ?? ""),
+      format: entry.format ?? "timer",
+    }));
+  }
+
+  function ensureCustomPanelGroups(profile: SkillMonitorProfile): CustomPanelGroup[] {
+    const groups = profile.customPanelGroups ?? [];
+    const legacyPosition = profile.overlayPositions?.customPanelGroup ?? { x: 700, y: 280 };
+    const legacyScale = Math.max(
+      0.5,
+      Math.min(2.5, profile.overlaySizes?.customPanelGroupScale ?? 1),
+    );
+    if (groups.length > 0) {
+      return groups.map((group, idx) => ({
+        id: group.id ?? `custom_panel_group_${idx + 1}`,
+        name: group.name ?? `监控区 ${idx + 1}`,
+        entries: ensureCustomPanelEntries(group.entries),
+        position: group.position ?? {
+          x: legacyPosition.x + idx * 40,
+          y: legacyPosition.y + idx * 40,
+        },
+        scale: Math.max(0.5, Math.min(2.5, group.scale ?? (idx === 0 ? legacyScale : 1))),
+      }));
+    }
+    const legacyEntries = ensureInlineBuffEntries(profile);
+    if (legacyEntries.length === 0) return [];
+    return [
+      {
+        id: "custom_panel_group_1",
+        name: "监控区 1",
+        entries: legacyEntries,
+        position: legacyPosition,
+        scale: legacyScale,
+      },
+    ];
   }
 
   function isSameRowRef(a: PanelAreaRowRef, b: PanelAreaRowRef): boolean {
@@ -646,6 +692,29 @@
     inlineBuffSearch = value;
   }
 
+  function updateCustomPanelGroups(
+    updater: (groups: CustomPanelGroup[]) => CustomPanelGroup[],
+  ) {
+    updateActiveProfile((profile) => ({
+      ...profile,
+      customPanelGroups: updater(ensureCustomPanelGroups(profile)),
+      inlineBuffEntries: [],
+    }));
+  }
+
+  function findCustomPanelEntryLocation(
+    sourceType: InlineBuffEntry["sourceType"],
+    sourceId: number,
+    groups: CustomPanelGroup[],
+  ): { groupId: string; groupName: string } | null {
+    for (const group of groups) {
+      if (group.entries.some((entry) => entry.sourceType === sourceType && entry.sourceId === sourceId)) {
+        return { groupId: group.id, groupName: group.name };
+      }
+    }
+    return null;
+  }
+
   function updateCustomPanelStyle(
     updater: (style: CustomPanelStyle) => CustomPanelStyle,
   ) {
@@ -687,6 +756,29 @@
       ...style,
       progressOpacity: Math.max(0, Math.min(1, value)),
     }));
+  }
+
+  function addCustomPanelGroup() {
+    updateCustomPanelGroups((groups) => [
+      ...groups,
+      createDefaultCustomPanelGroup(`监控区 ${groups.length + 1}`, groups.length + 1),
+    ]);
+  }
+
+  function removeCustomPanelGroup(groupId: string) {
+    updateCustomPanelGroups((groups) =>
+      groups.filter((group) => group.id !== groupId)
+    );
+  }
+
+  function renameCustomPanelGroup(groupId: string, name: string) {
+    updateCustomPanelGroups((groups) =>
+      groups.map((group) =>
+        group.id === groupId
+          ? { ...group, name: name.trim() || group.name }
+          : group
+      )
+    );
   }
 
   function updateTextBuffPanelStyle(
@@ -736,10 +828,14 @@
     }));
   }
 
-  function addInlineBuffEntry(sourceType: "buff" | "counter", sourceId: number) {
+  function addCustomPanelEntry(
+    groupId: string,
+    sourceType: "buff" | "counter",
+    sourceId: number,
+  ) {
     updateActiveProfile((profile) => {
-      const entries = ensureInlineBuffEntries(profile);
-      if (entries.some((entry) => entry.sourceType === sourceType && entry.sourceId === sourceId)) {
+      const groups = ensureCustomPanelGroups(profile);
+      if (findCustomPanelEntryLocation(sourceType, sourceId, groups)) {
         return profile;
       }
       const label = sourceType === "counter"
@@ -754,32 +850,50 @@
       };
       return {
         ...profile,
-        inlineBuffEntries: [...entries, nextEntry],
+        customPanelGroups: groups.map((group) =>
+          group.id === groupId
+            ? { ...group, entries: [...group.entries, nextEntry] }
+            : group
+        ),
+        inlineBuffEntries: [],
       };
     });
   }
 
-  function removeInlineBuffEntry(entryId: string) {
-    updateActiveProfile((profile) => ({
-      ...profile,
-      inlineBuffEntries: ensureInlineBuffEntries(profile).filter((entry) => entry.id !== entryId),
-    }));
+  function removeCustomPanelEntry(groupId: string, entryId: string) {
+    updateCustomPanelGroups((groups) =>
+      groups.map((group) =>
+        group.id === groupId
+          ? {
+              ...group,
+              entries: group.entries.filter((entry) => entry.id !== entryId),
+            }
+          : group
+      )
+    );
   }
 
-  function updateInlineBuffEntry(
+  function updateCustomPanelEntry(
+    groupId: string,
     entryId: string,
     updater: (entry: InlineBuffEntry) => InlineBuffEntry,
   ) {
-    updateActiveProfile((profile) => ({
-      ...profile,
-      inlineBuffEntries: ensureInlineBuffEntries(profile).map((entry) =>
-        entry.id === entryId ? updater(entry) : entry
-      ),
-    }));
+    updateCustomPanelGroups((groups) =>
+      groups.map((group) =>
+        group.id === groupId
+          ? {
+              ...group,
+              entries: group.entries.map((entry) =>
+                entry.id === entryId ? updater(entry) : entry
+              ),
+            }
+          : group
+      )
+    );
   }
 
-  function setInlineBuffLabel(entryId: string, label: string) {
-    updateInlineBuffEntry(entryId, (entry) => ({ ...entry, label }));
+  function setCustomPanelEntryLabel(groupId: string, entryId: string, label: string) {
+    updateCustomPanelEntry(groupId, entryId, (entry) => ({ ...entry, label }));
   }
 
   function movePanelAreaRow(row: PanelAreaRowRef, direction: "up" | "down") {
@@ -802,24 +916,30 @@
     });
   }
 
-  function moveCustomPanelEntry(entryId: string, direction: "up" | "down") {
-    updateActiveProfile((profile) => {
-      const entries = ensureInlineBuffEntries(profile);
-      const idx = entries.findIndex((entry) => entry.id === entryId);
-      if (idx < 0) return profile;
-      const target = direction === "up" ? idx - 1 : idx + 1;
-      if (target < 0 || target >= entries.length) return profile;
-      const next = [...entries];
-      const temp = next[idx];
-      const targetValue = next[target];
-      if (!temp || !targetValue) return profile;
-      next[idx] = targetValue;
-      next[target] = temp;
-      return {
-        ...profile,
-        inlineBuffEntries: next,
-      };
-    });
+  function moveCustomPanelEntry(
+    groupId: string,
+    entryId: string,
+    direction: "up" | "down",
+  ) {
+    updateCustomPanelGroups((groups) =>
+      groups.map((group) => {
+        if (group.id !== groupId) return group;
+        const idx = group.entries.findIndex((entry) => entry.id === entryId);
+        if (idx < 0) return group;
+        const target = direction === "up" ? idx - 1 : idx + 1;
+        if (target < 0 || target >= group.entries.length) return group;
+        const next = [...group.entries];
+        const temp = next[idx];
+        const targetValue = next[target];
+        if (!temp || !targetValue) return group;
+        next[idx] = targetValue;
+        next[target] = temp;
+        return {
+          ...group,
+          entries: next,
+        };
+      })
+    );
   }
 
   function setBuffDisplayMode(mode: BuffDisplayMode) {
@@ -1105,7 +1225,7 @@
           : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
         onclick={() => (activeTab = "custom-panel")}
       >
-        自定义面板
+        自定义监控
       </button>
       <button
         type="button"
@@ -1228,12 +1348,15 @@
       {getBuffDisplayName}
       {inlineBuffSearch}
       {filteredInlineBuffSearchResults}
-      {inlineBuffEntries}
+      {customPanelGroups}
       {customPanelStyle}
       {setInlineBuffSearch}
-      {addInlineBuffEntry}
-      {removeInlineBuffEntry}
-      {setInlineBuffLabel}
+      {addCustomPanelGroup}
+      {removeCustomPanelGroup}
+      {renameCustomPanelGroup}
+      {addCustomPanelEntry}
+      {removeCustomPanelEntry}
+      {setCustomPanelEntryLabel}
       {moveCustomPanelEntry}
       {setCustomPanelGap}
       {setCustomPanelFontSize}

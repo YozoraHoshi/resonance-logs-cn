@@ -15,6 +15,7 @@ import {
 } from "$lib/config/buff-name-table";
 import {
   ensureBuffGroups,
+  ensureCustomPanelGroups,
   ensureCustomPanelStyle,
   ensureIndividualMonitorAllGroup,
   ensureOverlayPositions,
@@ -140,6 +141,7 @@ function ensureActiveProfileDefaults() {
       !profile.overlayVisibility ||
       !profile.buffDisplayMode ||
       !profile.buffGroups ||
+      !profile.customPanelGroups ||
       !profile.customPanelStyle ||
       !profile.textBuffPanelStyle ||
       !profile.textBuffMaxVisible)
@@ -152,6 +154,8 @@ function ensureActiveProfileDefaults() {
       buffDisplayMode: profile.buffDisplayMode ?? "individual",
       buffGroups: ensureBuffGroups(profile),
       individualMonitorAllGroup: ensureIndividualMonitorAllGroup(profile),
+      customPanelGroups: ensureCustomPanelGroups(profile),
+      inlineBuffEntries: [],
       customPanelStyle: ensureCustomPanelStyle(profile),
       textBuffPanelStyle: ensureTextBuffPanelStyle(profile),
       textBuffMaxVisible: Math.max(

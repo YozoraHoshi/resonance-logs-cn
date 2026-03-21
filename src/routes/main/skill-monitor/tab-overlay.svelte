@@ -61,7 +61,7 @@
           : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
         onclick={() => toggleOverlaySectionVisibility("showCustomPanelGroup")}
       >
-        自定义面板区：{showCustomPanelGroup ? "显示" : "隐藏"}
+        自定义监控区：{showCustomPanelGroup ? "显示" : "隐藏"}
       </button>
     </div>
     <p class="text-xs text-muted-foreground">

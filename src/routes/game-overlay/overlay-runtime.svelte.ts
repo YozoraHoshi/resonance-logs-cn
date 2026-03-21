@@ -31,7 +31,7 @@ export const overlayRuntime = $state({
   buffDefinitions: new Map<number, BuffDefinition>(),
   iconDisplayBuffs: [] as IconBuffDisplay[],
   textBuffs: [] as TextBuffDisplay[],
-  customPanelRows: [] as CustomPanelDisplayRow[],
+  customPanelRowsByGroup: new Map<string, CustomPanelDisplayRow[]>(),
   isEditing: false,
   dragState: null as DragState | null,
   resizeState: null as ResizeState | null,

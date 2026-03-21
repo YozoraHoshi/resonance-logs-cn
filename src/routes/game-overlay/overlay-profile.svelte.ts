@@ -15,8 +15,8 @@ import {
 import { DEFAULT_OVERLAY_VISIBILITY } from "./overlay-constants";
 import {
   ensureBuffGroups,
+  ensureCustomPanelGroups,
   ensureCustomPanelStyle,
-  ensureInlineBuffEntries,
   ensureTextBuffPanelStyle,
 } from "./overlay-utils";
 
@@ -95,9 +95,12 @@ const _monitoredPanelAttrs = $derived.by(() => {
 const _enabledPanelAttrs = $derived.by(() =>
   _monitoredPanelAttrs.filter((item) => item.enabled),
 );
-const _inlineBuffEntries = $derived.by<InlineBuffEntry[]>(() => {
+const _customPanelGroups = $derived.by(() => {
   if (!_activeProfile) return [];
-  return ensureInlineBuffEntries(_activeProfile);
+  return ensureCustomPanelGroups(_activeProfile);
+});
+const _inlineBuffEntries = $derived.by<InlineBuffEntry[]>(() => {
+  return _customPanelGroups.flatMap((group) => group.entries);
 });
 const _inlineBuffIds = $derived.by(
   () =>
@@ -170,6 +173,10 @@ export function monitoredPanelAttrs() {
 
 export function enabledPanelAttrs() {
   return _enabledPanelAttrs;
+}
+
+export function customPanelGroups() {
+  return _customPanelGroups;
 }
 
 export function inlineBuffEntries() {

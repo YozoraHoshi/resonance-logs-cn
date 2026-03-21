@@ -1,5 +1,6 @@
 <script lang="ts">
   import { SETTINGS, type SkillMonitorProfile } from "$lib/settings-store";
+  import { ensureCustomPanelGroups } from "../game-overlay/overlay-utils";
   import {
     DEFAULT_MONSTER_OVERLAY_POSITIONS,
     DEFAULT_MONSTER_OVERLAY_SIZES,
@@ -54,7 +55,18 @@
       pushArea("panelAttrGroup", "角色属性区", overlayPositions.panelAttrGroup.x, overlayPositions.panelAttrGroup.y, 220, 130, overlaySizes.panelAttrGroupScale);
     }
     if (overlayVisibility.showCustomPanelGroup) {
-      pushArea("customPanelGroup", "自定义面板区", overlayPositions.customPanelGroup.x, overlayPositions.customPanelGroup.y, 220, 120, overlaySizes.customPanelGroupScale);
+      for (const group of ensureCustomPanelGroups(profile)) {
+        const height = Math.max(120, group.entries.length * 34 + 24);
+        pushArea(
+          `customPanelGroup:${group.id}`,
+          group.name,
+          group.position.x,
+          group.position.y,
+          220,
+          height,
+          group.scale,
+        );
+      }
     }
 
     pushArea("textBuffPanel", "无图标Buff区", overlayPositions.textBuffPanel.x, overlayPositions.textBuffPanel.y, 240, 130, overlaySizes.textBuffPanelScale);

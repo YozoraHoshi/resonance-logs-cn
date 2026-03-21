@@ -8,6 +8,7 @@ import { iconDisplayBuffs, overlayRuntime } from "./overlay-runtime.svelte.js";
 import type { DragTarget, IconBuffDisplay, ResizeTarget } from "./overlay-types";
 import {
   ensureBuffGroups,
+  ensureCustomPanelGroups,
   ensureIndividualMonitorAllGroup,
   ensureOverlayPositions,
   ensureOverlaySizes,
@@ -60,6 +61,18 @@ function updateBuffGroups(
   updateActiveProfile((profile) => ({
     ...profile,
     buffGroups: updater(ensureBuffGroups(profile)),
+  }));
+}
+
+function updateCustomPanelGroups(
+  updater: (
+    groups: ReturnType<typeof ensureCustomPanelGroups>,
+  ) => ReturnType<typeof ensureCustomPanelGroups>,
+) {
+  updateActiveProfile((profile) => ({
+    ...profile,
+    customPanelGroups: updater(ensureCustomPanelGroups(profile)),
+    inlineBuffEntries: [],
   }));
 }
 
@@ -235,6 +248,26 @@ export function setBuffGroupIconSize(groupId: string, value: number) {
   );
 }
 
+export function setCustomPanelGroupPosition(
+  groupId: string,
+  nextPos: { x: number; y: number },
+) {
+  updateCustomPanelGroups((groups) =>
+    groups.map((group) =>
+      group.id === groupId ? { ...group, position: nextPos } : group,
+    ),
+  );
+}
+
+export function setCustomPanelGroupScale(groupId: string, value: number) {
+  const nextValue = clampGroupScale(value);
+  updateCustomPanelGroups((groups) =>
+    groups.map((group) =>
+      group.id === groupId ? { ...group, scale: nextValue } : group,
+    ),
+  );
+}
+
 export function setIndividualAllGroupPosition(nextPos: { x: number; y: number }) {
   updateIndividualAllGroup((group) => ({
     ...group,
@@ -303,6 +336,11 @@ export function onGlobalPointerMove(e: PointerEvent) {
         overlayRuntime.resizeState.target.key,
         overlayRuntime.resizeState.startValue + delta / 300,
       );
+    } else if (overlayRuntime.resizeState.target.kind === "customPanelGroup") {
+      setCustomPanelGroupScale(
+        overlayRuntime.resizeState.target.groupId,
+        overlayRuntime.resizeState.startValue + delta / 300,
+      );
     } else if (overlayRuntime.resizeState.target.kind === "individualAllGroup") {
       setIndividualAllGroupIconSize(overlayRuntime.resizeState.startValue + delta / 2);
     } else if (overlayRuntime.resizeState.target.kind === "buffGroup") {
@@ -345,6 +383,8 @@ export function onGlobalPointerMove(e: PointerEvent) {
   };
   if (overlayRuntime.dragState.target.kind === "group") {
     setGroupPosition(overlayRuntime.dragState.target.key, nextPos);
+  } else if (overlayRuntime.dragState.target.kind === "customPanelGroup") {
+    setCustomPanelGroupPosition(overlayRuntime.dragState.target.groupId, nextPos);
   } else if (overlayRuntime.dragState.target.kind === "individualAllGroup") {
     setIndividualAllGroupPosition(nextPos);
   } else if (overlayRuntime.dragState.target.kind === "buffGroup") {
@@ -379,13 +419,29 @@ export function onWindowDragPointerDown(e: PointerEvent) {
 }
 
 export function resetOverlaySizes() {
-  updateOverlaySizes(() => ({ ...DEFAULT_OVERLAY_SIZES }));
+  updateActiveProfile((profile) => ({
+    ...profile,
+    overlaySizes: { ...DEFAULT_OVERLAY_SIZES },
+    customPanelGroups: ensureCustomPanelGroups(profile).map((group) => ({
+      ...group,
+      scale: 1,
+    })),
+    inlineBuffEntries: [],
+  }));
 }
 
 export function resetOverlayPositions() {
   updateActiveProfile((profile) => ({
     ...profile,
     overlayPositions: { ...DEFAULT_OVERLAY_POSITIONS },
+    customPanelGroups: ensureCustomPanelGroups(profile).map((group, index) => ({
+      ...group,
+      position: {
+        x: DEFAULT_OVERLAY_POSITIONS.customPanelGroup.x + index * 40,
+        y: DEFAULT_OVERLAY_POSITIONS.customPanelGroup.y + index * 40,
+      },
+    })),
+    inlineBuffEntries: [],
     buffGroups: ensureBuffGroups(profile).map((group) => ({
       ...group,
       position: { x: 40, y: 40 },

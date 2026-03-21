@@ -22,10 +22,9 @@ import {
   buffAliases,
   buffDisplayMode,
   buffPriorityIds,
+  customPanelGroups,
   expandedMonitoredBuffIds,
   enabledPanelAttrs,
-  inlineBuffEntries,
-  inlineBuffIds,
   monitoredBuffCategories,
   monitoredBuffIds,
   selectedClassKey,
@@ -209,8 +208,8 @@ export function limitedTextBuffs() {
   return _limitedTextBuffs;
 }
 
-export function customPanelRows() {
-  return overlayRuntime.customPanelRows;
+export function customPanelRowsByGroup() {
+  return overlayRuntime.customPanelRowsByGroup;
 }
 
 export function getResourceValue(index: number): number {
@@ -250,14 +249,20 @@ export function updateDisplay() {
   const explicitSelectedBuffIds = monitoredBuffIds();
   const priorityIds = buffPriorityIds();
   const buffDefinitionsMap = buffDefinitions();
-  const skippedInlineBuffIds = inlineBuffIds();
+  const panelGroups = customPanelGroups();
+  const skippedInlineBuffIds = new Set(
+    panelGroups
+      .flatMap((group) => group.entries)
+      .filter((entry) => entry.sourceType === "buff")
+      .map((entry) => entry.sourceId),
+  );
   const currentBuffAliases = buffAliases();
   const classKey = selectedClassKey();
   const nextActiveBuffIds = new Set<number>();
   const nextBuffDurationPercents = new Map<number, number>();
   const nextIconBuffs: IconBuffDisplay[] = [];
   const nextTextBuffs: TextBuffDisplay[] = [];
-  const nextCustomPanelRows: CustomPanelDisplayRow[] = [];
+  const nextCustomPanelRowsByGroup = new Map<string, CustomPanelDisplayRow[]>();
 
   for (const [baseId, buff] of overlayRuntime.buffMap) {
     if (skippedInlineBuffIds.has(baseId)) continue;
@@ -373,16 +378,20 @@ export function updateDisplay() {
     }
   }
 
-  for (const entry of inlineBuffEntries()) {
-    const row = getCustomPanelDisplayRow(
-      entry,
-      now,
-      overlayRuntime.buffMap,
-      overlayRuntime.counterMap,
-      _counterRuleMap,
-      (baseId) => resolveBuffDisplayName(baseId, currentBuffAliases),
-    );
-    if (row) nextCustomPanelRows.push(row);
+  for (const group of panelGroups) {
+    const nextRows: CustomPanelDisplayRow[] = [];
+    for (const entry of group.entries) {
+      const row = getCustomPanelDisplayRow(
+        entry,
+        now,
+        overlayRuntime.buffMap,
+        overlayRuntime.counterMap,
+        _counterRuleMap,
+        (baseId) => resolveBuffDisplayName(baseId, currentBuffAliases),
+      );
+      if (row) nextRows.push(row);
+    }
+    nextCustomPanelRowsByGroup.set(group.id, nextRows);
   }
 
   overlayRuntime.activeBuffIds = nextActiveBuffIds;
@@ -390,6 +399,6 @@ export function updateDisplay() {
   overlayRuntime.displayMap = nextDisplayMap;
   overlayRuntime.iconDisplayBuffs = nextIconBuffs;
   overlayRuntime.textBuffs = nextTextBuffs;
-  overlayRuntime.customPanelRows = nextCustomPanelRows;
+  overlayRuntime.customPanelRowsByGroup = nextCustomPanelRowsByGroup;
   overlayRuntime.rafId = requestAnimationFrame(updateDisplay);
 }

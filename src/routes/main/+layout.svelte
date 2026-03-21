@@ -54,8 +54,10 @@
       activeProfile?.monitoredBuffCategories,
     );
     const monitoredPanelAttrs = activeProfile?.monitoredPanelAttrs ?? [];
-    const inlineBuffEntries = activeProfile?.inlineBuffEntries ?? [];
-    const inlineCounterRuleIds = inlineBuffEntries
+    const customPanelEntries = activeProfile?.customPanelGroups?.length
+      ? activeProfile.customPanelGroups.flatMap((group) => group.entries ?? [])
+      : (activeProfile?.inlineBuffEntries ?? []);
+    const inlineCounterRuleIds = customPanelEntries
       .filter((entry) => entry.sourceType === "counter")
       .map((entry) => entry.sourceId);
     const buffDisplayMode = activeProfile?.buffDisplayMode ?? "individual";
@@ -68,7 +70,7 @@
       buffDisplayMode === "grouped"
         ? buffGroups.flatMap((group) => (group.monitorAll ? [] : group.buffIds))
         : [];
-    const inlineBuffIds = inlineBuffEntries
+    const inlineBuffIds = customPanelEntries
       .filter((entry) => entry.sourceType === "buff")
       .map((entry) => entry.sourceId);
     const activeCounterRuleIds = inlineCounterRuleIds;

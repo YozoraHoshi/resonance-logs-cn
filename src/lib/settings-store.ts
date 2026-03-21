@@ -206,6 +206,14 @@ export type InlineBuffEntry = {
 
 export type PanelAreaRowRef = { type: "attr"; attrId: number };
 
+export type CustomPanelGroup = {
+  id: string;
+  name: string;
+  entries: InlineBuffEntry[];
+  position: Point;
+  scale: number;
+};
+
 export type BuffGroup = {
   id: string;
   name: string;
@@ -233,6 +241,7 @@ export type SkillMonitorProfile = {
   buffDisplayMode: BuffDisplayMode;
   buffGroups: BuffGroup[];
   individualMonitorAllGroup?: BuffGroup | null;
+  customPanelGroups?: CustomPanelGroup[];
   inlineBuffEntries?: InlineBuffEntry[];
   panelAreaRowOrder?: PanelAreaRowRef[];
   customPanelStyle?: CustomPanelStyle;
@@ -352,6 +361,19 @@ export function createDefaultBuffGroup(
   };
 }
 
+export function createDefaultCustomPanelGroup(
+  name = "监控区 1",
+  index = 1,
+): CustomPanelGroup {
+  return {
+    id: `custom_panel_group_${Date.now()}_${index}`,
+    name,
+    entries: [],
+    position: { x: 700 + (index - 1) * 40, y: 280 + (index - 1) * 40 },
+    scale: 1,
+  };
+}
+
 export function createDefaultSkillMonitorProfile(
   name = "默认方案",
   classKey = "wind_knight",
@@ -367,6 +389,7 @@ export function createDefaultSkillMonitorProfile(
     buffDisplayMode: "individual",
     buffGroups: [],
     individualMonitorAllGroup: null,
+    customPanelGroups: [],
     inlineBuffEntries: [],
     panelAreaRowOrder: [],
     customPanelStyle: createDefaultCustomPanelStyle(),

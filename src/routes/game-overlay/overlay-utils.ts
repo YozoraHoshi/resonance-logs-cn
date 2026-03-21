@@ -5,6 +5,7 @@ import type {
 } from "$lib/api";
 import type {
   BuffGroup,
+  CustomPanelGroup,
   CustomPanelStyle,
   InlineBuffEntry,
   OverlayPositions,
@@ -324,6 +325,57 @@ export function ensureInlineBuffEntries(
         : (entry.label ?? ""),
     format: entry.format ?? "timer",
   }));
+}
+
+function ensureCustomPanelEntries(entries: InlineBuffEntry[] | undefined): InlineBuffEntry[] {
+  return (entries ?? []).map((entry, idx) => ({
+    id: entry.id ?? `inline_${idx + 1}`,
+    sourceType: entry.sourceType ?? "buff",
+    sourceId: entry.sourceId,
+    label:
+      entry.sourceType === "counter"
+        ? (entry.label ?? `计数器 ${entry.sourceId}`)
+        : (entry.label ?? ""),
+    format: entry.format ?? "timer",
+  }));
+}
+
+export function ensureCustomPanelGroups(
+  profile: SkillMonitorProfile,
+): CustomPanelGroup[] {
+  const groups = profile.customPanelGroups ?? [];
+  const legacyPosition =
+    profile.overlayPositions?.customPanelGroup ?? DEFAULT_OVERLAY_POSITIONS.customPanelGroup;
+  const legacyScale = clampDecimal(
+    profile.overlaySizes?.customPanelGroupScale ??
+      DEFAULT_OVERLAY_SIZES.customPanelGroupScale,
+    0.5,
+    2.5,
+  );
+  if (groups.length > 0) {
+    return groups.map((group, index) => ({
+      id: group.id ?? `custom_panel_group_${index + 1}`,
+      name: group.name ?? `监控区 ${index + 1}`,
+      entries: ensureCustomPanelEntries(group.entries),
+      position: group.position ?? {
+        x: legacyPosition.x + index * 40,
+        y: legacyPosition.y + index * 40,
+      },
+      scale: clampDecimal(group.scale ?? (index === 0 ? legacyScale : 1), 0.5, 2.5),
+    }));
+  }
+
+  const legacyEntries = ensureInlineBuffEntries(profile);
+  if (legacyEntries.length === 0) return [];
+  return [
+    {
+      id: "custom_panel_group_1",
+      name: "监控区 1",
+      entries: legacyEntries,
+      position: legacyPosition,
+      scale: legacyScale,
+    },
+  ];
 }
 
 function samePanelRowRef(a: PanelAreaRowRef, b: PanelAreaRowRef): boolean {
