@@ -107,7 +107,11 @@ pub(crate) fn save_monitor_runtime_snapshot(
     for dir in app_data_dirs.into_iter().flatten() {
         let target_dir = dir.join("stores");
         if let Err(error) = std::fs::create_dir_all(&target_dir) {
-            last_err = Some(format!("create_dir_all {}: {}", target_dir.display(), error));
+            last_err = Some(format!(
+                "create_dir_all {}: {}",
+                target_dir.display(),
+                error
+            ));
             continue;
         }
 
@@ -142,7 +146,9 @@ pub(crate) fn save_monitor_runtime_snapshot(
     Err(last_err.unwrap_or_else(|| "failed to save monitor runtime snapshot".to_string()))
 }
 
-pub(crate) fn load_monitor_runtime_snapshot(app_handle: &AppHandle) -> Option<MonitorRuntimeSnapshot> {
+pub(crate) fn load_monitor_runtime_snapshot(
+    app_handle: &AppHandle,
+) -> Option<MonitorRuntimeSnapshot> {
     for path in snapshot_path_candidates(app_handle) {
         if !path.exists() {
             continue;

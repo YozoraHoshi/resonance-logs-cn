@@ -1173,7 +1173,6 @@ impl AppStateManager {
     pub fn stop_training_dummy(&self) -> Result<(), String> {
         self.send_control(LiveControlCommand::StopTrainingDummy)
     }
-
 }
 
 impl AppStateManager {
