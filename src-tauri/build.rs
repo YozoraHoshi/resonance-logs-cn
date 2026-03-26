@@ -52,14 +52,21 @@ fn build_module_optimizer() {
     let cccl_root = find_cccl_root();
     let cuda_lib_dir = compile_cuda(&cpp_dir, cccl_root.as_deref());
     let use_cuda = cuda_lib_dir.is_some();
-    let use_opencl = detect_opencl();
+    let opencl_path = find_opencl();
+    let opencl_clhpp_include = find_opencl_clhpp();
+    let use_opencl = opencl_path.is_some() && opencl_clhpp_include.is_some();
 
     println!("cargo:warning=CUDA enabled: {}", use_cuda);
     println!("cargo:warning=OpenCL detected: {}", use_opencl);
+    println!(
+        "cargo:warning=OpenCL C++ Wrapper found: {}",
+        opencl_clhpp_include.is_some()
+    );
 
     // Build C++ source files list
     let mut cpp_sources = vec![
         cpp_dir.join("module_optimizer.cpp"),
+        cpp_dir.join("module_optimizer_gpu_shared.cpp"),
         cpp_dir.join("ffi_bridge.cpp"),
     ];
 
@@ -106,12 +113,15 @@ fn build_module_optimizer() {
     if use_opencl {
         build.define("USE_OPENCL", None);
 
-        if let Some(opencl_path) = find_opencl() {
+        if let Some(opencl_path) = &opencl_path {
             build.include(opencl_path.join("include"));
             println!(
                 "cargo:rustc-link-search=native={}",
                 opencl_path.join("lib/x64").display()
             );
+        }
+        if let Some(clhpp_include) = &opencl_clhpp_include {
+            build.include(clhpp_include);
         }
         println!("cargo:rustc-link-lib=OpenCL");
     }
@@ -124,12 +134,9 @@ fn build_module_optimizer() {
     println!("cargo:rerun-if-env-changed=CUDA_HOME");
     println!("cargo:rerun-if-env-changed=CUDA_PATH");
     println!("cargo:rerun-if-env-changed=OPENCL_HOME");
+    println!("cargo:rerun-if-env-changed=OPENCL_CLHPP_ROOT");
     println!("cargo:rerun-if-env-changed=CCCL_ROOT");
     println!("cargo:rerun-if-env-changed=CMAKE_CUDA_ARCHITECTURES");
-}
-
-fn detect_opencl() -> bool {
-    find_opencl().is_some()
 }
 
 fn candidate_cuda_homes() -> Vec<PathBuf> {
@@ -195,6 +202,35 @@ fn find_opencl() -> Option<PathBuf> {
         }
     }
 
+    None
+}
+
+fn find_opencl_clhpp() -> Option<PathBuf> {
+    let Some(clhpp_root) = env::var_os("OPENCL_CLHPP_ROOT").map(PathBuf::from) else {
+        println!("cargo:warning=OPENCL_CLHPP_ROOT is not configured, skipping OpenCL build");
+        return None;
+    };
+
+    let candidates = [
+        clhpp_root.join("include"),
+        clhpp_root.clone(),
+        clhpp_root.join("OpenCL/include"),
+    ];
+
+    for include_dir in candidates {
+        if include_dir.join("CL/opencl.hpp").exists() {
+            println!(
+                "cargo:warning=Using OpenCL C++ Wrapper from: {}",
+                include_dir.display()
+            );
+            return Some(include_dir);
+        }
+    }
+
+    println!(
+        "cargo:warning=OPENCL_CLHPP_ROOT is set but missing CL/opencl.hpp under {}",
+        clhpp_root.display()
+    );
     None
 }
 

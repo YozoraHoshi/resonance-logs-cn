@@ -2,7 +2,7 @@ use super::{
     BEAM_INTERNAL_MAX_SOLUTIONS, GpuSupport, ModuleInfo, ModuleSolution, OptimizeOptions,
     ProgressHandleOwner, check_gpu_support as check_gpu_support_internal, get_progress_context,
     parse_modules_from_vdata, strategy_beam_search, strategy_enumeration_cpu,
-    strategy_enumeration_gpu, strategy_five_module_cuda,
+    strategy_enumeration_gpu, strategy_five_module_gpu_hybrid,
 };
 use crate::database::db_exec;
 use crate::database::schema::detailed_playerdata::dsl as dpd;
@@ -187,11 +187,13 @@ pub async fn optimize_latest_modules(
     };
     let final_max_solutions = options.max_solutions.max(1) as usize;
 
-    let use_parallel_cuda =
-        combination_size == 5 && options.use_gpu && check_gpu_support_internal().cuda_available;
+    let gpu_support = check_gpu_support_internal();
+    let use_parallel_gpu_hybrid = combination_size == 5
+        && options.use_gpu
+        && (gpu_support.cuda_available || gpu_support.opencl_available);
 
-    let progress_handles = ProgressHandleOwner::new(if use_parallel_cuda { 2 } else { 1 });
-    let progress_sources = if use_parallel_cuda {
+    let progress_handles = ProgressHandleOwner::new(if use_parallel_gpu_hybrid { 2 } else { 1 });
+    let progress_sources = if use_parallel_gpu_hybrid {
         vec![
             ProgressSource {
                 handle: progress_handles.handles()[0],
@@ -212,11 +214,11 @@ pub async fn optimize_latest_modules(
     let monitor_handle =
         spawn_progress_monitor(app.clone(), progress_sources, Arc::clone(&monitor_stop));
 
-    let result: Result<Vec<ModuleSolution>, String> = if use_parallel_cuda {
+    let result: Result<Vec<ModuleSolution>, String> = if use_parallel_gpu_hybrid {
         let enumeration_progress_handle = progress_handles.handles()[0];
         let beam_progress_handle = progress_handles.handles()[1];
         tokio::task::spawn_blocking(move || {
-            strategy_five_module_cuda(
+            strategy_five_module_gpu_hybrid(
                 &modules,
                 &options,
                 enumeration_progress_handle,

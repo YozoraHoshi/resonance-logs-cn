@@ -80,6 +80,30 @@ pub mod ffi {
             progress_handle: u64,
         ) -> Vec<ModuleSolutionFfi>;
 
+        fn strategy_enumeration_cuda_ffi(
+            modules: &Vec<ModuleInfoFfi>,
+            target_attributes: &Vec<i32>,
+            exclude_attributes: &Vec<i32>,
+            min_attr_ids: &Vec<i32>,
+            min_attr_values: &Vec<i32>,
+            max_solutions: i32,
+            max_workers: i32,
+            combination_size: i32,
+            progress_handle: u64,
+        ) -> Vec<ModuleSolutionFfi>;
+
+        fn strategy_enumeration_opencl_ffi(
+            modules: &Vec<ModuleInfoFfi>,
+            target_attributes: &Vec<i32>,
+            exclude_attributes: &Vec<i32>,
+            min_attr_ids: &Vec<i32>,
+            min_attr_values: &Vec<i32>,
+            max_solutions: i32,
+            max_workers: i32,
+            combination_size: i32,
+            progress_handle: u64,
+        ) -> Vec<ModuleSolutionFfi>;
+
         fn strategy_beam_search_ffi(
             modules: &Vec<ModuleInfoFfi>,
             target_attributes: &Vec<i32>,

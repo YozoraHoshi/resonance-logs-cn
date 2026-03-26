@@ -234,6 +234,84 @@ ProgressInfoFfi get_progress_context_ffi(::std::uint64_t handle) {
     return convert_solutions(result);
 }
 
+::rust::Vec<ModuleSolutionFfi> strategy_enumeration_cuda_ffi(
+    ::rust::Vec<ModuleInfoFfi> const& modules,
+    ::rust::Vec<::std::int32_t> const& target_attributes,
+    ::rust::Vec<::std::int32_t> const& exclude_attributes,
+    ::rust::Vec<::std::int32_t> const& min_attr_ids,
+    ::rust::Vec<::std::int32_t> const& min_attr_values,
+    ::std::int32_t max_solutions,
+    ::std::int32_t max_workers,
+    ::std::int32_t combination_size,
+    ::std::uint64_t progress_handle) {
+#ifdef USE_CUDA
+    auto cpp_modules = convert_modules(modules);
+    auto progress = get_progress_context(progress_handle);
+    auto result = ModuleOptimizerCpp::StrategyEnumerationCUDA(
+        cpp_modules,
+        to_set(target_attributes),
+        to_set(exclude_attributes),
+        to_map(min_attr_ids, min_attr_values),
+        max_solutions,
+        max_workers,
+        combination_size,
+        progress
+    );
+
+    return convert_solutions(result);
+#else
+    (void)modules;
+    (void)target_attributes;
+    (void)exclude_attributes;
+    (void)min_attr_ids;
+    (void)min_attr_values;
+    (void)max_solutions;
+    (void)max_workers;
+    (void)combination_size;
+    (void)progress_handle;
+    return {};
+#endif
+}
+
+::rust::Vec<ModuleSolutionFfi> strategy_enumeration_opencl_ffi(
+    ::rust::Vec<ModuleInfoFfi> const& modules,
+    ::rust::Vec<::std::int32_t> const& target_attributes,
+    ::rust::Vec<::std::int32_t> const& exclude_attributes,
+    ::rust::Vec<::std::int32_t> const& min_attr_ids,
+    ::rust::Vec<::std::int32_t> const& min_attr_values,
+    ::std::int32_t max_solutions,
+    ::std::int32_t max_workers,
+    ::std::int32_t combination_size,
+    ::std::uint64_t progress_handle) {
+#ifdef USE_OPENCL
+    auto cpp_modules = convert_modules(modules);
+    auto progress = get_progress_context(progress_handle);
+    auto result = ModuleOptimizerCpp::StrategyEnumerationOpenCL(
+        cpp_modules,
+        to_set(target_attributes),
+        to_set(exclude_attributes),
+        to_map(min_attr_ids, min_attr_values),
+        max_solutions,
+        max_workers,
+        combination_size,
+        progress
+    );
+
+    return convert_solutions(result);
+#else
+    (void)modules;
+    (void)target_attributes;
+    (void)exclude_attributes;
+    (void)min_attr_ids;
+    (void)min_attr_values;
+    (void)max_solutions;
+    (void)max_workers;
+    (void)combination_size;
+    (void)progress_handle;
+    return {};
+#endif
+}
+
 ::rust::Vec<ModuleSolutionFfi> strategy_beam_search_ffi(
     ::rust::Vec<ModuleInfoFfi> const& modules,
     ::rust::Vec<::std::int32_t> const& target_attributes,

@@ -355,50 +355,134 @@ fn prefilter_modules_by_total_scores(
         .collect()
 }
 
-pub fn strategy_enumeration_gpu(
-    modules: &[ModuleInfo],
-    options: &OptimizeOptions,
-    progress_handle: Option<u64>,
-) -> Vec<ModuleSolution> {
-    const GPU_ENUM_INPUT_LIMIT_FOUR: usize = 1000;
-    const GPU_ENUM_INPUT_LIMIT_FIVE: usize = 500;
+#[derive(Clone, Copy)]
+enum GpuEnumerationBackend {
+    Unified,
+    Cuda,
+    Opencl,
+}
 
+fn collect_min_attr_requirements(options: &OptimizeOptions) -> (Vec<i32>, Vec<i32>) {
     let min_attr_ids: Vec<i32> = options.min_attr_requirements.keys().copied().collect();
     let min_attr_values: Vec<i32> = min_attr_ids
         .iter()
-        .map(|k| options.min_attr_requirements.get(k).copied().unwrap_or(0))
+        .map(|key| options.min_attr_requirements.get(key).copied().unwrap_or(0))
         .collect();
+    (min_attr_ids, min_attr_values)
+}
+
+fn prefilter_gpu_enumeration_modules(
+    modules: &[ModuleInfo],
+    options: &OptimizeOptions,
+    min_attr_ids: &[i32],
+) -> Vec<ModuleInfo> {
+    const GPU_ENUM_INPUT_LIMIT_FOUR: usize = 1000;
+    const GPU_ENUM_INPUT_LIMIT_FIVE: usize = 450;
 
     let max_input_modules = match options.combination_size {
         5 => GPU_ENUM_INPUT_LIMIT_FIVE,
         _ => GPU_ENUM_INPUT_LIMIT_FOUR,
     };
 
-    let modules_to_use: Vec<ModuleInfo> = if modules.len() > max_input_modules {
+    if modules.len() > max_input_modules {
         prefilter_modules_by_total_scores(
             modules,
             &options.target_attributes,
-            &min_attr_ids,
+            min_attr_ids,
             max_input_modules,
         )
     } else {
         modules.to_vec()
-    };
-    let ffi_modules = to_ffi_modules(&modules_to_use);
+    }
+}
 
-    let result = bridge::ffi::strategy_enumeration_gpu_ffi(
-        &ffi_modules,
-        &options.target_attributes,
-        &options.exclude_attributes,
-        &min_attr_ids,
-        &min_attr_values,
-        options.max_solutions,
-        options.max_workers,
-        options.combination_size,
-        progress_handle.unwrap_or(0),
-    );
+fn run_gpu_enumeration(
+    modules: &[ModuleInfo],
+    options: &OptimizeOptions,
+    progress_handle: Option<u64>,
+    backend: GpuEnumerationBackend,
+) -> Vec<ModuleSolution> {
+    let (min_attr_ids, min_attr_values) = collect_min_attr_requirements(options);
+    let modules_to_use = prefilter_gpu_enumeration_modules(modules, options, &min_attr_ids);
+    let ffi_modules = to_ffi_modules(&modules_to_use);
+    let progress_handle = progress_handle.unwrap_or(0);
+
+    let result = match backend {
+        GpuEnumerationBackend::Unified => bridge::ffi::strategy_enumeration_gpu_ffi(
+            &ffi_modules,
+            &options.target_attributes,
+            &options.exclude_attributes,
+            &min_attr_ids,
+            &min_attr_values,
+            options.max_solutions,
+            options.max_workers,
+            options.combination_size,
+            progress_handle,
+        ),
+        GpuEnumerationBackend::Cuda => bridge::ffi::strategy_enumeration_cuda_ffi(
+            &ffi_modules,
+            &options.target_attributes,
+            &options.exclude_attributes,
+            &min_attr_ids,
+            &min_attr_values,
+            options.max_solutions,
+            options.max_workers,
+            options.combination_size,
+            progress_handle,
+        ),
+        GpuEnumerationBackend::Opencl => bridge::ffi::strategy_enumeration_opencl_ffi(
+            &ffi_modules,
+            &options.target_attributes,
+            &options.exclude_attributes,
+            &min_attr_ids,
+            &min_attr_values,
+            options.max_solutions,
+            options.max_workers,
+            options.combination_size,
+            progress_handle,
+        ),
+    };
 
     from_ffi_solutions(result)
+}
+
+pub fn strategy_enumeration_gpu(
+    modules: &[ModuleInfo],
+    options: &OptimizeOptions,
+    progress_handle: Option<u64>,
+) -> Vec<ModuleSolution> {
+    run_gpu_enumeration(
+        modules,
+        options,
+        progress_handle,
+        GpuEnumerationBackend::Unified,
+    )
+}
+
+pub fn strategy_enumeration_cuda(
+    modules: &[ModuleInfo],
+    options: &OptimizeOptions,
+    progress_handle: Option<u64>,
+) -> Vec<ModuleSolution> {
+    run_gpu_enumeration(
+        modules,
+        options,
+        progress_handle,
+        GpuEnumerationBackend::Cuda,
+    )
+}
+
+pub fn strategy_enumeration_opencl(
+    modules: &[ModuleInfo],
+    options: &OptimizeOptions,
+    progress_handle: Option<u64>,
+) -> Vec<ModuleSolution> {
+    run_gpu_enumeration(
+        modules,
+        options,
+        progress_handle,
+        GpuEnumerationBackend::Opencl,
+    )
 }
 
 pub fn strategy_enumeration_cpu(
@@ -406,11 +490,7 @@ pub fn strategy_enumeration_cpu(
     options: &OptimizeOptions,
     progress_handle: Option<u64>,
 ) -> Vec<ModuleSolution> {
-    let min_attr_ids: Vec<i32> = options.min_attr_requirements.keys().copied().collect();
-    let min_attr_values: Vec<i32> = min_attr_ids
-        .iter()
-        .map(|k| options.min_attr_requirements.get(k).copied().unwrap_or(0))
-        .collect();
+    let (min_attr_ids, min_attr_values) = collect_min_attr_requirements(options);
 
     let modules_to_use: Vec<ModuleInfo> = if modules.len() > 800 {
         prefilter_modules_by_total_scores(modules, &options.target_attributes, &min_attr_ids, 800)
@@ -445,11 +525,25 @@ pub fn strategy_beam_search(
     const DEFAULT_EXPAND_PER_STATE: i32 = 0;
     const DEFAULT_BEAM_WORKERS: i32 = 3;
 
-    let min_attr_ids: Vec<i32> = options.min_attr_requirements.keys().copied().collect();
-    let min_attr_values: Vec<i32> = min_attr_ids
-        .iter()
-        .map(|k| options.min_attr_requirements.get(k).copied().unwrap_or(0))
-        .collect();
+    strategy_beam_search_with_params(
+        modules,
+        options,
+        DEFAULT_BEAM_WIDTH,
+        DEFAULT_EXPAND_PER_STATE,
+        options.max_workers.min(DEFAULT_BEAM_WORKERS),
+        progress_handle,
+    )
+}
+
+pub fn strategy_beam_search_with_params(
+    modules: &[ModuleInfo],
+    options: &OptimizeOptions,
+    beam_width: i32,
+    expand_per_state: i32,
+    beam_workers: i32,
+    progress_handle: Option<u64>,
+) -> Vec<ModuleSolution> {
+    let (min_attr_ids, min_attr_values) = collect_min_attr_requirements(options);
     let ffi_modules = to_ffi_modules(modules);
 
     let result = bridge::ffi::strategy_beam_search_ffi(
@@ -459,17 +553,17 @@ pub fn strategy_beam_search(
         &min_attr_ids,
         &min_attr_values,
         options.max_solutions,
-        DEFAULT_BEAM_WIDTH,
-        DEFAULT_EXPAND_PER_STATE,
+        beam_width,
+        expand_per_state,
         options.combination_size,
-        options.max_workers.min(DEFAULT_BEAM_WORKERS),
+        beam_workers,
         progress_handle.unwrap_or(0),
     );
 
     from_ffi_solutions(result)
 }
 
-pub fn strategy_five_module_cuda(
+pub fn strategy_five_module_gpu_hybrid(
     modules: &[ModuleInfo],
     options: &OptimizeOptions,
     enumeration_progress_handle: u64,
@@ -497,7 +591,7 @@ pub fn strategy_five_module_cuda(
 
     let enumeration_results = enumeration_handle
         .join()
-        .map_err(|_| "CUDA 枚举线程执行失败".to_string())?;
+        .map_err(|_| "GPU 枚举线程执行失败".to_string())?;
     let beam_results = beam_handle
         .join()
         .map_err(|_| "Beam Search 线程执行失败".to_string())?;
