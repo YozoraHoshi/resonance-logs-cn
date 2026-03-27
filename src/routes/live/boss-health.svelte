@@ -7,6 +7,7 @@
   import { tooltip } from "$lib/utils.svelte";
 
   import AbbreviatedNumber from "$lib/components/abbreviated-number.svelte";
+  import { SETTINGS } from "$lib/settings-store";
 
   let headerInfo: HeaderInfo = $state({
     totalDps: 0,
@@ -21,6 +22,7 @@
       phase: "idle",
     },
   });
+  let abbreviationStyle = $derived(SETTINGS.live.general.state.abbreviationStyle);
 
 
 
@@ -54,9 +56,14 @@
       <div class="flex items-center gap-1 whitespace-nowrap">
         <span class="text-base truncate text-neutral-100 font-semibold tracking-tight" {@attach tooltip(() => boss.name)}>{boss.name + " -"}</span>
         <span class="text-base tabular-nums font-semibold text-neutral-100">
-          <AbbreviatedNumber num={boss.currentHp !== null ? boss.currentHp : 0} />
+          <AbbreviatedNumber
+            num={boss.currentHp !== null ? boss.currentHp : 0}
+            {abbreviationStyle}
+          />
           {#if boss.maxHp}
-            <span> / <AbbreviatedNumber num={boss.maxHp} /></span>
+            <span
+              > / <AbbreviatedNumber num={boss.maxHp} {abbreviationStyle} /></span
+            >
             <span class="text-rose-400 ml-1">({hpPercent.toFixed(1)}%)</span>
           {/if}
         </span>

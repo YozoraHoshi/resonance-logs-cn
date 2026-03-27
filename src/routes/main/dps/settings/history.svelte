@@ -75,6 +75,15 @@
           <SettingsSwitch bind:checked={SETTINGS.history.general.state.shortenAbilityScore} label="缩写能力评分" description="将能力评分显示为缩写形式" />
           <SettingsSwitch bind:checked={SETTINGS.history.general.state.shortenDps} label="缩写 DPS 数值" description="将 DPS 显示为 5k、50k 等" />
           <SettingsSelect
+            bind:selected={SETTINGS.history.general.state.abbreviationStyle}
+            label="缩写单位风格"
+            description="设置 DPS/HPS/TPS、总伤和 Boss 血量等缩写单位的显示方式"
+            values={[
+              { label: "西式缩写（1.2m）", value: "western" },
+              { label: "中文缩写（12.3w / 1.2亿）", value: "cn" },
+            ]}
+          />
+          <SettingsSelect
             bind:selected={SETTINGS.history.general.state.abbreviatedDecimalPlaces}
             label="缩写小数位数"
             description="设置玩家表与技能明细中的 DPS/HPS/TPS 等缩写数值保留的小数位数"

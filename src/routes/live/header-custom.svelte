@@ -36,6 +36,7 @@
   // Get header settings
   const h = $derived(SETTINGS.live.headerCustomization.state);
   const trainingDummySettings = $derived(SETTINGS.trainingDummy.state);
+  const abbreviationStyle = $derived(SETTINGS.live.general.state.abbreviationStyle);
 
   const liveData = $derived(getLiveData());
 
@@ -376,6 +377,7 @@
                 )}
                 ><AbbreviatedNumber
                   num={Number(displayHeaderInfo.totalDmg)}
+                  {abbreviationStyle}
                 /></span
               >
             </div>
@@ -393,7 +395,10 @@
                 style="font-size: {h.totalDpsValueFontSize}px"
                 {@attach tooltip(() =>
                   displayHeaderInfo.totalDps.toLocaleString(),
-                )}><AbbreviatedNumber num={displayHeaderInfo.totalDps} /></span
+                )}><AbbreviatedNumber
+                  num={displayHeaderInfo.totalDps}
+                  {abbreviationStyle}
+                /></span
               >
             </div>
           {/if}
@@ -429,9 +434,12 @@
                     >
                       <AbbreviatedNumber
                         num={boss.currentHp !== null ? boss.currentHp : 0}
+                        {abbreviationStyle}
                       />
                       {#if boss.maxHp}
-                        <span> / <AbbreviatedNumber num={boss.maxHp} /></span>
+                        <span
+                          > / <AbbreviatedNumber num={boss.maxHp} {abbreviationStyle} /></span
+                        >
                         <span
                           class="text-destructive ml-1"
                           style="font-size: {h.bossHealthPercentFontSize}px"

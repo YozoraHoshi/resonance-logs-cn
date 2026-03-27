@@ -485,6 +485,9 @@
   let abbreviatedDecimalPlaces = $derived(
     SETTINGS.history.general.state.abbreviatedDecimalPlaces ?? 1,
   );
+  let abbreviationStyle = $derived(
+    SETTINGS.history.general.state.abbreviationStyle,
+  );
 
   function toggleGroup(id: number) {
     const next = new Set(expandedGroups);
@@ -913,6 +916,7 @@
                         <AbbreviatedNumber
                           num={p[col.key] ?? 0}
                           decimalPlaces={abbreviatedDecimalPlaces}
+                          {abbreviationStyle}
                         />
                       {:else}
                         {col.format(p[col.key] ?? 0)}
@@ -1093,6 +1097,7 @@
                     <AbbreviatedNumber
                       num={skillCellValue(item, col.key)}
                       decimalPlaces={abbreviatedDecimalPlaces}
+                      {abbreviationStyle}
                     />
                   {:else}
                     {col.format(skillCellValue(item, col.key))}
