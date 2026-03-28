@@ -31,7 +31,10 @@
   import AbbreviatedNumber from "$lib/components/abbreviated-number.svelte";
   import { emitTo } from "@tauri-apps/api/event";
   import { SETTINGS } from "$lib/settings-store";
-  import { getLiveData } from "$lib/stores/live-meter-store.svelte";
+  import {
+    getLiveData,
+    getTrainingDummyState as getRuntimeTrainingDummyState,
+  } from "$lib/stores/live-meter-store.svelte";
 
   // Get header settings
   const h = $derived(SETTINGS.live.headerCustomization.state);
@@ -39,6 +42,7 @@
   const abbreviationStyle = $derived(SETTINGS.live.general.state.abbreviationStyle);
 
   const liveData = $derived(getLiveData());
+  const runtimeTrainingDummyState = $derived(getRuntimeTrainingDummyState());
 
   const emptyTrainingDummy: TrainingDummyState = {
     phase: "idle",
@@ -94,7 +98,9 @@
     sceneName: null,
     trainingDummy: emptyTrainingDummy,
   };
-  const trainingDummyState = $derived(liveData?.trainingDummy ?? emptyTrainingDummy);
+  const trainingDummyState = $derived.by(
+    () => runtimeTrainingDummyState ?? emptyTrainingDummy,
+  );
   const isEncounterPaused = $derived(!!liveData?.isPaused);
   const headerInfo = $derived.by((): HeaderInfo => {
     const data = liveData;
@@ -115,7 +121,7 @@
       bosses: data.bosses,
       sceneId: data.sceneId,
       sceneName: data.sceneName,
-      trainingDummy: data.trainingDummy,
+      trainingDummy: trainingDummyState,
     };
   });
 

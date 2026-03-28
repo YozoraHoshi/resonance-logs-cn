@@ -190,7 +190,6 @@ export type LiveDataPayload = {
   sceneId: number | null;
   sceneName: string | null;
   isPaused: boolean;
-  trainingDummy: TrainingDummyState;
   bosses: BossHealth[];
   entities: RawEntityData[];
 };
@@ -205,6 +204,9 @@ export const onEncounterUpdate = (handler: (event: Event<EncounterUpdatePayload>
 
 export const onLiveData = (handler: (event: Event<LiveDataPayload>) => void): Promise<UnlistenFn> =>
   listen<LiveDataPayload>("live-data", handler);
+
+export const onTrainingDummyUpdate = (handler: (event: Event<TrainingDummyState>) => void): Promise<UnlistenFn> =>
+  listen<TrainingDummyState>("training-dummy-update", handler);
 
 export const onSceneChange = (handler: (event: Event<SceneChangePayload>) => void): Promise<UnlistenFn> =>
   listen<SceneChangePayload>("scene-change", handler);

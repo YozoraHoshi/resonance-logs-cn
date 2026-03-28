@@ -57,7 +57,6 @@ pub struct LiveDataPayload {
     pub scene_id: Option<i32>,
     pub scene_name: Option<String>,
     pub is_paused: bool,
-    pub training_dummy: TrainingDummyState,
     pub bosses: Vec<BossHealth>,
     pub entities: Vec<RawEntityData>,
 }

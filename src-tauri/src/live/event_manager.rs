@@ -100,6 +100,7 @@ pub enum OutboundEvent {
     EncounterReset,
     EncounterPause(bool),
     SceneChange(String),
+    TrainingDummyUpdate(TrainingDummyState),
     LiveData(LiveDataPayload),
     BuffUpdate(Vec<BuffUpdateState>),
     BossBuffUpdate(HashMap<i64, Vec<BuffUpdateState>>),
@@ -163,6 +164,11 @@ impl EventManager {
     pub fn emit_scene_change(&mut self, scene_name: String) {
         self.outbound_events
             .push(OutboundEvent::SceneChange(scene_name));
+    }
+
+    pub fn emit_training_dummy_update(&mut self, training_dummy: TrainingDummyState) {
+        self.outbound_events
+            .push(OutboundEvent::TrainingDummyUpdate(training_dummy));
     }
 
     /// Returns whether the `EventManager` should emit events.
@@ -247,7 +253,6 @@ pub type EventManagerMutex = RwLock<EventManager>;
 pub fn generate_live_data_payload(
     encounter: &Encounter,
     attr_store: &EntityAttrStore,
-    training_dummy: TrainingDummyState,
 ) -> LiveDataPayload {
     let elapsed_ms = encounter
         .time_last_combat_packet_ms
@@ -371,7 +376,6 @@ pub fn generate_live_data_payload(
         scene_id: encounter.current_scene_id,
         scene_name: encounter.current_scene_name.clone(),
         is_paused: encounter.is_encounter_paused,
-        training_dummy,
         bosses,
         entities,
     }
