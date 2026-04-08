@@ -76,6 +76,8 @@ pub struct EffectSlotConfig {
     pub threshold: Option<u32>,
     pub reset_buff_id: i32,
     #[serde(default)]
+    pub reset_source_config_id: Option<i32>,
+    #[serde(default)]
     pub on_buff_add: CounterAction,
     #[serde(default)]
     pub on_buff_change: CounterAction,
@@ -166,6 +168,7 @@ impl<'de> Deserialize<'de> for CounterRule {
                     slot_id: 1,
                     threshold: rule.threshold,
                     reset_buff_id: rule.linked_buff_id,
+                    reset_source_config_id: None,
                     on_buff_add: rule.on_buff_add,
                     on_buff_change: CounterAction::NoOp,
                     on_buff_remove: rule.on_buff_remove,
@@ -377,6 +380,11 @@ impl BuffCounterTracker {
                 {
                     if slot_config.reset_buff_id != change.base_id {
                         continue;
+                    }
+                    if let Some(required_source_config_id) = slot_config.reset_source_config_id {
+                        if change.source_config_id != Some(required_source_config_id) {
+                            continue;
+                        }
                     }
                     let action = match change.change_type {
                         BuffChangeType::Added => slot_config.on_buff_add,

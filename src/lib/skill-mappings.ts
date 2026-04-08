@@ -71,6 +71,7 @@ export type CounterEffectSlotPreset = {
   slotId: number;
   threshold: number | null;
   resetBuffId: number;
+  resetSourceConfigId?: number;
   onBuffAdd: CounterAction;
   onBuffChange: CounterAction;
   onBuffRemove: CounterAction;
@@ -169,6 +170,9 @@ export function resolveCounterEffectSlots(
             slotId: idx + 1,
             threshold: item.slot.threshold,
             resetBuffId: item.slot.resetBuffId,
+            ...(item.slot.resetSourceConfigId !== undefined
+              ? { resetSourceConfigId: item.slot.resetSourceConfigId }
+              : {}),
             onBuffAdd: item.slot.onBuffAdd,
             onBuffChange: item.slot.onBuffChange,
             onBuffRemove: item.slot.onBuffRemove,
