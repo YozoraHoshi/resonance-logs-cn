@@ -188,6 +188,17 @@
     }
   },
   {
+    "sourceId": "frost_mage_x1",
+    "name": "冰魔X1, 释放冰霜之矛获得 12 点能量",
+    "description": "释放冰之灌注获得 12 点能量",
+    "source": {
+      "skillCast": {
+        "skillBaseIds": [1242],
+        "increment": 12
+      }
+    }
+  },
+  {
     "sourceId": "frost_mage_x3",
     "name": "冰魔X3, 冰箭每造成 5 次伤害获得 8 点能量",
     "description": "冰箭每造成 5 次伤害获得 8 点能量",
@@ -196,6 +207,17 @@
         "skillKeys": [312130100, 312130200],
         "increment": 8,
         "hitsRequired": 5
+      }
+    }
+  },
+  {
+    "sourceId": "frost_mage_x4",
+    "name": "冰魔X4, 贯穿之矛, 冰霜彗星造成伤害获得 24 点虚妄能量",
+    "description": "贯穿之矛, 冰霜彗星造成伤害获得 24 点虚妄能量",
+    "source": {
+      "damageBySkillKeyOnce": {
+        "skillKeys": [312090100, 112590101],
+        "increment": 24
       }
     }
   },

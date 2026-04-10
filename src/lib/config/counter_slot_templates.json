@@ -102,6 +102,18 @@
     }
   },
   {
+    "slotTemplateId": "frost_mage_x1",
+    "name": "冰魔真实因子X1, 下次冰之灌注期间玄冰上限+2",
+    "description": "下次冰之灌注期间玄冰上限+2",
+    "slot": {
+      "threshold": 400,
+      "resetBuffId": 3052401,
+      "onBuffAdd": "reset",
+      "onBuffChange": "noOp",
+      "onBuffRemove": "noOp"
+    }
+  },
+  {
     "slotTemplateId": "frost_mage_x3",
     "name": "冰魔真实因子X3, 释放水球, 并且赋予极寒状态, 冷却 10s",
     "description": "释放水球, 并且赋予极寒状态, 冷却 10s",
