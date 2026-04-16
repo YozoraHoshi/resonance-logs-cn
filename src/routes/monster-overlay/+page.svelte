@@ -56,7 +56,10 @@
   }
 
   :global(.group-tag) {
-    margin-bottom: 6px;
+    position: absolute;
+    top: -22px;
+    left: 0;
+    z-index: 1;
     padding: 3px 7px;
     border-radius: 6px;
     display: inline-block;

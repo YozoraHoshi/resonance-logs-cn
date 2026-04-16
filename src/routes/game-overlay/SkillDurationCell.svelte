@@ -73,6 +73,7 @@
     border: 2px solid rgba(102, 204, 255, 0.9);
     border-radius: 8px;
     background: rgba(20, 36, 56, 0.55);
+    margin: -6px -4px;
     padding: 4px 2px;
   }
 
