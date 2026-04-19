@@ -131,7 +131,7 @@
     "description": "释放水球, 并且赋予极寒状态, 冷却 10s",
     "slot": {
       "threshold": 514,
-      "resetBuffId": 25401,
+      "resetBuffId": 3052421,
       "resetSourceConfigId": 3052420,
       "onBuffAdd": "freeze",
       "onBuffChange": "noOp",
