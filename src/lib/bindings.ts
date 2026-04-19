@@ -405,6 +405,38 @@ isDefeated: boolean }
 export type CounterAction = "reset" | "freeze" | "resetAndFreeze" | "resetAndStartCount" | "startCount" | "noOp"
 export type CounterRule = { ruleId: number; sources: CounterSource[]; effectSlots: EffectSlotConfig[] }
 export type CounterSource = { damageBySkillKey: { skillKeys: number[]; increment: number; hitsRequired?: number | null } } | { damageBySkillKeyOnce: { skillKeys: number[]; increment: number } } | { damageBySkillKeySelfTarget: { skillKeys: number[]; increment: number; hitsRequired?: number | null } } | { anyDamage: { increment: number; hitsRequired?: number | null } } | { buffDurationTick: { buffId: number; tickIntervalMs: number; increment: number; attrCondition?: TickAttrCondition | null } } | { skillCast: { skillBaseIds: number[]; increment: number } } | { skillDurationTick: { skillBaseId: number; tickIntervalMs: number; increment: number } } | { skillCastComplete: { skillBaseIds: number[]; increment: number } }
+/**
+ * A single damage event recorded in the 2s sliding window used for death replay.
+ */
+export type DamageSnapshot = { 
+/**
+ * Absolute timestamp in milliseconds since UNIX epoch.
+ */
+timestampMs: number; 
+/**
+ * Attacker entity uid (uuid >> 16).
+ */
+attackerUid: number; 
+/**
+ * Monster type id of the attacker, if the attacker is a monster. None otherwise.
+ */
+attackerMonsterTypeId: number | null; 
+/**
+ * Skill key produced by `damage_id::compute_damage_id`.
+ */
+skillKey: number; 
+/**
+ * Raw damage value.
+ */
+value: number }
+/**
+ * A death replay record, capturing the damage taken within the window leading up to a death.
+ */
+export type DeathRecord = { victimUid: number; deathTimestampMs: number; 
+/**
+ * Damage snapshots in chronological order (oldest first).
+ */
+recentDamages: DamageSnapshot[] }
 export type Device = { name: string; description: string | null }
 export type EffectSlotConfig = { slotId: number; threshold: number | null; resetBuffId: number; resetSourceConfigId?: number | null; onBuffAdd?: CounterAction; onBuffChange?: CounterAction; onBuffRemove?: CounterAction; freezeDurationMs?: number | null; onFreezeExpire?: CounterAction; altFreeze?: AltFreezeConfig | null }
 /**
@@ -500,7 +532,7 @@ remoteEncounterId: number | null;
  */
 isFavorite: boolean }
 export type GpuSupport = { cuda_available: boolean; opencl_available: boolean }
-export type HistoryEntityData = { uid: number; name: string; classId: number; classSpec: number; className: string; classSpecName: string; abilityScore: number; seasonStrength: number; damage: RawCombatStats; damageBossOnly: RawCombatStats; healing: RawCombatStats; taken: RawCombatStats; dmgSkills: Partial<{ [key in number]: RawSkillStats }>; healSkills: Partial<{ [key in number]: RawSkillStats }>; takenSkills: Partial<{ [key in number]: RawSkillStats }>; dmgPerTarget: PerTargetStats[]; healPerTarget: PerTargetStats[] }
+export type HistoryEntityData = { uid: number; name: string; classId: number; classSpec: number; className: string; classSpecName: string; abilityScore: number; seasonStrength: number; damage: RawCombatStats; damageBossOnly: RawCombatStats; healing: RawCombatStats; taken: RawCombatStats; dmgSkills: Partial<{ [key in number]: RawSkillStats }>; healSkills: Partial<{ [key in number]: RawSkillStats }>; takenSkills: Partial<{ [key in number]: RawSkillStats }>; dmgPerTarget: PerTargetStats[]; healPerTarget: PerTargetStats[]; deaths: DeathRecord[] }
 export type LiveRuntimeSnapshot = { eventUpdateRateMs: number }
 export type ModuleInfo = { name: string; config_id: number; uuid: number; quality: number; parts: ModulePart[] }
 export type ModulePart = { id: number; name: string; value: number }

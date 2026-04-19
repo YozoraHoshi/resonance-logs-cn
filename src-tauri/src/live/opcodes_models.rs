@@ -1,8 +1,9 @@
+use crate::live::commands_models::{DamageSnapshot, DeathRecord};
 use crate::live::monster_registry::{self, MonsterType};
 use crate::live::opcodes_models::class::ClassSpec;
 use blueprotobuf_lib::blueprotobuf::{EEntityType, SyncContainerData};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use tokio::sync::RwLock;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -355,6 +356,10 @@ pub struct Entity {
     pub skill_dmg_to_target: HashMap<(i64, i64), SkillTargetStats>,
     pub skill_heal_to_target: HashMap<(i64, i64), SkillTargetStats>,
     pub season_strength: i32,
+    /// Rolling 2s window of damage taken events; used to build death-replay snapshots.
+    #[serde(skip)]
+    pub recent_taken_events: VecDeque<DamageSnapshot>,
+    pub deaths: Vec<DeathRecord>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -422,6 +427,10 @@ impl Encounter {
             // Taken
             entity.taken = CombatStats::default();
             entity.skill_uid_to_taken_skill.clear();
+
+            // Death replay window
+            entity.recent_taken_events.clear();
+            entity.deaths.clear();
         }
     }
 }

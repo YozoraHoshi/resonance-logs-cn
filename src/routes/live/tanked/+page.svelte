@@ -270,8 +270,9 @@
             ? SETTINGS.live.general.state.showYourSeasonStrength
             : SETTINGS.live.general.state.showOthersSeasonStrength)}
         <tr
-          class="relative bg-background/40 hover:bg-muted/60 transition-colors cursor-default group"
+          class="relative bg-background/40 hover:bg-muted/60 transition-colors cursor-pointer group"
           style="height: {tableSettings.playerRowHeight}px; font-size: {tableSettings.playerFontSize}px;"
+          onclick={() => goto(`/live/tanked/skills?playerUid=${player.uid}`)}
         >
           <td class="px-3 py-1 relative z-10">
             <div class="flex items-center h-full gap-2">

@@ -1,6 +1,6 @@
 // NOTE: opcodes_process works on Encounter directly; avoid importing opcodes_models at top-level.
 use crate::database::{flush_playerdata, now_ms};
-use crate::live::commands_models::HateEntry;
+use crate::live::commands_models::{DamageSnapshot, HateEntry};
 use crate::live::damage_id;
 use crate::live::dungeon_log::{BattleStateMachine, EncounterResetReason};
 use crate::live::entity_attr_store::EntityAttrStore;
@@ -885,6 +885,13 @@ pub fn process_aoi_sync_delta(
                 actual_value
             };
 
+            // Snapshot attacker's monster_type_id before mutably borrowing defender_entity,
+            // so the death-replay window can surface it without needing a second lookup.
+            let attacker_monster_type_id = encounter
+                .entity_uid_to_entity
+                .get(&attacker_uid)
+                .and_then(|e| e.monster_type_id);
+
             let defender_entity = encounter
                 .entity_uid_to_entity
                 .entry(target_uid)
@@ -914,6 +921,23 @@ pub fn process_aoi_sync_delta(
                 defender_entity.taken.total += effective_value;
                 taken_skill.hits += 1;
                 taken_skill.total_value += effective_value;
+
+                // Maintain a 2s sliding window of recent damage taken for death replay.
+                const REPLAY_WINDOW_MS: u128 = 2000;
+                while defender_entity
+                    .recent_taken_events
+                    .front()
+                    .is_some_and(|ev| timestamp_ms.saturating_sub(ev.timestamp_ms) > REPLAY_WINDOW_MS)
+                {
+                    defender_entity.recent_taken_events.pop_front();
+                }
+                defender_entity.recent_taken_events.push_back(DamageSnapshot {
+                    timestamp_ms,
+                    attacker_uid,
+                    attacker_monster_type_id,
+                    skill_key,
+                    value: actual_value,
+                });
             }
         }
     }

@@ -108,6 +108,7 @@ pub struct HistoryEntityData {
     pub taken_skills: HashMap<i64, RawSkillStats>,
     pub dmg_per_target: Vec<PerTargetStats>,
     pub heal_per_target: Vec<PerTargetStats>,
+    pub deaths: Vec<DeathRecord>,
 }
 
 #[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
@@ -353,4 +354,36 @@ pub struct FightResourceState {
 #[serde(rename_all = "camelCase")]
 pub struct FightResourceUpdatePayload {
     pub fight_res: FightResourceState,
+}
+
+/// A single damage event recorded in the 2s sliding window used for death replay.
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DamageSnapshot {
+    /// Absolute timestamp in milliseconds since UNIX epoch.
+    pub timestamp_ms: u128,
+    /// Attacker entity uid (uuid >> 16).
+    pub attacker_uid: i64,
+    /// Monster type id of the attacker, if the attacker is a monster. None otherwise.
+    pub attacker_monster_type_id: Option<i32>,
+    /// Skill key produced by `damage_id::compute_damage_id`.
+    pub skill_key: i64,
+    /// Raw damage value.
+    pub value: u128,
+}
+
+/// A death replay record, capturing the damage taken within the window leading up to a death.
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DeathRecord {
+    pub victim_uid: i64,
+    pub death_timestamp_ms: u128,
+    /// Damage snapshots in chronological order (oldest first).
+    pub recent_damages: Vec<DamageSnapshot>,
+}
+
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DeathReplayPayload {
+    pub records: Vec<DeathRecord>,
 }

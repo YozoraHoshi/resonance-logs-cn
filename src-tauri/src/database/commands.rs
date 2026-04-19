@@ -674,6 +674,7 @@ pub fn get_encounter_entities_raw(encounter_id: i32) -> Result<Vec<lc::HistoryEn
                 Some(&entity.dmg_to_target),
             ),
             heal_per_target: lc::build_per_target_stats(&entity.skill_heal_to_target, None),
+            deaths: entity.deaths.clone(),
         });
     }
     rows.sort_by_key(|row| row.uid);

@@ -17,6 +17,7 @@
     onSceneChange,
     onPauseEncounter,
     onTrainingDummyUpdate,
+    onDeathReplay,
   } from "$lib/api";
   import { applyCustomFonts } from "$lib/font-loader";
   import { writable } from "svelte/store";
@@ -31,6 +32,7 @@
   import {
     setLiveData,
     setTrainingDummyState,
+    setDeathRecords,
     clearMeterData,
     cleanupStores,
   } from "$lib/stores/live-meter-store.svelte";
@@ -177,6 +179,24 @@
         return;
       }
 
+      const deathReplayUnlisten = await onDeathReplay((event) => {
+        if (isDestroyed) return;
+        lastEventTime = Date.now();
+        hadAnyEvent = true;
+        setDeathRecords(event.payload.records);
+      });
+
+      if (isDestroyed) {
+        playersUnlisten();
+        resetUnlisten();
+        encounterUnlisten();
+        sceneChangeUnlisten();
+        trainingDummyUnlisten();
+        deathReplayUnlisten();
+        listenersSetupInProgress = false;
+        return;
+      }
+
       // Listen for explicit pause/resume events as a keep-alive as well
       const pauseUnlisten = await onPauseEncounter((event) => {
         if (isDestroyed) return;
@@ -191,6 +211,7 @@
         encounterUnlisten();
         sceneChangeUnlisten();
         trainingDummyUnlisten();
+        deathReplayUnlisten();
         pauseUnlisten();
         listenersSetupInProgress = false;
         return;
@@ -214,6 +235,9 @@
         } catch {}
         try {
           trainingDummyUnlisten();
+        } catch {}
+        try {
+          deathReplayUnlisten();
         } catch {}
         try {
           pauseUnlisten();

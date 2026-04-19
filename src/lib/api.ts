@@ -11,6 +11,8 @@ import type {
   RawCombatStats as BindingRawCombatStats,
   RawSkillStats as BindingRawSkillStats,
   HistoryEntityData as BindingRawEntityData,
+  DamageSnapshot as BindingDamageSnapshot,
+  DeathRecord as BindingDeathRecord,
 } from "./bindings";
 
 // Type definitions for event payloads
@@ -198,6 +200,13 @@ export type SceneChangePayload = {
   sceneName: string;
 };
 
+export type DamageSnapshot = BindingDamageSnapshot;
+export type DeathRecord = BindingDeathRecord;
+
+export type DeathReplayPayload = {
+  records: DeathRecord[];
+};
+
 // Event listener functions
 export const onEncounterUpdate = (handler: (event: Event<EncounterUpdatePayload>) => void): Promise<UnlistenFn> =>
   listen<EncounterUpdatePayload>("encounter-update", handler);
@@ -255,6 +264,10 @@ export const onPanelAttrUpdate = (
   handler: (event: Event<PanelAttrUpdatePayload>) => void
 ): Promise<UnlistenFn> =>
   listen<PanelAttrUpdatePayload>("panel-attr-update", handler);
+
+export const onDeathReplay = (
+  handler: (event: Event<DeathReplayPayload>) => void
+): Promise<UnlistenFn> => listen<DeathReplayPayload>("death-replay", handler);
 
 // Command wrappers (still using generated bindings)
 

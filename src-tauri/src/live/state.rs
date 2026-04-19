@@ -2,8 +2,8 @@ use crate::database::{EncounterMetadata, PlayerNameEntry, now_ms, save_encounter
 use crate::live::bootstrap_snapshot::MonitorRuntimeSnapshot;
 use crate::live::buff_monitor::{BossBuffMonitors, BuffMonitor};
 use crate::live::commands_models::{
-    CounterUpdateState, FightResourceEntry, FightResourceState, PanelAttrState, SkillCdState,
-    TrainingDummyState,
+    CounterUpdateState, DeathRecord, FightResourceEntry, FightResourceState, PanelAttrState,
+    SkillCdState, TrainingDummyState,
 };
 use crate::live::counter_tracker::{BuffCounterTracker, CounterRule};
 use crate::live::dungeon_log::{BattleStateMachine, EncounterResetReason};
@@ -82,6 +82,9 @@ pub struct AppState {
     pub training_dummy: TrainingDummyRuntime,
     /// UIDs whose display names have already been pushed to the monster overlay.
     pub sent_overlay_uids: HashSet<i64>,
+    /// Set to true whenever a new DeathRecord has been appended to an Entity, signalling that
+    /// the next emit cycle should push a full death-replay snapshot.
+    pub death_snapshot_dirty: bool,
 }
 
 #[derive(Debug)]
@@ -154,6 +157,7 @@ impl AppState {
             pending_auto_reset: None,
             training_dummy: TrainingDummyRuntime::default(),
             sent_overlay_uids: HashSet::new(),
+            death_snapshot_dirty: false,
         }
     }
 
@@ -1076,6 +1080,21 @@ impl AppStateManager {
                 .build_filtered_skill_cds();
             emit_skill_cd_update_if_needed(state, filtered);
         }
+
+        for death in changes.death_events {
+            if let Some(entity) = state.encounter.entity_uid_to_entity.get_mut(&death.uid) {
+                let recent_damages: Vec<_> = entity.recent_taken_events.drain(..).collect();
+                if recent_damages.is_empty() {
+                    continue;
+                }
+                entity.deaths.push(DeathRecord {
+                    victim_uid: death.uid,
+                    death_timestamp_ms: death.timestamp_ms,
+                    recent_damages,
+                });
+                state.death_snapshot_dirty = true;
+            }
+        }
     }
 
     fn apply_battle_state_resets_if_needed(&self, state: &mut AppState) {
@@ -1095,6 +1114,7 @@ impl AppStateManager {
     fn reset_encounter(&self, state: &mut AppState, is_manual: bool) {
         persist_and_save_encounter(state, is_manual, "reset");
         state.encounter.reset_combat_state();
+        state.death_snapshot_dirty = false;
 
         if state.event_manager.should_emit_events() {
             state.event_manager.emit_encounter_reset();
@@ -1222,6 +1242,18 @@ impl AppStateManager {
         );
 
         state.event_manager.emit_live_data(payload);
+
+        if state.death_snapshot_dirty {
+            let mut records: Vec<DeathRecord> = state
+                .encounter
+                .entity_uid_to_entity
+                .values()
+                .flat_map(|entity| entity.deaths.iter().cloned())
+                .collect();
+            records.sort_by_key(|r| r.death_timestamp_ms);
+            state.event_manager.emit_death_replay(records);
+            state.death_snapshot_dirty = false;
+        }
         let mut boss_buff_snapshot = state
             .boss_buff_monitors
             .build_all_buff_snapshots(state.server_clock_offset);

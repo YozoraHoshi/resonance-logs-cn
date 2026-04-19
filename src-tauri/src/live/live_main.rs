@@ -1,9 +1,9 @@
 use crate::live::state::{AppState, AppStateManager, StateEvent};
 use crate::live::{
     commands_models::{
-        BossBuffUpdatePayload, BuffCounterUpdatePayload, BuffUpdatePayload, EntityNameMapPayload,
-        FightResourceUpdatePayload, HateListUpdatePayload, PanelAttrUpdatePayload,
-        SkillCdUpdatePayload,
+        BossBuffUpdatePayload, BuffCounterUpdatePayload, BuffUpdatePayload, DeathReplayPayload,
+        EntityNameMapPayload, FightResourceUpdatePayload, HateListUpdatePayload,
+        PanelAttrUpdatePayload, SkillCdUpdatePayload,
     },
     event_manager::{EncounterUpdatePayload, SceneChangePayload},
     event_manager::{OutboundEvent, safe_emit_to},
@@ -472,6 +472,14 @@ fn flush_outbound_events(app_handle: &AppHandle, state: &mut AppState) {
                     crate::WINDOW_GAME_OVERLAY_LABEL,
                     "fight-res-update",
                     FightResourceUpdatePayload { fight_res },
+                );
+            }
+            OutboundEvent::DeathReplay(records) => {
+                safe_emit_to(
+                    app_handle,
+                    crate::WINDOW_LIVE_LABEL,
+                    "death-replay",
+                    DeathReplayPayload { records },
                 );
             }
         }

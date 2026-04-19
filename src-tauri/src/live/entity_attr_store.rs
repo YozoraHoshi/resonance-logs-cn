@@ -2,6 +2,13 @@ use crate::live::commands_models::{HateEntry, PanelAttrState};
 use crate::live::opcodes_models::{AttrType, AttrValue, Entity};
 use blueprotobuf_lib::blueprotobuf::EActorState;
 use std::collections::HashMap;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+#[derive(Debug, Clone)]
+pub struct DeathEvent {
+    pub uid: i64,
+    pub timestamp_ms: u128,
+}
 
 #[derive(Debug, Default)]
 pub struct EntityAttrStore {
@@ -13,12 +20,14 @@ pub struct EntityAttrStore {
     panel_attr_values: HashMap<i32, i32>,
     cd_dirty: bool,
     panel_dirty_attrs: Vec<PanelAttrState>,
+    death_events: Vec<DeathEvent>,
 }
 
 #[derive(Debug, Default)]
 pub struct AttrChanges {
     pub cd_dirty: bool,
     pub panel_dirty_attrs: Vec<PanelAttrState>,
+    pub death_events: Vec<DeathEvent>,
 }
 
 impl EntityAttrStore {
@@ -32,6 +41,7 @@ impl EntityAttrStore {
             panel_attr_values: HashMap::new(),
             cd_dirty: false,
             panel_dirty_attrs: Vec::with_capacity(8),
+            death_events: Vec::new(),
         }
     }
 
@@ -40,6 +50,10 @@ impl EntityAttrStore {
     }
 
     pub fn set_attr(&mut self, uid: i64, attr_type: AttrType, value: AttrValue) -> bool {
+        // Snapshot previous ActorState dead flag before mutating so we can detect a
+        // non-Dead -> Dead edge after the write.
+        let was_dead = matches!(attr_type, AttrType::ActorState) && self.is_dead(uid);
+
         let changed = self
             .attrs
             .entry(uid)
@@ -58,6 +72,18 @@ impl EntityAttrStore {
         {
             self.cd_dirty = true;
         }
+
+        if matches!(attr_type, AttrType::ActorState) {
+            let is_dead_now = self.is_dead(uid);
+            if !was_dead && is_dead_now {
+                let timestamp_ms = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_millis();
+                self.death_events.push(DeathEvent { uid, timestamp_ms });
+            }
+        }
+
         true
     }
 
@@ -185,12 +211,14 @@ impl EntityAttrStore {
         self.attrs.clear();
         self.hate_lists.clear();
         self.fight_resource_ids.clear();
+        self.death_events.clear();
     }
 
     pub fn drain_changes(&mut self) -> AttrChanges {
         AttrChanges {
             cd_dirty: std::mem::take(&mut self.cd_dirty),
             panel_dirty_attrs: std::mem::take(&mut self.panel_dirty_attrs),
+            death_events: std::mem::take(&mut self.death_events),
         }
     }
 }

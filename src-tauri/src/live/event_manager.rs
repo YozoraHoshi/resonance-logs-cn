@@ -1,6 +1,6 @@
 use crate::live::commands_models::{
-    BossHealth, BuffUpdateState, CounterUpdateState, FightResourceState, HateEntry, HeaderInfo,
-    LiveDataPayload, PanelAttrState, RawEntityData, SkillCdState, TrainingDummyState,
+    BossHealth, BuffUpdateState, CounterUpdateState, DeathRecord, FightResourceState, HateEntry,
+    HeaderInfo, LiveDataPayload, PanelAttrState, RawEntityData, SkillCdState, TrainingDummyState,
     to_raw_combat_stats, to_raw_skill_stats,
 };
 use crate::live::entity_attr_store::EntityAttrStore;
@@ -112,6 +112,7 @@ pub enum OutboundEvent {
     SkillCdUpdate(Vec<SkillCdState>),
     PanelAttrUpdate(Vec<PanelAttrState>),
     FightResourceUpdate(FightResourceState),
+    DeathReplay(Vec<DeathRecord>),
 }
 
 impl EventManager {
@@ -216,6 +217,14 @@ impl EventManager {
     pub fn emit_fight_resource_update(&mut self, fight_res: FightResourceState) {
         self.outbound_events
             .push(OutboundEvent::FightResourceUpdate(fight_res));
+    }
+
+    pub fn emit_death_replay(&mut self, records: Vec<DeathRecord>) {
+        if records.is_empty() {
+            return;
+        }
+        self.outbound_events
+            .push(OutboundEvent::DeathReplay(records));
     }
 
     pub fn drain_outbound_events(&mut self) -> Vec<OutboundEvent> {

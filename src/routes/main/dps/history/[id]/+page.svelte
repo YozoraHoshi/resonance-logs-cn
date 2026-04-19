@@ -25,8 +25,13 @@
     type SkillDisplayRow,
   } from "$lib/config/recount-table";
   import { formatClassSpecLabel } from "$lib/class-labels";
+  import DeathPlayerList, {
+    type DeathPlayerEntry,
+  } from "$lib/components/death-replay/death-player-list.svelte";
+  import DeathList from "$lib/components/death-replay/death-list.svelte";
+  import DeathReplayDetail from "$lib/components/death-replay/death-replay-detail.svelte";
 
-  type HistorySkillType = "dps" | "heal" | "tanked";
+  type HistorySkillType = "dps" | "heal" | "tanked" | "death";
 
   type HistoryPlayerRow = {
     uid: number;
@@ -105,11 +110,13 @@
   let overviewTargetUid = $state<number | null>(null);
 
   // Tab state for encounter view
-  let activeTab = $state<"damage" | "tanked" | "healing">("damage");
-  const tabs: { key: "damage" | "tanked" | "healing"; label: string }[] = [
+  type HistoryTab = "damage" | "tanked" | "healing" | "death";
+  let activeTab = $state<HistoryTab>("damage");
+  const tabs: { key: HistoryTab; label: string }[] = [
     { key: "damage", label: "伤害" },
     { key: "tanked", label: "承伤" },
     { key: "healing", label: "治疗" },
+    { key: "death", label: "死亡回放" },
   ];
 
   let encounterDurationSeconds = $derived.by(() => {
@@ -329,6 +336,34 @@
     if (!raw) return null;
     const parsed = Number(raw);
     return Number.isFinite(parsed) ? parsed : null;
+  });
+
+  let selectedDeathTs = $derived.by(() => {
+    const raw = $page.url.searchParams.get("deathTs");
+    if (!raw) return null;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : null;
+  });
+
+  let deathEntries = $derived.by<DeathPlayerEntry[]>(() =>
+    rawEntities
+      .filter((entity) => (entity.deaths?.length ?? 0) > 0)
+      .map((entity) => ({
+        uid: entity.uid,
+        name: entity.name || `#${entity.uid}`,
+        className: entity.className || "",
+        classSpecName: entity.classSpecName || "",
+        deaths: entity.deaths ?? [],
+      })),
+  );
+
+  let selectedDeathRecord = $derived.by(() => {
+    if (!selectedEntity || selectedDeathTs == null) return null;
+    return (
+      selectedEntity.deaths?.find(
+        (record) => Number(record.deathTimestampMs) === selectedDeathTs,
+      ) ?? null
+    );
   });
 
   function flattenGrouping(grouping: {
@@ -557,6 +592,34 @@
     } else {
       sp.delete("targetUid");
     }
+    // Always drop any previous deathTs when navigating to a new player/type.
+    sp.delete("deathTs");
+    goto(`/main/dps/history/${encounterId}?${sp.toString()}`);
+  }
+
+  function viewDeathReplay(playerUid: number, deathTs: number) {
+    const sp = new URLSearchParams($page.url.searchParams);
+    sp.set("charId", String(playerUid));
+    sp.set("skillType", "death");
+    sp.set("deathTs", String(deathTs));
+    sp.delete("targetUid");
+    goto(`/main/dps/history/${encounterId}?${sp.toString()}`);
+  }
+
+  function backToDeathPlayerList() {
+    const sp = new URLSearchParams($page.url.searchParams);
+    sp.delete("charId");
+    sp.delete("deathTs");
+    sp.delete("targetUid");
+    sp.set("skillType", "death");
+    goto(`/main/dps/history/${encounterId}?${sp.toString()}`);
+  }
+
+  function backToDeathList() {
+    const sp = new URLSearchParams($page.url.searchParams);
+    sp.delete("deathTs");
+    sp.delete("targetUid");
+    sp.set("skillType", "death");
     goto(`/main/dps/history/${encounterId}?${sp.toString()}`);
   }
 
@@ -566,6 +629,7 @@
     sp.delete("charId");
     sp.delete("skillType");
     sp.delete("targetUid");
+    sp.delete("deathTs");
     const qs = sp.toString();
     goto(`/main/dps/history/${encounterId}${qs ? `?${qs}` : ""}`);
   }
@@ -577,6 +641,7 @@
     sp.delete("charId");
     sp.delete("skillType");
     sp.delete("targetUid");
+    sp.delete("deathTs");
     const qs = sp.toString();
     goto(`/main/dps/history${qs ? `?${qs}` : ""}`);
   }
@@ -642,6 +707,14 @@
     activeTab;
     if (activeTab !== "damage") {
       overviewTargetUid = null;
+    }
+  });
+
+  // When the URL indicates the user drilled into a death-replay view, keep the top-level
+  // tab pointer in sync so the "死亡回放" tab appears active if/when they return to overview.
+  $effect(() => {
+    if (skillType === "death") {
+      activeTab = "death";
     }
   });
 
@@ -824,6 +897,15 @@
       </div>
     {/if}
 
+    {#if activeTab === "death"}
+      <DeathPlayerList
+        entries={deathEntries}
+        localPlayerUid={localPlayerUid}
+        onSelect={(uid) => viewPlayerSkills(uid, "death")}
+        emptyMessage="本次战斗没有记录到玩家死亡。"
+        variant="history"
+      />
+    {:else}
     <div class="overflow-x-auto rounded border border-border/60 bg-card/30">
         <table class="w-full border-collapse">
           <thead>
@@ -952,6 +1034,59 @@
             {/each}
           </tbody>
         </table>
+    </div>
+    {/if}
+  {:else if charId && selectedPlayer && selectedEntity && skillType === "death"}
+    <!-- Death Replay: list or detail -->
+    <div class="mb-4">
+      {#if selectedDeathTs == null}
+        <DeathList
+          playerName={getDisplayName({
+            player: {
+              uid: selectedPlayer.uid,
+              name: selectedPlayer.name,
+              className: selectedPlayer.className,
+              classSpecName: selectedPlayer.classSpecName,
+            },
+            showYourNameSetting: settings.state.history.general.showYourName,
+            showOthersNameSetting: settings.state.history.general.showOthersName,
+            isLocalPlayer: selectedPlayer.isLocalPlayer,
+          })}
+          className={selectedPlayer.className}
+          classSpecName={selectedPlayer.classSpecName}
+          deaths={selectedEntity.deaths ?? []}
+          fightStartTimestampMs={encounter?.startedAtMs ?? null}
+          onSelect={(ts) => viewDeathReplay(selectedPlayer.uid, ts)}
+          onBack={backToDeathPlayerList}
+          variant="history"
+        />
+      {:else if selectedDeathRecord}
+        <DeathReplayDetail
+          playerName={getDisplayName({
+            player: {
+              uid: selectedPlayer.uid,
+              name: selectedPlayer.name,
+              className: selectedPlayer.className,
+              classSpecName: selectedPlayer.classSpecName,
+            },
+            showYourNameSetting: settings.state.history.general.showYourName,
+            showOthersNameSetting: settings.state.history.general.showOthersName,
+            isLocalPlayer: selectedPlayer.isLocalPlayer,
+          })}
+          className={selectedPlayer.className}
+          classSpecName={selectedPlayer.classSpecName}
+          record={selectedDeathRecord}
+          onBack={backToDeathList}
+          variant="history"
+        />
+      {:else}
+        <div
+          class="flex h-40 items-center justify-center rounded-lg border border-dashed border-border/60 text-muted-foreground text-xs"
+        >
+          未找到该死亡记录。
+          <button class="ml-2 underline" onclick={backToDeathList}>返回列表</button>
+        </div>
+      {/if}
     </div>
   {:else if charId && selectedPlayer && selectedEntity}
     <!-- Player Skills View -->
