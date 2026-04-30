@@ -618,6 +618,18 @@
     "SpriteFile": null
   },
   {
+    "Id": 10001,
+    "Icon": "",
+    "NameDesign": "光翼展开判断",
+    "SpriteFile": null
+  },
+  {
+    "Id": 10002,
+    "Icon": "",
+    "NameDesign": "光翼展开",
+    "SpriteFile": null
+  },
+  {
     "Id": 12001,
     "Icon": "",
     "NameDesign": "水矛发射特效",
@@ -4494,6 +4506,12 @@
     "SpriteFile": null
   },
   {
+    "Id": 681702,
+    "Icon": "buff_red_cd",
+    "NameDesign": "异次元惩戒报名冷却",
+    "SpriteFile": "buff_red_cd_-3057026040773415960.png"
+  },
+  {
     "Id": 681801,
     "Icon": "",
     "NameDesign": "BUFF分类测试BUFF-1类1号",
@@ -5388,6 +5406,12 @@
     "SpriteFile": null
   },
   {
+    "Id": 683193,
+    "Icon": "",
+    "NameDesign": "载具-超大娜宝疾跑特效",
+    "SpriteFile": null
+  },
+  {
     "Id": 683301,
     "Icon": "",
     "NameDesign": "BOSS对主要目标伤害提高300%----临时",
@@ -5896,6 +5920,36 @@
     "Icon": "",
     "NameDesign": "行李箱-命中qte表现",
     "SpriteFile": null
+  },
+  {
+    "Id": 683855,
+    "Icon": "",
+    "NameDesign": "娜宝-奔跑特效",
+    "SpriteFile": null
+  },
+  {
+    "Id": 683856,
+    "Icon": "",
+    "NameDesign": "娜宝-1技能停止体力恢复",
+    "SpriteFile": null
+  },
+  {
+    "Id": 683857,
+    "Icon": "",
+    "NameDesign": "娜宝-强化buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 683858,
+    "Icon": "talent_passive_icon_general_sup_grassarea",
+    "NameDesign": "娜宝-2技能表现",
+    "SpriteFile": "talent_passive_icon_general_sup_grassarea_-2699280676978229692.png"
+  },
+  {
+    "Id": 683859,
+    "Icon": "talent_passive_icon_general_sup_grassarea",
+    "NameDesign": "娜宝-2技能表现(高定)",
+    "SpriteFile": "talent_passive_icon_general_sup_grassarea_-2699280676978229692.png"
   },
   {
     "Id": 684800,
@@ -11317,57 +11371,57 @@
   },
   {
     "Id": 828112,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-双子-普通",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 828113,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-双子-困难",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 828114,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-双子-噩梦",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 828115,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-石头人-普通",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 828116,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-石头人-困难",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 828117,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-石头人-噩梦",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 828118,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-铠甲-普通",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 828119,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-铠甲-困难",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 828120,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-铠甲-噩梦",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 828121,
@@ -11684,7 +11738,7 @@
   {
     "Id": 829119,
     "Icon": "",
-    "NameDesign": "电网转阶段buff",
+    "NameDesign": "电网天生buff",
     "SpriteFile": null
   },
   {
@@ -11740,6 +11794,12 @@
     "Icon": "",
     "NameDesign": "BossD区域buff",
     "SpriteFile": null
+  },
+  {
+    "Id": 829129,
+    "Icon": "buff_red_hp",
+    "NameDesign": "奇点伤痕",
+    "SpriteFile": "buff_red_hp_7631201784644749282.png"
   },
   {
     "Id": 829201,
@@ -11946,6 +12006,48 @@
     "SpriteFile": null
   },
   {
+    "Id": 829238,
+    "Icon": "",
+    "NameDesign": "raid死亡传送在活着的队友身边",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829239,
+    "Icon": "",
+    "NameDesign": "地板碎裂表现",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829240,
+    "Icon": "",
+    "NameDesign": "BOSS锁血 空血时触发表演buff",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829241,
+    "Icon": "",
+    "NameDesign": "闪现坐标点标记（结尾表演）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829242,
+    "Icon": "",
+    "NameDesign": "raid转阶段小怪aoe",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829243,
+    "Icon": "buff_talent_passive_icon_sup_control01",
+    "NameDesign": "二阶段禁共鸣技能",
+    "SpriteFile": "buff_talent_passive_icon_sup_control01_5609452090819210916.png"
+  },
+  {
+    "Id": 829244,
+    "Icon": "",
+    "NameDesign": "移除中间三块地板用（buff加在dummy上)",
+    "SpriteFile": null
+  },
+  {
     "Id": 829300,
     "Icon": "",
     "NameDesign": "实体可见性测试buff",
@@ -12097,57 +12199,135 @@
   },
   {
     "Id": 829352,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-一阶段-普通",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 829353,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-一阶段-困难",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 829354,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-一阶段-噩梦",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 829355,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-二阶段-普通",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 829356,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-二阶段-困难",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 829357,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-二阶段-噩梦",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 829358,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-三阶段-普通",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 829359,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-三阶段-困难",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 829360,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-三阶段-噩梦",
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
+  },
+  {
+    "Id": 829361,
+    "Icon": "",
+    "NameDesign": "开启云",
     "SpriteFile": null
+  },
+  {
+    "Id": 829362,
+    "Icon": "",
+    "NameDesign": "暂停云",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829363,
+    "Icon": "",
+    "NameDesign": "关闭云",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829364,
+    "Icon": "",
+    "NameDesign": "喷气！！！",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829365,
+    "Icon": "",
+    "NameDesign": "初始平台传送门-boss2（前端）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829366,
+    "Icon": "",
+    "NameDesign": "初始平台传送门-boss3（前端）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829367,
+    "Icon": "",
+    "NameDesign": "初始平台传送门-连打（前端）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829368,
+    "Icon": "",
+    "NameDesign": "连打老一加血",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829369,
+    "Icon": "",
+    "NameDesign": "连打老二加血",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829370,
+    "Icon": "buff_talent_skill_300001",
+    "NameDesign": "连打buff",
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
+  },
+  {
+    "Id": 829371,
+    "Icon": "",
+    "NameDesign": "隐身无视碰撞暂停ai",
+    "SpriteFile": null
+  },
+  {
+    "Id": 829372,
+    "Icon": "debuff_icon_20",
+    "NameDesign": "计数1",
+    "SpriteFile": "debuff_icon_20_3157023957711429111.png"
+  },
+  {
+    "Id": 829373,
+    "Icon": "debuff_icon_20",
+    "NameDesign": "计数2",
+    "SpriteFile": "debuff_icon_20_3157023957711429111.png"
   },
   {
     "Id": 829901,
@@ -18348,6 +18528,12 @@
     "SpriteFile": "buff_abnormal_icon_-7224232056957210398.png"
   },
   {
+    "Id": 880305,
+    "Icon": "buff_abnormal_icon",
+    "NameDesign": "禁锢（通用）",
+    "SpriteFile": "buff_abnormal_icon_-7224232056957210398.png"
+  },
+  {
     "Id": 880401,
     "Icon": "",
     "NameDesign": "跳砍预警",
@@ -23665,57 +23851,57 @@
   },
   {
     "Id": 882260,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-冰龙-普通",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 882261,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-冰龙-困难",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 882262,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-冰龙-噩梦",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 882263,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-虚蚀龙-普通",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 882264,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-虚蚀龙-困难",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 882265,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-虚蚀龙-噩梦",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 882266,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-光龙-普通",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 882267,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-光龙-困难",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 882268,
-    "Icon": "",
+    "Icon": "buff_talent_skill_300001",
     "NameDesign": "祝祷之泉buff-光龙-噩梦",
-    "SpriteFile": null
+    "SpriteFile": "buff_talent_skill_300001_3928582440410015275.png"
   },
   {
     "Id": 882270,
@@ -26712,6 +26898,12 @@
     "SpriteFile": null
   },
   {
+    "Id": 883399,
+    "Icon": "debuff_icon_2",
+    "NameDesign": "N6火龙卷禁止TH撞球",
+    "SpriteFile": "debuff_icon_2_3143350778177224612.png"
+  },
+  {
     "Id": 883500,
     "Icon": "",
     "NameDesign": "测试-格子矩阵",
@@ -27981,6 +28173,24 @@
     "Id": 884174,
     "Icon": "",
     "NameDesign": "拼图完成玩家挂",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884175,
+    "Icon": "",
+    "NameDesign": "raid地板碎裂预警",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884176,
+    "Icon": "",
+    "NameDesign": "raid处死玩家（玩家）",
+    "SpriteFile": null
+  },
+  {
+    "Id": 884177,
+    "Icon": "",
+    "NameDesign": "raid分摊标记（玩家）",
     "SpriteFile": null
   },
   {
@@ -35022,6 +35232,24 @@
     "SpriteFile": null
   },
   {
+    "Id": 997328,
+    "Icon": "",
+    "NameDesign": "肉鸽s3事件3瘫痪锁BK",
+    "SpriteFile": null
+  },
+  {
+    "Id": 997329,
+    "Icon": "",
+    "NameDesign": "肉鸽大秘境s3事件3扣血20%",
+    "SpriteFile": null
+  },
+  {
+    "Id": 997330,
+    "Icon": "buff_hideseek_icon12",
+    "NameDesign": "肉鸽大秘境s3事件3属性提升奖励",
+    "SpriteFile": "buff_hideseek_icon12_-2385457419463855088.png"
+  },
+  {
     "Id": 997331,
     "Icon": "",
     "NameDesign": "肉鸽大秘境s3事件3开炮特效",
@@ -35336,7 +35564,7 @@
   {
     "Id": 997388,
     "Icon": "",
-    "NameDesign": "区域5事件哥布林演出无敌",
+    "NameDesign": "区域3事件节点可交互",
     "SpriteFile": null
   },
   {
@@ -38430,6 +38658,30 @@
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
   {
+    "Id": 2010004,
+    "Icon": "",
+    "NameDesign": "【木桩比赛】扣血",
+    "SpriteFile": null
+  },
+  {
+    "Id": 2010005,
+    "Icon": "",
+    "NameDesign": "【木桩比赛】自动蒂娜",
+    "SpriteFile": null
+  },
+  {
+    "Id": 2010006,
+    "Icon": "",
+    "NameDesign": "【木桩比赛】自动蒂娜",
+    "SpriteFile": null
+  },
+  {
+    "Id": 2010007,
+    "Icon": "",
+    "NameDesign": "【木桩比赛】木桩锁血回血",
+    "SpriteFile": null
+  },
+  {
     "Id": 2010010,
     "Icon": "",
     "NameDesign": "信息面板属性测试属性+1",
@@ -38629,6 +38881,42 @@
   },
   {
     "Id": 2010079,
+    "Icon": "buff_food_up",
+    "NameDesign": "美食的加护",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2010081,
+    "Icon": "buff_food_up",
+    "NameDesign": "美食的加护-2",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2010082,
+    "Icon": "buff_food_up",
+    "NameDesign": "美食的加护",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2010083,
+    "Icon": "buff_food_up",
+    "NameDesign": "美食的加护",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2010084,
+    "Icon": "buff_food_up",
+    "NameDesign": "美食的加护",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2010085,
+    "Icon": "buff_food_up",
+    "NameDesign": "美食的加护",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Id": 2010086,
     "Icon": "buff_food_up",
     "NameDesign": "美食的加护",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
@@ -42050,8 +42338,8 @@
   {
     "Id": 2200130,
     "Icon": "",
-    "NameDesign": "雷电精通（废弃）",
-    "SpriteFile": null
+    "NameDesign": "幸运强效",
+    "SpriteFile": "talent_passive_icon_general_dps_ignoredef_7286603713275054058.png"
   },
   {
     "Id": 2200140,
@@ -42584,19 +42872,19 @@
   {
     "Id": 2201010,
     "Icon": "",
-    "NameDesign": "砂岩之握精进",
-    "SpriteFile": "talent_passive_icon_general_tank_pierce_3485067466456800186.png"
+    "NameDesign": "砂岩之握精进-岩拳回复",
+    "SpriteFile": "weiren962_487516027964618427.png"
   },
   {
     "Id": 2201011,
     "Icon": "",
-    "NameDesign": "幸运格挡_cd-砂岩之握精进",
-    "SpriteFile": "talent_passive_icon_general_tank_pierce_3485067466456800186.png"
+    "NameDesign": "幸运格挡_cd-岩拳回复",
+    "SpriteFile": "weiren962_487516027964618427.png"
   },
   {
     "Id": 2201012,
     "Icon": "buff_icon09",
-    "NameDesign": "砂岩之握精进_全能",
+    "NameDesign": "砂岩之握精进_全能-岩拳回复",
     "SpriteFile": "buff_icon09_-8333181523373916495.png"
   },
   {
@@ -42924,6 +43212,12 @@
     "SpriteFile": "talent_passive_icon_general_tank_luckblockcd_7879603332321940074.png"
   },
   {
+    "Id": 2201351,
+    "Icon": "",
+    "NameDesign": "护盾-砂岩回溯",
+    "SpriteFile": "talent_passive_icon_general_tank_luckblockcd_7879603332321940074.png"
+  },
+  {
     "Id": 2201360,
     "Icon": "",
     "NameDesign": "幸缘维护-砂石震荡",
@@ -43118,7 +43412,7 @@
   {
     "Id": 2201540,
     "Icon": "",
-    "NameDesign": "碎星冲追击",
+    "NameDesign": "护盾猛击追击",
     "SpriteFile": "weiren952_8143393319629407803.png"
   },
   {
@@ -43220,26 +43514,26 @@
   {
     "Id": 2201640,
     "Icon": "",
-    "NameDesign": "岩拳回复",
-    "SpriteFile": "weiren962_487516027964618427.png"
+    "NameDesign": "岩拳回复-岩怒追击",
+    "SpriteFile": "talent_passive_icon_general_tank_pierce_3485067466456800186.png"
   },
   {
     "Id": 2201641,
     "Icon": "",
-    "NameDesign": "岩拳回复--子buf",
-    "SpriteFile": "weiren962_487516027964618427.png"
+    "NameDesign": "岩拳回复--子buf-岩怒追击",
+    "SpriteFile": "talent_passive_icon_general_tank_pierce_3485067466456800186.png"
   },
   {
     "Id": 2201642,
     "Icon": "",
-    "NameDesign": "岩拳回复--护盾",
-    "SpriteFile": "weiren962_487516027964618427.png"
+    "NameDesign": "岩拳回复--护盾-岩怒追击",
+    "SpriteFile": "talent_passive_icon_general_tank_pierce_3485067466456800186.png"
   },
   {
     "Id": 2201643,
     "Icon": "",
-    "NameDesign": "岩拳回复",
-    "SpriteFile": "weiren962_487516027964618427.png"
+    "NameDesign": "岩怒追击",
+    "SpriteFile": "talent_passive_icon_general_tank_pierce_3485067466456800186.png"
   },
   {
     "Id": 2201650,
@@ -43713,6 +44007,12 @@
     "Id": 2202311,
     "Icon": "",
     "NameDesign": "自然之灵的愤怒-治疗子BUFF-防御加持",
+    "SpriteFile": "talent_passive_icon_general_sup_seedtrriger_-8403839690203707975.png"
+  },
+  {
+    "Id": 2202312,
+    "Icon": "",
+    "NameDesign": "狂想buff-防御加持",
     "SpriteFile": "talent_passive_icon_general_sup_seedtrriger_-8403839690203707975.png"
   },
   {
@@ -45410,7 +45710,7 @@
   {
     "Id": 2204620,
     "Icon": "",
-    "NameDesign": "专精伤害发射冰箭-广域冰箭",
+    "NameDesign": "广域冰箭",
     "SpriteFile": "mozhang265_-1619521838561868028.png"
   },
   {
@@ -46424,7 +46724,7 @@
   {
     "Id": 2206290,
     "Icon": "",
-    "NameDesign": "众生裁决",
+    "NameDesign": "众生裁决-裁决追击",
     "SpriteFile": "jiandun1228_-2637363237474792725.png"
   },
   {
@@ -46592,7 +46892,7 @@
   {
     "Id": 2206490,
     "Icon": "",
-    "NameDesign": "盾击强化",
+    "NameDesign": "盾击强化-魔法守卫",
     "SpriteFile": "jiandun1248_1039790835260823812.png"
   },
   {
@@ -46738,6 +47038,12 @@
     "Icon": "",
     "NameDesign": "光晕",
     "SpriteFile": "jiandun1266_5464923835327230226.png"
+  },
+  {
+    "Id": 2206680,
+    "Icon": "",
+    "NameDesign": "众生裁决-裁决追击",
+    "SpriteFile": "jiandun1228_-2637363237474792725.png"
   },
   {
     "Id": 2207010,
@@ -47002,6 +47308,12 @@
     "Icon": "buff_passive_icon_sup_heal02",
     "NameDesign": "音域扩充强化标记-属性共鸣暴击",
     "SpriteFile": "buff_passive_icon_sup_heal02_4890210747944786896.png"
+  },
+  {
+    "Id": 2207262,
+    "Icon": "",
+    "NameDesign": "激昂·热情挥洒持续期间-属性共鸣暴击",
+    "SpriteFile": "gita1325_-5447470031736844593.png"
   },
   {
     "Id": 2207270,
@@ -47636,7 +47948,7 @@
   {
     "Id": 2208290,
     "Icon": "",
-    "NameDesign": "精通转三刀流概率-无相火斩精通",
+    "NameDesign": "精通转三刀流概率-无相火斩幸运",
     "SpriteFile": "shuangfu328_619996992613869099.png"
   },
   {
@@ -51324,6 +51636,12 @@
     "SpriteFile": null
   },
   {
+    "Id": 3051411,
+    "Icon": "",
+    "NameDesign": "触发龙击炮",
+    "SpriteFile": null
+  },
+  {
     "Id": 3051420,
     "Icon": "",
     "NameDesign": "真实因子-触发大风环",
@@ -52743,6 +53061,12 @@
     "Id": 3056271,
     "Icon": "",
     "NameDesign": "专精技能伤害和幸运伤害+x%,可叠x层",
+    "SpriteFile": null
+  },
+  {
+    "Id": 3056272,
+    "Icon": "",
+    "NameDesign": "召唤鹿",
     "SpriteFile": null
   },
   {
