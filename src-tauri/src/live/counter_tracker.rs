@@ -350,13 +350,7 @@ impl BuffCounterTracker {
                     CounterSource::DamageBySkillKeyOnce {
                         skill_keys,
                         increment,
-                    } => {
-                        let distinct_count = skill_keys
-                            .iter()
-                            .filter(|sk| events.iter().any(|e| e.skill_key == **sk))
-                            .count();
-                        scaled_increment(*increment, distinct_count)
-                    }
+                    } => apply_damage_by_skill_key_once_max(events, skill_keys, *increment),
                     CounterSource::DamageBySkillKeySelfTarget {
                         skill_keys,
                         increment,
@@ -758,6 +752,37 @@ fn scaled_increment(increment: u32, matches: usize) -> Option<u32> {
     }
 
     Some(increment.saturating_mul(u32::try_from(matches).unwrap_or(u32::MAX)))
+}
+
+fn apply_damage_by_skill_key_once_max(
+    events: &[LocalDamageEvent],
+    skill_keys: &[i64],
+    increment: u32,
+) -> Option<u32> {
+    if events.is_empty() || skill_keys.is_empty() {
+        return None;
+    }
+
+    let mut hits: HashMap<(i64, i64), u32> = HashMap::new();
+    for event in events {
+        if skill_keys.contains(&event.skill_key) {
+            *hits.entry((event.skill_key, event.target_uid)).or_insert(0) += 1;
+        }
+    }
+
+    let total = skill_keys
+        .iter()
+        .map(|skill_key| {
+            hits.iter()
+                .filter_map(|((matched_skill_key, _), count)| {
+                    (matched_skill_key == skill_key).then_some(*count)
+                })
+                .max()
+                .unwrap_or(0)
+        })
+        .sum::<u32>();
+
+    scaled_increment(increment, usize::try_from(total).unwrap_or(usize::MAX))
 }
 
 fn apply_damage_hits_required(
