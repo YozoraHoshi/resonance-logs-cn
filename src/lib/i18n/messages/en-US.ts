@@ -719,12 +719,15 @@ export const enUSMessages = {
     "Font size for K/M/% suffixes in skill rows",
   "themes.background.title": "Background Image",
   "themes.background.description":
-    "Use a custom background image for all windows. Note: background colors must be translucent for the image to show.",
+    "Use a custom background image for all windows. Image opacity and window background opacity are applied as separate layers.",
   "themes.background.enable": "Enable Background Image",
   "themes.background.enableDescription": "Use an image as the background",
   "themes.background.selectImage": "Choose Image",
   "themes.background.selectImageDescription":
     "Choose an image file (PNG/JPG/WebP)",
+  "themes.background.opacity": "Image Opacity",
+  "themes.background.opacityDescription":
+    "Adjust only the background image opacity without changing the window background opacity",
   "themes.background.imageMode": "Image Mode",
   "themes.background.imageModeDescription": "How the image fits the window",
   "themes.background.imageMode.cover": "Cover",

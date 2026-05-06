@@ -644,11 +644,14 @@ export const zhCNMessages = {
     "技能行中 K/M/% 等后缀的字体大小",
   "themes.background.title": "背景图片",
   "themes.background.description":
-    "为所有窗口使用自定义背景图片。注意：需要将背景颜色设置为半透明，图片才能显示出来。",
+    "为所有窗口使用自定义背景图片。图片透明度和窗口背景色透明度会分层生效。",
   "themes.background.enable": "启用背景图片",
   "themes.background.enableDescription": "使用图片作为背景",
   "themes.background.selectImage": "选择图片",
   "themes.background.selectImageDescription": "选择图片文件（PNG/JPG/WebP）",
+  "themes.background.opacity": "图片透明度",
+  "themes.background.opacityDescription":
+    "单独调整背景图片的透明度，不影响窗口背景色透明度",
   "themes.background.imageMode": "图片模式",
   "themes.background.imageModeDescription": "图片如何适配窗口",
   "themes.background.imageMode.cover": "覆盖",

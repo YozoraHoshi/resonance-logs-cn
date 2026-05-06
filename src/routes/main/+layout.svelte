@@ -20,6 +20,7 @@
   import ChangelogModal from '$lib/components/ChangelogModal.svelte';
   import UpdateModal from '$lib/components/UpdateModal.svelte';
   import { getVersion } from "@tauri-apps/api/app";
+  import AppBackgroundLayer from "$lib/components/app-background-layer.svelte";
 
   let { children } = $props();
 
@@ -191,36 +192,6 @@
       console.error('Failed to get app version', err);
     });
 
-    // Poll settings for background image
-    const bgAndFontInterval = window.setInterval(() => {
-      try {
-        // Apply background image if enabled
-        const bgImageEnabled = SETTINGS.accessibility.state.backgroundImageEnabled;
-        const bgImage = SETTINGS.accessibility.state.backgroundImage;
-        const bgMode = SETTINGS.accessibility.state.backgroundImageMode || 'cover';
-        const bgContainColor = SETTINGS.accessibility.state.backgroundImageContainColor || 'rgba(0, 0, 0, 1)';
-
-        if (bgImageEnabled && bgImage) {
-          document.body.style.backgroundImage = `url('${bgImage}')`;
-          document.body.style.backgroundSize = bgMode;
-          document.body.style.backgroundPosition = 'center';
-          document.body.style.backgroundRepeat = 'no-repeat';
-          if (bgMode === 'contain') {
-            document.body.style.backgroundColor = bgContainColor;
-          } else {
-            document.body.style.backgroundColor = '';
-          }
-        } else {
-          // Clear any background image settings
-          document.body.style.background = '';
-          document.body.style.backgroundImage = '';
-          document.body.style.backgroundColor = '';
-        }
-      } catch (e) {
-        // ignore
-      }
-    }, 200);
-
     // Cleanup on unmount
     return () => {
       if (runtimeSyncTimer) {
@@ -239,7 +210,6 @@
         clickthroughUnlisten();
         clickthroughUnlisten = null;
       }
-      clearInterval(bgAndFontInterval);
     };
   });
 
@@ -254,34 +224,53 @@
   }
 </script>
 
-<div class="flex h-screen bg-background-main text-foreground font-sans">
-  <!-- Left Sidebar - Tool List -->
-  <ToolSidebar />
+<div
+  class="text-foreground relative isolate h-screen overflow-hidden font-sans"
+>
+  <AppBackgroundLayer
+    enabled={SETTINGS.accessibility.state.backgroundImageEnabled}
+    image={SETTINGS.accessibility.state.backgroundImage}
+    mode={SETTINGS.accessibility.state.backgroundImageMode}
+    containColor={SETTINGS.accessibility.state.backgroundImageContainColor}
+    opacity={SETTINGS.accessibility.state.backgroundImageOpacity ?? 100}
+  />
+  <div
+    class="bg-background-main pointer-events-none absolute inset-0 z-10"
+  ></div>
+  <div class="relative z-20 flex h-full">
+    <!-- Left Sidebar - Tool List -->
+    <ToolSidebar />
 
-  <!-- Right Content Area -->
-  <main class="flex-1 flex flex-col overflow-hidden">
-    <div class="flex-1 overflow-y-auto p-6">
-      {@render children()}
-    </div>
-  </main>
+    <!-- Right Content Area -->
+    <main class="flex flex-1 flex-col overflow-hidden">
+      <div class="flex-1 overflow-y-auto p-6">
+        {@render children()}
+      </div>
+    </main>
 
-  {#if showChangelog}
-    <ChangelogModal onclose={handleClose} />
-  {/if}
+    {#if showChangelog}
+      <ChangelogModal onclose={handleClose} />
+    {/if}
 
-  {#if !showChangelog && updateInfo}
-    <UpdateModal
-      info={updateInfo}
-      {currentVersion}
-      onclose={() => {
-        updateInfo = null;
-      }}
-    />
-  {/if}
+    {#if !showChangelog && updateInfo}
+      <UpdateModal
+        info={updateInfo}
+        {currentVersion}
+        onclose={() => {
+          updateInfo = null;
+        }}
+      />
+    {/if}
+  </div>
 </div>
 
 <style>
   :global {
+    html,
+    body {
+      background: transparent;
+    }
+
     /* Hide scrollbars globally but keep scrolling functional */
     * {
       -ms-overflow-style: none; /* IE and Edge */

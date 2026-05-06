@@ -593,6 +593,14 @@
     SETTINGS.accessibility.state.useClassSpecColors = colorMode === "spec";
   });
 
+  $effect(() => {
+    if (
+      typeof SETTINGS.accessibility.state.backgroundImageOpacity !== "number"
+    ) {
+      SETTINGS.accessibility.state.backgroundImageOpacity = 100;
+    }
+  });
+
   // Group custom theme colors by category
   const colorCategories = $derived.by(() => {
     const categories: Record<
@@ -1350,6 +1358,17 @@
                     onclear={() => {
                       SETTINGS.accessibility.state.backgroundImage = "";
                     }}
+                  />
+                  <SettingsSlider
+                    bind:value={
+                      SETTINGS.accessibility.state.backgroundImageOpacity
+                    }
+                    min={0}
+                    max={100}
+                    step={50}
+                    unit="%"
+                    label={t("themes.background.opacity")}
+                    description={t("themes.background.opacityDescription")}
                   />
                   <SettingsSelect
                     label={t("themes.background.imageMode")}

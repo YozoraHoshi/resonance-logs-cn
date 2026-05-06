@@ -1117,7 +1117,8 @@ const DEFAULT_SETTINGS = {
     backgroundImage: "" as string,
     backgroundImageEnabled: false,
     backgroundImageMode: "cover" as "cover" | "contain",
-    backgroundImageContainColor: "rgba(0, 0, 0, 1)",
+    backgroundImageContainColor: "rgba(0, 0, 0, 0)",
+    backgroundImageOpacity: 100,
     // Custom font settings
     customFontSansEnabled: false,
     customFontSansUrl: "" as string,
