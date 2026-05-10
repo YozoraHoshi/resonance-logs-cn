@@ -891,6 +891,18 @@ export const zhCNMessages = {
   "skillMonitor.buff.priority.groupTitle": "分组内优先级",
   "skillMonitor.buff.priority.groupPlaceholder": "搜索并添加到优先级列表",
   "skillMonitor.buff.priority.groupEmpty": "没有可添加到优先级的 Buff",
+  "skillMonitor.buff.alert.title": "Buff 倒计时告警",
+  "skillMonitor.buff.alert.description":
+    "为需要特别关注的 Buff 设置剩余时间阈值，进入阈值后会高亮显示。",
+  "skillMonitor.buff.alert.addPlaceholder": "搜索已监控 Buff 并添加告警",
+  "skillMonitor.buff.alert.emptySearch":
+    "没有可添加告警的 Buff（需先加入监控且未配置告警）",
+  "skillMonitor.buff.alert.empty": "尚未配置 Buff 告警",
+  "skillMonitor.buff.alert.configuredCount": "已配置告警 {count}",
+  "skillMonitor.buff.alert.threshold": "剩余 ≤ {seconds} 秒时高亮",
+  "skillMonitor.buff.alert.highlightColor": "高亮颜色",
+  "skillMonitor.buff.alert.flash": "闪烁",
+  "skillMonitor.buff.alert.remove": "移除告警",
   "skillMonitor.buff.category.title": "分类快捷监听",
   "skillMonitor.buff.category.selectedTitle": "已选分类",
   "skillMonitor.buff.category.empty": "尚未选择任何分类监听",
@@ -1029,6 +1041,17 @@ export const zhCNMessages = {
   "monsterMonitor.priority.moveDown": "下移",
   "monsterMonitor.priority.empty":
     "尚未设置优先级。你可以通过上方搜索框将监控中的 Buff 加入。",
+  "monsterMonitor.alert.title": "Buff 倒计时告警",
+  "monsterMonitor.alert.description":
+    "为怪物 Buff 单独设置剩余时间阈值，进入阈值后会高亮显示。",
+  "monsterMonitor.alert.addPlaceholder": "搜索已监控 Buff 并添加告警",
+  "monsterMonitor.alert.emptySearch":
+    "没有可添加告警的 Buff（需先在上方加入监控且未配置告警）",
+  "monsterMonitor.alert.empty": "尚未配置怪物 Buff 告警",
+  "monsterMonitor.alert.threshold": "剩余 ≤ {seconds} 秒时高亮",
+  "monsterMonitor.alert.highlightColor": "高亮颜色",
+  "monsterMonitor.alert.flash": "闪烁",
+  "monsterMonitor.alert.remove": "移除告警",
   "monsterMonitor.alias.title": "显示名称",
   "monsterMonitor.alias.empty":
     "先选择要监控的怪物 Buff，之后可在这里设置别名。",

@@ -8,6 +8,8 @@
     BuffNameInfo,
   } from "$lib/config/buff-name-table";
   import type {
+    BuffAlertMap,
+    BuffAlertRule,
     BuffDisplayMode,
     BuffGroup,
     TextBuffPanelDisplayMode,
@@ -15,7 +17,9 @@
   } from "$lib/settings-store";
   import { t } from "$lib/i18n/index.svelte";
 
-  type BuffGroupUpdateHandler = (updater: (curr: BuffGroup) => BuffGroup) => void;
+  type BuffGroupUpdateHandler = (
+    updater: (curr: BuffGroup) => BuffGroup,
+  ) => void;
 
   interface Props {
     buffSearch: string;
@@ -68,16 +72,30 @@
     buffPriorityIds: number[];
     toggleGlobalPriority: (buffId: number) => void;
     moveGlobalPriority: (buffId: number, direction: "up" | "down") => void;
+    buffAlerts: BuffAlertMap;
+    buffAlertSectionExpanded: boolean;
+    setBuffAlertSectionExpanded: (expanded: boolean) => void;
+    alertSearch: string;
+    alertSearchResults: BuffNameInfo[];
+    alertEligibleBuffIds: number[];
+    setAlertSearch: (value: string) => void;
+    upsertBuffAlert: (buffId: number, patch: Partial<BuffAlertRule>) => void;
+    removeBuffAlert: (buffId: number) => void;
 
     individualMonitorAllGroup: BuffGroup | null;
     addIndividualMonitorAll: () => void;
     removeIndividualMonitorAll: () => void;
-    updateIndividualMonitorAllGroup: (updater: (group: BuffGroup) => BuffGroup) => void;
+    updateIndividualMonitorAllGroup: (
+      updater: (group: BuffGroup) => BuffGroup,
+    ) => void;
 
     buffGroups: BuffGroup[];
     addBuffGroup: () => void;
     removeBuffGroup: (groupId: string) => void;
-    updateBuffGroup: (groupId: string, updater: (group: BuffGroup) => BuffGroup) => void;
+    updateBuffGroup: (
+      groupId: string,
+      updater: (group: BuffGroup) => BuffGroup,
+    ) => void;
     getGroupSearchKeyword: (groupId: string) => string;
     setGroupSearchKeyword: (groupId: string, value: string) => void;
     getGroupSearchResults: (group: BuffGroup) => BuffNameInfo[];
@@ -85,11 +103,21 @@
     setGroupPrioritySearchKeyword: (groupId: string, value: string) => void;
     getGroupPrioritySearchResults: (group: BuffGroup) => BuffNameInfo[];
     getGroupPriorityIds: (group: BuffGroup) => number[];
-    toggleBuffCategoryInGroup: (groupId: string, categoryKey: BuffCategoryKey) => void;
-    hasCompleteBuffCategoryInGroup: (group: BuffGroup, categoryKey: BuffCategoryKey) => boolean;
+    toggleBuffCategoryInGroup: (
+      groupId: string,
+      categoryKey: BuffCategoryKey,
+    ) => void;
+    hasCompleteBuffCategoryInGroup: (
+      group: BuffGroup,
+      categoryKey: BuffCategoryKey,
+    ) => boolean;
     toggleBuffInGroup: (groupId: string, buffId: number) => void;
     togglePriorityInGroup: (groupId: string, buffId: number) => void;
-    moveGroupPriority: (groupId: string, buffId: number, direction: "up" | "down") => void;
+    moveGroupPriority: (
+      groupId: string,
+      buffId: number,
+      direction: "up" | "down",
+    ) => void;
   }
 
   let {
@@ -141,6 +169,15 @@
     buffPriorityIds,
     toggleGlobalPriority,
     moveGlobalPriority,
+    buffAlerts,
+    buffAlertSectionExpanded,
+    setBuffAlertSectionExpanded,
+    alertSearch,
+    alertSearchResults,
+    alertEligibleBuffIds,
+    setAlertSearch,
+    upsertBuffAlert,
+    removeBuffAlert,
     individualMonitorAllGroup,
     addIndividualMonitorAll,
     removeIndividualMonitorAll,
@@ -164,11 +201,14 @@
   }: Props = $props();
 
   function buffSearchStatusLabel(buffId: number): string | null {
-    return isBuffSelected(buffId) ? t("skillMonitor.buff.status.selected") : null;
+    return isBuffSelected(buffId)
+      ? t("skillMonitor.buff.status.selected")
+      : null;
   }
 
   function buffAliasStatusLabel(buffId: number): string | null {
-    if (buffAliasEditingBuffId === buffId) return t("skillMonitor.buff.status.editing");
+    if (buffAliasEditingBuffId === buffId)
+      return t("skillMonitor.buff.status.editing");
     return configuredBuffAliasIds.includes(buffId)
       ? t("skillMonitor.buff.status.aliased")
       : null;
@@ -196,14 +236,38 @@
       return true;
     });
   }
+
+  const configuredAlertBuffIds = $derived.by(() =>
+    Object.keys(buffAlerts)
+      .map((baseId) => Number(baseId))
+      .filter(
+        (baseId) =>
+          Number.isFinite(baseId) && alertEligibleBuffIds.includes(baseId),
+      )
+      .sort((a, b) => a - b),
+  );
+
+  function getFilteredAlertSearchResults(): BuffNameInfo[] {
+    const ids: number[] = [];
+    return alertSearchResults.filter((item) => {
+      if (ids.includes(item.baseId)) return false;
+      if (!alertEligibleBuffIds.includes(item.baseId)) return false;
+      if (buffAlerts[String(item.baseId)]) return false;
+      ids.push(item.baseId);
+      return true;
+    });
+  }
 </script>
 
-{#snippet buffGroupLayoutControls(group: BuffGroup, onUpdate: BuffGroupUpdateHandler)}
+{#snippet buffGroupLayoutControls(
+  group: BuffGroup,
+  onUpdate: BuffGroupUpdateHandler,
+)}
   <div class="grid grid-cols-2 gap-3">
-    <label class="text-xs text-muted-foreground">
+    <label class="text-muted-foreground text-xs">
       {t("skillMonitor.layoutControls.iconSize", { value: group.iconSize })}
       <input
-        class="w-full mt-1"
+        class="mt-1 w-full"
         type="range"
         min="24"
         max="120"
@@ -216,10 +280,10 @@
           }))}
       />
     </label>
-    <label class="text-xs text-muted-foreground">
+    <label class="text-muted-foreground text-xs">
       {t("skillMonitor.layoutControls.columns", { value: group.columns })}
       <input
-        class="w-full mt-1"
+        class="mt-1 w-full"
         type="range"
         min="1"
         max="12"
@@ -232,10 +296,10 @@
           }))}
       />
     </label>
-    <label class="text-xs text-muted-foreground">
+    <label class="text-muted-foreground text-xs">
       {t("skillMonitor.layoutControls.rows", { value: group.rows })}
       <input
-        class="w-full mt-1"
+        class="mt-1 w-full"
         type="range"
         min="1"
         max="12"
@@ -248,10 +312,10 @@
           }))}
       />
     </label>
-    <label class="text-xs text-muted-foreground">
+    <label class="text-muted-foreground text-xs">
       {t("skillMonitor.layoutControls.gap", { value: group.gap })}
       <input
-        class="w-full mt-1"
+        class="mt-1 w-full"
         type="range"
         min="0"
         max="16"
@@ -266,7 +330,9 @@
     </label>
   </div>
   <div class="flex flex-wrap gap-3">
-    <label class="flex items-center gap-2 rounded border border-border/60 bg-muted/20 px-3 py-2 text-xs text-foreground">
+    <label
+      class="border-border/60 bg-muted/20 text-foreground flex items-center gap-2 rounded border px-3 py-2 text-xs"
+    >
       <input
         type="checkbox"
         checked={group.showName}
@@ -278,7 +344,9 @@
       />
       {t("skillMonitor.layoutControls.showName")}
     </label>
-    <label class="flex items-center gap-2 rounded border border-border/60 bg-muted/20 px-3 py-2 text-xs text-foreground">
+    <label
+      class="border-border/60 bg-muted/20 text-foreground flex items-center gap-2 rounded border px-3 py-2 text-xs"
+    >
       <input
         type="checkbox"
         checked={group.showTime}
@@ -290,7 +358,9 @@
       />
       {t("skillMonitor.layoutControls.showTime")}
     </label>
-    <label class="flex items-center gap-2 rounded border border-border/60 bg-muted/20 px-3 py-2 text-xs text-foreground">
+    <label
+      class="border-border/60 bg-muted/20 text-foreground flex items-center gap-2 rounded border px-3 py-2 text-xs"
+    >
       <input
         type="checkbox"
         checked={group.showLayer}
@@ -306,14 +376,20 @@
 {/snippet}
 
 <div class="space-y-6">
-  <div class="rounded-lg border border-border/60 bg-card/40 p-4 space-y-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]">
+  <div
+    class="border-border/60 bg-card/40 space-y-4 rounded-lg border p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
+  >
     <div class="flex items-center justify-between gap-3">
       <div>
-        <h2 class="text-base font-semibold text-foreground">{t("skillMonitor.buff.title")}</h2>
-        <p class="text-xs text-muted-foreground">{t("skillMonitor.buff.description")}</p>
+        <h2 class="text-foreground text-base font-semibold">
+          {t("skillMonitor.buff.title")}
+        </h2>
+        <p class="text-muted-foreground text-xs">
+          {t("skillMonitor.buff.description")}
+        </p>
       </div>
       <div class="flex items-center gap-3">
-        <div class="text-xs text-muted-foreground">
+        <div class="text-muted-foreground text-xs">
           {t("skillMonitor.buff.selectedSummary", {
             buffCount: monitoredBuffIds.length,
             categoryCount: monitoredBuffCategories.length,
@@ -321,7 +397,7 @@
         </div>
         <button
           type="button"
-          class="text-xs px-2 py-1 rounded border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+          class="border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded border px-2 py-1 text-xs transition-colors"
           onclick={clearBuffs}
         >
           {t("skillMonitor.common.clear")}
@@ -330,10 +406,11 @@
     </div>
 
     <input
-      class="w-full sm:w-64 rounded border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+      class="border-border/60 bg-muted/30 text-foreground placeholder:text-muted-foreground focus:ring-primary/50 w-full rounded border px-3 py-2 text-sm focus:ring-2 focus:outline-none sm:w-64"
       placeholder={t("skillMonitor.buff.placeholder")}
       value={buffSearch}
-      oninput={(event) => setBuffSearch((event.currentTarget as HTMLInputElement).value)}
+      oninput={(event) =>
+        setBuffSearch((event.currentTarget as HTMLInputElement).value)}
     />
 
     {#if buffSearch.trim().length > 0}
@@ -346,31 +423,37 @@
         emptyMessage={t("components.buffSearchResultGrid.empty")}
       />
     {:else}
-      <div class="text-xs text-muted-foreground">{t("skillMonitor.buff.searchPrompt")}</div>
+      <div class="text-muted-foreground text-xs">
+        {t("skillMonitor.buff.searchPrompt")}
+      </div>
     {/if}
 
     <div class="space-y-2">
-      <div class="text-xs text-muted-foreground">{t("skillMonitor.buff.selectedTitle")}</div>
+      <div class="text-muted-foreground text-xs">
+        {t("skillMonitor.buff.selectedTitle")}
+      </div>
       <div class="flex flex-wrap gap-2">
         {#each monitoredBuffIds as buffId (buffId)}
-          {@const iconBuff = selectedBuffs.find((buff) => buff.baseId === buffId)}
+          {@const iconBuff = selectedBuffs.find(
+            (buff) => buff.baseId === buffId,
+          )}
           {#if iconBuff}
             <button
               type="button"
-              class="relative rounded-md border border-border/60 overflow-hidden bg-muted/20 size-12 hover:border-border hover:bg-muted/30"
+              class="border-border/60 bg-muted/20 hover:border-border hover:bg-muted/30 relative size-12 overflow-hidden rounded-md border"
               title={getBuffDisplayName(buffId)}
               onclick={() => toggleBuff(iconBuff.baseId)}
             >
               <img
                 src={`/images/buff/${iconBuff.spriteFile}`}
                 alt={getBuffDisplayName(buffId)}
-                class="w-full h-full object-contain"
+                class="h-full w-full object-contain"
               />
             </button>
           {:else}
             <button
               type="button"
-              class="rounded-md border border-border/60 bg-muted/20 px-2 py-1 text-[11px] text-foreground hover:border-border hover:bg-muted/30"
+              class="border-border/60 bg-muted/20 text-foreground hover:border-border hover:bg-muted/30 rounded-md border px-2 py-1 text-[11px]"
               title={getBuffDisplayName(buffId)}
               onclick={() => toggleBuff(buffId)}
             >
@@ -380,43 +463,52 @@
         {/each}
       </div>
     </div>
-
   </div>
 
-  <div class="rounded-lg border border-border/60 bg-card/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]">
+  <div
+    class="border-border/60 bg-card/40 rounded-lg border shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
+  >
     <button
       type="button"
-      class="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors"
+      class="hover:bg-muted/30 flex w-full items-center justify-between px-4 py-3 transition-colors"
       onclick={() => setBuffAliasSectionExpanded(!buffAliasSectionExpanded)}
     >
       <div class="text-left">
-        <h2 class="text-base font-semibold text-foreground">{t("skillMonitor.buff.alias.title")}</h2>
+        <h2 class="text-foreground text-base font-semibold">
+          {t("skillMonitor.buff.alias.title")}
+        </h2>
       </div>
       <ChevronDown
-        class="w-5 h-5 text-muted-foreground transition-transform duration-200 {buffAliasSectionExpanded
+        class="text-muted-foreground h-5 w-5 transition-transform duration-200 {buffAliasSectionExpanded
           ? 'rotate-180'
           : ''}"
       />
     </button>
 
     {#if buffAliasSectionExpanded}
-      <div class="px-4 pb-4 space-y-4">
+      <div class="space-y-4 px-4 pb-4">
         <div class="space-y-2">
-          <div class="text-xs text-muted-foreground">
-            {t("skillMonitor.buff.alias.configuredCount", { count: configuredBuffAliasIds.length })}
+          <div class="text-muted-foreground text-xs">
+            {t("skillMonitor.buff.alias.configuredCount", {
+              count: configuredBuffAliasIds.length,
+            })}
           </div>
           <input
-            class="w-full sm:w-80 rounded border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            class="border-border/60 bg-muted/30 text-foreground placeholder:text-muted-foreground focus:ring-primary/50 w-full rounded border px-3 py-2 text-sm focus:ring-2 focus:outline-none sm:w-80"
             placeholder={t("skillMonitor.buff.alias.placeholder")}
             value={buffAliasSearch}
             oninput={(event) =>
-              setBuffAliasSearch((event.currentTarget as HTMLInputElement).value)}
+              setBuffAliasSearch(
+                (event.currentTarget as HTMLInputElement).value,
+              )}
           />
         </div>
 
         {#if buffAliasSearch.trim().length > 0}
           <div class="space-y-2">
-            <div class="text-xs text-muted-foreground">{t("skillMonitor.buff.alias.searchResults")}</div>
+            <div class="text-muted-foreground text-xs">
+              {t("skillMonitor.buff.alias.searchResults")}
+            </div>
             <BuffSearchResultGrid
               items={buffAliasSearchResults}
               {availableBuffMap}
@@ -427,13 +519,15 @@
             />
 
             {#if buffAliasEditingBuffId !== null}
-              <div class="rounded-md border border-border/60 bg-muted/20 p-3 space-y-2">
+              <div
+                class="border-border/60 bg-muted/20 space-y-2 rounded-md border p-3"
+              >
                 <div class="flex items-center justify-between gap-3">
                   <div class="min-w-0">
-                    <div class="text-sm text-foreground truncate">
+                    <div class="text-foreground truncate text-sm">
                       {getBuffDisplayName(buffAliasEditingBuffId)}
                     </div>
-                    <div class="text-xs text-muted-foreground truncate">
+                    <div class="text-muted-foreground truncate text-xs">
                       {t("skillMonitor.buff.alias.defaultWithId", {
                         name: getBuffDefaultName(buffAliasEditingBuffId),
                         id: buffAliasEditingBuffId,
@@ -442,7 +536,7 @@
                   </div>
                   <button
                     type="button"
-                    class="text-xs px-2 py-1 rounded border border-border/60 hover:bg-muted/40 disabled:opacity-50"
+                    class="border-border/60 hover:bg-muted/40 rounded border px-2 py-1 text-xs disabled:opacity-50"
                     onclick={() => resetBuffAlias(buffAliasEditingBuffId)}
                     disabled={!getBuffAlias(buffAliasEditingBuffId)}
                   >
@@ -450,37 +544,48 @@
                   </button>
                 </div>
                 <input
-                  class="w-full rounded border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  class="border-border/60 bg-muted/30 text-foreground placeholder:text-muted-foreground focus:ring-primary/50 w-full rounded border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                   placeholder={getBuffDefaultName(buffAliasEditingBuffId)}
                   value={getBuffAlias(buffAliasEditingBuffId)}
                   oninput={(event) =>
-                    setBuffAlias(buffAliasEditingBuffId, (event.currentTarget as HTMLInputElement).value)}
+                    setBuffAlias(
+                      buffAliasEditingBuffId,
+                      (event.currentTarget as HTMLInputElement).value,
+                    )}
                 />
               </div>
             {/if}
           </div>
         {:else if configuredBuffAliasIds.length > 0}
           <div class="space-y-2">
-            <div class="text-xs text-muted-foreground">{t("skillMonitor.buff.alias.configuredTitle")}</div>
+            <div class="text-muted-foreground text-xs">
+              {t("skillMonitor.buff.alias.configuredTitle")}
+            </div>
             <div class="space-y-2">
               {#each configuredBuffAliasIds as buffId (buffId)}
                 {@const iconBuff = availableBuffMap.get(buffId)}
-                <div class="rounded-md border border-border/60 bg-muted/20 p-3 space-y-2">
+                <div
+                  class="border-border/60 bg-muted/20 space-y-2 rounded-md border p-3"
+                >
                   <div class="flex items-center gap-3">
                     {#if iconBuff}
                       <img
                         src={`/images/buff/${iconBuff.spriteFile}`}
                         alt={getBuffDisplayName(buffId)}
-                        class="size-10 rounded border border-border/40 bg-muted/20 object-contain"
+                        class="border-border/40 bg-muted/20 size-10 rounded border object-contain"
                       />
                     {:else}
-                      <div class="size-10 rounded border border-border/40 bg-muted/20 flex items-center justify-center text-[10px] text-muted-foreground">
+                      <div
+                        class="border-border/40 bg-muted/20 text-muted-foreground flex size-10 items-center justify-center rounded border text-[10px]"
+                      >
                         {t("components.buffSearchResultGrid.fallbackIcon")}
                       </div>
                     {/if}
                     <div class="min-w-0 flex-1">
-                      <div class="text-sm text-foreground truncate">{getBuffDisplayName(buffId)}</div>
-                      <div class="text-xs text-muted-foreground truncate">
+                      <div class="text-foreground truncate text-sm">
+                        {getBuffDisplayName(buffId)}
+                      </div>
+                      <div class="text-muted-foreground truncate text-xs">
                         {t("skillMonitor.buff.alias.defaultWithId", {
                           name: getBuffDefaultName(buffId),
                           id: buffId,
@@ -489,25 +594,28 @@
                     </div>
                     <button
                       type="button"
-                      class="text-xs px-2 py-1 rounded border border-border/60 hover:bg-muted/40"
+                      class="border-border/60 hover:bg-muted/40 rounded border px-2 py-1 text-xs"
                       onclick={() => resetBuffAlias(buffId)}
                     >
                       {t("skillMonitor.buff.alias.reset")}
                     </button>
                   </div>
                   <input
-                    class="w-full rounded border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    class="border-border/60 bg-muted/30 text-foreground placeholder:text-muted-foreground focus:ring-primary/50 w-full rounded border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                     placeholder={getBuffDefaultName(buffId)}
                     value={getBuffAlias(buffId)}
                     oninput={(event) =>
-                      setBuffAlias(buffId, (event.currentTarget as HTMLInputElement).value)}
+                      setBuffAlias(
+                        buffId,
+                        (event.currentTarget as HTMLInputElement).value,
+                      )}
                   />
                 </div>
               {/each}
             </div>
           </div>
         {:else}
-          <div class="text-xs text-muted-foreground">
+          <div class="text-muted-foreground text-xs">
             {t("skillMonitor.buff.alias.empty")}
           </div>
         {/if}
@@ -515,15 +623,22 @@
     {/if}
   </div>
 
-  <div class="rounded-lg border border-border/60 bg-card/40 p-4 space-y-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]">
+  <div
+    class="border-border/60 bg-card/40 space-y-4 rounded-lg border p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
+  >
     <div>
-      <h2 class="text-base font-semibold text-foreground">{t("skillMonitor.buff.display.title")}</h2>
-      <p class="text-xs text-muted-foreground">{t("skillMonitor.buff.display.description")}</p>
+      <h2 class="text-foreground text-base font-semibold">
+        {t("skillMonitor.buff.display.title")}
+      </h2>
+      <p class="text-muted-foreground text-xs">
+        {t("skillMonitor.buff.display.description")}
+      </p>
     </div>
     <div class="flex flex-wrap gap-2">
       <button
         type="button"
-        class="px-3 py-2 rounded-lg text-sm font-medium border transition-colors {buffDisplayMode === 'individual'
+        class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors {buffDisplayMode ===
+        'individual'
           ? 'bg-primary text-primary-foreground border-primary'
           : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
         onclick={() => setBuffDisplayMode("individual")}
@@ -532,7 +647,8 @@
       </button>
       <button
         type="button"
-        class="px-3 py-2 rounded-lg text-sm font-medium border transition-colors {buffDisplayMode === 'grouped'
+        class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors {buffDisplayMode ===
+        'grouped'
           ? 'bg-primary text-primary-foreground border-primary'
           : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
         onclick={() => setBuffDisplayMode("grouped")}
@@ -543,7 +659,8 @@
     <div class="flex flex-wrap gap-2">
       <button
         type="button"
-        class="px-3 py-2 rounded-lg text-sm font-medium border transition-colors {textBuffPanelStyle.displayMode === 'modern'
+        class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors {textBuffPanelStyle.displayMode ===
+        'modern'
           ? 'bg-primary text-primary-foreground border-primary'
           : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
         onclick={() => setTextBuffPanelDisplayMode("modern")}
@@ -552,7 +669,8 @@
       </button>
       <button
         type="button"
-        class="px-3 py-2 rounded-lg text-sm font-medium border transition-colors {textBuffPanelStyle.displayMode === 'classic'
+        class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors {textBuffPanelStyle.displayMode ===
+        'classic'
           ? 'bg-primary text-primary-foreground border-primary'
           : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
         onclick={() => setTextBuffPanelDisplayMode("classic")}
@@ -560,89 +678,127 @@
         {t("skillMonitor.buff.display.classicText")}
       </button>
     </div>
-    <label class="block text-xs text-muted-foreground max-w-md">
-      {t("skillMonitor.buff.display.maxTextBuffs", { count: textBuffMaxVisible })}
+    <label class="text-muted-foreground block max-w-md text-xs">
+      {t("skillMonitor.buff.display.maxTextBuffs", {
+        count: textBuffMaxVisible,
+      })}
       <input
-        class="w-full mt-1"
+        class="mt-1 w-full"
         type="range"
         min="1"
         max="20"
         step="1"
         value={textBuffMaxVisible}
-        oninput={(event) => setTextBuffMaxVisible(Number((event.currentTarget as HTMLInputElement).value))}
+        oninput={(event) =>
+          setTextBuffMaxVisible(
+            Number((event.currentTarget as HTMLInputElement).value),
+          )}
       />
     </label>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-w-4xl">
-      <label class="text-xs text-muted-foreground">
+    <div class="grid max-w-4xl grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+      <label class="text-muted-foreground text-xs">
         {t("skillMonitor.style.gap", { value: textBuffPanelStyle.gap })}
         <input
-          class="w-full mt-1"
+          class="mt-1 w-full"
           type="range"
           min="0"
           max="24"
           step="1"
           value={textBuffPanelStyle.gap}
-          oninput={(event) => setTextBuffPanelGap(Number((event.currentTarget as HTMLInputElement).value))}
+          oninput={(event) =>
+            setTextBuffPanelGap(
+              Number((event.currentTarget as HTMLInputElement).value),
+            )}
         />
       </label>
-      <label class="text-xs text-muted-foreground">
-        {t("skillMonitor.style.fontSize", { value: textBuffPanelStyle.fontSize })}
+      <label class="text-muted-foreground text-xs">
+        {t("skillMonitor.style.fontSize", {
+          value: textBuffPanelStyle.fontSize,
+        })}
         <input
-          class="w-full mt-1"
+          class="mt-1 w-full"
           type="range"
           min="10"
           max="28"
           step="1"
           value={textBuffPanelStyle.fontSize}
-          oninput={(event) => setTextBuffPanelFontSize(Number((event.currentTarget as HTMLInputElement).value))}
+          oninput={(event) =>
+            setTextBuffPanelFontSize(
+              Number((event.currentTarget as HTMLInputElement).value),
+            )}
         />
       </label>
       {#if textBuffPanelStyle.displayMode === "modern"}
-        <label class="text-xs text-muted-foreground">
-          {t("skillMonitor.style.columnGap", { value: textBuffPanelStyle.columnGap })}
+        <label class="text-muted-foreground text-xs">
+          {t("skillMonitor.style.columnGap", {
+            value: textBuffPanelStyle.columnGap,
+          })}
           <input
-            class="w-full mt-1"
+            class="mt-1 w-full"
             type="range"
             min="0"
             max="240"
             step="1"
             value={textBuffPanelStyle.columnGap}
             oninput={(event) =>
-              setTextBuffPanelColumnGap(Number((event.currentTarget as HTMLInputElement).value))}
+              setTextBuffPanelColumnGap(
+                Number((event.currentTarget as HTMLInputElement).value),
+              )}
           />
         </label>
       {/if}
     </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 max-w-4xl">
-      <label class="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+    <div class="grid max-w-4xl grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <label
+        class="border-border/60 bg-muted/20 text-muted-foreground flex items-center justify-between gap-2 rounded border px-3 py-2 text-xs"
+      >
         {t("skillMonitor.style.nameColor")}
         <input
           type="color"
           value={textBuffPanelStyle.nameColor}
-          class="h-7 w-12 rounded border border-border/60 bg-transparent p-0"
-          onchange={(event) => setTextBuffPanelNameColor((event.currentTarget as HTMLInputElement).value)}
+          class="border-border/60 h-7 w-12 rounded border bg-transparent p-0"
+          onchange={(event) =>
+            setTextBuffPanelNameColor(
+              (event.currentTarget as HTMLInputElement).value,
+            )}
         />
       </label>
-      <label class="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+      <label
+        class="border-border/60 bg-muted/20 text-muted-foreground flex items-center justify-between gap-2 rounded border px-3 py-2 text-xs"
+      >
         {t("skillMonitor.style.valueColor")}
         <input
           type="color"
           value={textBuffPanelStyle.valueColor}
-          class="h-7 w-12 rounded border border-border/60 bg-transparent p-0"
-          onchange={(event) => setTextBuffPanelValueColor((event.currentTarget as HTMLInputElement).value)}
+          class="border-border/60 h-7 w-12 rounded border bg-transparent p-0"
+          onchange={(event) =>
+            setTextBuffPanelValueColor(
+              (event.currentTarget as HTMLInputElement).value,
+            )}
         />
       </label>
-      <label class="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+      <label
+        class="border-border/60 bg-muted/20 text-muted-foreground flex items-center justify-between gap-2 rounded border px-3 py-2 text-xs"
+      >
         {t("skillMonitor.style.progressColor")}
         <input
           type="color"
           value={textBuffPanelStyle.progressColor}
-          class="h-7 w-12 rounded border border-border/60 bg-transparent p-0"
-          onchange={(event) => setTextBuffPanelProgressColor((event.currentTarget as HTMLInputElement).value)}
+          class="border-border/60 h-7 w-12 rounded border bg-transparent p-0"
+          onchange={(event) =>
+            setTextBuffPanelProgressColor(
+              (event.currentTarget as HTMLInputElement).value,
+            )}
         />
       </label>
-      <label class="rounded border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-        <div>{t("skillMonitor.style.progressOpacity", { value: Math.round(textBuffPanelStyle.progressOpacity * 100) })}</div>
+      <label
+        class="border-border/60 bg-muted/20 text-muted-foreground rounded border px-3 py-2 text-xs"
+      >
+        <div>
+          {t("skillMonitor.style.progressOpacity", {
+            value: Math.round(textBuffPanelStyle.progressOpacity * 100),
+          })}
+        </div>
         <input
           class="mt-2 w-full"
           type="range"
@@ -651,20 +807,29 @@
           step="0.05"
           value={textBuffPanelStyle.progressOpacity}
           oninput={(event) =>
-            setTextBuffPanelProgressOpacity(Number((event.currentTarget as HTMLInputElement).value))}
+            setTextBuffPanelProgressOpacity(
+              Number((event.currentTarget as HTMLInputElement).value),
+            )}
         />
       </label>
     </div>
   </div>
 
-  <div class="rounded-lg border border-border/60 bg-card/40 p-4 space-y-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]">
+  <div
+    class="border-border/60 bg-card/40 space-y-4 rounded-lg border p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
+  >
     <div class="space-y-2">
-      <div class="text-xs font-medium text-foreground">{t("skillMonitor.buff.priority.globalTitle")}</div>
+      <div class="text-foreground text-xs font-medium">
+        {t("skillMonitor.buff.priority.globalTitle")}
+      </div>
       <input
-        class="w-full sm:w-72 rounded border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+        class="border-border/60 bg-muted/30 text-foreground placeholder:text-muted-foreground focus:ring-primary/50 w-full rounded border px-3 py-2 text-sm focus:ring-2 focus:outline-none sm:w-72"
         placeholder={t("skillMonitor.buff.priority.globalPlaceholder")}
         value={globalPrioritySearch}
-        oninput={(event) => setGlobalPrioritySearch((event.currentTarget as HTMLInputElement).value)}
+        oninput={(event) =>
+          setGlobalPrioritySearch(
+            (event.currentTarget as HTMLInputElement).value,
+          )}
       />
       {#if globalPrioritySearch.trim().length > 0}
         <BuffSearchResultGrid
@@ -677,30 +842,186 @@
       {/if}
       <div class="space-y-1">
         {#each buffPriorityIds as buffId, idx (buffId)}
-          <div class="flex items-center gap-2 rounded border border-border/60 bg-muted/20 px-2 py-1">
-            <span class="w-6 text-center text-xs text-muted-foreground">{idx + 1}</span>
-            <span class="flex-1 text-xs text-foreground truncate">
+          <div
+            class="border-border/60 bg-muted/20 flex items-center gap-2 rounded border px-2 py-1"
+          >
+            <span class="text-muted-foreground w-6 text-center text-xs"
+              >{idx + 1}</span
+            >
+            <span class="text-foreground flex-1 truncate text-xs">
               {getBuffDisplayName(buffId)}
             </span>
-            <button type="button" class="text-xs px-2 py-0.5 rounded border border-border/60 hover:bg-muted/40" onclick={() => toggleGlobalPriority(buffId)}>{t("skillMonitor.common.remove")}</button>
-            <button type="button" class="text-xs px-2 py-0.5 rounded border border-border/60 hover:bg-muted/40 disabled:opacity-50" onclick={() => moveGlobalPriority(buffId, "up")} disabled={idx === 0}>{t("skillMonitor.common.moveUp")}</button>
-            <button type="button" class="text-xs px-2 py-0.5 rounded border border-border/60 hover:bg-muted/40 disabled:opacity-50" onclick={() => moveGlobalPriority(buffId, "down")} disabled={idx === buffPriorityIds.length - 1}>{t("skillMonitor.common.moveDown")}</button>
+            <button
+              type="button"
+              class="border-border/60 hover:bg-muted/40 rounded border px-2 py-0.5 text-xs"
+              onclick={() => toggleGlobalPriority(buffId)}
+              >{t("skillMonitor.common.remove")}</button
+            >
+            <button
+              type="button"
+              class="border-border/60 hover:bg-muted/40 rounded border px-2 py-0.5 text-xs disabled:opacity-50"
+              onclick={() => moveGlobalPriority(buffId, "up")}
+              disabled={idx === 0}>{t("skillMonitor.common.moveUp")}</button
+            >
+            <button
+              type="button"
+              class="border-border/60 hover:bg-muted/40 rounded border px-2 py-0.5 text-xs disabled:opacity-50"
+              onclick={() => moveGlobalPriority(buffId, "down")}
+              disabled={idx === buffPriorityIds.length - 1}
+              >{t("skillMonitor.common.moveDown")}</button
+            >
           </div>
         {/each}
       </div>
     </div>
   </div>
 
+  <div
+    class="border-border/60 bg-card/40 rounded-lg border shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
+  >
+    <button
+      type="button"
+      class="hover:bg-muted/30 flex w-full items-center justify-between gap-3 px-4 py-3 transition-colors"
+      onclick={() => setBuffAlertSectionExpanded(!buffAlertSectionExpanded)}
+    >
+      <div class="min-w-0 text-left">
+        <h2 class="text-foreground text-base font-semibold">
+          {t("skillMonitor.buff.alert.title")}
+        </h2>
+        <p class="text-muted-foreground text-xs">
+          {t("skillMonitor.buff.alert.description")}
+        </p>
+      </div>
+      <div class="flex shrink-0 items-center gap-3">
+        <span class="text-muted-foreground text-xs">
+          {t("skillMonitor.buff.alert.configuredCount", {
+            count: configuredAlertBuffIds.length,
+          })}
+        </span>
+        <ChevronDown
+          class="text-muted-foreground h-5 w-5 transition-transform duration-200 {buffAlertSectionExpanded
+            ? 'rotate-180'
+            : ''}"
+        />
+      </div>
+    </button>
+
+    {#if buffAlertSectionExpanded}
+      <div class="space-y-4 px-4 pb-4">
+        <input
+          class="border-border/60 bg-muted/30 text-foreground placeholder:text-muted-foreground focus:ring-primary/50 w-full rounded border px-3 py-2 text-sm focus:ring-2 focus:outline-none sm:w-72"
+          placeholder={t("skillMonitor.buff.alert.addPlaceholder")}
+          value={alertSearch}
+          oninput={(event) =>
+            setAlertSearch((event.currentTarget as HTMLInputElement).value)}
+        />
+        {#if alertSearch.trim().length > 0}
+          <BuffSearchResultGrid
+            items={getFilteredAlertSearchResults()}
+            {availableBuffMap}
+            onSelect={(buffId) => upsertBuffAlert(buffId, {})}
+            emptyMessage={t("skillMonitor.buff.alert.emptySearch")}
+            minColumnWidth={180}
+          />
+        {/if}
+        <div class="space-y-2">
+          {#each configuredAlertBuffIds as buffId (buffId)}
+            {@const rule = buffAlerts[String(buffId)]}
+            {#if rule}
+              <div
+                class="border-border/60 bg-muted/20 space-y-3 rounded border p-3"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-foreground min-w-0 truncate text-sm">
+                    {getBuffDisplayName(buffId)}
+                  </span>
+                  <button
+                    type="button"
+                    class="border-border/60 text-destructive hover:bg-destructive/10 rounded border px-2 py-1 text-xs"
+                    onclick={() => removeBuffAlert(buffId)}
+                  >
+                    {t("skillMonitor.buff.alert.remove")}
+                  </button>
+                </div>
+                <div
+                  class="grid gap-3 md:grid-cols-[minmax(0,1fr)_160px_120px] md:items-center"
+                >
+                  <label class="text-muted-foreground text-xs">
+                    {t("skillMonitor.buff.alert.threshold", {
+                      seconds: rule.thresholdSeconds,
+                    })}
+                    <input
+                      class="border-border/60 bg-muted/30 text-foreground mt-1 w-full rounded border px-2 py-1 text-sm"
+                      type="number"
+                      min="1"
+                      max="60"
+                      step="1"
+                      value={rule.thresholdSeconds}
+                      oninput={(event) =>
+                        upsertBuffAlert(buffId, {
+                          thresholdSeconds: Number(
+                            (event.currentTarget as HTMLInputElement).value,
+                          ),
+                        })}
+                    />
+                  </label>
+                  <label class="text-muted-foreground text-xs">
+                    {t("skillMonitor.buff.alert.highlightColor")}
+                    <input
+                      class="border-border/60 mt-1 h-8 w-full rounded border bg-transparent p-0"
+                      type="color"
+                      value={rule.highlightColor}
+                      oninput={(event) =>
+                        upsertBuffAlert(buffId, {
+                          highlightColor: (
+                            event.currentTarget as HTMLInputElement
+                          ).value,
+                        })}
+                    />
+                  </label>
+                  <label
+                    class="text-foreground flex items-center gap-2 text-xs"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={rule.flash}
+                      onchange={(event) =>
+                        upsertBuffAlert(buffId, {
+                          flash: (event.currentTarget as HTMLInputElement)
+                            .checked,
+                        })}
+                    />
+                    {t("skillMonitor.buff.alert.flash")}
+                  </label>
+                </div>
+              </div>
+            {/if}
+          {:else}
+            <div class="text-muted-foreground text-xs">
+              {t("skillMonitor.buff.alert.empty")}
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
+  </div>
+
   {#if buffDisplayMode === "individual"}
-    <div class="rounded-lg border border-border/60 bg-card/40 p-4 space-y-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]">
+    <div
+      class="border-border/60 bg-card/40 space-y-4 rounded-lg border p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
+    >
       <div>
-          <h2 class="text-base font-semibold text-foreground">{t("skillMonitor.buff.category.title")}</h2>
+        <h2 class="text-foreground text-base font-semibold">
+          {t("skillMonitor.buff.category.title")}
+        </h2>
       </div>
       <div class="flex flex-wrap gap-2">
         {#each buffCategoryDefinitions as category (category.key)}
           <button
             type="button"
-            class="px-3 py-2 rounded-lg text-sm font-medium border transition-colors {isBuffCategorySelected(category.key)
+            class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors {isBuffCategorySelected(
+              category.key,
+            )
               ? 'bg-primary text-primary-foreground border-primary'
               : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
             onclick={() => toggleBuffCategory(category.key)}
@@ -710,76 +1031,107 @@
         {/each}
       </div>
       <div class="space-y-2">
-        <div class="text-xs text-muted-foreground">{t("skillMonitor.buff.category.selectedTitle")}</div>
+        <div class="text-muted-foreground text-xs">
+          {t("skillMonitor.buff.category.selectedTitle")}
+        </div>
         <div class="flex flex-wrap gap-2">
           {#if selectedBuffCategories.length > 0}
             {#each selectedBuffCategories as category (category.key)}
               <button
                 type="button"
-                class="rounded-md border border-primary/60 bg-primary/10 px-3 py-1.5 text-xs text-foreground hover:bg-primary/15"
+                class="border-primary/60 bg-primary/10 text-foreground hover:bg-primary/15 rounded-md border px-3 py-1.5 text-xs"
                 onclick={() => toggleBuffCategory(category.key)}
               >
                 {category.label} ({category.count})
               </button>
             {/each}
           {:else}
-            <div class="text-xs text-muted-foreground">{t("skillMonitor.buff.category.empty")}</div>
+            <div class="text-muted-foreground text-xs">
+              {t("skillMonitor.buff.category.empty")}
+            </div>
           {/if}
         </div>
       </div>
     </div>
 
-    <div class="rounded-lg border border-border/60 bg-card/40 p-4 space-y-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]">
+    <div
+      class="border-border/60 bg-card/40 space-y-4 rounded-lg border p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
+    >
       <div class="flex items-center justify-between gap-3">
         <div>
-          <h2 class="text-base font-semibold text-foreground">{t("skillMonitor.buff.all.title")}</h2>
-          <p class="text-xs text-muted-foreground">
+          <h2 class="text-foreground text-base font-semibold">
+            {t("skillMonitor.buff.all.title")}
+          </h2>
+          <p class="text-muted-foreground text-xs">
             {t("skillMonitor.buff.all.description")}
           </p>
         </div>
         {#if !individualMonitorAllGroup}
-          <button type="button" class="text-xs px-3 py-2 rounded border border-border/60 text-foreground hover:bg-muted/40 transition-colors" onclick={addIndividualMonitorAll}>
+          <button
+            type="button"
+            class="border-border/60 text-foreground hover:bg-muted/40 rounded border px-3 py-2 text-xs transition-colors"
+            onclick={addIndividualMonitorAll}
+          >
             {t("skillMonitor.buff.all.add")}
           </button>
         {:else}
-          <button type="button" class="text-xs px-3 py-2 rounded border border-border/60 text-destructive hover:bg-destructive/10 transition-colors" onclick={removeIndividualMonitorAll}>
+          <button
+            type="button"
+            class="border-border/60 text-destructive hover:bg-destructive/10 rounded border px-3 py-2 text-xs transition-colors"
+            onclick={removeIndividualMonitorAll}
+          >
             {t("skillMonitor.buff.all.remove")}
           </button>
         {/if}
       </div>
       {#if individualMonitorAllGroup}
-        <div class="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-3">
+        <div
+          class="border-border/60 bg-muted/20 space-y-3 rounded-lg border p-3"
+        >
           <div class="flex flex-wrap items-center gap-2">
             <input
-              class="w-52 rounded border border-border/60 bg-muted/30 px-2 py-1.5 text-sm text-foreground"
+              class="border-border/60 bg-muted/30 text-foreground w-52 rounded border px-2 py-1.5 text-sm"
               value={individualMonitorAllGroup.name}
-              placeholder={getIndividualAllGroupDisplayName(individualMonitorAllGroup)}
+              placeholder={getIndividualAllGroupDisplayName(
+                individualMonitorAllGroup,
+              )}
               oninput={(event) =>
                 updateIndividualMonitorAllGroup((curr) => ({
                   ...curr,
-                  name: (event.currentTarget as HTMLInputElement).value || curr.name,
+                  name:
+                    (event.currentTarget as HTMLInputElement).value ||
+                    curr.name,
                 }))}
             />
-            <span class="text-xs text-muted-foreground">{t("skillMonitor.buff.all.fixed")}</span>
+            <span class="text-muted-foreground text-xs"
+              >{t("skillMonitor.buff.all.fixed")}</span
+            >
           </div>
-          {@render buffGroupLayoutControls(individualMonitorAllGroup, updateIndividualMonitorAllGroup)}
+          {@render buffGroupLayoutControls(
+            individualMonitorAllGroup,
+            updateIndividualMonitorAllGroup,
+          )}
         </div>
       {/if}
     </div>
   {/if}
 
   {#if buffDisplayMode === "grouped"}
-    <div class="rounded-lg border border-border/60 bg-card/40 p-4 space-y-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]">
+    <div
+      class="border-border/60 bg-card/40 space-y-4 rounded-lg border p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
+    >
       <div class="flex items-center justify-between gap-3">
         <div>
-          <h2 class="text-base font-semibold text-foreground">{t("skillMonitor.buff.group.title")}</h2>
-          <p class="text-xs text-muted-foreground">
+          <h2 class="text-foreground text-base font-semibold">
+            {t("skillMonitor.buff.group.title")}
+          </h2>
+          <p class="text-muted-foreground text-xs">
             {t("skillMonitor.buff.group.description")}
           </p>
         </div>
         <button
           type="button"
-          class="text-xs px-3 py-2 rounded border border-border/60 text-foreground hover:bg-muted/40 transition-colors"
+          class="border-border/60 text-foreground hover:bg-muted/40 rounded border px-3 py-2 text-xs transition-colors"
           onclick={addBuffGroup}
         >
           {t("skillMonitor.buff.group.new")}
@@ -788,33 +1140,40 @@
 
       <div class="space-y-3">
         {#each buffGroups as group, groupIndex (group.id)}
-          <div class="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-3">
+          <div
+            class="border-border/60 bg-muted/20 space-y-3 rounded-lg border p-3"
+          >
             <div class="flex flex-wrap items-center gap-2">
               <input
-                class="w-52 rounded border border-border/60 bg-muted/30 px-2 py-1.5 text-sm text-foreground"
+                class="border-border/60 bg-muted/30 text-foreground w-52 rounded border px-2 py-1.5 text-sm"
                 value={group.name}
                 placeholder={getBuffGroupDisplayName(group, groupIndex)}
                 oninput={(event) =>
                   updateBuffGroup(group.id, (curr) => ({
                     ...curr,
-                    name: (event.currentTarget as HTMLInputElement).value || curr.name,
+                    name:
+                      (event.currentTarget as HTMLInputElement).value ||
+                      curr.name,
                   }))}
               />
               <button
                 type="button"
-                class="text-xs px-2 py-1 rounded border border-border/60 text-destructive hover:bg-destructive/10 transition-colors"
+                class="border-border/60 text-destructive hover:bg-destructive/10 rounded border px-2 py-1 text-xs transition-colors"
                 onclick={() => removeBuffGroup(group.id)}
               >
                 {t("skillMonitor.buff.group.delete")}
               </button>
-              <label class="ml-auto flex items-center gap-2 text-xs text-foreground">
+              <label
+                class="text-foreground ml-auto flex items-center gap-2 text-xs"
+              >
                 <input
                   type="checkbox"
                   checked={group.monitorAll}
                   onchange={(event) =>
                     updateBuffGroup(group.id, (curr) => ({
                       ...curr,
-                      monitorAll: (event.currentTarget as HTMLInputElement).checked,
+                      monitorAll: (event.currentTarget as HTMLInputElement)
+                        .checked,
                     }))}
                 />
                 {t("skillMonitor.buff.group.monitorAll")}
@@ -826,30 +1185,37 @@
                 {#each buffCategoryDefinitions as category (category.key)}
                   <button
                     type="button"
-                    class="rounded-md border px-3 py-1.5 text-xs transition-colors {hasCompleteBuffCategoryInGroup(group, category.key)
+                    class="rounded-md border px-3 py-1.5 text-xs transition-colors {hasCompleteBuffCategoryInGroup(
+                      group,
+                      category.key,
+                    )
                       ? 'border-primary/60 bg-primary/10 text-foreground'
                       : 'border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/40 hover:text-foreground'}"
-                    onclick={() => toggleBuffCategoryInGroup(group.id, category.key)}
+                    onclick={() =>
+                      toggleBuffCategoryInGroup(group.id, category.key)}
                     disabled={group.monitorAll}
                   >
                     {hasCompleteBuffCategoryInGroup(group, category.key)
                       ? t("skillMonitor.buff.group.removeCategory", {
-                        name: category.label,
-                        count: category.count,
-                      })
+                          name: category.label,
+                          count: category.count,
+                        })
                       : t("skillMonitor.buff.group.addCategory", {
-                        name: category.label,
-                        count: category.count,
-                      })}
+                          name: category.label,
+                          count: category.count,
+                        })}
                   </button>
                 {/each}
               </div>
               <input
-                class="w-full sm:w-72 rounded border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                class="border-border/60 bg-muted/30 text-foreground placeholder:text-muted-foreground focus:ring-primary/50 w-full rounded border px-3 py-2 text-sm focus:ring-2 focus:outline-none sm:w-72"
                 placeholder={t("skillMonitor.buff.group.placeholder")}
                 value={getGroupSearchKeyword(group.id)}
                 oninput={(event) =>
-                  setGroupSearchKeyword(group.id, (event.currentTarget as HTMLInputElement).value)}
+                  setGroupSearchKeyword(
+                    group.id,
+                    (event.currentTarget as HTMLInputElement).value,
+                  )}
               />
               {#if getGroupSearchResults(group).length > 0}
                 <BuffSearchResultGrid
@@ -863,7 +1229,11 @@
 
               {#if !group.monitorAll}
                 <div class="space-y-2">
-                  <div class="text-xs text-muted-foreground">{t("skillMonitor.buff.group.joinedCount", { count: group.buffIds.length })}</div>
+                  <div class="text-muted-foreground text-xs">
+                    {t("skillMonitor.buff.group.joinedCount", {
+                      count: group.buffIds.length,
+                    })}
+                  </div>
                   <div class="flex flex-wrap gap-2">
                     {#if group.buffIds.length > 0}
                       {#each group.buffIds as buffId (buffId)}
@@ -871,7 +1241,7 @@
                         {#if selectedBuff}
                           <button
                             type="button"
-                            class="relative rounded-md border border-border/60 overflow-hidden bg-muted/20 size-12 hover:border-border hover:bg-muted/30"
+                            class="border-border/60 bg-muted/20 hover:border-border hover:bg-muted/30 relative size-12 overflow-hidden rounded-md border"
                             title={t("skillMonitor.buff.group.removeTitle", {
                               name: getBuffDisplayName(buffId),
                             })}
@@ -880,13 +1250,13 @@
                             <img
                               src={`/images/buff/${selectedBuff.spriteFile}`}
                               alt={getBuffDisplayName(buffId)}
-                              class="w-full h-full object-contain"
+                              class="h-full w-full object-contain"
                             />
                           </button>
                         {:else}
                           <button
                             type="button"
-                            class="rounded-md border border-border/60 bg-muted/20 px-2 py-1 text-[11px] text-foreground hover:border-border hover:bg-muted/30"
+                            class="border-border/60 bg-muted/20 text-foreground hover:border-border hover:bg-muted/30 rounded-md border px-2 py-1 text-[11px]"
                             title={t("skillMonitor.buff.group.removeTitle", {
                               name: getBuffDisplayName(buffId),
                             })}
@@ -897,57 +1267,95 @@
                         {/if}
                       {/each}
                     {:else}
-                      <div class="text-xs text-muted-foreground">{t("skillMonitor.buff.group.empty")}</div>
+                      <div class="text-muted-foreground text-xs">
+                        {t("skillMonitor.buff.group.empty")}
+                      </div>
                     {/if}
                   </div>
                 </div>
               {/if}
 
               <div class="space-y-1">
-                <div class="text-xs text-muted-foreground">{t("skillMonitor.buff.priority.groupTitle")}</div>
+                <div class="text-muted-foreground text-xs">
+                  {t("skillMonitor.buff.priority.groupTitle")}
+                </div>
                 <input
-                  class="w-full sm:w-72 rounded border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  class="border-border/60 bg-muted/30 text-foreground placeholder:text-muted-foreground focus:ring-primary/50 w-full rounded border px-3 py-2 text-sm focus:ring-2 focus:outline-none sm:w-72"
                   placeholder={t("skillMonitor.buff.priority.groupPlaceholder")}
                   value={getGroupPrioritySearchKeyword(group.id)}
                   oninput={(event) =>
-                    setGroupPrioritySearchKeyword(group.id, (event.currentTarget as HTMLInputElement).value)}
+                    setGroupPrioritySearchKeyword(
+                      group.id,
+                      (event.currentTarget as HTMLInputElement).value,
+                    )}
                 />
                 {#if getGroupPrioritySearchResults(group).length > 0}
                   <BuffSearchResultGrid
                     items={getGroupPrioritySearchResults(group)}
                     {availableBuffMap}
-                    onSelect={(buffId) => togglePriorityInGroup(group.id, buffId)}
+                    onSelect={(buffId) =>
+                      togglePriorityInGroup(group.id, buffId)}
                     emptyMessage={t("skillMonitor.buff.priority.groupEmpty")}
                     minColumnWidth={180}
                   />
                 {/if}
                 {#each getGroupPriorityIds(group) as buffId, idx (buffId)}
-                  <div class="flex items-center gap-2 rounded border border-border/60 bg-muted/20 px-2 py-1">
-                    <span class="w-6 text-center text-xs text-muted-foreground">{idx + 1}</span>
-                    <span class="flex-1 text-xs text-foreground truncate">
+                  <div
+                    class="border-border/60 bg-muted/20 flex items-center gap-2 rounded border px-2 py-1"
+                  >
+                    <span class="text-muted-foreground w-6 text-center text-xs"
+                      >{idx + 1}</span
+                    >
+                    <span class="text-foreground flex-1 truncate text-xs">
                       {getBuffDisplayName(buffId)}
                     </span>
-                    <button type="button" class="text-xs px-2 py-0.5 rounded border border-border/60 hover:bg-muted/40" onclick={() => togglePriorityInGroup(group.id, buffId)}>{t("skillMonitor.common.remove")}</button>
-                    <button type="button" class="text-xs px-2 py-0.5 rounded border border-border/60 hover:bg-muted/40 disabled:opacity-50" onclick={() => moveGroupPriority(group.id, buffId, "up")} disabled={idx === 0}>{t("skillMonitor.common.moveUp")}</button>
-                    <button type="button" class="text-xs px-2 py-0.5 rounded border border-border/60 hover:bg-muted/40 disabled:opacity-50" onclick={() => moveGroupPriority(group.id, buffId, "down")} disabled={idx === getGroupPriorityIds(group).length - 1}>{t("skillMonitor.common.moveDown")}</button>
+                    <button
+                      type="button"
+                      class="border-border/60 hover:bg-muted/40 rounded border px-2 py-0.5 text-xs"
+                      onclick={() => togglePriorityInGroup(group.id, buffId)}
+                      >{t("skillMonitor.common.remove")}</button
+                    >
+                    <button
+                      type="button"
+                      class="border-border/60 hover:bg-muted/40 rounded border px-2 py-0.5 text-xs disabled:opacity-50"
+                      onclick={() => moveGroupPriority(group.id, buffId, "up")}
+                      disabled={idx === 0}
+                      >{t("skillMonitor.common.moveUp")}</button
+                    >
+                    <button
+                      type="button"
+                      class="border-border/60 hover:bg-muted/40 rounded border px-2 py-0.5 text-xs disabled:opacity-50"
+                      onclick={() =>
+                        moveGroupPriority(group.id, buffId, "down")}
+                      disabled={idx === getGroupPriorityIds(group).length - 1}
+                      >{t("skillMonitor.common.moveDown")}</button
+                    >
                   </div>
                 {/each}
               </div>
               <div class="space-y-2">
-                <div class="text-xs text-muted-foreground">{t("skillMonitor.buff.group.layoutTitle")}</div>
-                {@render buffGroupLayoutControls(group, (updater: (curr: BuffGroup) => BuffGroup) => updateBuffGroup(group.id, updater))}
+                <div class="text-muted-foreground text-xs">
+                  {t("skillMonitor.buff.group.layoutTitle")}
+                </div>
+                {@render buffGroupLayoutControls(
+                  group,
+                  (updater: (curr: BuffGroup) => BuffGroup) =>
+                    updateBuffGroup(group.id, updater),
+                )}
               </div>
             </div>
           </div>
         {/each}
       </div>
 
-      <div class="rounded-md border border-border/60 bg-muted/20 p-3 space-y-2">
-        <div class="text-xs text-muted-foreground">{t("skillMonitor.buff.group.previewTitle")}</div>
+      <div class="border-border/60 bg-muted/20 space-y-2 rounded-md border p-3">
+        <div class="text-muted-foreground text-xs">
+          {t("skillMonitor.buff.group.previewTitle")}
+        </div>
         <div class="space-y-2">
           {#each buffGroups as group, groupIndex (group.id)}
-            <div class="rounded border border-border/50 p-2">
-              <div class="text-xs mb-2 text-foreground">
+            <div class="border-border/50 rounded border p-2">
+              <div class="text-foreground mb-2 text-xs">
                 {getBuffGroupDisplayName(group, groupIndex)}{group.monitorAll
                   ? t("skillMonitor.buff.group.allSuffix")
                   : ""}
@@ -959,15 +1367,25 @@
               >
                 {#if group.monitorAll}
                   {#each availableBuffs.slice(0, Math.max(6, group.columns * group.rows)) as buff (buff.baseId)}
-                    <img src={`/images/buff/${buff.spriteFile}`} alt={buff.name} class="w-full aspect-square object-contain rounded border border-border/30 bg-muted/20" />
+                    <img
+                      src={`/images/buff/${buff.spriteFile}`}
+                      alt={buff.name}
+                      class="border-border/30 bg-muted/20 aspect-square w-full rounded border object-contain"
+                    />
                   {/each}
                 {:else}
                   {#each group.buffIds.slice(0, Math.max(6, group.columns * group.rows)) as buffId (buffId)}
                     {@const buff = availableBuffMap.get(buffId)}
                     {#if buff}
-                      <img src={`/images/buff/${buff.spriteFile}`} alt={buff.name} class="w-full aspect-square object-contain rounded border border-border/30 bg-muted/20" />
+                      <img
+                        src={`/images/buff/${buff.spriteFile}`}
+                        alt={buff.name}
+                        class="border-border/30 bg-muted/20 aspect-square w-full rounded border object-contain"
+                      />
                     {:else}
-                      <div class="w-full aspect-square rounded border border-border/30 bg-muted/20"></div>
+                      <div
+                        class="border-border/30 bg-muted/20 aspect-square w-full rounded border"
+                      ></div>
                     {/if}
                   {/each}
                 {/if}

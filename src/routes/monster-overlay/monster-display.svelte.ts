@@ -1,9 +1,16 @@
 import { resolveBuffDisplayName } from "$lib/config/buff-name-table";
 import { resolveMonsterName } from "$lib/config/game-names";
 import { t } from "$lib/i18n/index.svelte";
-import { SETTINGS, ensureBuffAliases } from "$lib/settings-store";
+import {
+  SETTINGS,
+  ensureBuffAliases,
+  ensureBuffAlerts,
+} from "$lib/settings-store";
 import type { HateEntry } from "$lib/api";
-import { buildBuffTextRow } from "../game-overlay/overlay-utils";
+import {
+  buildBuffTextRow,
+  resolveAlertState,
+} from "../game-overlay/overlay-utils";
 import type { TextBuffDisplay } from "../game-overlay/overlay-types";
 import { monsterRuntime } from "./monster-runtime.svelte.js";
 import type {
@@ -12,24 +19,30 @@ import type {
 } from "./monster-types";
 
 function selectedMonsterBuffIds() {
-  return Array.from(new Set([
-    ...SETTINGS.monsterMonitor.state.monitoredBuffIds,
-    ...SETTINGS.monsterMonitor.state.selfAppliedBuffIds,
-  ]));
+  return Array.from(
+    new Set([
+      ...SETTINGS.monsterMonitor.state.monitoredBuffIds,
+      ...SETTINGS.monsterMonitor.state.selfAppliedBuffIds,
+    ]),
+  );
 }
 
 function buildPlaceholderRows(now: number): TextBuffDisplay[] {
   const aliases = ensureBuffAliases(SETTINGS.monsterMonitor.state.buffAliases);
   const selectedIds = selectedMonsterBuffIds();
   const priorityIds = SETTINGS.monsterMonitor.state.buffPriorityIds ?? [];
-  
+
   const priorityIndex = new Map<number, number>();
   priorityIds.forEach((id, idx) => priorityIndex.set(id, idx));
   const fallbackBase = priorityIds.length;
-  
+
   const sortedIds = [...selectedIds].sort((left, right) => {
-    const leftPriority = priorityIndex.has(left) ? priorityIndex.get(left)! : fallbackBase + selectedIds.indexOf(left);
-    const rightPriority = priorityIndex.has(right) ? priorityIndex.get(right)! : fallbackBase + selectedIds.indexOf(right);
+    const leftPriority = priorityIndex.has(left)
+      ? priorityIndex.get(left)!
+      : fallbackBase + selectedIds.indexOf(left);
+    const rightPriority = priorityIndex.has(right)
+      ? priorityIndex.get(right)!
+      : fallbackBase + selectedIds.indexOf(right);
     return leftPriority - rightPriority;
   });
 
@@ -46,7 +59,8 @@ function buildPlaceholderRows(now: number): TextBuffDisplay[] {
         },
         now,
         true,
-      ))
+      ),
+    )
     .filter((row): row is TextBuffDisplay => row !== null);
 
   if (rows.length > 0) return rows;
@@ -109,7 +123,10 @@ function resolveMonsterSectionTitle(uid: number): string {
   return t("monsterOverlay.placeholder.target", { uid });
 }
 
-function buildHateRows(entries: HateEntry[], maxDisplay: number): TextBuffDisplay[] {
+function buildHateRows(
+  entries: HateEntry[],
+  maxDisplay: number,
+): TextBuffDisplay[] {
   const sortedEntries = [...entries].sort((left, right) => {
     if (right.hateVal !== left.hateVal) {
       return right.hateVal - left.hateVal;
@@ -117,8 +134,13 @@ function buildHateRows(entries: HateEntry[], maxDisplay: number): TextBuffDispla
     return left.uid - right.uid;
   });
 
-  const normalizedHateValues = sortedEntries.map((entry) => Math.max(entry.hateVal, 0));
-  const totalHate = normalizedHateValues.reduce((sum, hateVal) => sum + hateVal, 0);
+  const normalizedHateValues = sortedEntries.map((entry) =>
+    Math.max(entry.hateVal, 0),
+  );
+  const totalHate = normalizedHateValues.reduce(
+    (sum, hateVal) => sum + hateVal,
+    0,
+  );
 
   let displayPercents = new Array<number>(sortedEntries.length).fill(0);
   if (totalHate > 0) {
@@ -132,14 +154,14 @@ function buildHateRows(entries: HateEntry[], maxDisplay: number): TextBuffDispla
       };
     });
 
-    let remainingPercent = 100 - percentParts.reduce(
-      (sum, part) => sum + part.basePercent,
-      0,
-    );
+    let remainingPercent =
+      100 - percentParts.reduce((sum, part) => sum + part.basePercent, 0);
 
     percentParts
-      .sort((left, right) =>
-        right.remainder - left.remainder || left.index - right.index)
+      .sort(
+        (left, right) =>
+          right.remainder - left.remainder || left.index - right.index,
+      )
       .forEach((part) => {
         if (remainingPercent <= 0) return;
         part.basePercent += 1;
@@ -165,8 +187,14 @@ function buildHateRows(entries: HateEntry[], maxDisplay: number): TextBuffDispla
 export function updateMonsterDisplay() {
   const now = Date.now();
   const aliases = ensureBuffAliases(SETTINGS.monsterMonitor.state.buffAliases);
+  const alertMap = ensureBuffAlerts(SETTINGS.monsterMonitor.state.buffAlerts);
+  const resolveAlert = (
+    baseId: number,
+    remainingMs: number,
+    durationMs: number,
+  ) => resolveAlertState(alertMap[String(baseId)], remainingMs, durationMs);
   const selectedIds = selectedMonsterBuffIds();
-  
+
   const priorityIds = SETTINGS.monsterMonitor.state.buffPriorityIds ?? [];
   const priorityIndex = new Map<number, number>();
   priorityIds.forEach((id, idx) => priorityIndex.set(id, idx));
@@ -180,15 +208,18 @@ export function updateMonsterDisplay() {
   const nextSections: MonsterBossBuffSection[] = [];
   const nextHateSections: MonsterHateSection[] = [];
 
-  const sortedBossUids = Array.from(monsterRuntime.bossBuffMap.keys())
-    .sort((leftUid, rightUid) => leftUid - rightUid);
+  const sortedBossUids = Array.from(monsterRuntime.bossBuffMap.keys()).sort(
+    (leftUid, rightUid) => leftUid - rightUid,
+  );
 
   for (const bossUid of sortedBossUids) {
     const buffMap = monsterRuntime.bossBuffMap.get(bossUid) ?? new Map();
     const buffRows = Array.from(buffMap.values())
       .sort((left, right) => {
-        const leftPriority = priorityIndex.get(left.baseId) ?? Number.MAX_SAFE_INTEGER;
-        const rightPriority = priorityIndex.get(right.baseId) ?? Number.MAX_SAFE_INTEGER;
+        const leftPriority =
+          priorityIndex.get(left.baseId) ?? Number.MAX_SAFE_INTEGER;
+        const rightPriority =
+          priorityIndex.get(right.baseId) ?? Number.MAX_SAFE_INTEGER;
         return leftPriority - rightPriority || left.baseId - right.baseId;
       })
       .map((buff) =>
@@ -197,7 +228,11 @@ export function updateMonsterDisplay() {
           resolveBuffDisplayName(buff.baseId, aliases),
           buff,
           now,
-        ))
+          false,
+          false,
+          resolveAlert,
+        ),
+      )
       .filter((row): row is TextBuffDisplay => row !== null);
 
     if (buffRows.length === 0) continue;
@@ -209,8 +244,9 @@ export function updateMonsterDisplay() {
   }
 
   if (SETTINGS.monsterMonitor.state.hateListEnabled) {
-    const sortedHateBossUids = Array.from(monsterRuntime.bossHateMap.keys())
-      .sort((leftUid, rightUid) => leftUid - rightUid);
+    const sortedHateBossUids = Array.from(
+      monsterRuntime.bossHateMap.keys(),
+    ).sort((leftUid, rightUid) => leftUid - rightUid);
     const maxDisplay = SETTINGS.monsterMonitor.state.hateListMaxDisplay ?? 5;
 
     for (const bossUid of sortedHateBossUids) {
@@ -237,9 +273,9 @@ export function updateMonsterDisplay() {
   }
 
   if (
-    SETTINGS.monsterMonitor.state.hateListEnabled
-    && nextHateSections.length === 0
-    && monsterRuntime.isEditing
+    SETTINGS.monsterMonitor.state.hateListEnabled &&
+    nextHateSections.length === 0 &&
+    monsterRuntime.isEditing
   ) {
     nextHateSections.push({
       bossUid: 0,

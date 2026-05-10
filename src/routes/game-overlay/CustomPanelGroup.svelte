@@ -14,9 +14,12 @@
   const rowsByGroup = $derived(customPanelRowsByGroup());
 
   function getGroupName(group: { name: string }, index: number): string {
-    return group.name.trim() || t("skillMonitor.defaults.customPanelGroupName", {
-      index: index + 1,
-    });
+    return (
+      group.name.trim() ||
+      t("skillMonitor.defaults.customPanelGroupName", {
+        index: index + 1,
+      })
+    );
   }
 </script>
 
@@ -32,7 +35,11 @@
       style:transform={`scale(${group.scale})`}
       style:transform-origin="top left"
       onpointerdown={(e) =>
-        startDrag(e, { kind: "customPanelGroup", groupId: group.id }, group.position)}
+        startDrag(
+          e,
+          { kind: "customPanelGroup", groupId: group.id },
+          group.position,
+        )}
     >
       {#if editing}
         <div class="group-tag">{getGroupName(group, groupIndex)}</div>
@@ -40,7 +47,9 @@
 
       <div class="custom-panel-list" style:gap={`${styleConfig.gap}px`}>
         {#if rows.length === 0}
-          <div class="empty-tip">{t("skillMonitor.customPanel.entries.empty")}</div>
+          <div class="empty-tip">
+            {t("skillMonitor.customPanel.entries.empty")}
+          </div>
         {/if}
         {#each rows as row (row.key)}
           <TextBuffRow
@@ -56,6 +65,7 @@
             fontSize={styleConfig.fontSize}
             columnGap={styleConfig.columnGap}
             placeholder={row.isPlaceholder}
+            alert={row.alert}
           />
         {/each}
       </div>

@@ -26,7 +26,8 @@
     style:top={`${panelPos.y}px`}
     style:transform={`scale(${panelScale})`}
     style:transform-origin="top left"
-    onpointerdown={(event) => startMonsterDrag(event, { kind: "buffPanel" }, panelPos)}
+    onpointerdown={(event) =>
+      startMonsterDrag(event, { kind: "buffPanel" }, panelPos)}
   >
     {#if editing}
       <div class="group-tag">{t("monsterOverlay.buffGroupTag")}</div>
@@ -51,6 +52,7 @@
                 fontSize={styleConfig.fontSize}
                 columnGap={styleConfig.columnGap}
                 placeholder={row.isPlaceholder}
+                alert={row.alert}
               />
             {/each}
           </div>
@@ -61,7 +63,8 @@
     {#if editing}
       <div
         class="resize-handle"
-        onpointerdown={(event) => startMonsterResize(event, { kind: "buffPanel" }, panelScale)}
+        onpointerdown={(event) =>
+          startMonsterResize(event, { kind: "buffPanel" }, panelScale)}
       ></div>
     {/if}
   </div>

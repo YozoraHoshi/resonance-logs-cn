@@ -27,7 +27,9 @@ import {
   getCustomPanelDisplayRow,
   getResourcePreciseValue as getResourcePreciseValueValue,
   getResourceValue as getResourceValueValue,
+  resolveAlertState,
 } from "./overlay-utils";
+import { ensureBuffAlerts } from "$lib/settings-store";
 import {
   activeProfile,
   buffAliases,
@@ -70,7 +72,10 @@ const _panelAreaRows = $derived.by(() =>
 );
 
 const _specialBuffConfigMap = $derived.by(() => {
-  const map = new Map<number, (ReturnType<typeof findSpecialBuffDisplays>)[number]>();
+  const map = new Map<
+    number,
+    ReturnType<typeof findSpecialBuffDisplays>[number]
+  >();
   for (const config of findSpecialBuffDisplays(selectedClassKey())) {
     map.set(config.buffBaseId, config);
   }
@@ -94,6 +99,12 @@ const _buffSnapshot = $derived.by(() => {
   const priorityIds = buffPriorityIds();
   const buffDefinitionsMap = buffDefinitions();
   const panelGroups = customPanelGroups();
+  const alertMap = ensureBuffAlerts(activeProfile()?.buffAlerts);
+  const resolveAlert = (
+    baseId: number,
+    remainingMs: number,
+    durationMs: number,
+  ) => resolveAlertState(alertMap[String(baseId)], remainingMs, durationMs);
   const skippedInlineBuffIds = new Set(
     panelGroups
       .flatMap((group) => group.entries)
@@ -132,11 +143,17 @@ const _buffSnapshot = $derived.by(() => {
       continue;
     }
 
-    if (buff.durationMs <= 0 && buff.layer <= 1 && !userExplicitBuffIds.has(baseId)) continue;
+    if (
+      buff.durationMs <= 0 &&
+      buff.layer <= 1 &&
+      !userExplicitBuffIds.has(baseId)
+    )
+      continue;
 
     const definition = buffDefinitionsMap.get(baseId);
     const name = resolveBuffDisplayName(baseId, currentBuffAliases);
     const timeText = formatTimerText(remaining);
+    const alert = resolveAlert(baseId, remaining, buff.durationMs);
     const specialConfig = _specialBuffConfigMap.get(baseId);
     const specialImages = specialConfig
       ? (() => {
@@ -157,9 +174,18 @@ const _buffSnapshot = $derived.by(() => {
         text: timeText,
         layer: buff.layer,
         ...(specialImages.length > 0 ? { specialImages } : {}),
+        ...(alert ? { alert } : {}),
       });
     } else {
-      const row = buildBuffTextRow(`buff_${baseId}`, name, buff, now);
+      const row = buildBuffTextRow(
+        `buff_${baseId}`,
+        name,
+        buff,
+        now,
+        false,
+        false,
+        resolveAlert,
+      );
       if (row) nextTextBuffs.push(row);
     }
   }
@@ -213,8 +239,12 @@ const _buffSnapshot = $derived.by(() => {
     return leftPriority - rightPriority || leftBaseId - rightBaseId;
   });
   nextTextBuffs.sort((left, right) => {
-    const [leftPriority, leftBaseId] = sortBuffPriority(getTextBuffBaseId(left));
-    const [rightPriority, rightBaseId] = sortBuffPriority(getTextBuffBaseId(right));
+    const [leftPriority, leftBaseId] = sortBuffPriority(
+      getTextBuffBaseId(left),
+    );
+    const [rightPriority, rightBaseId] = sortBuffPriority(
+      getTextBuffBaseId(right),
+    );
     return leftPriority - rightPriority || leftBaseId - rightBaseId;
   });
 
@@ -228,6 +258,7 @@ const _buffSnapshot = $derived.by(() => {
         counterMap(),
         _counterRuleMap,
         (baseId) => resolveBuffDisplayName(baseId, currentBuffAliases),
+        resolveAlert,
       );
       if (row) nextRows.push(row);
     }
@@ -294,7 +325,9 @@ const _skillSnapshot = $derived.by(() => {
 });
 
 const _activeBuffIds = $derived.by(() => _buffSnapshot.activeBuffIds);
-const _buffDurationPercents = $derived.by(() => _buffSnapshot.buffDurationPercents);
+const _buffDurationPercents = $derived.by(
+  () => _buffSnapshot.buffDurationPercents,
+);
 const _iconDisplayBuffs = $derived.by(() => _buffSnapshot.iconDisplayBuffs);
 const _textBuffs = $derived.by(() => _buffSnapshot.textBuffs);
 const _customPanelRowsByGroup = $derived.by(
@@ -306,7 +339,8 @@ const _skillDurationDisplays = $derived.by(
 );
 
 const _groupedIconBuffs = $derived.by(() => {
-  if (buffDisplayMode() !== "grouped") return new Map<string, IconBuffDisplay[]>();
+  if (buffDisplayMode() !== "grouped")
+    return new Map<string, IconBuffDisplay[]>();
   const groups = _normalizedBuffGroups;
   const iconBuffs = _iconDisplayBuffs.filter(
     (buff) => !(buff.specialImages && buff.specialImages.length > 0),
@@ -345,9 +379,10 @@ const _individualModeIconBuffs = $derived.by(() => {
     }));
   const categoryBuffs: IconBuffDisplay[] = [];
   for (const categoryKey of selectedCategories) {
-    const activeCategoryBuff = visibleBuffs.find((buff) =>
-      !explicitSelected.has(buff.baseId) &&
-      resolveBuffCategoryKey(buff.baseId) === categoryKey
+    const activeCategoryBuff = visibleBuffs.find(
+      (buff) =>
+        !explicitSelected.has(buff.baseId) &&
+        resolveBuffCategoryKey(buff.baseId) === categoryKey,
     );
     if (activeCategoryBuff) {
       categoryBuffs.push({
@@ -377,7 +412,8 @@ const _individualModeIconBuffs = $derived.by(() => {
 });
 
 const _individualAllGroupBuffs = $derived.by(() => {
-  if (buffDisplayMode() !== "individual" || !_individualMonitorAllGroup) return [];
+  if (buffDisplayMode() !== "individual" || !_individualMonitorAllGroup)
+    return [];
   const selected = new Set(expandedMonitoredBuffIds());
   return _iconDisplayBuffs.filter(
     (buff) =>

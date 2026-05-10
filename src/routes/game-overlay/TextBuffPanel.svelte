@@ -28,7 +28,8 @@
     style:gap={`${styleConfig.gap}px`}
     style:transform={`scale(${groupScale})`}
     style:transform-origin="top left"
-    onpointerdown={(e) => startDrag(e, { kind: "group", key: "textBuffPanel" }, groupPos)}
+    onpointerdown={(e) =>
+      startDrag(e, { kind: "group", key: "textBuffPanel" }, groupPos)}
   >
     {#if editing}
       <div class="group-tag">{t("gameOverlay.group.textBuff")}</div>
@@ -48,6 +49,7 @@
           progressOpacity={styleConfig.progressOpacity}
           fontSize={styleConfig.fontSize}
           placeholder={buff.isPlaceholder}
+          alert={buff.alert}
         />
       {:else}
         <TextBuffRow
@@ -63,6 +65,7 @@
           fontSize={styleConfig.fontSize}
           columnGap={styleConfig.columnGap}
           placeholder={buff.isPlaceholder}
+          alert={buff.alert}
         />
       {/if}
     {/each}

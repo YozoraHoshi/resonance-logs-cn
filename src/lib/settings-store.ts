@@ -520,6 +520,16 @@ export type MonsterOverlaySizes = {
   hatePanelScale: number;
 };
 
+export type BuffAlertRule = {
+  thresholdSeconds: number;
+  highlightColor: string;
+  flash: boolean;
+  flashIntervalMs?: number;
+  applyToProgress?: boolean;
+};
+
+export type BuffAlertMap = Record<string, BuffAlertRule>;
+
 export type MonsterMonitorConfig = {
   enabled: boolean;
   hateListEnabled: boolean;
@@ -528,6 +538,7 @@ export type MonsterMonitorConfig = {
   selfAppliedBuffIds: number[];
   buffPriorityIds: number[];
   buffAliases: BuffAliasMap;
+  buffAlerts: BuffAlertMap;
   overlayPositions: MonsterOverlayPositions;
   overlaySizes: MonsterOverlaySizes;
   panelStyle: CustomPanelStyle;
@@ -605,6 +616,7 @@ export type SkillMonitorProfile = {
   monitoredBuffCategories?: BuffCategoryKey[];
   monitoredPanelAttrs: PanelAttrConfig[];
   buffPriorityIds: number[];
+  buffAlerts?: BuffAlertMap;
   buffDisplayMode: BuffDisplayMode;
   buffGroups: BuffGroup[];
   individualMonitorAllGroup?: BuffGroup | null;
@@ -630,6 +642,42 @@ export function ensureBuffAliases(
     const trimmed = alias.trim();
     if (!trimmed) continue;
     next[baseId] = trimmed;
+  }
+  return next;
+}
+
+export function createDefaultBuffAlertRule(): BuffAlertRule {
+  return {
+    thresholdSeconds: 5,
+    highlightColor: "#ef4444",
+    flash: true,
+    flashIntervalMs: 600,
+    applyToProgress: true,
+  };
+}
+
+export function ensureBuffAlerts(
+  buffAlerts: BuffAlertMap | null | undefined,
+): BuffAlertMap {
+  const next: BuffAlertMap = {};
+  for (const [baseId, rule] of Object.entries(buffAlerts ?? {})) {
+    if (!rule || typeof rule !== "object") continue;
+    const numericBaseId = Number(baseId);
+    if (!Number.isFinite(numericBaseId)) continue;
+
+    const thresholdSeconds = Number(rule.thresholdSeconds);
+    const flashIntervalMs = Number(rule.flashIntervalMs);
+    next[String(numericBaseId)] = {
+      thresholdSeconds: Number.isFinite(thresholdSeconds)
+        ? Math.max(1, Math.min(60, thresholdSeconds))
+        : 5,
+      highlightColor: rule.highlightColor || "#ef4444",
+      flash: Boolean(rule.flash),
+      flashIntervalMs: Number.isFinite(flashIntervalMs)
+        ? Math.max(100, flashIntervalMs)
+        : 600,
+      applyToProgress: rule.applyToProgress ?? true,
+    };
   }
   return next;
 }
@@ -764,6 +812,7 @@ export function createDefaultSkillMonitorProfile(
       label: String(item.attrId),
     })),
     buffPriorityIds: [],
+    buffAlerts: {},
     buffDisplayMode: "individual",
     buffGroups: [],
     individualMonitorAllGroup: null,
@@ -788,6 +837,7 @@ export function createDefaultMonsterMonitorConfig(): MonsterMonitorConfig {
     selfAppliedBuffIds: [],
     buffPriorityIds: [],
     buffAliases: {},
+    buffAlerts: {},
     overlayPositions: createDefaultMonsterOverlayPositions(),
     overlaySizes: createDefaultMonsterOverlaySizes(),
     panelStyle: createDefaultCustomPanelStyle(),

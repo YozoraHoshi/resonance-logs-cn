@@ -21,9 +21,13 @@
   } from "$lib/config/buff-name-table";
   import {
     createDefaultBuffGroup,
+    createDefaultBuffAlertRule,
     createDefaultCustomPanelGroup,
     ensureBuffAliases,
+    ensureBuffAlerts,
     SETTINGS,
+    type BuffAlertMap,
+    type BuffAlertRule,
     type BuffDisplayMode,
     type BuffGroup,
     type CustomPanelGroup,
@@ -75,6 +79,7 @@
   let buffSearchResults = $state<BuffNameInfo[]>([]);
   let globalPrioritySearch = $state("");
   let globalPrioritySearchResults = $state<BuffNameInfo[]>([]);
+  let alertSearch = $state("");
   let groupSearchKeyword = $state<Record<string, string>>({});
   let groupSearchResults = $state<Record<string, BuffNameInfo[]>>({});
   let groupPrioritySearchKeyword = $state<Record<string, string>>({});
@@ -82,9 +87,12 @@
   let resonanceSearch = $state("");
   let inlineBuffSearch = $state("");
   let inlineBuffSearchResults = $state<BuffNameInfo[]>([]);
-  let activeTab = $state<"skill-cd" | "buff" | "panel-attr" | "custom-panel" | "overlay">("skill-cd");
+  let activeTab = $state<
+    "skill-cd" | "buff" | "panel-attr" | "custom-panel" | "overlay"
+  >("skill-cd");
   let attrSectionExpanded = $state(false);
   let buffAliasSectionExpanded = $state(false);
+  let buffAlertSectionExpanded = $state(false);
   let buffAliasSearch = $state("");
   let buffAliasSearchResults = $state<BuffNameInfo[]>([]);
   let buffAliasEditingBuffId = $state<number | null>(null);
@@ -111,10 +119,16 @@
   const expandedSelectedBuffIds = $derived.by(() =>
     expandBuffSelection(monitoredBuffIds, monitoredBuffCategories),
   );
-  const monitoredPanelAttrs = $derived.by(() => ensurePanelAttrs(activeProfile));
+  const monitoredPanelAttrs = $derived.by(() =>
+    ensurePanelAttrs(activeProfile),
+  );
   const panelAttrGap = $derived(ensureOverlaySizes(activeProfile).panelAttrGap);
-  const panelAttrFontSize = $derived(ensureOverlaySizes(activeProfile).panelAttrFontSize);
-  const panelAttrColumnGap = $derived(ensureOverlaySizes(activeProfile).panelAttrColumnGap);
+  const panelAttrFontSize = $derived(
+    ensureOverlaySizes(activeProfile).panelAttrFontSize,
+  );
+  const panelAttrColumnGap = $derived(
+    ensureOverlaySizes(activeProfile).panelAttrColumnGap,
+  );
   const showSkillCdGroup = $derived(
     activeProfile.overlayVisibility?.showSkillCdGroup ?? false,
   );
@@ -133,12 +147,16 @@
   const showShieldDetailGroup = $derived(
     activeProfile.overlayVisibility?.showShieldDetailGroup ?? false,
   );
-  const textBuffPanelStyle = $derived.by(() => ensureTextBuffPanelStyle(activeProfile));
+  const textBuffPanelStyle = $derived.by(() =>
+    ensureTextBuffPanelStyle(activeProfile),
+  );
   const buffDisplayMode = $derived(
     activeProfile.buffDisplayMode ?? "individual",
   );
   const buffGroups = $derived.by(() => ensureBuffGroups(activeProfile));
-  const individualMonitorAllGroup = $derived.by(() => ensureIndividualMonitorAllGroup(activeProfile));
+  const individualMonitorAllGroup = $derived.by(() =>
+    ensureIndividualMonitorAllGroup(activeProfile),
+  );
   const selectedBuffCategories = $derived.by<BuffCategoryDefinition[]>(() =>
     buffCategoryDefinitions.filter((category) =>
       monitoredBuffCategories.includes(category.key),
@@ -152,8 +170,19 @@
   );
   const buffPriorityIds = $derived.by(() => {
     const selected = new Set(expandedSelectedBuffIds);
-    return uniqueIds((activeProfile.buffPriorityIds ?? []).filter((id) => selected.has(id)));
+    return uniqueIds(
+      (activeProfile.buffPriorityIds ?? []).filter((id) => selected.has(id)),
+    );
   });
+  const buffAlerts = $derived.by(() =>
+    ensureBuffAlerts(activeProfile.buffAlerts),
+  );
+  const alertEligibleBuffIds = $derived.by(() =>
+    getAlertEligibleBuffIds(activeProfile),
+  );
+  const alertSearchResults = $derived.by(() =>
+    searchBuffsByName(alertSearch, buffAliases),
+  );
   const textBuffMaxVisible = $derived(
     Math.max(1, Math.min(20, activeProfile.textBuffMaxVisible ?? 10)),
   );
@@ -163,14 +192,18 @@
   const resolvedUserCounterRules = $derived.by<CounterRuleOption[]>(() =>
     resolveUserCounterRulesToPresets(activeProfile.userCounterRules).map(
       (rule) => ({ ...rule, origin: "user" as const }),
-    )
+    ),
   );
   const allCounterRules = $derived.by<CounterRuleOption[]>(() => [
     ...counterRules.map((rule) => ({ ...rule, origin: "preset" as const })),
     ...resolvedUserCounterRules,
   ]);
-  const customPanelGroups = $derived.by(() => ensureCustomPanelGroups(activeProfile));
-  const panelAreaRowOrder = $derived.by(() => ensurePanelAreaRowOrder(activeProfile));
+  const customPanelGroups = $derived.by(() =>
+    ensureCustomPanelGroups(activeProfile),
+  );
+  const panelAreaRowOrder = $derived.by(() =>
+    ensurePanelAreaRowOrder(activeProfile),
+  );
   const filteredInlineBuffSearchResults = $derived.by(() => {
     const ids = new Set<number>();
     return inlineBuffSearchResults.filter((item) => {
@@ -190,7 +223,11 @@
     updateSharedActiveProfile(updater, { createDefaultIfEmpty: true });
   }
 
-  function moveItem(ids: number[], item: number, direction: "up" | "down"): number[] {
+  function moveItem(
+    ids: number[],
+    item: number,
+    direction: "up" | "down",
+  ): number[] {
     const idx = ids.indexOf(item);
     if (idx === -1) return ids;
     const target = direction === "up" ? idx - 1 : idx + 1;
@@ -209,7 +246,9 @@
       return uniqueIds(group.priorityBuffIds ?? []);
     }
     const inGroup = new Set(group.buffIds);
-    return uniqueIds((group.priorityBuffIds ?? []).filter((id) => inGroup.has(id)));
+    return uniqueIds(
+      (group.priorityBuffIds ?? []).filter((id) => inGroup.has(id)),
+    );
   }
 
   function setSelectedClass(classKey: string) {
@@ -260,12 +299,11 @@
   const filteredResonanceSkills = $derived.by(() =>
     searchResonanceSkills(resonanceSearch),
   );
-  const selectedResonanceSkills = $derived.by(
-    () =>
-      monitoredSkillIds
-        .map((id) => findResonanceSkill(id))
-        .filter((skill): skill is NonNullable<typeof skill> => Boolean(skill))
-        .slice(0, 10),
+  const selectedResonanceSkills = $derived.by(() =>
+    monitoredSkillIds
+      .map((id) => findResonanceSkill(id))
+      .filter((skill): skill is NonNullable<typeof skill> => Boolean(skill))
+      .slice(0, 10),
   );
 
   function clearSkills() {
@@ -285,6 +323,7 @@
       monitoredBuffIds: [],
       monitoredBuffCategories: [],
       buffPriorityIds: [],
+      buffAlerts: {},
     }));
   }
 
@@ -293,8 +332,41 @@
     nextBuffIds: number[],
     nextCategories: BuffCategoryKey[],
   ): number[] {
-    const expandedIds = new Set(expandBuffSelection(nextBuffIds, nextCategories));
-    return uniqueIds((profile.buffPriorityIds ?? []).filter((id) => expandedIds.has(id)));
+    const expandedIds = new Set(
+      expandBuffSelection(nextBuffIds, nextCategories),
+    );
+    return uniqueIds(
+      (profile.buffPriorityIds ?? []).filter((id) => expandedIds.has(id)),
+    );
+  }
+
+  function getAlertEligibleBuffIds(profile: SkillMonitorProfile): number[] {
+    const expandedIds = expandBuffSelection(
+      profile.monitoredBuffIds ?? [],
+      normalizeBuffCategoryKeys(profile.monitoredBuffCategories),
+    );
+    const groupBuffIds = ensureBuffGroups(profile)
+      .filter((group) => !group.monitorAll)
+      .flatMap((group) => group.buffIds);
+    const customPanelBuffIds = ensureCustomPanelGroups(profile)
+      .flatMap((group) => group.entries)
+      .filter((entry) => entry.sourceType === "buff")
+      .map((entry) => entry.sourceId);
+    return uniqueIds([...expandedIds, ...groupBuffIds, ...customPanelBuffIds]);
+  }
+
+  function filterBuffAlertsForProfile(
+    profile: SkillMonitorProfile,
+    nextAlerts: BuffAlertMap = ensureBuffAlerts(profile.buffAlerts),
+  ): BuffAlertMap {
+    const eligibleIds = new Set(getAlertEligibleBuffIds(profile));
+    const filtered: BuffAlertMap = {};
+    for (const [baseId, rule] of Object.entries(ensureBuffAlerts(nextAlerts))) {
+      if (eligibleIds.has(Number(baseId))) {
+        filtered[baseId] = rule;
+      }
+    }
+    return filtered;
   }
 
   function setResonanceSearch(value: string) {
@@ -303,6 +375,10 @@
 
   function setBuffSearch(value: string) {
     buffSearch = value;
+  }
+
+  function setAlertSearch(value: string) {
+    alertSearch = value;
   }
 
   function getBuffDisplayName(buffId: number): string {
@@ -338,12 +414,44 @@
     globalPrioritySearch = value;
   }
 
+  function upsertBuffAlert(buffId: number, patch: Partial<BuffAlertRule>) {
+    updateActiveProfile((profile) => {
+      const current = ensureBuffAlerts(profile.buffAlerts);
+      const existing = current[String(buffId)] ?? createDefaultBuffAlertRule();
+      return {
+        ...profile,
+        buffAlerts: {
+          ...current,
+          [String(buffId)]: {
+            ...existing,
+            ...patch,
+          },
+        },
+      };
+    });
+  }
+
+  function removeBuffAlert(buffId: number) {
+    updateActiveProfile((profile) => {
+      const next = { ...ensureBuffAlerts(profile.buffAlerts) };
+      delete next[String(buffId)];
+      return {
+        ...profile,
+        buffAlerts: next,
+      };
+    });
+  }
+
   function setAttrSectionExpanded(expanded: boolean) {
     attrSectionExpanded = expanded;
   }
 
   function setBuffAliasSectionExpanded(expanded: boolean) {
     buffAliasSectionExpanded = expanded;
+  }
+
+  function setBuffAlertSectionExpanded(expanded: boolean) {
+    buffAlertSectionExpanded = expanded;
   }
 
   function setBuffAliasEditingBuffId(buffId: number | null) {
@@ -355,15 +463,21 @@
     const exists = current.includes(buffId);
     if (exists) {
       const nextBuffIds = current.filter((id) => id !== buffId);
-      updateActiveProfile((profile) => ({
-        ...profile,
-        monitoredBuffIds: nextBuffIds,
-        buffPriorityIds: filterPriorityIdsForSelection(
-          profile,
-          nextBuffIds,
-          normalizeBuffCategoryKeys(profile.monitoredBuffCategories),
-        ),
-      }));
+      updateActiveProfile((profile) => {
+        const nextProfile = {
+          ...profile,
+          monitoredBuffIds: nextBuffIds,
+          buffPriorityIds: filterPriorityIdsForSelection(
+            profile,
+            nextBuffIds,
+            normalizeBuffCategoryKeys(profile.monitoredBuffCategories),
+          ),
+        };
+        return {
+          ...nextProfile,
+          buffAlerts: filterBuffAlertsForProfile(nextProfile),
+        };
+      });
       return;
     }
     updateActiveProfile((profile) => ({
@@ -374,11 +488,13 @@
 
   function toggleBuffCategory(categoryKey: BuffCategoryKey) {
     updateActiveProfile((profile) => {
-      const current = normalizeBuffCategoryKeys(profile.monitoredBuffCategories);
+      const current = normalizeBuffCategoryKeys(
+        profile.monitoredBuffCategories,
+      );
       const nextCategories = current.includes(categoryKey)
         ? current.filter((key) => key !== categoryKey)
         : [...current, categoryKey];
-      return {
+      const nextProfile = {
         ...profile,
         monitoredBuffCategories: nextCategories,
         buffPriorityIds: filterPriorityIdsForSelection(
@@ -386,6 +502,10 @@
           profile.monitoredBuffIds ?? [],
           nextCategories,
         ),
+      };
+      return {
+        ...nextProfile,
+        buffAlerts: filterBuffAlertsForProfile(nextProfile),
       };
     });
   }
@@ -396,7 +516,9 @@
       const exists = current.includes(buffId);
       return {
         ...profile,
-        buffPriorityIds: exists ? current.filter((id) => id !== buffId) : [...current, buffId],
+        buffPriorityIds: exists
+          ? current.filter((id) => id !== buffId)
+          : [...current, buffId],
       };
     });
   }
@@ -438,7 +560,10 @@
   });
 
   $effect(() => {
-    globalPrioritySearchResults = searchBuffsByName(globalPrioritySearch, buffAliases);
+    globalPrioritySearchResults = searchBuffsByName(
+      globalPrioritySearch,
+      buffAliases,
+    );
   });
 
   $effect(() => {
@@ -472,10 +597,14 @@
         showSkillCdGroup: profile.overlayVisibility?.showSkillCdGroup ?? false,
         showSkillDurationGroup:
           profile.overlayVisibility?.showSkillDurationGroup ?? true,
-        showResourceGroup: profile.overlayVisibility?.showResourceGroup ?? false,
-        showPanelAttrGroup: profile.overlayVisibility?.showPanelAttrGroup ?? true,
-        showCustomPanelGroup: profile.overlayVisibility?.showCustomPanelGroup ?? true,
-        showShieldDetailGroup: profile.overlayVisibility?.showShieldDetailGroup ?? false,
+        showResourceGroup:
+          profile.overlayVisibility?.showResourceGroup ?? false,
+        showPanelAttrGroup:
+          profile.overlayVisibility?.showPanelAttrGroup ?? true,
+        showCustomPanelGroup:
+          profile.overlayVisibility?.showCustomPanelGroup ?? true,
+        showShieldDetailGroup:
+          profile.overlayVisibility?.showShieldDetailGroup ?? false,
         [key]: checked,
       },
     }));
@@ -490,29 +619,33 @@
       | "showCustomPanelGroup"
       | "showShieldDetailGroup",
   ) {
-    const current = key === "showSkillCdGroup"
-      ? showSkillCdGroup
-      : key === "showSkillDurationGroup"
-      ? showSkillDurationGroup
-      : key === "showResourceGroup"
-      ? showResourceGroup
-      : key === "showPanelAttrGroup"
-      ? showPanelAttrGroup
-      : key === "showShieldDetailGroup"
-      ? showShieldDetailGroup
-      : showCustomPanelGroup;
+    const current =
+      key === "showSkillCdGroup"
+        ? showSkillCdGroup
+        : key === "showSkillDurationGroup"
+          ? showSkillDurationGroup
+          : key === "showResourceGroup"
+            ? showResourceGroup
+            : key === "showPanelAttrGroup"
+              ? showPanelAttrGroup
+              : key === "showShieldDetailGroup"
+                ? showShieldDetailGroup
+                : showCustomPanelGroup;
     setOverlaySectionVisibility(key, !current);
   }
 
   function setPanelAttrEnabled(attrId: number, enabled: boolean) {
     updateActiveProfile((profile) => {
       const nextAttrs = ensurePanelAttrs(profile).map((item) =>
-        item.attrId === attrId ? { ...item, enabled } : item
+        item.attrId === attrId ? { ...item, enabled } : item,
       );
       let nextOrder = ensurePanelAreaRowOrder(profile).filter((row) =>
-        nextAttrs.some((item) => item.enabled && item.attrId === row.attrId)
+        nextAttrs.some((item) => item.enabled && item.attrId === row.attrId),
       );
-      if (enabled && !nextOrder.some((row) => row.type === "attr" && row.attrId === attrId)) {
+      if (
+        enabled &&
+        !nextOrder.some((row) => row.type === "attr" && row.attrId === attrId)
+      ) {
         nextOrder = [...nextOrder, { type: "attr", attrId }];
       }
       return {
@@ -527,7 +660,7 @@
     updateActiveProfile((profile) => ({
       ...profile,
       monitoredPanelAttrs: ensurePanelAttrs(profile).map((item) =>
-        item.attrId === attrId ? { ...item, color } : item
+        item.attrId === attrId ? { ...item, color } : item,
       ),
     }));
   }
@@ -584,7 +717,9 @@
   ) {
     updateActiveProfile((profile) => ({
       ...profile,
-      userCounterRules: updater(ensureUserCounterRules(profile.userCounterRules)),
+      userCounterRules: updater(
+        ensureUserCounterRules(profile.userCounterRules),
+      ),
     }));
   }
 
@@ -593,20 +728,27 @@
       (maxId, rule) => Math.max(maxId, rule.ruleId),
       10000,
     );
-    const highestUserRuleId = ensureUserCounterRules(profile.userCounterRules).reduce(
-      (maxId, rule) => Math.max(maxId, rule.ruleId),
-      10000,
-    );
+    const highestUserRuleId = ensureUserCounterRules(
+      profile.userCounterRules,
+    ).reduce((maxId, rule) => Math.max(maxId, rule.ruleId), 10000);
     return Math.max(highestPresetRuleId, highestUserRuleId, 10000) + 1;
   }
 
-  function addUserCounterRule(name: string, sourceRefs: string[], slotRefs: string[]) {
+  function addUserCounterRule(
+    name: string,
+    sourceRefs: string[],
+    slotRefs: string[],
+  ) {
     const nextName = name.trim();
     const nextSourceRefs = Array.from(
-      new Set(sourceRefs.filter((item) => typeof item === "string" && item.trim())),
+      new Set(
+        sourceRefs.filter((item) => typeof item === "string" && item.trim()),
+      ),
     );
     const nextSlotRefs = Array.from(
-      new Set(slotRefs.filter((item) => typeof item === "string" && item.trim())),
+      new Set(
+        slotRefs.filter((item) => typeof item === "string" && item.trim()),
+      ),
     );
     if (!nextName || nextSourceRefs.length === 0 || nextSlotRefs.length === 0) {
       return;
@@ -628,44 +770,59 @@
   function removeUserCounterRule(ruleId: number) {
     updateActiveProfile((profile) => ({
       ...profile,
-      userCounterRules: ensureUserCounterRules(profile.userCounterRules).filter((rule) =>
-        rule.ruleId !== ruleId
+      userCounterRules: ensureUserCounterRules(profile.userCounterRules).filter(
+        (rule) => rule.ruleId !== ruleId,
       ),
       customPanelGroups: ensureCustomPanelGroups(profile).map((group) => ({
         ...group,
-        entries: group.entries.filter((entry) =>
-          !(entry.sourceType === "counter" && entry.sourceId === ruleId)
+        entries: group.entries.filter(
+          (entry) =>
+            !(entry.sourceType === "counter" && entry.sourceId === ruleId),
         ),
       })),
-      inlineBuffEntries: ensureInlineBuffEntries(profile).filter((entry) =>
-        !(entry.sourceType === "counter" && entry.sourceId === ruleId)
+      inlineBuffEntries: ensureInlineBuffEntries(profile).filter(
+        (entry) =>
+          !(entry.sourceType === "counter" && entry.sourceId === ruleId),
       ),
     }));
   }
 
-  function updateUserCounterRule(ruleId: number, updates: Partial<UserCounterRule>) {
+  function updateUserCounterRule(
+    ruleId: number,
+    updates: Partial<UserCounterRule>,
+  ) {
     updateUserCounterRules((rules) =>
       rules.map((rule) => {
         if (rule.ruleId !== ruleId) return rule;
         return {
           ...rule,
-          ...(updates.name !== undefined ? { name: updates.name.trim() || rule.name } : {}),
+          ...(updates.name !== undefined
+            ? { name: updates.name.trim() || rule.name }
+            : {}),
           ...(updates.sourceRefs !== undefined
             ? {
                 sourceRefs: Array.from(
-                  new Set(updates.sourceRefs.filter((item) => typeof item === "string" && item.trim())),
+                  new Set(
+                    updates.sourceRefs.filter(
+                      (item) => typeof item === "string" && item.trim(),
+                    ),
+                  ),
                 ),
               }
             : {}),
           ...(updates.slotRefs !== undefined
             ? {
                 slotRefs: Array.from(
-                  new Set(updates.slotRefs.filter((item) => typeof item === "string" && item.trim())),
+                  new Set(
+                    updates.slotRefs.filter(
+                      (item) => typeof item === "string" && item.trim(),
+                    ),
+                  ),
                 ),
               }
             : {}),
         };
-      })
+      }),
     );
   }
 
@@ -676,11 +833,14 @@
     groups: CustomPanelGroup[],
   ): { groupId: string; groupName: string } | null {
     for (const group of groups) {
-      if (group.entries.some((entry) =>
-        entry.sourceType === sourceType
-        && entry.sourceId === sourceId
-        && (sourceType !== "counter" || entry.counterSlotId === counterSlotId)
-      )) {
+      if (
+        group.entries.some(
+          (entry) =>
+            entry.sourceType === sourceType &&
+            entry.sourceId === sourceId &&
+            (sourceType !== "counter" || entry.counterSlotId === counterSlotId),
+        )
+      ) {
         return { groupId: group.id, groupName: group.name };
       }
     }
@@ -694,7 +854,9 @@
     updateActiveProfile((profile) => ({
       ...profile,
       customPanelGroups: ensureCustomPanelGroups(profile).map((group) =>
-        group.id === groupId ? { ...group, style: updater(group.style) } : group
+        group.id === groupId
+          ? { ...group, style: updater(group.style) }
+          : group,
       ),
     }));
   }
@@ -708,7 +870,7 @@
 
   function removeCustomPanelGroup(groupId: string) {
     updateCustomPanelGroups((groups) =>
-      groups.filter((group) => group.id !== groupId)
+      groups.filter((group) => group.id !== groupId),
     );
   }
 
@@ -717,8 +879,8 @@
       groups.map((group) =>
         group.id === groupId
           ? { ...group, name: name.trim() || group.name }
-          : group
-      )
+          : group,
+      ),
     );
   }
 
@@ -777,18 +939,29 @@
   ) {
     updateActiveProfile((profile) => {
       const groups = ensureCustomPanelGroups(profile);
-      if (findCustomPanelEntryLocation(sourceType, sourceId, counterSlotId, groups)) {
+      if (
+        findCustomPanelEntryLocation(
+          sourceType,
+          sourceId,
+          counterSlotId,
+          groups,
+        )
+      ) {
         return profile;
       }
-      const counterRule = sourceType === "counter"
-        ? allCounterRules.find((rule) => rule.ruleId === sourceId)
-        : null;
-      const counterSlot = counterRule?.effectSlots.find((slot) => slot.slotId === counterSlotId);
-      const label = sourceType === "counter"
-        ? (counterSlot
-          ? `${counterRule?.name ?? `#${sourceId}`} #${counterSlot.slotId}`
-          : (counterRule?.name ?? `#${sourceId}`))
-        : "";
+      const counterRule =
+        sourceType === "counter"
+          ? allCounterRules.find((rule) => rule.ruleId === sourceId)
+          : null;
+      const counterSlot = counterRule?.effectSlots.find(
+        (slot) => slot.slotId === counterSlotId,
+      );
+      const label =
+        sourceType === "counter"
+          ? counterSlot
+            ? `${counterRule?.name ?? `#${sourceId}`} #${counterSlot.slotId}`
+            : (counterRule?.name ?? `#${sourceId}`)
+          : "";
       const nextEntry: InlineBuffEntry = {
         id: `inline_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
         sourceType,
@@ -802,7 +975,7 @@
         customPanelGroups: groups.map((group) =>
           group.id === groupId
             ? { ...group, entries: [...group.entries, nextEntry] }
-            : group
+            : group,
         ),
         inlineBuffEntries: [],
       };
@@ -817,8 +990,8 @@
               ...group,
               entries: group.entries.filter((entry) => entry.id !== entryId),
             }
-          : group
-      )
+          : group,
+      ),
     );
   }
 
@@ -833,15 +1006,19 @@
           ? {
               ...group,
               entries: group.entries.map((entry) =>
-                entry.id === entryId ? updater(entry) : entry
+                entry.id === entryId ? updater(entry) : entry,
               ),
             }
-          : group
-      )
+          : group,
+      ),
     );
   }
 
-  function setCustomPanelEntryLabel(groupId: string, entryId: string, label: string) {
+  function setCustomPanelEntryLabel(
+    groupId: string,
+    entryId: string,
+    label: string,
+  ) {
     updateCustomPanelEntry(groupId, entryId, (entry) => ({ ...entry, label }));
   }
 
@@ -887,7 +1064,7 @@
           ...group,
           entries: next,
         };
-      })
+      }),
     );
   }
 
@@ -896,7 +1073,10 @@
       ...profile,
       buffDisplayMode: mode,
       buffPriorityIds: uniqueIds(profile.buffPriorityIds ?? []),
-      textBuffMaxVisible: Math.max(1, Math.min(20, profile.textBuffMaxVisible ?? 10)),
+      textBuffMaxVisible: Math.max(
+        1,
+        Math.min(20, profile.textBuffMaxVisible ?? 10),
+      ),
       buffGroups: ensureBuffGroups(profile),
     }));
   }
@@ -909,21 +1089,30 @@
     }));
   }
 
-  function updateBuffGroup(groupId: string, updater: (group: BuffGroup) => BuffGroup) {
-    updateActiveProfile((profile) => ({
-      ...profile,
-      buffGroups: ensureBuffGroups(profile).map((group) =>
-        group.id === groupId
-          ? (() => {
-              const updated = updater(group);
-              return {
-                ...updated,
-                priorityBuffIds: normalizeGroupPriorityIds(updated),
-              };
-            })()
-          : group,
-      ),
-    }));
+  function updateBuffGroup(
+    groupId: string,
+    updater: (group: BuffGroup) => BuffGroup,
+  ) {
+    updateActiveProfile((profile) => {
+      const nextProfile = {
+        ...profile,
+        buffGroups: ensureBuffGroups(profile).map((group) =>
+          group.id === groupId
+            ? (() => {
+                const updated = updater(group);
+                return {
+                  ...updated,
+                  priorityBuffIds: normalizeGroupPriorityIds(updated),
+                };
+              })()
+            : group,
+        ),
+      };
+      return {
+        ...nextProfile,
+        buffAlerts: filterBuffAlertsForProfile(nextProfile),
+      };
+    });
   }
 
   function addBuffGroup() {
@@ -937,10 +1126,18 @@
   }
 
   function removeBuffGroup(groupId: string) {
-    updateActiveProfile((profile) => ({
-      ...profile,
-      buffGroups: ensureBuffGroups(profile).filter((group) => group.id !== groupId),
-    }));
+    updateActiveProfile((profile) => {
+      const nextProfile = {
+        ...profile,
+        buffGroups: ensureBuffGroups(profile).filter(
+          (group) => group.id !== groupId,
+        ),
+      };
+      return {
+        ...nextProfile,
+        buffAlerts: filterBuffAlertsForProfile(nextProfile),
+      };
+    });
     const nextKeyword = { ...groupSearchKeyword };
     delete nextKeyword[groupId];
     groupSearchKeyword = nextKeyword;
@@ -976,7 +1173,9 @@
     }));
   }
 
-  function updateIndividualMonitorAllGroup(updater: (group: BuffGroup) => BuffGroup) {
+  function updateIndividualMonitorAllGroup(
+    updater: (group: BuffGroup) => BuffGroup,
+  ) {
     updateActiveProfile((profile) => {
       const current = ensureIndividualMonitorAllGroup(profile);
       if (!current) return profile;
@@ -1009,10 +1208,16 @@
   }
 
   function setGroupPrioritySearchKeyword(groupId: string, value: string) {
-    groupPrioritySearchKeyword = { ...groupPrioritySearchKeyword, [groupId]: value };
+    groupPrioritySearchKeyword = {
+      ...groupPrioritySearchKeyword,
+      [groupId]: value,
+    };
     const keyword = value.trim();
     if (!keyword) {
-      groupPrioritySearchResults = { ...groupPrioritySearchResults, [groupId]: [] };
+      groupPrioritySearchResults = {
+        ...groupPrioritySearchResults,
+        [groupId]: [],
+      };
       return;
     }
     groupPrioritySearchResults = {
@@ -1042,7 +1247,8 @@
     const ids = new Set<number>();
     return results.filter((item) => {
       if (ids.has(item.baseId)) return false;
-      if (!group.monitorAll && !group.buffIds.includes(item.baseId)) return false;
+      if (!group.monitorAll && !group.buffIds.includes(item.baseId))
+        return false;
       if (group.priorityBuffIds.includes(item.baseId)) return false;
       ids.add(item.baseId);
       return true;
@@ -1068,7 +1274,10 @@
     });
   }
 
-  function toggleBuffCategoryInGroup(groupId: string, categoryKey: BuffCategoryKey) {
+  function toggleBuffCategoryInGroup(
+    groupId: string,
+    categoryKey: BuffCategoryKey,
+  ) {
     const categoryBuffIds = getBuffIdsByCategory(categoryKey);
     if (categoryBuffIds.length === 0) return;
     updateBuffGroup(groupId, (group) => {
@@ -1079,7 +1288,9 @@
         const categoryBuffIdSet = new Set(categoryBuffIds);
         return {
           ...group,
-          buffIds: group.buffIds.filter((buffId) => !categoryBuffIdSet.has(buffId)),
+          buffIds: group.buffIds.filter(
+            (buffId) => !categoryBuffIdSet.has(buffId),
+          ),
           priorityBuffIds: group.priorityBuffIds.filter(
             (buffId) => !categoryBuffIdSet.has(buffId),
           ),
@@ -1097,8 +1308,10 @@
     categoryKey: BuffCategoryKey,
   ): boolean {
     const categoryBuffIds = getBuffIdsByCategory(categoryKey);
-    return categoryBuffIds.length > 0
-      && categoryBuffIds.every((buffId) => group.buffIds.includes(buffId));
+    return (
+      categoryBuffIds.length > 0 &&
+      categoryBuffIds.every((buffId) => group.buffIds.includes(buffId))
+    );
   }
 
   function togglePriorityInGroup(groupId: string, buffId: number) {
@@ -1120,17 +1333,26 @@
     }));
   }
 
-  function moveGroupPriority(groupId: string, buffId: number, direction: "up" | "down") {
+  function moveGroupPriority(
+    groupId: string,
+    buffId: number,
+    direction: "up" | "down",
+  ) {
     updateBuffGroup(groupId, (group) => ({
       ...group,
-      priorityBuffIds: moveItem(normalizeGroupPriorityIds(group), buffId, direction),
+      priorityBuffIds: moveItem(
+        normalizeGroupPriorityIds(group),
+        buffId,
+        direction,
+      ),
     }));
   }
-
 </script>
 
 <div class="space-y-6">
-  <div class="rounded-lg border border-border/60 bg-card/40 p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] space-y-2">
+  <div
+    class="border-border/60 bg-card/40 space-y-2 rounded-lg border p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
+  >
     <SettingsSwitch
       bind:checked={SETTINGS.skillMonitor.state.enabled}
       label={t("skillMonitor.main.enabled.label")}
@@ -1138,11 +1360,14 @@
     />
   </div>
 
-  <div class="rounded-lg border border-border/60 bg-card/40 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]">
+  <div
+    class="border-border/60 bg-card/40 rounded-lg border p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
+  >
     <div class="flex flex-wrap gap-2">
       <button
         type="button"
-        class="px-3 py-2 rounded-lg text-sm font-medium border transition-colors {activeTab === 'skill-cd'
+        class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors {activeTab ===
+        'skill-cd'
           ? 'bg-primary text-primary-foreground border-primary'
           : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
         onclick={() => (activeTab = "skill-cd")}
@@ -1151,7 +1376,8 @@
       </button>
       <button
         type="button"
-        class="px-3 py-2 rounded-lg text-sm font-medium border transition-colors {activeTab === 'buff'
+        class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors {activeTab ===
+        'buff'
           ? 'bg-primary text-primary-foreground border-primary'
           : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
         onclick={() => (activeTab = "buff")}
@@ -1160,7 +1386,8 @@
       </button>
       <button
         type="button"
-        class="px-3 py-2 rounded-lg text-sm font-medium border transition-colors {activeTab === 'panel-attr'
+        class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors {activeTab ===
+        'panel-attr'
           ? 'bg-primary text-primary-foreground border-primary'
           : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
         onclick={() => (activeTab = "panel-attr")}
@@ -1169,7 +1396,8 @@
       </button>
       <button
         type="button"
-        class="px-3 py-2 rounded-lg text-sm font-medium border transition-colors {activeTab === 'custom-panel'
+        class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors {activeTab ===
+        'custom-panel'
           ? 'bg-primary text-primary-foreground border-primary'
           : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
         onclick={() => (activeTab = "custom-panel")}
@@ -1178,7 +1406,8 @@
       </button>
       <button
         type="button"
-        class="px-3 py-2 rounded-lg text-sm font-medium border transition-colors {activeTab === 'overlay'
+        class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors {activeTab ===
+        'overlay'
           ? 'bg-primary text-primary-foreground border-primary'
           : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
         onclick={() => (activeTab = "overlay")}
@@ -1258,6 +1487,15 @@
       {buffPriorityIds}
       {toggleGlobalPriority}
       {moveGlobalPriority}
+      {buffAlerts}
+      {buffAlertSectionExpanded}
+      {setBuffAlertSectionExpanded}
+      {alertSearch}
+      {alertSearchResults}
+      {alertEligibleBuffIds}
+      {setAlertSearch}
+      {upsertBuffAlert}
+      {removeBuffAlert}
       {individualMonitorAllGroup}
       {addIndividualMonitorAll}
       {removeIndividualMonitorAll}
@@ -1330,5 +1568,4 @@
       {toggleOverlaySectionVisibility}
     />
   {/if}
-
 </div>

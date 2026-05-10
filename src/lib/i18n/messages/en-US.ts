@@ -990,6 +990,19 @@ export const enUSMessages = {
   "skillMonitor.buff.priority.groupPlaceholder":
     "Search and add to priority list",
   "skillMonitor.buff.priority.groupEmpty": "No buffs can be added to priority",
+  "skillMonitor.buff.alert.title": "Buff Countdown Alerts",
+  "skillMonitor.buff.alert.description":
+    "Set a remaining-time threshold for important buffs. Matching buffs are highlighted in the overlay.",
+  "skillMonitor.buff.alert.addPlaceholder":
+    "Search monitored buffs and add alert",
+  "skillMonitor.buff.alert.emptySearch":
+    "No buffs can be added. Add them to monitoring first and avoid duplicates.",
+  "skillMonitor.buff.alert.empty": "No buff alerts configured",
+  "skillMonitor.buff.alert.configuredCount": "{count} alerts set",
+  "skillMonitor.buff.alert.threshold": "Highlight when remaining <= {seconds}s",
+  "skillMonitor.buff.alert.highlightColor": "Highlight Color",
+  "skillMonitor.buff.alert.flash": "Flash",
+  "skillMonitor.buff.alert.remove": "Remove Alert",
   "skillMonitor.buff.category.title": "Category Quick Monitor",
   "skillMonitor.buff.category.selectedTitle": "Selected Categories",
   "skillMonitor.buff.category.empty": "No categories selected",
@@ -1132,6 +1145,17 @@ export const enUSMessages = {
   "monsterMonitor.priority.moveDown": "Move Down",
   "monsterMonitor.priority.empty":
     "No priority set yet. Use the search box above to add monitored buffs.",
+  "monsterMonitor.alert.title": "Buff Countdown Alerts",
+  "monsterMonitor.alert.description":
+    "Set separate remaining-time thresholds for monster buffs. Matching rows are highlighted in the overlay.",
+  "monsterMonitor.alert.addPlaceholder": "Search monitored buffs and add alert",
+  "monsterMonitor.alert.emptySearch":
+    "No buffs can be added. Add them to monitoring above first and avoid duplicates.",
+  "monsterMonitor.alert.empty": "No monster buff alerts configured",
+  "monsterMonitor.alert.threshold": "Highlight when remaining <= {seconds}s",
+  "monsterMonitor.alert.highlightColor": "Highlight Color",
+  "monsterMonitor.alert.flash": "Flash",
+  "monsterMonitor.alert.remove": "Remove Alert",
   "monsterMonitor.alias.title": "Display Names",
   "monsterMonitor.alias.empty":
     "Select monster buffs to monitor first, then set aliases here.",
