@@ -1365,7 +1365,7 @@
                     }
                     min={0}
                     max={100}
-                    step={50}
+                    step={1}
                     unit="%"
                     label={t("themes.background.opacity")}
                     description={t("themes.background.opacityDescription")}
