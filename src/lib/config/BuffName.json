@@ -1,6 +1,18 @@
 [
   {
     "Icon": "",
+    "Id": 10001,
+    "NameDesign": "光翼展开判断",
+    "SpriteFile": null
+  },
+  {
+    "Icon": "",
+    "Id": 10002,
+    "NameDesign": "光翼展开",
+    "SpriteFile": null
+  },
+  {
+    "Icon": "",
     "Id": 1001,
     "NameDesign": "冰龙卷本体BUFF",
     "SpriteFile": null
@@ -127,6 +139,30 @@
   },
   {
     "Icon": "",
+    "Id": 2010004,
+    "NameDesign": "【木桩比赛】扣血",
+    "SpriteFile": null
+  },
+  {
+    "Icon": "",
+    "Id": 2010005,
+    "NameDesign": "【木桩比赛】自动蒂娜",
+    "SpriteFile": null
+  },
+  {
+    "Icon": "",
+    "Id": 2010006,
+    "NameDesign": "【木桩比赛】自动蒂娜",
+    "SpriteFile": null
+  },
+  {
+    "Icon": "",
+    "Id": 2010007,
+    "NameDesign": "【木桩比赛】木桩锁血回血",
+    "SpriteFile": null
+  },
+  {
+    "Icon": "",
     "Id": 2010010,
     "NameDesign": "信息面板属性测试属性+1",
     "SpriteFile": null
@@ -171,6 +207,12 @@
     "Icon": "",
     "Id": 2010017,
     "NameDesign": "消耗品用空buff",
+    "SpriteFile": null
+  },
+  {
+    "Icon": "",
+    "Id": 2010018,
+    "NameDesign": "过期消耗品buff",
     "SpriteFile": null
   },
   {
@@ -326,6 +368,42 @@
   {
     "Icon": "buff_food_up",
     "Id": 2010079,
+    "NameDesign": "美食的加护",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Icon": "buff_food_up",
+    "Id": 2010081,
+    "NameDesign": "美食的加护-2",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Icon": "buff_food_up",
+    "Id": 2010082,
+    "NameDesign": "美食的加护",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Icon": "buff_food_up",
+    "Id": 2010083,
+    "NameDesign": "美食的加护",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Icon": "buff_food_up",
+    "Id": 2010084,
+    "NameDesign": "美食的加护",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Icon": "buff_food_up",
+    "Id": 2010085,
+    "NameDesign": "美食的加护",
+    "SpriteFile": "buff_food_up_-2204692683451143968.png"
+  },
+  {
+    "Icon": "buff_food_up",
+    "Id": 2010086,
     "NameDesign": "美食的加护",
     "SpriteFile": "buff_food_up_-2204692683451143968.png"
   },
@@ -4016,8 +4094,8 @@
   {
     "Icon": "",
     "Id": 2200130,
-    "NameDesign": "雷电精通（废弃）",
-    "SpriteFile": null
+    "NameDesign": "幸运强效",
+    "SpriteFile": "talent_passive_icon_general_dps_ignoredef_7286603713275054058.png"
   },
   {
     "Icon": "",
@@ -4556,19 +4634,19 @@
   {
     "Icon": "",
     "Id": 2201010,
-    "NameDesign": "砂岩之握精进",
-    "SpriteFile": "talent_passive_icon_general_tank_pierce_3485067466456800186.png"
+    "NameDesign": "砂岩之握精进-岩拳回复",
+    "SpriteFile": "weiren962_487516027964618427.png"
   },
   {
     "Icon": "",
     "Id": 2201011,
-    "NameDesign": "幸运格挡_cd-砂岩之握精进",
-    "SpriteFile": "talent_passive_icon_general_tank_pierce_3485067466456800186.png"
+    "NameDesign": "幸运格挡_cd-岩拳回复",
+    "SpriteFile": "weiren962_487516027964618427.png"
   },
   {
     "Icon": "buff_icon09",
     "Id": 2201012,
-    "NameDesign": "砂岩之握精进_全能",
+    "NameDesign": "砂岩之握精进_全能-岩拳回复",
     "SpriteFile": "buff_icon09_-8333181523373916495.png"
   },
   {
@@ -4897,6 +4975,12 @@
   },
   {
     "Icon": "",
+    "Id": 2201351,
+    "NameDesign": "护盾-砂岩回溯",
+    "SpriteFile": "talent_passive_icon_general_tank_luckblockcd_7879603332321940074.png"
+  },
+  {
+    "Icon": "",
     "Id": 2201360,
     "NameDesign": "幸缘维护-砂石震荡",
     "SpriteFile": "talent_passive_icon_general_tank_grind_-8011041684372079886.png"
@@ -5090,7 +5174,7 @@
   {
     "Icon": "",
     "Id": 2201540,
-    "NameDesign": "碎星冲追击",
+    "NameDesign": "护盾猛击追击",
     "SpriteFile": "weiren952_8143393319629407803.png"
   },
   {
@@ -5192,26 +5276,26 @@
   {
     "Icon": "",
     "Id": 2201640,
-    "NameDesign": "岩拳回复",
-    "SpriteFile": "weiren962_487516027964618427.png"
+    "NameDesign": "岩拳回复-岩怒追击",
+    "SpriteFile": "talent_passive_icon_general_tank_pierce_3485067466456800186.png"
   },
   {
     "Icon": "",
     "Id": 2201641,
-    "NameDesign": "岩拳回复--子buf",
-    "SpriteFile": "weiren962_487516027964618427.png"
+    "NameDesign": "岩拳回复--子buf-岩怒追击",
+    "SpriteFile": "talent_passive_icon_general_tank_pierce_3485067466456800186.png"
   },
   {
     "Icon": "",
     "Id": 2201642,
-    "NameDesign": "岩拳回复--护盾",
-    "SpriteFile": "weiren962_487516027964618427.png"
+    "NameDesign": "岩拳回复--护盾-岩怒追击",
+    "SpriteFile": "talent_passive_icon_general_tank_pierce_3485067466456800186.png"
   },
   {
     "Icon": "",
     "Id": 2201643,
-    "NameDesign": "岩拳回复",
-    "SpriteFile": "weiren962_487516027964618427.png"
+    "NameDesign": "岩怒追击",
+    "SpriteFile": "talent_passive_icon_general_tank_pierce_3485067466456800186.png"
   },
   {
     "Icon": "",
@@ -5738,7 +5822,7 @@
   {
     "Icon": "",
     "Id": 2202360,
-    "NameDesign": "和煦之光-荆棘",
+    "NameDesign": "荆棘",
     "SpriteFile": "talent_passive_icon_dps_lucky04_3630585918272962198.png"
   },
   {
@@ -7388,7 +7472,7 @@
   {
     "Icon": "",
     "Id": 2204620,
-    "NameDesign": "专精伤害发射冰箭-广域冰箭",
+    "NameDesign": "广域冰箭",
     "SpriteFile": "mozhang265_-1619521838561868028.png"
   },
   {
@@ -8402,7 +8486,7 @@
   {
     "Icon": "",
     "Id": 2206290,
-    "NameDesign": "众生裁决",
+    "NameDesign": "众生裁决-裁决追击",
     "SpriteFile": "jiandun1228_-2637363237474792725.png"
   },
   {
@@ -8570,7 +8654,7 @@
   {
     "Icon": "",
     "Id": 2206490,
-    "NameDesign": "盾击强化",
+    "NameDesign": "盾击强化-魔法守卫",
     "SpriteFile": "jiandun1248_1039790835260823812.png"
   },
   {
@@ -8716,6 +8800,12 @@
     "Id": 2206670,
     "NameDesign": "光晕",
     "SpriteFile": "jiandun1266_5464923835327230226.png"
+  },
+  {
+    "Icon": "",
+    "Id": 2206680,
+    "NameDesign": "众生裁决-裁决追击",
+    "SpriteFile": "jiandun1228_-2637363237474792725.png"
   },
   {
     "Icon": "",
@@ -8980,6 +9070,12 @@
     "Id": 2207261,
     "NameDesign": "音域扩充强化标记-属性共鸣暴击",
     "SpriteFile": "buff_passive_icon_sup_heal02_4890210747944786896.png"
+  },
+  {
+    "Icon": "",
+    "Id": 2207262,
+    "NameDesign": "激昂·热情挥洒持续期间-属性共鸣暴击",
+    "SpriteFile": "gita1325_-5447470031736844593.png"
   },
   {
     "Icon": "",
@@ -9614,7 +9710,7 @@
   {
     "Icon": "",
     "Id": 2208290,
-    "NameDesign": "精通转三刀流概率-无相火斩精通",
+    "NameDesign": "精通转三刀流概率-无相火斩幸运",
     "SpriteFile": "shuangfu328_619996992613869099.png"
   },
   {
@@ -13665,6 +13761,12 @@
     "Icon": "",
     "Id": 3051410,
     "NameDesign": "真实因子-触发龙击炮",
+    "SpriteFile": null
+  },
+  {
+    "Icon": "",
+    "Id": 3051411,
+    "NameDesign": "触发龙击炮",
     "SpriteFile": null
   },
   {
@@ -30984,10 +31086,10 @@
     "SpriteFile": "buff_red_hp_7631201784644749282.png"
   },
   {
-    "Icon": "",
+    "Icon": "buff_blue_cd",
     "Id": 829201,
     "NameDesign": "延时轨道炮幻（玩家挂）",
-    "SpriteFile": null
+    "SpriteFile": "buff_blue_cd_-8175755454109992172.png"
   },
   {
     "Icon": "",
@@ -31020,10 +31122,10 @@
     "SpriteFile": null
   },
   {
-    "Icon": "",
+    "Icon": "buff_blue_cd",
     "Id": 829210,
     "NameDesign": "延时轨道炮大范围（玩家挂）",
-    "SpriteFile": null
+    "SpriteFile": "buff_blue_cd_-8175755454109992172.png"
   },
   {
     "Icon": "",
@@ -31227,6 +31329,24 @@
     "Icon": "",
     "Id": 829244,
     "NameDesign": "移除中间三块地板用（buff加在dummy上)",
+    "SpriteFile": null
+  },
+  {
+    "Icon": "",
+    "Id": 829245,
+    "NameDesign": "衰减点名（玩家挂）",
+    "SpriteFile": null
+  },
+  {
+    "Icon": "",
+    "Id": 829246,
+    "NameDesign": "倒计时引爆所有延迟衰减炸弹和玩家（BOSS挂）",
+    "SpriteFile": null
+  },
+  {
+    "Icon": "",
+    "Id": 829247,
+    "NameDesign": "衰减预警（炸弹挂）",
     "SpriteFile": null
   },
   {
@@ -46189,6 +46309,12 @@
   },
   {
     "Icon": "",
+    "Id": 883522,
+    "NameDesign": "玩家-跳舞和禁止跳跃1",
+    "SpriteFile": null
+  },
+  {
+    "Icon": "",
     "Id": 883531,
     "NameDesign": "测试-节拍器（BPM125）4/4",
     "SpriteFile": null
@@ -54567,6 +54693,12 @@
     "Icon": "",
     "Id": 997316,
     "NameDesign": "隐藏房传送门2",
+    "SpriteFile": null
+  },
+  {
+    "Icon": "",
+    "Id": 997320,
+    "NameDesign": "s3肉鸽标记",
     "SpriteFile": null
   },
   {

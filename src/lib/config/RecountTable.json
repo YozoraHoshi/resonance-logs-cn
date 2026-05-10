@@ -1918,7 +1918,7 @@
   },
   "230": {
     "Id": 230,
-    "RecountName": "飞腾炎华二段",
+    "RecountName": "飞腾炎华",
     "DamageId": [
       116200103
     ]
@@ -1932,7 +1932,7 @@
   },
   "232": {
     "Id": 232,
-    "RecountName": "狂热斩击回血",
+    "RecountName": "狂热斩击",
     "DamageId": [
       23510401
     ]
@@ -2007,7 +2007,7 @@
   },
   "241": {
     "Id": 241,
-    "RecountName": "如川流华斩- 技能本体吸血",
+    "RecountName": "如川流华斩",
     "DamageId": [
       23510503
     ]
