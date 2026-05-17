@@ -35,6 +35,9 @@ function getCounterRuleBuffIds(rule: CounterRule): number[] {
     if ("buffDurationTick" in source) {
       result.push(source.buffDurationTick.buffId);
     }
+    if ("movementDistance" in source) {
+      result.push(source.movementDistance.buffId);
+    }
   }
   return result;
 }
