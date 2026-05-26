@@ -1215,6 +1215,18 @@
     "Name": "悖与灾的机骸·始",
     "MonsterType": 2
   },
+  "103109": {
+    "Name": "机械幻象V型",
+    "MonsterType": 1
+  },
+  "103110": {
+    "Name": "对龙机像-炮管子右",
+    "MonsterType": 2
+  },
+  "103111": {
+    "Name": "对龙机像-炮管子左",
+    "MonsterType": 2
+  },
   "103200": {
     "Name": "悖与灾的机骸·继",
     "MonsterType": 2
@@ -1572,7 +1584,7 @@
     "MonsterType": 0
   },
   "11011": {
-    "Name": "哥布林护卫",
+    "Name": "哥布林守卫",
     "MonsterType": 0
   },
   "11012": {
