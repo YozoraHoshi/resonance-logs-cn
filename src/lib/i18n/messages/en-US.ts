@@ -865,10 +865,13 @@ export const enUSMessages = {
   "components.deathReplay.table.encounterTime": "In Encounter",
   "components.deathReplay.table.hitCount": "Hits Taken",
   "components.deathReplay.table.skill": "Skill",
+  "components.deathReplay.table.source": "Source",
   "components.deathReplay.table.damage": "Damage",
   "components.deathReplay.classIconAlt": "Class icon",
   "components.deathReplay.unknownClass": "Unknown class",
   "components.deathReplay.uidTooltip": "UID: #{uid}",
+  "components.deathReplay.attackerUid": "Attacker #{uid}",
+  "components.deathReplay.sourceLabel": "Source: {source}",
   "components.deathReplay.deathCountText": "{count} deaths",
   "components.deathReplay.hitCountText": "{count} hits taken",
   "components.deathReplay.deathAt": "Died at {time}",
@@ -879,8 +882,7 @@ export const enUSMessages = {
     "No damage snapshots were recorded for this death.",
   "components.deathReplay.relativeSeconds.zero": "0s",
   "components.deathReplay.relativeSeconds.value": "{seconds}s",
-  "components.deathReplay.monsterSkillFallback":
-    "Monster {monsterId} · #{skillKey}",
+  "components.deathReplay.monsterSkillFallback": "{monsterName} · #{skillKey}",
   "live.death.replay.notFound":
     "The selected death record was not found. It may have been reset.",
   "live.death.replay.backToList": "Back to list",

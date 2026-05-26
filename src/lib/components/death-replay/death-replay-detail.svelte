@@ -4,6 +4,7 @@
   import type { DamageSnapshot, DeathRecord } from "$lib/api";
   import AbbreviatedNumber from "$lib/components/abbreviated-number.svelte";
   import { formatClassSpecLabel } from "$lib/class-labels";
+  import { resolveMonsterName } from "$lib/config/game-names";
   import { lookupDamageIdName } from "$lib/config/recount-table";
   import TableRowGlow from "$lib/components/table-row-glow.svelte";
   import { formatDateTime, formatNumber, t } from "$lib/i18n/index.svelte";
@@ -81,6 +82,19 @@
     });
   }
 
+  function resolveAttackerName(snapshot: DamageSnapshot): string {
+    if (snapshot.attackerMonsterTypeId != null) {
+      return resolveMonsterName(Number(snapshot.attackerMonsterTypeId));
+    }
+
+    const attackerUid = Number(snapshot.attackerUid);
+    if (Number.isFinite(attackerUid) && attackerUid > 0) {
+      return t("components.deathReplay.attackerUid", { uid: attackerUid });
+    }
+
+    return "";
+  }
+
   function resolveSkillName(snapshot: DamageSnapshot): string {
     const skillKey = Number(snapshot.skillKey);
     const base = lookupDamageIdName(skillKey);
@@ -88,11 +102,20 @@
     if (base && base !== unknown) return base;
     if (snapshot.attackerMonsterTypeId != null) {
       return t("components.deathReplay.monsterSkillFallback", {
-        monsterId: snapshot.attackerMonsterTypeId,
+        monsterName: resolveAttackerName(snapshot),
         skillKey: snapshot.skillKey,
       });
     }
     return unknown;
+  }
+
+  function resolveDamageTooltip(snapshot: DamageSnapshot): string {
+    const skillName = resolveSkillName(snapshot);
+    const attackerName = resolveAttackerName(snapshot);
+    if (!attackerName) return skillName;
+    return `${skillName}\n${t("components.deathReplay.sourceLabel", {
+      source: attackerName,
+    })}`;
   }
 
   function glowPercentage(value: number): number {
@@ -161,6 +184,10 @@
             >{t("components.deathReplay.table.skill")}</th
           >
           <th
+            class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground"
+            >{t("components.deathReplay.table.source")}</th
+          >
+          <th
             class="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground"
             >{t("components.deathReplay.table.damage")}</th
           >
@@ -174,7 +201,7 @@
         {#if rows.length === 0}
           <tr>
             <td
-              colspan="4"
+              colspan="5"
               class="px-3 py-8 text-center text-xs text-muted-foreground"
             >
               {t("components.deathReplay.noDamageSnapshots")}
@@ -192,8 +219,13 @@
               >
               <td
                 class="px-3 py-3 text-sm text-muted-foreground relative z-10 truncate"
-                {@attach tooltip(() => resolveSkillName(dmg))}
+                {@attach tooltip(() => resolveDamageTooltip(dmg))}
                 >{resolveSkillName(dmg)}</td
+              >
+              <td
+                class="px-3 py-3 text-sm text-muted-foreground relative z-10 truncate"
+                {@attach tooltip(() => resolveAttackerName(dmg))}
+                >{resolveAttackerName(dmg) || "-"}</td
               >
               <td
                 class="px-3 py-3 text-right text-sm text-muted-foreground relative z-10 tabular-nums"
@@ -258,10 +290,20 @@
                     >{formatRelativeSeconds(dmg)}</span
                   >
                   <span
-                    class="flex-1 truncate"
-                    {@attach tooltip(() => resolveSkillName(dmg))}
-                    >{resolveSkillName(dmg)}</span
+                    class="flex-1 min-w-0"
+                    {@attach tooltip(() => resolveDamageTooltip(dmg))}
                   >
+                    <span class="block truncate">{resolveSkillName(dmg)}</span>
+                    {#if resolveAttackerName(dmg)}
+                      <span
+                        class="block truncate text-[0.85em] text-muted-foreground/80"
+                      >
+                        {t("components.deathReplay.sourceLabel", {
+                          source: resolveAttackerName(dmg),
+                        })}
+                      </span>
+                    {/if}
+                  </span>
                   <span
                     class="tabular-nums font-medium shrink-0"
                     {@attach tooltip(() => formatNumber(Number(dmg.value)))}
