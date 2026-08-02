@@ -5,29 +5,70 @@ import type {
   ShieldDetailEntry,
   SkillCdState,
 } from "$lib/api";
+import {
+  liveBuffsStore,
+  liveStatusStore,
+} from "$lib/stores/live-topics.svelte";
 import type { BuffDefinition } from "$lib/config/buff-name-table";
-import type {
-  DragState,
-  ResizeState,
-  SkillDurationState,
-} from "./overlay-types";
+import type { DragState, ResizeState, SkillDurationState } from "./overlay-types";
+
+function latestBuffsByBaseId(buffs: BuffUpdateState[]) {
+  const result = new Map<number, BuffUpdateState>();
+  for (const buff of buffs) {
+    const current = result.get(buff.baseId);
+    if (!current || buff.createTimeMs >= current.createTimeMs) {
+      result.set(buff.baseId, buff);
+    }
+  }
+  return result;
+}
+
+const _cdMap = $derived.by(() => {
+  const result = new Map<number, SkillCdState>();
+  for (const cd of liveStatusStore.data?.skillCds ?? []) {
+    result.set(Math.floor(cd.skillLevelId / 100), cd);
+  }
+  return result;
+});
+
+const _fightResMap = $derived.by(() => {
+  const result = new Map<number, number>();
+  for (const entry of liveStatusStore.data?.fightResource?.entries ?? []) {
+    result.set(entry.id, entry.value);
+  }
+  return result;
+});
+
+const _buffMap = $derived.by(() =>
+  latestBuffsByBaseId(liveBuffsStore.data?.localBuffs ?? []),
+);
+
+function countersByRuleId(counters: CounterUpdateState[]) {
+  return new Map(counters.map((counter) => [counter.ruleId, counter]));
+}
+
+const _counterMap = $derived.by(() =>
+  countersByRuleId(liveStatusStore.data?.counters ?? []),
+);
+const _factorCounterMap = $derived.by(() =>
+  countersByRuleId(liveStatusStore.data?.factorCounters ?? []),
+);
+const _panelAttrMap = $derived.by(
+  () =>
+    new Map(
+      (liveStatusStore.data?.panelAttrs ?? []).map((attr) => [
+        attr.attrId,
+        attr.value,
+      ]),
+    ),
+);
 
 export const overlayRuntime = $state({
   currentWindow: null as ReturnType<typeof getCurrentWindow> | null,
   cleanup: null as (() => void) | null,
   isInitialized: false,
   isMounted: false,
-  cdMap: new Map<number, SkillCdState>(),
   skillDurationMap: new Map<number, SkillDurationState>(),
-  fightResMap: new Map<number, number>(),
-  buffMap: new Map<number, BuffUpdateState>(),
-  counterMap: new Map<number, CounterUpdateState>(),
-  factorCounterMap: new Map<number, CounterUpdateState>(),
-  seasonCultivateFactorSourceItemIds: [] as number[],
-  seasonCultivateFactorSlotItemIds: [] as number[],
-  panelAttrMap: new Map<number, number>(),
-  shieldDetailHp: { current: 0, max: 0 },
-  shieldDetailEntries: [] as ShieldDetailEntry[],
   buffDefinitions: new Map<number, BuffDefinition>(),
   isEditing: false,
   isReferenceMode: false,
@@ -36,47 +77,46 @@ export const overlayRuntime = $state({
 });
 
 export function cdMap() {
-  return overlayRuntime.cdMap;
-}
-
-export function skillDurationMap() {
-  return overlayRuntime.skillDurationMap;
+  return _cdMap;
 }
 
 export function fightResMap() {
-  return overlayRuntime.fightResMap;
+  return _fightResMap;
 }
 
 export function buffMap() {
-  return overlayRuntime.buffMap;
+  return _buffMap;
 }
 
 export function counterMap() {
-  return overlayRuntime.counterMap;
+  return _counterMap;
 }
 
 export function factorCounterMap() {
-  return overlayRuntime.factorCounterMap;
+  return _factorCounterMap;
 }
 
 export function seasonCultivateFactorSourceItemIds() {
-  return overlayRuntime.seasonCultivateFactorSourceItemIds;
+  return liveStatusStore.data?.factorSourceItemIds ?? [];
 }
 
 export function seasonCultivateFactorSlotItemIds() {
-  return overlayRuntime.seasonCultivateFactorSlotItemIds;
+  return liveStatusStore.data?.factorSlotItemIds ?? [];
 }
 
 export function panelAttrMap() {
-  return overlayRuntime.panelAttrMap;
+  return _panelAttrMap;
 }
 
 export function shieldDetailHp() {
-  return overlayRuntime.shieldDetailHp;
+  return {
+    current: liveStatusStore.data?.shieldCurrentHp ?? 0,
+    max: liveStatusStore.data?.shieldMaxHp ?? 0,
+  };
 }
 
-export function shieldDetailEntries() {
-  return overlayRuntime.shieldDetailEntries;
+export function shieldDetailEntries(): ShieldDetailEntry[] {
+  return liveStatusStore.data?.shieldEntries ?? [];
 }
 
 export function buffDefinitions() {
@@ -89,6 +129,10 @@ export function isEditing() {
 
 export function isReferenceMode() {
   return overlayRuntime.isReferenceMode;
+}
+
+export function skillDurationMap() {
+  return overlayRuntime.skillDurationMap;
 }
 
 // Whether to render the full layout scaffold (placeholders for configured-but-

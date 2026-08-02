@@ -33,7 +33,10 @@ import {
   ensureBuffGroups,
   ensureIndividualMonitorAllGroup,
   formatTimerText,
+  getBuffRemainingMs,
+  getBuffRemainPercent,
   getCustomPanelDisplayRow,
+  isBuffActive,
   getResourcePreciseValue as getResourcePreciseValueValue,
   getResourceValue as getResourceValueValue,
   resolveAlertState,
@@ -63,8 +66,8 @@ import {
   cdMap,
   counterMap,
   factorCounterMap,
+  fightResMap,
   isLayoutScaffold,
-  overlayRuntime,
   seasonCultivateFactorSlotItemIds,
   skillDurationMap,
 } from "./overlay-runtime.svelte.js";
@@ -202,21 +205,16 @@ const _buffSnapshot = $derived.by(() => {
       .filter((g) => !g.monitorAll)
       .flatMap((g) => g.buffIds),
   ]);
-
   for (const [baseId, buff] of buffMap()) {
     if (skippedInlineBuffIds.has(baseId)) continue;
 
-    const end = buff.createTimeMs + buff.durationMs;
-    const remaining = Math.max(0, end - now);
-    const remainPercent =
-      buff.durationMs > 0
-        ? Math.min(100, Math.max(0, (remaining / buff.durationMs) * 100))
-        : 100;
+    const remaining = getBuffRemainingMs(buff, now);
+    const remainPercent = getBuffRemainPercent(buff, now);
 
     if (buff.durationMs > 0) {
       nextBuffDurationPercents.set(baseId, remainPercent);
     }
-    if (buff.durationMs <= 0 || end > now) {
+    if (isBuffActive(buff, now)) {
       nextActiveBuffIds.add(baseId);
     } else {
       continue;
@@ -714,16 +712,12 @@ export function customPanelRowsByGroup() {
 }
 
 export function getResourceValue(resourceId: number): number {
-  return getResourceValueValue(
-    overlayRuntime.fightResMap,
-    selectedClassKey(),
-    resourceId,
-  );
+  return getResourceValueValue(fightResMap(), selectedClassKey(), resourceId);
 }
 
 export function getResourcePreciseValue(resourceId: number): number {
   return getResourcePreciseValueValue(
-    overlayRuntime.fightResMap,
+    fightResMap(),
     selectedClassKey(),
     resourceId,
   );

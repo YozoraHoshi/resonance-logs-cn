@@ -7,7 +7,7 @@
   import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { goto } from "$app/navigation";
-  import { onSceneChange } from "$lib/api";
+  import { liveCombatStore } from "$lib/stores/live-topics.svelte";
   import {
     isDailyScene,
     isSupportedMinimapScene,
@@ -181,7 +181,6 @@
   let updateInfo = $state<UpdateInfo | null>(null);
   let updateUnlisten: UnlistenFn | null = null;
   let clickthroughUnlisten: UnlistenFn | null = null;
-  let sceneChangeUnlisten: UnlistenFn | null = null;
 
   async function revealMainWindowForNotice() {
     try {
@@ -199,6 +198,18 @@
   }
 
   onMount(() => {
+    let disposed = false;
+    let disconnectSnapshot: (() => void) | null = null;
+    void liveCombatStore
+      .connect()
+      .then((disconnect) => {
+        if (disposed) disconnect();
+        else disconnectSnapshot = disconnect;
+      })
+      .catch((error) => {
+        console.error("Failed to connect live combat stream", error);
+      });
+
     showFirstRunPrompt = shouldShowFirstRunPrompt();
 
     // Resolve the buff-icon directory once so settings previews can render
@@ -210,7 +221,7 @@
     void refreshOverlayWindowVisibility("live");
 
     // The inline voice-binding controls (buff monitor / counter editor / DBM
-    // table) need the phrase catalog for their "短语库引用" picker, so load
+    // table) need the phrase catalog for their "短语库引�? picker, so load
     // it app-wide instead of only when the user visits the voice page.
     void (async () => {
       await ensureVoiceListeners();
@@ -252,16 +263,6 @@
         );
       });
 
-    onSceneChange((event) => {
-      currentSceneId = event.payload.sceneId;
-    })
-      .then((unlisten) => {
-        sceneChangeUnlisten = unlisten;
-      })
-      .catch((err) => {
-        console.error("Failed to subscribe scene-change event", err);
-      });
-
     // Get app version and check changelog
     getVersion()
       .then((v) => {
@@ -278,6 +279,8 @@
 
     // Cleanup on unmount
     return () => {
+      disposed = true;
+      disconnectSnapshot?.();
       if (runtimeSyncTimer) {
         clearTimeout(runtimeSyncTimer);
         runtimeSyncTimer = null;
@@ -294,11 +297,12 @@
         clickthroughUnlisten();
         clickthroughUnlisten = null;
       }
-      if (sceneChangeUnlisten) {
-        sceneChangeUnlisten();
-        sceneChangeUnlisten = null;
-      }
     };
+  });
+
+  $effect(() => {
+    const snapshot = liveCombatStore.data;
+    if (snapshot) currentSceneId = snapshot.sceneId;
   });
 
   function handleClose() {

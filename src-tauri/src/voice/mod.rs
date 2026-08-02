@@ -9,8 +9,6 @@ pub mod generator;
 pub mod model_manager;
 pub mod models;
 pub mod player;
-pub mod rules;
-pub mod scheduler;
 pub mod types;
 
 use std::collections::HashMap;

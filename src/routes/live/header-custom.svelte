@@ -35,14 +35,9 @@
     normalizeHeaderLayout,
     type HeaderLayoutComponentId,
   } from "$lib/live-header-layout";
-  import {
-    getLiveData,
-    getTrainingDummyState as getRuntimeTrainingDummyState,
-  } from "$lib/stores/live-meter-store.svelte";
-  import {
-    resolveMonsterName,
-    resolveSceneName,
-  } from "$lib/config/game-names";
+  import { ipcNumber, ipcRatio } from "$lib/ipc-decimal";
+  import { liveCombatStore } from "$lib/stores/live-topics.svelte";
+  import { resolveMonsterName, resolveSceneName } from "$lib/config/game-names";
   import { formatNumber, t } from "$lib/i18n/index.svelte";
 
   // Get header settings
@@ -51,26 +46,32 @@
     SETTINGS.live.general.state.abbreviationStyle,
   );
 
-  const liveData = $derived(getLiveData());
-  const runtimeTrainingDummyState = $derived(getRuntimeTrainingDummyState());
+  const liveData = $derived(liveCombatStore.data?.combat ?? null);
+  const runtimeTrainingDummyState = $derived(
+    liveCombatStore.data?.training ?? null,
+  );
 
   const emptyTrainingDummy: TrainingDummyState = {
     phase: "idle",
   };
 
   let clientElapsedMs = $state(0);
+  let elapsedAnchorMs = 0;
+  let elapsedAnchorMonoMs = 0;
   let animationFrameId: number | null = null;
   let trainingDummyBusy = $state(false);
 
-  // Client-side timer loop for smooth local elapsed display.
   function updateClientTimer() {
-    if (headerInfo.fightStartTimestampMs > 0 && !isEncounterPaused) {
-      clientElapsedMs = Date.now() - headerInfo.fightStartTimestampMs;
+    if (isEncounterActive && !isEncounterPaused) {
+      clientElapsedMs =
+        elapsedAnchorMs + Math.max(0, performance.now() - elapsedAnchorMonoMs);
     }
     animationFrameId = requestAnimationFrame(updateClientTimer);
   }
 
   function resetTimer() {
+    elapsedAnchorMs = 0;
+    elapsedAnchorMonoMs = performance.now();
     clientElapsedMs = 0;
   }
 
@@ -112,9 +113,13 @@
     () => runtimeTrainingDummyState ?? emptyTrainingDummy,
   );
   const isEncounterPaused = $derived(!!liveData?.isPaused);
+  const isEncounterActive = $derived(
+    liveCombatStore.data?.activeSegmentId !== null &&
+      liveCombatStore.data?.activeSegmentId !== undefined,
+  );
   const headerInfo = $derived.by((): HeaderInfo => {
     const data = liveData;
-    if (!data || data.fightStartTimestampMs <= 0) {
+    if (!data || ipcNumber(data.fightStartTimestampMs) <= 0) {
       return {
         ...emptyHeaderInfo,
         trainingDummy: trainingDummyState,
@@ -122,14 +127,11 @@
     }
 
     return {
-      totalDps:
-        data.elapsedMs > 0
-          ? Number(data.totalDmg) / (Number(data.elapsedMs) / 1000)
-          : 0,
-      totalDmg: Number(data.totalDmg),
-      elapsedMs: Number(data.elapsedMs),
-      activeCombatTimeMs: Number(data.activeCombatTimeMs),
-      fightStartTimestampMs: Number(data.fightStartTimestampMs),
+      totalDps: ipcRatio(data.totalDmg, data.elapsedMs, 1_000),
+      totalDmg: ipcNumber(data.totalDmg),
+      elapsedMs: ipcNumber(data.elapsedMs),
+      activeCombatTimeMs: ipcNumber(data.activeCombatTimeMs),
+      fightStartTimestampMs: ipcNumber(data.fightStartTimestampMs),
       bosses: data.bosses,
       sceneId: data.sceneId,
       dungeonDifficulty: data.dungeonDifficulty,
@@ -138,11 +140,9 @@
   });
 
   $effect(() => {
-    const nextFightStartTimestampMs = headerInfo.fightStartTimestampMs;
-    clientElapsedMs =
-      nextFightStartTimestampMs > 0
-        ? Date.now() - nextFightStartTimestampMs
-        : 0;
+    elapsedAnchorMs = Math.max(0, ipcNumber(liveData?.elapsedMs));
+    elapsedAnchorMonoMs = performance.now();
+    clientElapsedMs = elapsedAnchorMs;
   });
 
   const displayHeaderInfo = $derived(headerInfo);
@@ -252,23 +252,23 @@
 </script>
 
 {#snippet timerItem()}
-  <div class="flex items-center gap-2 shrink-0">
+  <div class="flex shrink-0 items-center gap-2">
     {#if h.timerLabelFontSize > 0}
       <span
-        class="font-medium text-muted-foreground uppercase tracking-wider leading-none"
+        class="text-muted-foreground leading-none font-medium tracking-wider uppercase"
         style="font-size: {h.timerLabelFontSize}px"
         >{t("live.header.timer")}</span
       >
     {/if}
     <span
-      class="font-bold text-foreground tabular-nums tracking-tight leading-none"
+      class="text-foreground leading-none font-bold tracking-tight tabular-nums"
       style="font-size: {h.timerFontSize}px"
       {@attach tooltip(() => t("live.header.tooltip.timeElapsed"))}
       >{formatElapsed(displayElapsedMs)}</span
     >
     {#if h.showActiveTimer}
       <span
-        class="font-bold text-foreground tabular-nums tracking-tight leading-none"
+        class="text-foreground leading-none font-bold tracking-tight tabular-nums"
         style="font-size: {h.activeTimerFontSize}px"
         {@attach tooltip(() => t("live.header.tooltip.activeCombatTime"))}
       >
@@ -280,7 +280,7 @@
 
 {#snippet sceneNameItem()}
   <span
-    class="text-muted-foreground font-medium shrink-0 leading-none"
+    class="text-muted-foreground shrink-0 leading-none font-medium"
     style="font-size: {h.sceneNameFontSize}px"
     {@attach tooltip(() => displaySceneName || "")}>{displaySceneName}</span
   >
@@ -288,7 +288,7 @@
 
 {#snippet trainingDummyStatusItem()}
   <div
-    class="inline-flex items-center gap-2 rounded-full border border-border/60 px-3 py-1 text-foreground shrink-0"
+    class="border-border/60 text-foreground inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1"
     {@attach tooltip(() => formatTrainingDummyLabel(trainingDummyState))}
   >
     <CrosshairIcon
@@ -296,7 +296,7 @@
       style="width: {h.sceneNameFontSize}px; height: {h.sceneNameFontSize}px"
     />
     <span
-      class="font-medium leading-none"
+      class="leading-none font-medium"
       style="font-size: {h.sceneNameFontSize}px"
     >
       {formatTrainingDummyLabel(trainingDummyState)}
@@ -305,15 +305,15 @@
 {/snippet}
 
 {#snippet totalDamageItem()}
-  <div class="flex items-center gap-2 shrink-0">
+  <div class="flex shrink-0 items-center gap-2">
     <span
-      class="font-bold text-muted-foreground uppercase tracking-wider"
+      class="text-muted-foreground font-bold tracking-wider uppercase"
       style="font-size: {h.totalDamageLabelFontSize}px"
       {@attach tooltip(() => t("live.header.tooltip.totalDamage"))}
       >{t("live.header.totalDamage")}</span
     >
     <span
-      class="font-bold text-foreground"
+      class="text-foreground font-bold"
       style="font-size: {h.totalDamageValueFontSize}px"
       {@attach tooltip(() => formatNumber(displayHeaderInfo.totalDmg))}
       ><AbbreviatedNumber
@@ -325,15 +325,15 @@
 {/snippet}
 
 {#snippet totalDpsItem()}
-  <div class="flex items-center gap-2 shrink-0">
+  <div class="flex shrink-0 items-center gap-2">
     <span
-      class="font-bold text-muted-foreground uppercase tracking-wider"
+      class="text-muted-foreground font-bold tracking-wider uppercase"
       style="font-size: {h.totalDpsLabelFontSize}px"
       {@attach tooltip(() => t("live.header.tooltip.totalDps"))}
       >{t("live.header.totalDps")}</span
     >
     <span
-      class="font-bold text-foreground"
+      class="text-foreground font-bold"
       style="font-size: {h.totalDpsValueFontSize}px"
       {@attach tooltip(() => formatNumber(displayHeaderInfo.totalDps))}
       ><AbbreviatedNumber
@@ -345,9 +345,9 @@
 {/snippet}
 
 {#snippet bossHealthItem()}
-  <div class="flex items-center gap-2 shrink-0">
+  <div class="flex shrink-0 items-center gap-2">
     <span
-      class="font-bold text-muted-foreground uppercase tracking-wider"
+      class="text-muted-foreground font-bold tracking-wider uppercase"
       style="font-size: {h.bossHealthLabelFontSize}px"
       {@attach tooltip(() => t("live.header.tooltip.bossHealth"))}
       >{t("live.header.boss")}</span
@@ -366,12 +366,13 @@
               : 0}
           <div class="flex items-center gap-1 whitespace-nowrap">
             <span
-              class="truncate text-foreground font-semibold tracking-tight"
+              class="text-foreground truncate font-semibold tracking-tight"
               style="font-size: {h.bossHealthNameFontSize}px"
-              {@attach tooltip(() => boss.displayName)}>{boss.displayName} -</span
+              {@attach tooltip(() => boss.displayName)}
+              >{boss.displayName} -</span
             >
             <span
-              class="tabular-nums font-semibold text-foreground"
+              class="text-foreground font-semibold tabular-nums"
               style="font-size: {h.bossHealthValueFontSize}px"
             >
               <AbbreviatedNumber
@@ -397,7 +398,7 @@
       </div>
     {:else}
       <span
-        class="text-neutral-500 font-medium italic"
+        class="font-medium text-neutral-500 italic"
         style="font-size: {h.bossHealthNameFontSize}px"
         >{t("live.empty.noBoss")}</span
       >
@@ -406,7 +407,7 @@
 {/snippet}
 
 {#snippet controlButtonsItem()}
-  <div class="flex items-center gap-2 shrink-0">
+  <div class="flex shrink-0 items-center gap-2">
     {#if h.showHeaderControl}
       <button
         class="{isTrainingDummyActive
@@ -447,7 +448,7 @@
     {#if h.showPauseButton}
       <button
         class="{isEncounterPaused
-          ? 'text-[oklch(0.65_0.1_145)] bg-[oklch(0.9_0.02_145)]/30'
+          ? 'bg-[oklch(0.9_0.02_145)]/30 text-[oklch(0.65_0.1_145)]'
           : 'text-muted-foreground'} hover:text-foreground hover:bg-popover/60 rounded-lg transition-all duration-200"
         style="padding: {h.pauseButtonPadding}px"
         onclick={() => void togglePauseEncounter()}
@@ -496,10 +497,10 @@
 
 {#snippet navigationTabsItem()}
   <div
-    class="flex items-stretch border border-border rounded-lg overflow-hidden bg-popover/30 shrink-0"
+    class="border-border bg-popover/30 flex shrink-0 items-stretch overflow-hidden rounded-lg border"
   >
     <button
-      class="transition-all duration-200 font-bold tracking-wider uppercase border-r border-border whitespace-nowrap h-full flex items-center {$page.url.pathname.includes(
+      class="border-border flex h-full items-center border-r font-bold tracking-wider whitespace-nowrap uppercase transition-all duration-200 {$page.url.pathname.includes(
         'dps',
       )
         ? 'bg-muted text-foreground'
@@ -509,7 +510,7 @@
       onclick={() => goto(resolve("/live/dps"))}>{t("live.tabs.dps")}</button
     >
     <button
-      class="transition-all duration-200 font-bold tracking-wider uppercase border-r border-border whitespace-nowrap h-full flex items-center {$page.url.pathname.includes(
+      class="border-border flex h-full items-center border-r font-bold tracking-wider whitespace-nowrap uppercase transition-all duration-200 {$page.url.pathname.includes(
         'heal',
       )
         ? 'bg-muted text-foreground'
@@ -519,25 +520,27 @@
       onclick={() => goto(resolve("/live/heal"))}>{t("live.tabs.heal")}</button
     >
     <button
-      class="transition-all duration-200 font-bold tracking-wider uppercase border-r border-border whitespace-nowrap h-full flex items-center {$page.url.pathname.includes(
+      class="border-border flex h-full items-center border-r font-bold tracking-wider whitespace-nowrap uppercase transition-all duration-200 {$page.url.pathname.includes(
         'tanked',
       )
         ? 'bg-muted text-foreground'
         : 'text-muted-foreground hover:text-foreground hover:bg-popover/60'}"
       style="font-size: {h.navTabFontSize}px; padding: {h.navTabPaddingY}px {h.navTabPaddingX}px"
       aria-current={$page.url.pathname.includes("tanked") ? "page" : undefined}
-      onclick={() => goto(resolve("/live/tanked"))}>{t("live.tabs.tanked")}</button
+      onclick={() => goto(resolve("/live/tanked"))}
+      >{t("live.tabs.tanked")}</button
     >
     {#if h.showDeathTab}
       <button
-        class="transition-all duration-200 font-bold tracking-wider uppercase whitespace-nowrap h-full flex items-center {$page.url.pathname.includes(
+        class="flex h-full items-center font-bold tracking-wider whitespace-nowrap uppercase transition-all duration-200 {$page.url.pathname.includes(
           'death',
         )
           ? 'bg-muted text-foreground'
           : 'text-muted-foreground hover:text-foreground hover:bg-popover/60'}"
         style="font-size: {h.navTabFontSize}px; padding: {h.navTabPaddingY}px {h.navTabPaddingX}px"
         aria-current={$page.url.pathname.includes("death") ? "page" : undefined}
-        onclick={() => goto(resolve("/live/death"))}>{t("live.tabs.death")}</button
+        onclick={() => goto(resolve("/live/death"))}
+        >{t("live.tabs.death")}</button
       >
     {/if}
   </div>
@@ -607,29 +610,31 @@
     <!-- Row 1, Col 1: Timer + Scene + Segment -->
     {#if hasRow1Left}
       <div
-        class="col-start-1 row-start-1 flex items-center overflow-hidden gap-4 min-w-0"
+        class="col-start-1 row-start-1 flex min-w-0 items-center gap-4 overflow-hidden"
         data-tauri-drag-region
       >
         {#if h.showTimer}
-          <div class="flex items-center gap-2 shrink-0">
+          <div class="flex shrink-0 items-center gap-2">
             {#if h.timerLabelFontSize > 0}
               <span
-                class="font-medium text-muted-foreground uppercase tracking-wider leading-none"
+                class="text-muted-foreground leading-none font-medium tracking-wider uppercase"
                 style="font-size: {h.timerLabelFontSize}px"
                 >{t("live.header.timer")}</span
               >
             {/if}
             <span
-              class="font-bold text-foreground tabular-nums tracking-tight leading-none"
+              class="text-foreground leading-none font-bold tracking-tight tabular-nums"
               style="font-size: {h.timerFontSize}px"
               {@attach tooltip(() => t("live.header.tooltip.timeElapsed"))}
               >{formatElapsed(displayElapsedMs)}</span
             >
             {#if h.showActiveTimer}
               <span
-                class="font-bold text-foreground tabular-nums tracking-tight leading-none"
+                class="text-foreground leading-none font-bold tracking-tight tabular-nums"
                 style="font-size: {h.activeTimerFontSize}px"
-                {@attach tooltip(() => t("live.header.tooltip.activeCombatTime"))}
+                {@attach tooltip(() =>
+                  t("live.header.tooltip.activeCombatTime"),
+                )}
               >
                 / {formatElapsed(displayHeaderInfo.activeCombatTimeMs)}
               </span>
@@ -639,7 +644,7 @@
 
         {#if h.showSceneName && displaySceneName}
           <span
-            class="text-muted-foreground font-medium shrink-0 leading-none"
+            class="text-muted-foreground shrink-0 leading-none font-medium"
             style="font-size: {h.sceneNameFontSize}px"
             {@attach tooltip(() => displaySceneName || "")}
             >{displaySceneName}</span
@@ -648,7 +653,7 @@
 
         {#if isTrainingDummyActive}
           <div
-            class="inline-flex items-center gap-2 rounded-full border border-border/60 px-3 py-1 text-foreground shrink-0"
+            class="border-border/60 text-foreground inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1"
             {@attach tooltip(() =>
               formatTrainingDummyLabel(trainingDummyState),
             )}
@@ -658,7 +663,7 @@
               style="width: {h.sceneNameFontSize}px; height: {h.sceneNameFontSize}px"
             />
             <span
-              class="font-medium leading-none"
+              class="leading-none font-medium"
               style="font-size: {h.sceneNameFontSize}px"
             >
               {formatTrainingDummyLabel(trainingDummyState)}
@@ -671,7 +676,7 @@
     <!-- Row 1, Col 2: Control Buttons -->
     {#if hasRow1Right}
       <div
-        class="col-start-2 row-start-1 flex items-center justify-self-end gap-2 shrink-0"
+        class="col-start-2 row-start-1 flex shrink-0 items-center gap-2 justify-self-end"
       >
         {#if h.showHeaderControl}
           <button
@@ -713,14 +718,16 @@
         {#if h.showPauseButton}
           <button
             class="{isEncounterPaused
-              ? 'text-[oklch(0.65_0.1_145)] bg-[oklch(0.9_0.02_145)]/30'
+              ? 'bg-[oklch(0.9_0.02_145)]/30 text-[oklch(0.65_0.1_145)]'
               : 'text-muted-foreground'} hover:text-foreground hover:bg-popover/60 rounded-lg transition-all duration-200"
             style="padding: {h.pauseButtonPadding}px"
             onclick={() => void togglePauseEncounter()}
           >
             {#if isEncounterPaused}
               <PlayIcon
-                {@attach tooltip(() => t("live.header.tooltip.resumeEncounter"))}
+                {@attach tooltip(() =>
+                  t("live.header.tooltip.resumeEncounter"),
+                )}
                 style="width: {h.pauseButtonSize}px; height: {h.pauseButtonSize}px"
               />
             {:else}
@@ -763,19 +770,19 @@
     <!-- Row 2, Col 1: Stats summary + Boss Health -->
     {#if hasRow2Left}
       <div
-        class="col-start-1 row-start-2 flex overflow-hidden items-center gap-5 min-w-0"
+        class="col-start-1 row-start-2 flex min-w-0 items-center gap-5 overflow-hidden"
       >
-        <div class="flex overflow-hidden items-center gap-5">
+        <div class="flex items-center gap-5 overflow-hidden">
           {#if h.showTotalDamage}
-            <div class="flex items-center gap-2 shrink-0">
+            <div class="flex shrink-0 items-center gap-2">
               <span
-                class="font-bold text-muted-foreground uppercase tracking-wider"
+                class="text-muted-foreground font-bold tracking-wider uppercase"
                 style="font-size: {h.totalDamageLabelFontSize}px"
                 {@attach tooltip(() => t("live.header.tooltip.totalDamage"))}
                 >{t("live.header.totalDamage")}</span
               >
               <span
-                class="font-bold text-foreground"
+                class="text-foreground font-bold"
                 style="font-size: {h.totalDamageValueFontSize}px"
                 {@attach tooltip(() =>
                   formatNumber(displayHeaderInfo.totalDmg),
@@ -789,15 +796,15 @@
           {/if}
 
           {#if h.showTotalDps}
-            <div class="flex items-center gap-2 shrink-0">
+            <div class="flex shrink-0 items-center gap-2">
               <span
-                class="font-bold text-muted-foreground uppercase tracking-wider"
+                class="text-muted-foreground font-bold tracking-wider uppercase"
                 style="font-size: {h.totalDpsLabelFontSize}px"
                 {@attach tooltip(() => t("live.header.tooltip.totalDps"))}
                 >{t("live.header.totalDps")}</span
               >
               <span
-                class="font-bold text-foreground"
+                class="text-foreground font-bold"
                 style="font-size: {h.totalDpsValueFontSize}px"
                 {@attach tooltip(() =>
                   formatNumber(displayHeaderInfo.totalDps),
@@ -812,9 +819,9 @@
         </div>
 
         {#if h.showBossHealth}
-          <div class="flex items-center gap-2 shrink-0">
+          <div class="flex shrink-0 items-center gap-2">
             <span
-              class="font-bold text-muted-foreground uppercase tracking-wider"
+              class="text-muted-foreground font-bold tracking-wider uppercase"
               style="font-size: {h.bossHealthLabelFontSize}px"
               {@attach tooltip(() => t("live.header.tooltip.bossHealth"))}
               >{t("live.header.boss")}</span
@@ -837,13 +844,13 @@
                       : 0}
                   <div class="flex items-center gap-1 whitespace-nowrap">
                     <span
-                      class="truncate text-foreground font-semibold tracking-tight"
+                      class="text-foreground truncate font-semibold tracking-tight"
                       style="font-size: {h.bossHealthNameFontSize}px"
                       {@attach tooltip(() => boss.displayName)}
                       >{boss.displayName} -</span
                     >
                     <span
-                      class="tabular-nums font-semibold text-foreground"
+                      class="text-foreground font-semibold tabular-nums"
                       style="font-size: {h.bossHealthValueFontSize}px"
                     >
                       <AbbreviatedNumber
@@ -872,7 +879,7 @@
               </div>
             {:else}
               <span
-                class="text-neutral-500 font-medium italic"
+                class="font-medium text-neutral-500 italic"
                 style="font-size: {h.bossHealthNameFontSize}px"
                 >{t("live.empty.noBoss")}</span
               >
@@ -885,20 +892,21 @@
     <!-- Row 2, Col 2: DPS/HEAL/TANKED Tabs -->
     {#if h.showNavigationTabs}
       <div
-        class="col-start-2 row-start-2 justify-self-end flex items-stretch border border-border rounded-lg overflow-hidden bg-popover/30 shrink-0"
+        class="border-border bg-popover/30 col-start-2 row-start-2 flex shrink-0 items-stretch justify-self-end overflow-hidden rounded-lg border"
       >
         <button
-          class="transition-all duration-200 font-bold tracking-wider uppercase border-r border-border whitespace-nowrap h-full flex items-center {$page.url.pathname.includes(
+          class="border-border flex h-full items-center border-r font-bold tracking-wider whitespace-nowrap uppercase transition-all duration-200 {$page.url.pathname.includes(
             'dps',
           )
             ? 'bg-muted text-foreground'
             : 'text-muted-foreground hover:text-foreground hover:bg-popover/60'}"
           style="font-size: {h.navTabFontSize}px; padding: {h.navTabPaddingY}px {h.navTabPaddingX}px"
           aria-current={$page.url.pathname.includes("dps") ? "page" : undefined}
-          onclick={() => goto(resolve("/live/dps"))}>{t("live.tabs.dps")}</button
+          onclick={() => goto(resolve("/live/dps"))}
+          >{t("live.tabs.dps")}</button
         >
         <button
-          class="transition-all duration-200 font-bold tracking-wider uppercase border-r border-border whitespace-nowrap h-full flex items-center {$page.url.pathname.includes(
+          class="border-border flex h-full items-center border-r font-bold tracking-wider whitespace-nowrap uppercase transition-all duration-200 {$page.url.pathname.includes(
             'heal',
           )
             ? 'bg-muted text-foreground'
@@ -907,10 +915,11 @@
           aria-current={$page.url.pathname.includes("heal")
             ? "page"
             : undefined}
-          onclick={() => goto(resolve("/live/heal"))}>{t("live.tabs.heal")}</button
+          onclick={() => goto(resolve("/live/heal"))}
+          >{t("live.tabs.heal")}</button
         >
         <button
-          class="transition-all duration-200 font-bold tracking-wider uppercase border-r border-border whitespace-nowrap h-full flex items-center {$page.url.pathname.includes(
+          class="border-border flex h-full items-center border-r font-bold tracking-wider whitespace-nowrap uppercase transition-all duration-200 {$page.url.pathname.includes(
             'tanked',
           )
             ? 'bg-muted text-foreground'
@@ -919,11 +928,12 @@
           aria-current={$page.url.pathname.includes("tanked")
             ? "page"
             : undefined}
-          onclick={() => goto(resolve("/live/tanked"))}>{t("live.tabs.tanked")}</button
+          onclick={() => goto(resolve("/live/tanked"))}
+          >{t("live.tabs.tanked")}</button
         >
         {#if h.showDeathTab}
           <button
-            class="transition-all duration-200 font-bold tracking-wider uppercase whitespace-nowrap h-full flex items-center {$page.url.pathname.includes(
+            class="flex h-full items-center font-bold tracking-wider whitespace-nowrap uppercase transition-all duration-200 {$page.url.pathname.includes(
               'death',
             )
               ? 'bg-muted text-foreground'
@@ -932,7 +942,8 @@
             aria-current={$page.url.pathname.includes("death")
               ? "page"
               : undefined}
-            onclick={() => goto(resolve("/live/death"))}>{t("live.tabs.death")}</button
+            onclick={() => goto(resolve("/live/death"))}
+            >{t("live.tabs.death")}</button
           >
         {/if}
       </div>

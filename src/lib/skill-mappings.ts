@@ -1,3 +1,4 @@
+import keySkillMarkersRaw from "$lib/config/key_skill_markers.json";
 import resonanceSkillIconsRaw from "$lib/config/skill_aoyi_icons.json";
 import classSkillConfigsRaw from "$lib/config/class_skill_configs.json";
 import classResourcesRaw from "$lib/config/class_resources.json";
@@ -74,6 +75,15 @@ type ResonanceSkillIconRaw = {
 };
 
 export type ResonanceSkillDefinition = SkillDisplayInfo;
+
+/** Raw row of the shared `meter-data/KeySkillMarkers.json` whitelist. */
+type KeySkillMarkerRaw = {
+  skillId: number;
+  name: string;
+  icon: string;
+};
+
+export type KeySkillMarkerDefinition = SkillDisplayInfo;
 
 export type CounterRulePreset = {
   ruleId: number;
@@ -155,6 +165,9 @@ type SlotTemplateOverride = Partial<SlotTemplate> & {
 type ResonanceSkillIconOverride = Partial<ResonanceSkillIconRaw> & {
   id?: number;
 };
+type KeySkillMarkerOverride = Partial<KeySkillMarkerRaw> & {
+  skillId?: number;
+};
 
 export const FACTOR_RULE_ID_BASE = 900_000_000;
 
@@ -180,6 +193,8 @@ const RESONANCE_SKILL_ICONS = resonanceSkillIconsRaw as ResonanceSkillIconRaw[];
 
 export const RESONANCE_SKILLS: ResonanceSkillDefinition[] =
   buildResonanceSkills(RESONANCE_SKILL_ICONS, new Map());
+
+const KEY_SKILL_MARKERS = keySkillMarkersRaw as KeySkillMarkerRaw[];
 
 export const COUNTER_RULES: CounterRulePreset[] =
   counterRulesRaw as CounterRulePreset[];
@@ -209,6 +224,10 @@ const SLOT_TEMPLATES_BY_LOCALE = new Map<AppLocale, SlotTemplate[]>();
 const RESONANCE_SKILLS_BY_LOCALE = new Map<
   AppLocale,
   ResonanceSkillDefinition[]
+>();
+const KEY_SKILL_MARKERS_BY_LOCALE = new Map<
+  AppLocale,
+  KeySkillMarkerDefinition[]
 >();
 
 function getLocaleConfig<T>(locale: AppLocale, fileName: string): T | null {
@@ -498,6 +517,26 @@ function getResonanceSkills(locale = getLocale()): ResonanceSkillDefinition[] {
     getResonanceSkillOverrides(locale),
   );
   RESONANCE_SKILLS_BY_LOCALE.set(locale, localized);
+  return localized;
+}
+
+function getKeySkillMarkers(locale = getLocale()): KeySkillMarkerDefinition[] {
+  const cached = KEY_SKILL_MARKERS_BY_LOCALE.get(locale);
+  if (cached) return cached;
+
+  const overrides = mapByNumber(
+    getLocaleConfig<KeySkillMarkerOverride[]>(
+      locale,
+      "key_skill_markers.json",
+    ) ?? [],
+    (item) => numberKey(item.skillId),
+  );
+  const localized = KEY_SKILL_MARKERS.map((marker) => ({
+    skillId: marker.skillId,
+    name: localizedText(overrides.get(marker.skillId)?.name, marker.name),
+    imagePath: marker.icon,
+  }));
+  KEY_SKILL_MARKERS_BY_LOCALE.set(locale, localized);
   return localized;
 }
 
@@ -893,6 +932,15 @@ export function findResonanceSkill(
   locale = getLocale(),
 ): ResonanceSkillDefinition | undefined {
   return getResonanceSkills(locale).find((skill) => skill.skillId === skillId);
+}
+
+export function findKeySkillMarker(
+  skillId: number,
+  locale = getLocale(),
+): KeySkillMarkerDefinition | undefined {
+  return getKeySkillMarkers(locale).find(
+    (marker) => marker.skillId === skillId,
+  );
 }
 
 export function searchResonanceSkills(
