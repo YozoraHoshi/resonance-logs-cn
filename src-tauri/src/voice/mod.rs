@@ -673,11 +673,12 @@ impl VoiceService {
             fine_tuned
                 .as_ref()
                 .map_or(FineTunedVoiceState::NotConfigured, |voice| {
+                    let state_dir = catalog::fine_tuned_dir(&fine_tuned_service.inner.voice_root);
                     fine_tuned_service
                         .inner
                         .fine_tuned_validation
                         .lock()
-                        .inspect(voice)
+                        .inspect(voice, &state_dir)
                 })
         });
         let (engine, model, fine_tuned_voice) =
@@ -715,6 +716,16 @@ impl VoiceService {
         Ok(candidate)
     }
 
+    /// Drops both validation cache layers for the fine-tuned voice. The
+    /// persisted record has to go as well: unlike the official model's
+    /// version-scoped `model_dir`, this is a single shared file, so a record
+    /// left behind would outlive the voice it described. The lock is released
+    /// before the file is touched so the mutex is never held across IO.
+    fn invalidate_fine_tuned_validation(&self) {
+        self.inner.fine_tuned_validation.lock().invalidate();
+        finetuned::clear_persisted_fingerprint(&catalog::fine_tuned_dir(&self.inner.voice_root));
+    }
+
     pub fn set_fine_tuned_voice(
         &self,
         package_path: &Path,
@@ -744,7 +755,7 @@ impl VoiceService {
         }
         catalog.fine_tuned_voice = Some(candidate.clone());
         self.commit_catalog(catalog)?;
-        self.inner.fine_tuned_validation.lock().invalidate();
+        self.invalidate_fine_tuned_validation();
         Ok(candidate)
     }
 
@@ -774,7 +785,7 @@ impl VoiceService {
             mark_fine_tuned_assets_stale(&mut catalog, &previous.model_sha256);
         }
         self.commit_catalog(catalog)?;
-        self.inner.fine_tuned_validation.lock().invalidate();
+        self.invalidate_fine_tuned_validation();
         Ok(())
     }
 

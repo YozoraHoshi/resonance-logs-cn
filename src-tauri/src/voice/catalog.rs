@@ -4,6 +4,7 @@
 //! - `models/<modelVersion>/` — installed GGUF model files.
 //! - `profiles/<profileId>/speaker.q3sp` — speaker embedding profile.
 //! - `assets/<phraseId>/<assetId>.wav` — generated takes.
+//! - `finetuned/` — validation state for the user-provided CustomVoice package.
 //! - `catalog.json` — profile/phrase/asset metadata (this file).
 
 use std::path::{Path, PathBuf};
@@ -45,6 +46,13 @@ pub fn assets_dir(voice_root: &Path) -> PathBuf {
 
 pub fn staging_dir(voice_root: &Path) -> PathBuf {
     voice_root.join("staging")
+}
+
+/// Holds app-owned validation state for the configured fine-tuned voice. The
+/// package itself lives wherever the user picked it, which may be read-only or
+/// removable media, so nothing is ever written back into it.
+pub fn fine_tuned_dir(voice_root: &Path) -> PathBuf {
+    voice_root.join("finetuned")
 }
 
 pub fn profile_dir(voice_root: &Path, profile_id: &str) -> PathBuf {
