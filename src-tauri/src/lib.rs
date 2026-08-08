@@ -3,6 +3,8 @@ mod build_app;
 mod live;
 pub mod module_optimizer;
 mod packets;
+#[cfg(windows)]
+mod titlebar_guard;
 pub mod voice;
 
 use crate::build_app::build_and_run;
@@ -239,6 +241,18 @@ pub fn run() {
 
             // Setup tray icon
             setup_tray(&app_handle).expect("failed to setup tray");
+
+            // The main window is the only one that still uses the native
+            // caption bar, so it is the only one whose close/minimize/maximize
+            // buttons can park the event loop inside win32k's tracking loop
+            // when a fullscreen game steals the mouse release. Falling back to
+            // the native behaviour is better than refusing to start.
+            #[cfg(windows)]
+            if let Some(main_window) = app.get_webview_window(WINDOW_MAIN_LABEL) {
+                if let Err(error) = titlebar_guard::install(&main_window) {
+                    warn!("failed to install the caption guard on the main window: {error}");
+                }
+            }
 
             let (live_runtime, runtime_commands) =
                 crate::live::runtime_handle::LiveRuntimeHandle::new();
