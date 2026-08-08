@@ -491,11 +491,15 @@ export const enUSMessages = {
   "history.timeline.lanes.selectAll": "Select all",
   "history.timeline.lanes.clearAll": "Clear",
   "history.timeline.lanes.closeSelector": "Close teammate selector",
-  "history.timeline.curve.caption": "DPS Curve",
   "history.timeline.chartAriaLabel":
     "Encounter timeline: boss skills, player key skills and fantasy casts, with DPS curves",
   "history.timeline.selection.label": "Selected {start} - {end} ({duration})",
   "history.timeline.selection.clear": "Clear selection",
+  "history.timeline.selection.zoomToRange": "Zoom to selection",
+  "history.timeline.zoom.windowLabel": "{start} - {end} / {duration}",
+  "history.timeline.zoom.reset": "Reset zoom",
+  "history.timeline.hint.gestures":
+    "Drag to select · Shift+drag to pan · Scroll to zoom · Double-click to reset",
   "tanked.monster.unknownSource": "Unknown source",
   "live.tanked.monsters.title": "Damage source",
   "history.detail.table.player": "Player",

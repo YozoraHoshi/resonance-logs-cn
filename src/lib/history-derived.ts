@@ -20,7 +20,7 @@ import type {
   RawPerSourceStats,
 } from "$lib/api";
 import type { DeathPlayerEntry } from "$lib/components/death-replay/death-player-list.svelte";
-import type { EncounterChartSeries } from "$lib/components/encounter-timeline-data";
+import type { EncounterChartSeries } from "$lib/components/encounter-timeline/timeline-data";
 import { formatClassSpecLabel } from "$lib/class-labels";
 import { t } from "$lib/i18n/index.svelte";
 import { ipcBigInt } from "$lib/ipc-decimal";

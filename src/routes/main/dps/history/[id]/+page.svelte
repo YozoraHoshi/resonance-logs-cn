@@ -8,11 +8,11 @@
   import DeathReplayDetail from "$lib/components/death-replay/death-replay-detail.svelte";
   import EncounterTimelineChart, {
     type TimelineEventDisplay,
-  } from "$lib/components/encounter-timeline-chart.svelte";
+  } from "$lib/components/encounter-timeline/encounter-timeline-chart.svelte";
   import type {
     EncounterChart,
     EncounterTimelineEvent,
-  } from "$lib/components/encounter-timeline-data";
+  } from "$lib/components/encounter-timeline/timeline-data";
   import HistoryPlayerTable from "$lib/components/history/history-player-table.svelte";
   import HistorySkillView from "$lib/components/history/history-skill-view.svelte";
   import {

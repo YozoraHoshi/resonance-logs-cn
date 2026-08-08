@@ -439,11 +439,15 @@ export const zhCNMessages = {
   "history.timeline.lanes.selectAll": "全选",
   "history.timeline.lanes.clearAll": "清空",
   "history.timeline.lanes.closeSelector": "关闭队友选择",
-  "history.timeline.curve.caption": "秒伤曲线",
   "history.timeline.chartAriaLabel":
     "战斗时间线：Boss 技能、玩家关键技能与幻想施放标记，以及秒伤曲线",
   "history.timeline.selection.label": "已选 {start} - {end}（{duration}）",
   "history.timeline.selection.clear": "清除选区",
+  "history.timeline.selection.zoomToRange": "缩放到选区",
+  "history.timeline.zoom.windowLabel": "{start} - {end} / {duration}",
+  "history.timeline.zoom.reset": "重置缩放",
+  "history.timeline.hint.gestures":
+    "拖拽选区 · Shift+拖拽平移 · 滚轮缩放 · 双击重置",
   "tanked.monster.unknownSource": "未知来源",
   "live.tanked.monsters.title": "伤害来源",
   "history.detail.table.player": "玩家",

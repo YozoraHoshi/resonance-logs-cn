@@ -474,11 +474,15 @@ export const jaJPMessages = {
   "history.timeline.lanes.selectAll": "すべて選択",
   "history.timeline.lanes.clearAll": "クリア",
   "history.timeline.lanes.closeSelector": "チームメイト選択を閉じる",
-  "history.timeline.curve.caption": "DPS曲線",
   "history.timeline.chartAriaLabel":
     "戦闘タイムライン：ボススキル、プレイヤーの重要スキルと幻想の発動、およびDPS曲線",
   "history.timeline.selection.label": "選択中 {start} - {end}（{duration}）",
   "history.timeline.selection.clear": "選択を解除",
+  "history.timeline.selection.zoomToRange": "選択範囲にズーム",
+  "history.timeline.zoom.windowLabel": "{start} - {end} / {duration}",
+  "history.timeline.zoom.reset": "ズームをリセット",
+  "history.timeline.hint.gestures":
+    "ドラッグで範囲選択 · Shift+ドラッグでパン · スクロールでズーム · ダブルクリックでリセット",
   "tanked.monster.unknownSource": "不明なソース",
   "live.tanked.monsters.title": "ダメージソース",
   "history.detail.table.player": "プレイヤー",
