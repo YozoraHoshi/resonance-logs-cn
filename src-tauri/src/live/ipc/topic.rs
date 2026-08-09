@@ -17,6 +17,8 @@ impl TopicMask {
     pub const MONSTER: Self = Self(1 << 3);
     pub const FANTASY: Self = Self(1 << 4);
     pub const MINIMAP: Self = Self(1 << 5);
+    pub const DEATHS: Self = Self(1 << 6);
+    pub const SCENE: Self = Self(1 << 7);
 
     #[must_use]
     pub const fn is_empty(self) -> bool {
@@ -81,6 +83,8 @@ pub enum Topic {
     Monster,
     Fantasy,
     Minimap,
+    Deaths,
+    Scene,
 }
 
 impl Topic {
@@ -92,9 +96,11 @@ impl Topic {
         Self::Monster,
         Self::Fantasy,
         Self::Minimap,
+        Self::Deaths,
+        Self::Scene,
     ];
 
-    pub const COUNT: usize = 6;
+    pub const COUNT: usize = 8;
 
     /// Position of this topic in [`Topic::ALL`].
     #[must_use]
@@ -106,6 +112,8 @@ impl Topic {
             Self::Monster => 3,
             Self::Fantasy => 4,
             Self::Minimap => 5,
+            Self::Deaths => 6,
+            Self::Scene => 7,
         }
     }
 
@@ -118,6 +126,8 @@ impl Topic {
             Self::Monster => TopicMask::MONSTER,
             Self::Fantasy => TopicMask::FANTASY,
             Self::Minimap => TopicMask::MINIMAP,
+            Self::Deaths => TopicMask::DEATHS,
+            Self::Scene => TopicMask::SCENE,
         }
     }
 
@@ -130,6 +140,8 @@ impl Topic {
             Self::Monster => "live-monster",
             Self::Fantasy => "live-fantasy",
             Self::Minimap => "minimap-snapshot",
+            Self::Deaths => "live-deaths",
+            Self::Scene => "live-scene",
         }
     }
 
@@ -137,11 +149,15 @@ impl Topic {
     #[must_use]
     pub const fn window_labels(self) -> &'static [&'static str] {
         match self {
-            Self::Combat => &[WINDOW_LIVE_LABEL, WINDOW_MAIN_LABEL],
+            Self::Combat => &[WINDOW_LIVE_LABEL],
             Self::Status | Self::Buffs => &[WINDOW_GAME_OVERLAY_LABEL],
             Self::Monster => &[WINDOW_MONSTER_OVERLAY_LABEL],
             Self::Fantasy => &[WINDOW_LIVE_LABEL, WINDOW_MONSTER_OVERLAY_LABEL],
             Self::Minimap => &[WINDOW_MINIMAP_OVERLAY_LABEL],
+            Self::Deaths => &[WINDOW_LIVE_LABEL],
+            // The only consumer is the daily-scene auto-hide logic for the
+            // game/monster/minimap overlay windows, which runs in `main`.
+            Self::Scene => &[WINDOW_MAIN_LABEL],
         }
     }
 
@@ -155,7 +171,8 @@ impl Topic {
         match self {
             Self::Combat => None, // uses configured event_update_rate_ms
             Self::Status => None, // per-batch immediate
-            Self::Buffs | Self::Monster | Self::Fantasy | Self::Minimap => Some(50),
+            Self::Buffs | Self::Monster | Self::Fantasy | Self::Minimap | Self::Deaths
+            | Self::Scene => Some(50),
         }
     }
 }

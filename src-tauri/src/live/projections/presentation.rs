@@ -2,8 +2,9 @@
 
 use crate::live::counter::engine::CounterSnapshot;
 use crate::live::ipc::models::{
-    LiveBuffsPayload, LiveCombatPayload, LiveDataPayload, LiveFantasyPayload, LiveMonsterPayload,
-    LiveStatusPayload, TrainingDummyPhase, TrainingDummyState,
+    DeathRecord, LiveBuffsPayload, LiveCombatPayload, LiveDataPayload, LiveDeathsPayload,
+    LiveFantasyPayload, LiveMonsterPayload, LiveScenePayload, LiveStatusPayload,
+    TrainingDummyPhase, TrainingDummyState,
 };
 use crate::live::projections::entity_monitor::EntityMonitorSnapshot;
 use crate::live::runtime::events::SegmentId;
@@ -16,6 +17,8 @@ pub struct PresentationProjection {
     buffs_revision: u64,
     monster_revision: u64,
     fantasy_revision: u64,
+    deaths_revision: u64,
+    scene_revision: u64,
     active_segment_id: Option<SegmentId>,
     displayed_segment_id: Option<SegmentId>,
     displayed_combat: Option<LiveDataPayload>,
@@ -46,39 +49,21 @@ impl PresentationProjection {
     /// Builds a combat payload and advances its revision (publication path).
     pub fn take_combat_payload(
         &mut self,
-        scene_id: Option<i32>,
-        dungeon_difficulty: Option<i32>,
         active_combat: Option<LiveDataPayload>,
-        deaths: Vec<crate::live::ipc::models::DeathRecord>,
         segment_state: &SegmentState,
     ) -> LiveCombatPayload {
         self.combat_revision = self.combat_revision.saturating_add(1);
-        self.combat_payload(
-            scene_id,
-            dungeon_difficulty,
-            active_combat,
-            deaths,
-            segment_state,
-        )
+        self.combat_payload(active_combat, segment_state)
     }
 
     /// Read-only combat payload for command-side bootstrap.
     #[must_use]
     pub fn peek_combat_payload(
         &self,
-        scene_id: Option<i32>,
-        dungeon_difficulty: Option<i32>,
         active_combat: Option<LiveDataPayload>,
-        deaths: Vec<crate::live::ipc::models::DeathRecord>,
         segment_state: &SegmentState,
     ) -> LiveCombatPayload {
-        self.combat_payload(
-            scene_id,
-            dungeon_difficulty,
-            active_combat,
-            deaths,
-            segment_state,
-        )
+        self.combat_payload(active_combat, segment_state)
     }
 
     pub fn take_status_payload(
@@ -135,12 +120,41 @@ impl PresentationProjection {
         self.fantasy_payload(monitored)
     }
 
-    fn combat_payload(
+    /// Builds a deaths payload and advances its revision (publication path).
+    pub fn take_deaths_payload(&mut self, deaths: Vec<DeathRecord>) -> LiveDeathsPayload {
+        self.deaths_revision = self.deaths_revision.saturating_add(1);
+        self.deaths_payload(deaths)
+    }
+
+    /// Read-only deaths payload for command-side bootstrap.
+    #[must_use]
+    pub fn peek_deaths_payload(&self, deaths: Vec<DeathRecord>) -> LiveDeathsPayload {
+        self.deaths_payload(deaths)
+    }
+
+    /// Builds a scene payload and advances its revision (publication path).
+    pub fn take_scene_payload(
+        &mut self,
+        scene_id: Option<i32>,
+        dungeon_difficulty: Option<i32>,
+    ) -> LiveScenePayload {
+        self.scene_revision = self.scene_revision.saturating_add(1);
+        self.scene_payload(scene_id, dungeon_difficulty)
+    }
+
+    /// Read-only scene payload for command-side bootstrap.
+    #[must_use]
+    pub fn peek_scene_payload(
         &self,
         scene_id: Option<i32>,
         dungeon_difficulty: Option<i32>,
+    ) -> LiveScenePayload {
+        self.scene_payload(scene_id, dungeon_difficulty)
+    }
+
+    fn combat_payload(
+        &self,
         active_combat: Option<LiveDataPayload>,
-        deaths: Vec<crate::live::ipc::models::DeathRecord>,
         segment_state: &SegmentState,
     ) -> LiveCombatPayload {
         let combat = if self.active_segment_id.is_some() {
@@ -150,12 +164,9 @@ impl PresentationProjection {
         };
         LiveCombatPayload {
             revision: self.combat_revision,
-            scene_id,
-            dungeon_difficulty,
             active_segment_id: self.active_segment_id.map(|segment| segment.0),
             displayed_segment_id: self.displayed_segment_id.map(|segment| segment.0),
             combat,
-            deaths,
             training: TrainingDummyState {
                 phase: training_phase(segment_state),
             },
@@ -210,6 +221,25 @@ impl PresentationProjection {
             teammate_fantasies: monitored.teammate_fantasies.clone(),
         }
     }
+
+    fn deaths_payload(&self, deaths: Vec<DeathRecord>) -> LiveDeathsPayload {
+        LiveDeathsPayload {
+            revision: self.deaths_revision,
+            deaths,
+        }
+    }
+
+    fn scene_payload(
+        &self,
+        scene_id: Option<i32>,
+        dungeon_difficulty: Option<i32>,
+    ) -> LiveScenePayload {
+        LiveScenePayload {
+            revision: self.scene_revision,
+            scene_id,
+            dungeon_difficulty,
+        }
+    }
 }
 
 fn training_phase(state: &SegmentState) -> TrainingDummyPhase {
@@ -246,6 +276,29 @@ mod tests {
         let peeked = presentation.peek_status_payload(&monitored, CounterSnapshot::default());
         assert_eq!(peeked.revision, 1);
         let second = presentation.take_status_payload(&monitored, CounterSnapshot::default());
+        assert_eq!(second.revision, 2);
+    }
+
+    #[test]
+    fn peek_deaths_does_not_advance_revision() {
+        let mut presentation = PresentationProjection::default();
+        let first = presentation.take_deaths_payload(Vec::new());
+        assert_eq!(first.revision, 1);
+        let peeked = presentation.peek_deaths_payload(Vec::new());
+        assert_eq!(peeked.revision, 1);
+        let second = presentation.take_deaths_payload(Vec::new());
+        assert_eq!(second.revision, 2);
+    }
+
+    #[test]
+    fn peek_scene_does_not_advance_revision() {
+        let mut presentation = PresentationProjection::default();
+        let first = presentation.take_scene_payload(Some(101), Some(2));
+        assert_eq!(first.revision, 1);
+        assert_eq!(first.scene_id, Some(101));
+        let peeked = presentation.peek_scene_payload(Some(101), Some(2));
+        assert_eq!(peeked.revision, 1);
+        let second = presentation.take_scene_payload(Some(101), Some(2));
         assert_eq!(second.revision, 2);
     }
 }

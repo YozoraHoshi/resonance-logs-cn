@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { liveCombatStore } from "$lib/stores/live-topics.svelte";
+  import { liveCombatStore, liveDeathsStore } from "$lib/stores/live-topics.svelte";
   import DeathReplayDetail from "$lib/components/death-replay/death-replay-detail.svelte";
   import { t } from "$lib/i18n/index.svelte";
 
@@ -9,7 +9,7 @@
   const deathTs = $derived(Number(page.url.searchParams.get("deathTs") ?? "-1"));
 
   const liveData = $derived(liveCombatStore.data?.combat ?? null);
-  const deathRecords = $derived(liveCombatStore.data?.deaths ?? []);
+  const deathRecords = $derived(liveDeathsStore.data?.deaths ?? []);
 
   const record = $derived(
     deathRecords.find(

@@ -1,7 +1,8 @@
 use crate::WINDOW_LIVE_LABEL;
 use crate::live::bootstrap_snapshot::{MonitorRuntimeSnapshot, save_monitor_runtime_snapshot};
 use crate::live::ipc::models::{
-    LiveBuffsPayload, LiveCombatPayload, LiveFantasyPayload, LiveMonsterPayload, LiveStatusPayload,
+    LiveBuffsPayload, LiveCombatPayload, LiveDeathsPayload, LiveFantasyPayload, LiveMonsterPayload,
+    LiveScenePayload, LiveStatusPayload,
 };
 use crate::live::runtime_handle::LiveRuntimeHandle;
 use tauri::Manager;
@@ -51,6 +52,26 @@ pub async fn get_live_fantasy(
     runtime: tauri::State<'_, LiveRuntimeHandle>,
 ) -> Result<LiveFantasyPayload, String> {
     runtime.fantasy().await
+}
+
+/// Bootstrap for the `live-deaths` topic.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_live_deaths(
+    runtime: tauri::State<'_, LiveRuntimeHandle>,
+) -> Result<LiveDeathsPayload, String> {
+    runtime.deaths().await
+}
+
+/// Bootstrap for the `live-scene` topic. `main`-only: drives the daily-scene
+/// auto-hide logic for the game/monster/minimap overlay windows without
+/// subscribing to the far heavier `live-combat` cadence.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_live_scene(
+    runtime: tauri::State<'_, LiveRuntimeHandle>,
+) -> Result<LiveScenePayload, String> {
+    runtime.scene().await
 }
 
 #[tauri::command]

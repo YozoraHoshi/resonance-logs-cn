@@ -6,7 +6,8 @@ use tokio::sync::{mpsc, oneshot};
 
 use crate::live::bootstrap_snapshot::MonitorRuntimeSnapshot;
 use crate::live::ipc::models::{
-    LiveBuffsPayload, LiveCombatPayload, LiveFantasyPayload, LiveMonsterPayload, LiveStatusPayload,
+    LiveBuffsPayload, LiveCombatPayload, LiveDeathsPayload, LiveFantasyPayload, LiveMonsterPayload,
+    LiveScenePayload, LiveStatusPayload,
 };
 const CONTROL_CAPACITY: usize = 64;
 const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(30);
@@ -18,6 +19,8 @@ pub enum TopicBootstrap {
     Buffs(LiveBuffsPayload),
     Monster(LiveMonsterPayload),
     Fantasy(LiveFantasyPayload),
+    Deaths(LiveDeathsPayload),
+    Scene(LiveScenePayload),
 }
 
 /// Topics that support command-side bootstrap. Minimap is push-only: its
@@ -32,6 +35,8 @@ pub enum BootstrapTopic {
     Buffs,
     Monster,
     Fantasy,
+    Deaths,
+    Scene,
 }
 
 #[derive(Debug)]
@@ -100,6 +105,20 @@ impl LiveRuntimeHandle {
     pub async fn fantasy(&self) -> Result<LiveFantasyPayload, String> {
         match self.topic(BootstrapTopic::Fantasy).await? {
             TopicBootstrap::Fantasy(payload) => Ok(payload),
+            other => Err(format!("unexpected topic bootstrap: {other:?}")),
+        }
+    }
+
+    pub async fn deaths(&self) -> Result<LiveDeathsPayload, String> {
+        match self.topic(BootstrapTopic::Deaths).await? {
+            TopicBootstrap::Deaths(payload) => Ok(payload),
+            other => Err(format!("unexpected topic bootstrap: {other:?}")),
+        }
+    }
+
+    pub async fn scene(&self) -> Result<LiveScenePayload, String> {
+        match self.topic(BootstrapTopic::Scene).await? {
+            TopicBootstrap::Scene(payload) => Ok(payload),
             other => Err(format!("unexpected topic bootstrap: {other:?}")),
         }
     }

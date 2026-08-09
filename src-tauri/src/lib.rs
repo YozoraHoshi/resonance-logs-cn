@@ -58,6 +58,8 @@ fn api_builder() -> Builder<tauri::Wry> {
             live::ipc::commands::get_live_buffs,
             live::ipc::commands::get_live_monster,
             live::ipc::commands::get_live_fantasy,
+            live::ipc::commands::get_live_deaths,
+            live::ipc::commands::get_live_scene,
             live::ipc::commands::enable_blur,
             live::ipc::commands::disable_blur,
             live::ipc::commands::reset_encounter,

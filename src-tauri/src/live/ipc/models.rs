@@ -2,18 +2,36 @@ use crate::live::projections::combat::accumulator::CombatSourceStats;
 use crate::live::projections::combat::stats::{CombatStats, Skill};
 use std::collections::HashMap;
 
-/// Combat / segment topic for the live meter and main window (`live-combat`).
+/// Combat / segment topic for the live meter window (`live-combat`).
+/// `scene_id`/`dungeon_difficulty` live only on the nested `combat` payload;
+/// they were duplicated at this level, but every consumer already reads them
+/// from `combat.sceneId`/`combat.dungeonDifficulty`.
 #[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct LiveCombatPayload {
     pub revision: u64,
-    pub scene_id: Option<i32>,
-    pub dungeon_difficulty: Option<i32>,
     pub active_segment_id: Option<u64>,
     pub displayed_segment_id: Option<u64>,
     pub combat: Option<LiveDataPayload>,
-    pub deaths: Vec<DeathRecord>,
     pub training: TrainingDummyState,
+}
+
+/// Player death replays (`live-deaths`), 50ms throttle. Dirty only when a
+/// record is appended or the segment resets, so it never rides the combat
+/// publication cadence.
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LiveDeathsPayload {
+    pub revision: u64,
+    pub deaths: Vec<DeathRecord>,
+}
+
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LiveScenePayload {
+    pub revision: u64,
+    pub scene_id: Option<i32>,
+    pub dungeon_difficulty: Option<i32>,
 }
 
 /// Skill CD / panel attrs / fight resource / shields / counters

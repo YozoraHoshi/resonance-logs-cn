@@ -7,7 +7,7 @@
   import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { goto } from "$app/navigation";
-  import { liveCombatStore, liveStatusStore } from "$lib/stores/live-topics.svelte";
+  import { liveSceneStore, liveStatusStore } from "$lib/stores/live-topics.svelte";
   import {
     isDailyScene,
     isSupportedMinimapScene,
@@ -199,15 +199,19 @@
 
   onMount(() => {
     let disposed = false;
+    // Only the current scene id is needed here (to drive the daily-scene
+    // auto-hide logic for the overlay windows below), so `main` subscribes
+    // to the dedicated low-frequency `live-scene` topic instead of the much
+    // heavier `live-combat` cadence.
     let disconnectSnapshot: (() => void) | null = null;
-    void liveCombatStore
+    void liveSceneStore
       .connect()
       .then((disconnect) => {
         if (disposed) disconnect();
         else disconnectSnapshot = disconnect;
       })
       .catch((error) => {
-        console.error("Failed to connect live combat stream", error);
+        console.error("Failed to connect live scene stream", error);
       });
 
     // The custom-panel settings tab needs the resolved season id to decide
@@ -316,7 +320,7 @@
   });
 
   $effect(() => {
-    const snapshot = liveCombatStore.data;
+    const snapshot = liveSceneStore.data;
     if (snapshot) currentSceneId = snapshot.sceneId;
   });
 

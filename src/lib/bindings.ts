@@ -63,6 +63,30 @@ async getLiveFantasy() : Promise<Result<LiveFantasyPayload, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Bootstrap for the `live-deaths` topic.
+ */
+async getLiveDeaths() : Promise<Result<LiveDeathsPayload, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_live_deaths") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Bootstrap for the `live-scene` topic. `main`-only: drives the daily-scene
+ * auto-hide logic for the game/monster/minimap overlay windows without
+ * subscribing to the far heavier `live-combat` cadence.
+ */
+async getLiveScene() : Promise<Result<LiveScenePayload, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_live_scene") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async enableBlur() : Promise<void> {
     await TAURI_INVOKE("enable_blur");
 },
@@ -641,13 +665,22 @@ export type I18nRuntimeSnapshot = { locale: AppLocale }
  */
 export type LiveBuffsPayload = { revision: number; localBuffs: BuffUpdateState[] }
 /**
- * Combat / segment topic for the live meter and main window (`live-combat`).
+ * Combat / segment topic for the live meter window (`live-combat`).
+ * `scene_id`/`dungeon_difficulty` live only on the nested `combat` payload;
+ * they were duplicated at this level, but every consumer already reads them
+ * from `combat.sceneId`/`combat.dungeonDifficulty`.
  */
-export type LiveCombatPayload = { revision: number; sceneId: number | null; dungeonDifficulty: number | null; activeSegmentId: number | null; displayedSegmentId: number | null; combat: LiveDataPayload | null; deaths: DeathRecord[]; training: TrainingDummyState }
+export type LiveCombatPayload = { revision: number; activeSegmentId: number | null; displayedSegmentId: number | null; combat: LiveDataPayload | null; training: TrainingDummyState }
 /**
  * Represents a raw
  */
 export type LiveDataPayload = { elapsedMs: string; activeCombatTimeMs: string; fightStartTimestampMs: string; totalDmg: string; totalDmgBossOnly: string; totalHeal: string; totalEffectiveHeal: string; localPlayerUuid: string; sceneId: number | null; dungeonDifficulty: number | null; isPaused: boolean; bosses: BossHealth[]; entities: RawEntityData[] }
+/**
+ * Player death replays (`live-deaths`), 50ms throttle. Dirty only when a
+ * record is appended or the segment resets, so it never rides the combat
+ * publication cadence.
+ */
+export type LiveDeathsPayload = { revision: number; deaths: DeathRecord[] }
 /**
  * Fantasy cast icons shared by live + monster overlay (`live-fantasy`).
  */
@@ -658,6 +691,13 @@ export type LiveFantasyPayload = { revision: number; teammateFantasies: Teammate
 export type LiveMonsterPayload = { revision: number; bossBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; teammateBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; bossMechanics: BossDbmEvent[]; hateLists: Partial<{ [key in string]: HateEntry[] }>; stun: StunEntry[]; playerNames: Partial<{ [key in string]: string }>; monsterIds: Partial<{ [key in string]: number }> }
 export type LiveRuntimeSnapshot = { eventUpdateRateMs: number }
 /**
+ * Current scene, pushed only to `main` (`live-scene`). Dirty only on
+ * `SceneChanged`, so `main`'s daily-scene auto-hide logic for the
+ * game/monster/minimap overlay windows can react without subscribing to the
+ * much heavier `live-combat` cadence.
+ */
+export type LiveScenePayload = { revision: number; sceneId: number | null; dungeonDifficulty: number | null }
+/**
  * Skill CD / panel attrs / fight resource / shields / counters
  * (`live-status`). Published once per batch when dirty (no time throttle), so
  * the shield bar gets the low latency it needs.
@@ -667,13 +707,7 @@ export type LiveStatusPayload = { revision: number; counters: CounterUpdateState
  * Highest deep-sleep (800522) `seasonId` resolved from the last
  * container sync/patch; `0` before any season data has been observed.
  */
-seasonId: number;
-/**
- * Talent template id(s) currently equipped (`cultivateLineAreaList`).
- * Meaningful from S4 on, where the overlay looks up the equipped
- * template's display buffs instead of factor sockets.
- */
-seasonActiveTemplateIds: number[]; skillCds: SkillCdState[]; panelAttrs: PanelAttrState[]; shieldCurrentHp: number; shieldMaxHp: number; shieldEntries: ShieldDetailEntry[]; fightResource: FightResourceState | null }
+seasonId: number; seasonActiveTemplateIds: number[]; skillCds: SkillCdState[]; panelAttrs: PanelAttrState[]; shieldCurrentHp: number; shieldMaxHp: number; shieldEntries: ShieldDetailEntry[]; fightResource: FightResourceState | null }
 /**
  * A single active buff fact currently known to the minimap.
  */

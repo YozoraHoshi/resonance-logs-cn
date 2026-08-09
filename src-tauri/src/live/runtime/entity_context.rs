@@ -1723,20 +1723,19 @@ impl EntityContext {
         self.entity_ref(current)
     }
 
-    /// Death replay only records player-side victims (`DeathProjection` keeps
-    /// a damage window only for damage taken by players), so cloning every
-    /// entity's buff list for each monster death would be built and dropped.
-    /// `Unknown` is included: a player whose identity has not arrived yet must
-    /// not lose the checkpoint.
+    /// Death replay only records player-side victims: `CombatHitFact::from_domain`
+    /// requires `target_kind == EntityKind::Character` to emit a `DamageTaken`
+    /// fact at all, so `DeathProjection`'s replay window can never hold pending
+    /// damage for a non-`Character` victim (including `Dummy` and `Unknown`,
+    /// whose identity has not resolved yet). Cloning every entity's buff list
+    /// for such a death would be built and immediately dropped, so this is
+    /// gated on the exact kind the replay path can ever consume.
     fn death_buff_checkpoint_for(&self, uuid: EntityUuid) -> DeathBuffCheckpoint {
         let kind = self
             .entities
             .get(&uuid)
             .map_or(EntityKind::Unknown, |entity| entity.identity.kind);
-        if matches!(
-            kind,
-            EntityKind::Character | EntityKind::Dummy | EntityKind::Unknown
-        ) {
+        if kind == EntityKind::Character {
             self.death_buff_checkpoint()
         } else {
             DeathBuffCheckpoint::default()
@@ -3520,6 +3519,51 @@ mod tests {
         // Monster deaths are dropped by the death replay downstream, so the
         // checkpoint is not built for them at all.
         assert_eq!(victim.uuid, monster);
+        assert!(buff_checkpoint.buffs(*victim).is_empty());
+    }
+
+    #[test]
+    fn dummy_victim_death_carries_empty_buff_checkpoint() {
+        // `CombatHitFact::from_domain` only emits `DamageTaken` for
+        // `target_kind == EntityKind::Character`, so a training dummy can
+        // never populate `DeathProjection`'s replay window either. The
+        // checkpoint must stay empty rather than cloning every entity's buff
+        // list for a death the replay path can never consume.
+        let mut context = EntityContext::new();
+        let dummy = EntityUuid(88);
+        context.reduce_batch(batch(
+            1,
+            vec![
+                ProtocolObservation::EntityAppeared {
+                    uuid: dummy,
+                    kind: EntityKind::Dummy,
+                },
+                ProtocolObservation::BuffChanged {
+                    target_uuid: dummy,
+                    change: ObservedBuffChange::Applied { buff: buff(7, 42) },
+                },
+            ],
+        ));
+
+        let events = context.reduce_batch(batch(
+            2,
+            vec![ProtocolObservation::DeathObserved {
+                victim_uuid: dummy,
+                killer_uuid: None,
+                skill_key: None,
+            }],
+        ));
+        let deaths = death_events(&events);
+        assert_eq!(deaths.len(), 1);
+        let DomainEvent::DeathOccurred {
+            victim,
+            buff_checkpoint,
+            ..
+        } = &deaths[0]
+        else {
+            panic!("death expected");
+        };
+        assert_eq!(victim.uuid, dummy);
         assert!(buff_checkpoint.buffs(*victim).is_empty());
     }
 

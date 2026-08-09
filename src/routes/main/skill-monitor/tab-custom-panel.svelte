@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import ChevronDown from "virtual:icons/lucide/chevron-down";
   import Volume2Icon from "virtual:icons/lucide/volume-2";
   import BuffSearchResultGrid from "$lib/components/BuffSearchResultGrid.svelte";
@@ -27,7 +28,7 @@
     subjectHasBindings,
     type VoiceBindingSubject,
   } from "$lib/voice-binding-subject.svelte.js";
-  import { liveStatusStore } from "$lib/stores/live-topics.svelte";
+  import { commands } from "$lib/bindings";
 
   /** S4+ moved the season panel's content from S3 factor-socket counters to
    * basic-node buffs; mirrors the backend's `SEASON_NODE_BUFF_MIN_ID`. */
@@ -240,8 +241,19 @@
     );
   }
 
-  const seasonId = $derived(liveStatusStore.data?.seasonId ?? 0);
+  // `main` never subscribes to `live-status` (it isn't routed here, and this
+  // panel only needs the season id once), so this is a single request/reply
+  // bootstrap rather than a live topic connection.
+  let seasonId = $state(0);
   const isSeasonNodeBuffMode = $derived(seasonId >= SEASON_NODE_BUFF_MIN_ID);
+
+  onMount(() => {
+    void commands.getLiveStatus().then((result) => {
+      if (result.status === "ok") {
+        seasonId = result.data.seasonId;
+      }
+    });
+  });
 
   function getCustomPanelGroupKindLabel(group: CustomPanelGroup): string {
     if (group.kind !== "seasonCultivateFactor") {

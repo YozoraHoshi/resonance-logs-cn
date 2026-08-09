@@ -55,25 +55,7 @@
     phase: "idle",
   };
 
-  let clientElapsedMs = $state(0);
-  let elapsedAnchorMs = 0;
-  let elapsedAnchorMonoMs = 0;
-  let animationFrameId: number | null = null;
   let trainingDummyBusy = $state(false);
-
-  function updateClientTimer() {
-    if (isEncounterActive && !isEncounterPaused) {
-      clientElapsedMs =
-        elapsedAnchorMs + Math.max(0, performance.now() - elapsedAnchorMonoMs);
-    }
-    animationFrameId = requestAnimationFrame(updateClientTimer);
-  }
-
-  function resetTimer() {
-    elapsedAnchorMs = 0;
-    elapsedAnchorMonoMs = performance.now();
-    clientElapsedMs = 0;
-  }
 
   onMount(() => {
     try {
@@ -81,13 +63,6 @@
     } catch (error) {
       console.error("Failed to get current live webview window", error);
     }
-
-    animationFrameId = requestAnimationFrame(updateClientTimer);
-    return () => {
-      if (animationFrameId !== null) {
-        cancelAnimationFrame(animationFrameId);
-      }
-    };
   });
 
   function formatElapsed(msElapsed: number) {
@@ -113,10 +88,6 @@
     () => runtimeTrainingDummyState ?? emptyTrainingDummy,
   );
   const isEncounterPaused = $derived(!!liveData?.isPaused);
-  const isEncounterActive = $derived(
-    liveCombatStore.data?.activeSegmentId !== null &&
-      liveCombatStore.data?.activeSegmentId !== undefined,
-  );
   const headerInfo = $derived.by((): HeaderInfo => {
     const data = liveData;
     if (!data || ipcNumber(data.fightStartTimestampMs) <= 0) {
@@ -139,14 +110,8 @@
     };
   });
 
-  $effect(() => {
-    elapsedAnchorMs = Math.max(0, ipcNumber(liveData?.elapsedMs));
-    elapsedAnchorMonoMs = performance.now();
-    clientElapsedMs = elapsedAnchorMs;
-  });
-
   const displayHeaderInfo = $derived(headerInfo);
-  const displayElapsedMs = $derived(clientElapsedMs);
+  const displayElapsedMs = $derived(headerInfo.elapsedMs);
   const displaySceneName = $derived(
     resolveSceneName(headerInfo.sceneId, headerInfo.dungeonDifficulty),
   );
@@ -173,7 +138,6 @@
   }
 
   function handleResetEncounter() {
-    resetTimer();
     void resetEncounter();
   }
 

@@ -191,6 +191,8 @@ fn emit_publications(app: &AppHandle, publications: Publications) {
             TopicPublication::Monster(payload) => emit_to_topic_windows(app, topic, &payload),
             TopicPublication::Fantasy(payload) => emit_to_topic_windows(app, topic, &payload),
             TopicPublication::Minimap(payload) => emit_to_topic_windows(app, topic, &payload),
+            TopicPublication::Deaths(payload) => emit_to_topic_windows(app, topic, &payload),
+            TopicPublication::Scene(payload) => emit_to_topic_windows(app, topic, &payload),
         }
     }
 }

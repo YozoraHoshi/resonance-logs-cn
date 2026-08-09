@@ -103,7 +103,7 @@ struct PendingDamage {
 #[derive(Debug, Default)]
 pub struct DeathProjection {
     recent_by_target: HashMap<EntityRef, VecDeque<PendingDamage>>,
-    records: Vec<DeathReplaySnapshot>,
+    records: Vec<DeathRecord>,
 }
 
 impl DeathProjection {
@@ -112,8 +112,7 @@ impl DeathProjection {
         self.records.clear();
     }
 
-    /// Applies a death-lifecycle event and returns the newly captured replay, if any.
-    pub fn apply(&mut self, envelope: &DomainEnvelope) -> Option<&DeathReplaySnapshot> {
+    pub fn apply(&mut self, envelope: &DomainEnvelope) -> Option<DeathReplaySnapshot> {
         match &envelope.event {
             DomainEvent::DeathOccurred {
                 victim,
@@ -138,14 +137,15 @@ impl DeathProjection {
                     })
                     .collect();
                 let victim_buffs = buffs_for(buff_checkpoint, *victim);
-                self.records.push(DeathReplaySnapshot {
+                let snapshot = DeathReplaySnapshot {
                     victim_entity_uuid: victim.uuid.0,
                     death_timestamp_ms: envelope.occurred_at_ms,
                     recent_damages,
                     victim_buffs,
                     participant_buffs,
-                });
-                self.records.last()
+                };
+                self.records.push(DeathRecord::from(&snapshot));
+                Some(snapshot)
             }
             DomainEvent::EntityDisappeared { entity } => {
                 self.recent_by_target.remove(entity);
@@ -155,16 +155,14 @@ impl DeathProjection {
         }
     }
 
-    /// Death records ride on the combat payload; returns whether this hit
-    /// fed the replay buffer that could produce a new record.
     pub fn apply_hit(
         &mut self,
         envelope: &DomainEnvelope,
         hit: &DomainHit,
         fact: Option<&CombatHitFact>,
-    ) -> bool {
+    ) {
         if !fact.is_some_and(|fact| fact.metric == CombatMetric::DamageTaken) {
-            return false;
+            return;
         }
         let queue = self.recent_by_target.entry(hit.target).or_default();
         prune(queue, envelope.occurred_at_ms);
@@ -175,12 +173,11 @@ impl DeathProjection {
             skill_key: hit.skill_key,
             value: hit.amount,
         });
-        true
     }
 
     #[must_use]
     pub fn snapshot(&self) -> Vec<DeathRecord> {
-        self.records.iter().map(DeathRecord::from).collect()
+        self.records.clone()
     }
 }
 
@@ -366,6 +363,15 @@ mod tests {
                 source_time_ms: None,
             },
             observations: vec![
+                // `death_buff_checkpoint_for` only builds a checkpoint for
+                // `EntityKind::Character` victims (matching the exact kind
+                // `CombatHitFact::from_domain` requires for `DamageTaken`),
+                // so the victim's identity must resolve to `Character`
+                // before the death for this test to exercise that path.
+                ProtocolObservation::EntityAppeared {
+                    uuid: VICTIM.uuid,
+                    kind: EntityKind::Character,
+                },
                 ProtocolObservation::BuffSnapshot {
                     target_uuid: VICTIM.uuid,
                     buffs: vec![ObservedBuff {
@@ -433,7 +439,7 @@ mod tests {
         assert_eq!(replay.participant_buffs.len(), 1);
         assert_eq!(replay.participant_buffs[0].entity_uuid, Some(10));
         assert_eq!(replay.participant_buffs[0].buffs[0].instance_id, 55);
-        let expected_record = DeathRecord::from(replay);
+        let expected_record = DeathRecord::from(&replay);
         assert_eq!(projection.snapshot(), vec![expected_record]);
     }
 

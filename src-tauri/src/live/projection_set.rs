@@ -6,8 +6,8 @@ use crate::live::bootstrap_snapshot::MonitorRuntimeSnapshot;
 use crate::live::counter::engine::{CounterEngine, CounterNamespace};
 use crate::live::history_writer::HistoryWriterHandle;
 use crate::live::ipc::models::{
-    LiveBuffsPayload, LiveCombatPayload, LiveFantasyPayload, LiveMonsterPayload, LiveStatusPayload,
-    MinimapUpdatePayload,
+    LiveBuffsPayload, LiveCombatPayload, LiveDeathsPayload, LiveFantasyPayload, LiveMonsterPayload,
+    LiveScenePayload, LiveStatusPayload, MinimapUpdatePayload,
 };
 use crate::live::ipc::topic::{Topic, TopicMask};
 use crate::live::projections::combat::accumulator::CombatHitFact;
@@ -33,8 +33,14 @@ const MONITORED_TOPICS: TopicMask = TopicMask::STATUS
     .union(TopicMask::MONSTER)
     .union(TopicMask::FANTASY);
 /// Everything except the minimap, which keeps its own incremental payload.
-const SEGMENT_TOPICS: TopicMask = MONITORED_TOPICS.union(TopicMask::COMBAT);
-const ALL_TOPICS: TopicMask = SEGMENT_TOPICS.union(TopicMask::MINIMAP);
+const SEGMENT_TOPICS: TopicMask = MONITORED_TOPICS
+    .union(TopicMask::COMBAT)
+    .union(TopicMask::DEATHS);
+/// The scene is persistent `EntityContext` state, not segment-scoped, so it
+/// sits outside `SEGMENT_TOPICS` next to the minimap.
+const ALL_TOPICS: TopicMask = SEGMENT_TOPICS
+    .union(TopicMask::MINIMAP)
+    .union(TopicMask::SCENE);
 
 /// One replace-only payload for a single dirty topic.
 #[derive(Debug)]
@@ -45,6 +51,8 @@ pub enum TopicPublication {
     Monster(LiveMonsterPayload),
     Fantasy(LiveFantasyPayload),
     Minimap(MinimapUpdatePayload),
+    Deaths(LiveDeathsPayload),
+    Scene(LiveScenePayload),
 }
 
 impl TopicPublication {
@@ -57,6 +65,8 @@ impl TopicPublication {
             Self::Monster(_) => Topic::Monster,
             Self::Fantasy(_) => Topic::Fantasy,
             Self::Minimap(_) => Topic::Minimap,
+            Self::Deaths(_) => Topic::Deaths,
+            Self::Scene(_) => Topic::Scene,
         }
     }
 }
@@ -267,12 +277,15 @@ impl ProjectionSet {
                 reported |= self.entity_monitor.apply(envelope, entities, scheduler);
                 self.voice.apply(envelope, entities, scheduler);
                 let replay = self.death.apply(envelope);
+                if replay.is_some() {
+                    reported |= TopicMask::DEATHS;
+                }
                 minimap_changed |= self.minimap.apply(envelope);
                 self.history.apply(
                     envelope,
                     entities,
                     self.combat.segment_offset_ms(envelope.meta.mono_ms()),
-                    replay,
+                    replay.as_ref(),
                 )?;
             }
             DomainEvent::Revived { .. } => {
@@ -288,7 +301,7 @@ impl ProjectionSet {
                     entities,
                 );
                 combat_changed |= outcome.had_combat;
-                combat_changed |= self.death.apply_hit(envelope, hit, fact.as_ref());
+                self.death.apply_hit(envelope, hit, fact.as_ref());
                 self.history.apply_hit(
                     envelope,
                     fact.as_ref(),
@@ -305,6 +318,7 @@ impl ProjectionSet {
                 reported |= self.entity_monitor.apply(envelope, entities, scheduler);
                 self.voice.apply(envelope, entities, scheduler);
                 minimap_changed |= self.minimap.apply(envelope);
+                reported |= TopicMask::SCENE;
             }
             DomainEvent::PauseChanged { is_paused } => {
                 combat_changed |= self.combat.set_paused(*is_paused, envelope.meta.mono_ms());
@@ -416,12 +430,20 @@ impl ProjectionSet {
     #[must_use]
     pub fn peek_combat(&self, segment_state: &SegmentState) -> LiveCombatPayload {
         self.presentation.peek_combat_payload(
-            self.combat.scene_id(),
-            self.combat.dungeon_difficulty(),
             self.combat.segment_id().map(|_| self.combat.payload()),
-            self.death.snapshot(),
             segment_state,
         )
+    }
+
+    #[must_use]
+    pub fn peek_deaths(&self) -> LiveDeathsPayload {
+        self.presentation.peek_deaths_payload(self.death.snapshot())
+    }
+
+    #[must_use]
+    pub fn peek_scene(&self, entities: &EntityContext) -> LiveScenePayload {
+        self.presentation
+            .peek_scene_payload(entities.current_scene_id(), entities.current_difficulty())
     }
 
     #[must_use]
@@ -476,10 +498,7 @@ impl ProjectionSet {
         for topic in due.iter() {
             publications.push(match topic {
                 Topic::Combat => TopicPublication::Combat(self.presentation.take_combat_payload(
-                    self.combat.scene_id(),
-                    self.combat.dungeon_difficulty(),
                     self.combat.segment_id().map(|_| self.combat.payload()),
-                    self.death.snapshot(),
                     segment_state,
                 )),
                 Topic::Status => TopicPublication::Status(
@@ -496,6 +515,13 @@ impl ProjectionSet {
                     TopicPublication::Fantasy(self.presentation.take_fantasy_payload(monitored()))
                 }
                 Topic::Minimap => TopicPublication::Minimap(self.minimap.take_payload()),
+                Topic::Deaths => TopicPublication::Deaths(
+                    self.presentation.take_deaths_payload(self.death.snapshot()),
+                ),
+                Topic::Scene => TopicPublication::Scene(self.presentation.take_scene_payload(
+                    entities.current_scene_id(),
+                    entities.current_difficulty(),
+                )),
             });
         }
 
@@ -694,13 +720,16 @@ mod tests {
             publications.as_slice(),
             [TopicPublication::Minimap(_)]
         ));
-        assert_eq!(projections.dirty_mask(), SEGMENT_TOPICS);
+        assert_eq!(
+            projections.dirty_mask(),
+            SEGMENT_TOPICS.union(TopicMask::SCENE)
+        );
 
         assert_eq!(
             projections
                 .take_publications(&entities, &state, ALL_TOPICS)
                 .len(),
-            SEGMENT_TOPICS.iter().count()
+            SEGMENT_TOPICS.union(TopicMask::SCENE).iter().count()
         );
         assert!(projections.dirty_mask().is_empty());
 
@@ -797,6 +826,112 @@ mod tests {
             plain_projection.apply_integer_attribute(plain, attr_type::ATTR_MAX_HP, 1, &entities,),
             TopicMask::EMPTY
         );
+    }
+
+    #[test]
+    fn death_occurred_dirties_deaths_but_a_plain_hit_does_not() {
+        use crate::live::runtime::events::{
+            BatchId, DeathBuffCheckpoint, DomainHit, EntityKind, EntityRef, EntityUuid, EventMeta,
+            HitChannel, HitKind, SegmentId,
+        };
+
+        let (writer, join) = HistoryWriterHandle::start().expect("history writer starts");
+        let mut projections = ProjectionSet::new(writer);
+        let entities = EntityContext::new();
+        let mut scheduler = DeadlineScheduler::new();
+
+        let attacker = EntityRef {
+            uuid: EntityUuid(10),
+            generation: 0,
+        };
+        let victim = EntityRef {
+            uuid: EntityUuid(20),
+            generation: 0,
+        };
+        let hit = DomainHit {
+            channel: HitChannel::ToMe,
+            source: Some(attacker),
+            packet_owner: None,
+            resolved_owner: None,
+            target: victim,
+            source_kind: Some(EntityKind::Monster),
+            target_kind: EntityKind::Character,
+            source_monster_id: Some(9_001),
+            target_monster_id: None,
+            target_is_boss: false,
+            source_is_player: false,
+            source_is_local_player: false,
+            skill_key: 17_140_101,
+            skill_id: Some(1_714),
+            type_flags: 0,
+            kind: HitKind::Damage,
+            amount: 100,
+            has_loss_breakdown: false,
+            hp_loss: 0,
+            shield_loss: 0,
+            is_lucky_bonus_only: false,
+            property: None,
+            damage_mode: None,
+            effective_amount: None,
+        };
+        let meta = EventMeta {
+            batch_id: BatchId(1),
+            capture_sequence: 1,
+            stream_id: 1,
+            stream_epoch: 1,
+            captured_wall_ms: 1_000,
+            captured_mono_ns: 1_000_000_000,
+            source_time_ms: None,
+        };
+
+        let mut dirty = projections.dirty_mask();
+        dirty.remove(ALL_TOPICS);
+        projections.dirty = dirty;
+
+        // A plain accepted hit only buffers pending damage; it must not by
+        // itself mark the deaths topic dirty.
+        projections
+            .apply(
+                &DomainEnvelope {
+                    sequence: 1,
+                    batch_id: meta.batch_id,
+                    occurred_at_ms: 1_000,
+                    meta,
+                    event_index: 0,
+                    segment_id: Some(SegmentId(1)),
+                    event: DomainEvent::CombatHitAccepted(hit),
+                },
+                &entities,
+                &mut scheduler,
+            )
+            .unwrap();
+        assert!(!projections.is_dirty(TopicMask::DEATHS));
+
+        // The death itself, having consumed that buffered damage, dirties it.
+        projections
+            .apply(
+                &DomainEnvelope {
+                    sequence: 2,
+                    batch_id: meta.batch_id,
+                    occurred_at_ms: 1_500,
+                    meta,
+                    event_index: 1,
+                    segment_id: Some(SegmentId(1)),
+                    event: DomainEvent::DeathOccurred {
+                        victim,
+                        killer: None,
+                        skill_key: None,
+                        buff_checkpoint: DeathBuffCheckpoint::default(),
+                    },
+                },
+                &entities,
+                &mut scheduler,
+            )
+            .unwrap();
+        assert!(projections.is_dirty(TopicMask::DEATHS));
+
+        drop(projections);
+        join.join().expect("history writer stops after disconnect");
     }
 
     #[test]

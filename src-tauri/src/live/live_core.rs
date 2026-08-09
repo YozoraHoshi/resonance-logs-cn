@@ -273,6 +273,12 @@ impl LiveCore {
                     BootstrapTopic::Fantasy => {
                         TopicBootstrap::Fantasy(self.projections.peek_fantasy(&self.entities))
                     }
+                    BootstrapTopic::Deaths => {
+                        TopicBootstrap::Deaths(self.projections.peek_deaths())
+                    }
+                    BootstrapTopic::Scene => {
+                        TopicBootstrap::Scene(self.projections.peek_scene(&self.entities))
+                    }
                 };
                 let _ = reply.send(bootstrap);
                 Ok(LiveCoreFlow::Continue)
