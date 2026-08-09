@@ -1937,6 +1937,9 @@ export const jaJPMessages = {
   "voice.phrases.generate.useExisting": "既存の音声を使用",
   "voice.phrases.generate.createNew": "新しい音声を作成",
   "voice.phrases.generate.pickProfile": "音声プロファイルを選択",
+  "voice.phrases.generate.presetSource": "プリセット音声",
+  "voice.phrases.generate.presetSource.info":
+    "フレーズ本文の言語に関係なく、現在のUI言語（{locale}）に対応する内蔵音声を自動的に使用します。初回生成時に自動作成され、参考音声の準備は不要です。",
   "voice.phrases.generate.cloneSource": "クローン音声",
   "voice.phrases.generate.finetunedSource": "微調整音声",
   "voice.phrases.generate.finetunedUnavailable":

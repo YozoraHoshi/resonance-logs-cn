@@ -1811,6 +1811,9 @@ export const zhCNMessages = {
   "voice.phrases.generate.useExisting": "使用已有音色",
   "voice.phrases.generate.createNew": "新建音色",
   "voice.phrases.generate.pickProfile": "选择音色",
+  "voice.phrases.generate.presetSource": "预置音色",
+  "voice.phrases.generate.presetSource.info":
+    "自动使用与当前界面语言（{locale}）匹配的内置音色，与短句本身的文本语言无关。首次生成会自动创建，无需准备参考音频。",
   "voice.phrases.generate.cloneSource": "克隆音色",
   "voice.phrases.generate.finetunedSource": "微调音色",
   "voice.phrases.generate.finetunedUnavailable":

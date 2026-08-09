@@ -1951,6 +1951,9 @@ export const enUSMessages = {
   "voice.phrases.generate.useExisting": "Use existing voice",
   "voice.phrases.generate.createNew": "Create new voice",
   "voice.phrases.generate.pickProfile": "Select voice profile",
+  "voice.phrases.generate.presetSource": "Preset voice",
+  "voice.phrases.generate.presetSource.info":
+    "Automatically uses the built-in voice matching the current UI language ({locale}), regardless of the phrase text's own language. Created automatically on first generation - no reference audio needed.",
   "voice.phrases.generate.cloneSource": "Cloned voice",
   "voice.phrases.generate.finetunedSource": "Fine-tuned voice",
   "voice.phrases.generate.finetunedUnavailable":

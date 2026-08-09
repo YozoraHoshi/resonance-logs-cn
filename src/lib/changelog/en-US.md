@@ -6,6 +6,7 @@
 
 - Added offline voice announcements: after installing the model you can clone a voice, maintain a phrase library, and play pre-generated audio on trigger
 - The voice model is based on Qwen3-TTS 0.6B and only Q8_0 / F16 quantized GGUF is supported; the Q8_0 build is downloaded in one click from the Models & Voices page by default (mirror sources supported), or a converted model can be imported manually
+- Added a preset voice (the default voice source): automatically picks a built-in reference voice matching the current UI language (Simplified Chinese / English / Japanese), so you can generate audio right after installing the model with no reference audio to prepare - you can still switch to a cloned or fine-tuned voice manually at any time
 - Prerequisites for generating audio: zero-shot cloning needs a 5-10 second clean vocal reference of a single speaker without background music; alternatively, fine-tune a dedicated model with your own voice data (based on Qwen3-TTS 0.6B CustomVoice, exported as GGUF and referenced, with a higher quality ceiling)
 - Voice bindings can be configured inline in Buff Monitor, Monster Buffs, Custom Counters, Boss DBM, and Dungeon Mechanics
 - The announcement overview page aggregates all bindings and can generate missing audio in one click

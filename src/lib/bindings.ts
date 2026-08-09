@@ -984,13 +984,37 @@ export type VoiceOperationState = { kind: "idle" } | { kind: "installingModel"; 
  */
 export type VoicePhraseMeta = { id: string; name: string; text: string; language: VoiceLanguage; activeAssetId: string | null; updatedAtMs: number }
 /**
+ * A UI locale with a bundled reference voice. Deliberately distinct from
+ * [`super::models::VoiceLanguage`], which tags the *text* of a phrase and
+ * drives the sidecar's codec language id: a Chinese-locale user can still
+ * author (and hear synthesized) an English or Japanese phrase, and should
+ * keep hearing it in the Chinese preset voice unless they pick a different
+ * source explicitly.
+ */
+export type VoicePresetLocale = "zh-CN" | "en-US" | "ja-JP"
+/**
+ * Identifies which bundled reference file (and manifest revision) a cloned
+ * profile was extracted from. Stored on [`super::models::VoiceProfileMeta`]
+ * so a later generation can detect that the bundled audio moved on to a
+ * new revision and re-extract rather than reuse a stale embedding.
+ */
+export type VoicePresetTag = { locale: VoicePresetLocale; revision: number }
+/**
  * A persisted speaker profile (voice clone), backed by a `.q3sp` file on disk.
  */
 export type VoiceProfileMeta = { id: string; name: string; createdAtMs: number; modelVersion: string; embeddingDim: number; modelSha256: string; refAudioSha256: string;
 /**
  * Whether the original reference WAV was kept on disk (opt-in).
  */
-refAudioRetained: boolean }
+refAudioRetained: boolean;
+/**
+ * Set when this profile was auto-created from a bundled preset
+ * reference (see `voice::presets`) rather than audio the user
+ * supplied, so generation can detect a stale preset (bundled asset
+ * revision bumped) and re-extract instead of silently reusing
+ * outdated audio. `None` for user-provided clone profiles.
+ */
+preset: VoicePresetTag | null }
 /**
  * Playback queue policy when the queue is full or a higher priority cue arrives.
  */
@@ -1016,7 +1040,12 @@ priority: number; cooldownMs: number; phraseIdByTier?: Partial<{ [key in number]
  * a sub-section of `MonitorRuntimeSnapshot` alongside skill/monster/teammate.
  */
 export type VoiceRuntimeSnapshot = { enabled: boolean; volume: number; queuePolicy: VoiceQueuePolicy; rules: VoiceRule[] }
-export type VoiceSourceSelectionDto = { mode: "cloneNew"; name: string; referenceWavPath: string; keepReference?: boolean } | { mode: "cloneExisting"; profileId: string } | { mode: "fineTuned" }
+export type VoiceSourceSelectionDto = { mode: "cloneNew"; name: string; referenceWavPath: string; keepReference?: boolean } | { mode: "cloneExisting"; profileId: string } |
+/**
+ * Auto-selects the bundled reference voice for a UI locale, extracting
+ * (and thereafter reusing) a clone profile from it on demand.
+ */
+{ mode: "preset"; locale: VoicePresetLocale } | { mode: "fineTuned" }
 /**
  * Overall status snapshot returned to the frontend for the voice feature.
  */
