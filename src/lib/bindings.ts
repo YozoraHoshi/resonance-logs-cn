@@ -662,7 +662,18 @@ export type LiveRuntimeSnapshot = { eventUpdateRateMs: number }
  * (`live-status`). Published once per batch when dirty (no time throttle), so
  * the shield bar gets the low latency it needs.
  */
-export type LiveStatusPayload = { revision: number; counters: CounterUpdateState[]; factorCounters: CounterUpdateState[]; factorSourceItemIds: number[]; factorSlotItemIds: number[]; skillCds: SkillCdState[]; panelAttrs: PanelAttrState[]; shieldCurrentHp: number; shieldMaxHp: number; shieldEntries: ShieldDetailEntry[]; fightResource: FightResourceState | null }
+export type LiveStatusPayload = { revision: number; counters: CounterUpdateState[]; factorCounters: CounterUpdateState[]; factorSourceItemIds: number[]; factorSlotItemIds: number[];
+/**
+ * Highest deep-sleep (800522) `seasonId` resolved from the last
+ * container sync/patch; `0` before any season data has been observed.
+ */
+seasonId: number;
+/**
+ * Talent template id(s) currently equipped (`cultivateLineAreaList`).
+ * Meaningful from S4 on, where the overlay looks up the equipped
+ * template's display buffs instead of factor sockets.
+ */
+seasonActiveTemplateIds: number[]; skillCds: SkillCdState[]; panelAttrs: PanelAttrState[]; shieldCurrentHp: number; shieldMaxHp: number; shieldEntries: ShieldDetailEntry[]; fightResource: FightResourceState | null }
 /**
  * A single active buff fact currently known to the minimap.
  */

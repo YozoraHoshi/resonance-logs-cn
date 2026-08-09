@@ -27,6 +27,10 @@ pub struct LiveStatusPayload {
     pub factor_counters: Vec<CounterUpdateState>,
     pub factor_source_item_ids: Vec<i32>,
     pub factor_slot_item_ids: Vec<i32>,
+    /// Highest deep-sleep (800522) `seasonId` resolved from the last
+    /// container sync/patch; `0` before any season data has been observed.
+    pub season_id: i32,
+    pub season_active_template_ids: Vec<i32>,
     pub skill_cds: Vec<SkillCdState>,
     pub panel_attrs: Vec<PanelAttrState>,
     pub shield_current_hp: i64,

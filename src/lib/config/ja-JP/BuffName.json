@@ -13400,7 +13400,7 @@
   {
     "Icon": "",
     "Id": 3002521,
-    "NameDesign": "効果 (AI)",
+    "NameDesign": "専精ダメージ上昇",
     "SpriteFile": null
   },
   {
@@ -13412,7 +13412,7 @@
   {
     "Icon": "",
     "Id": 3002531,
-    "NameDesign": "効果 (AI)",
+    "NameDesign": "ダメージ上昇",
     "SpriteFile": null
   },
   {
@@ -13424,7 +13424,7 @@
   {
     "Icon": "",
     "Id": 3002541,
-    "NameDesign": "効果 (AI)",
+    "NameDesign": "専精最終ダメージ上昇",
     "SpriteFile": null
   },
   {
@@ -13658,7 +13658,7 @@
   {
     "Icon": "",
     "Id": 3003033,
-    "NameDesign": "夢幻執念CD (AI)",
+    "NameDesign": "瀕死ロックHP CD",
     "SpriteFile": null
   },
   {
@@ -14120,7 +14120,7 @@
   {
     "Icon": "",
     "Id": 3004901,
-    "NameDesign": "幻滅崩壊界cd (AI)",
+    "NameDesign": "幻滅CD",
     "SpriteFile": null
   },
   {
@@ -14180,7 +14180,7 @@
   {
     "Icon": "",
     "Id": 3004981,
-    "NameDesign": "幻滅・蝕痕 (AI)",
+    "NameDesign": "幻滅崩界・傷痕",
     "SpriteFile": null
   },
   {
@@ -14192,7 +14192,7 @@
   {
     "Icon": "",
     "Id": 3004991,
-    "NameDesign": "幻滅・堅毅 (AI)",
+    "NameDesign": "幻滅崩界・剛毅",
     "SpriteFile": null
   },
   {
@@ -14204,7 +14204,7 @@
   {
     "Icon": "",
     "Id": 3005001,
-    "NameDesign": "幻滅・弱体化 (AI)",
+    "NameDesign": "幻滅崩界・弱体",
     "SpriteFile": null
   },
   {
@@ -14240,7 +14240,7 @@
   {
     "Icon": "buff_icon138",
     "Id": 3005102,
-    "NameDesign": "刻印 (AI)",
+    "NameDesign": "刻印",
     "SpriteFile": "buff_icon138_-2731530954218048691.png"
   },
   {
@@ -14336,7 +14336,7 @@
   {
     "Icon": "",
     "Id": 3005331,
-    "NameDesign": "効果 (AI)",
+    "NameDesign": "共鳴アクティブスキルダメージ上昇",
     "SpriteFile": null
   },
   {
@@ -14348,7 +14348,7 @@
   {
     "Icon": "",
     "Id": 3005341,
-    "NameDesign": "タイムレコーダー (AI)",
+    "NameDesign": "共鳴アクティブスキル元素ダメージ上昇",
     "SpriteFile": null
   },
   {
@@ -14372,7 +14372,7 @@
   {
     "Icon": "",
     "Id": 3005361,
-    "NameDesign": "消費強化印 (AI)",
+    "NameDesign": "共鳴スキルダメージ上昇",
     "SpriteFile": null
   },
   {
@@ -14402,7 +14402,7 @@
   {
     "Icon": "buff_icon138",
     "Id": 3005501,
-    "NameDesign": "戦意 (AI)",
+    "NameDesign": "闘気",
     "SpriteFile": "buff_icon138_-2731530954218048691.png"
   },
   {
@@ -14498,7 +14498,7 @@
   {
     "Icon": "",
     "Id": 3005703,
-    "NameDesign": "動機づけ (AI)",
+    "NameDesign": "激励",
     "SpriteFile": null
   },
   {
@@ -14516,7 +14516,7 @@
   {
     "Icon": "",
     "Id": 3005721,
-    "NameDesign": "破甲 (AI)",
+    "NameDesign": "破甲",
     "SpriteFile": null
   },
   {
@@ -14528,7 +14528,7 @@
   {
     "Icon": "",
     "Id": 3005731,
-    "NameDesign": "効果 (AI)",
+    "NameDesign": "治療強度上昇",
     "SpriteFile": null
   },
   {
@@ -14540,7 +14540,7 @@
   {
     "Icon": "",
     "Id": 3005741,
-    "NameDesign": "効果 (AI)",
+    "NameDesign": "詠唱速度上昇",
     "SpriteFile": null
   },
   {
@@ -14552,7 +14552,7 @@
   {
     "Icon": "",
     "Id": 3005751,
-    "NameDesign": "効果 (AI)",
+    "NameDesign": "攻撃速度上昇",
     "SpriteFile": null
   },
   {
@@ -14570,13 +14570,13 @@
   {
     "Icon": "buff_passive_icon_general_sup_inspire",
     "Id": 3005771,
-    "NameDesign": "強化 (AI)",
+    "NameDesign": "激励強化",
     "SpriteFile": "buff_passive_icon_general_sup_inspire_3011058618846226356.png"
   },
   {
     "Icon": "",
     "Id": 3005772,
-    "NameDesign": "強化CD (AI)",
+    "NameDesign": "激励CD",
     "SpriteFile": null
   },
   {
@@ -14588,7 +14588,7 @@
   {
     "Icon": "",
     "Id": 3005781,
-    "NameDesign": "目標は自己のダメージを減らす (AI)",
+    "NameDesign": "ダメージ軽減",
     "SpriteFile": null
   },
   {
@@ -14600,7 +14600,7 @@
   {
     "Icon": "",
     "Id": 3005801,
-    "NameDesign": "やる気が自分を強化する (AI)",
+    "NameDesign": "独唱昇華",
     "SpriteFile": null
   },
   {
@@ -14612,13 +14612,13 @@
   {
     "Icon": "buff_icon07",
     "Id": 3005901,
-    "NameDesign": "蓄勢 (AI)",
+    "NameDesign": "蓄勢",
     "SpriteFile": "buff_icon07_2013332694871649288.png"
   },
   {
     "Icon": "buff_icon08",
     "Id": 3005902,
-    "NameDesign": "- 爆発する (AI)",
+    "NameDesign": "迸破",
     "SpriteFile": "buff_icon08_5301004452925753041.png"
   },
   {
@@ -14696,31 +14696,31 @@
   {
     "Icon": "buff_icon22",
     "Id": 3006101,
-    "NameDesign": "属性交響 (AI)",
+    "NameDesign": "属性交響",
     "SpriteFile": "buff_icon22_1472380432504903133.png"
   },
   {
     "Icon": "",
     "Id": 3006102,
-    "NameDesign": "属性交響・普攻 (AI)",
+    "NameDesign": "属性交響・通常攻撃",
     "SpriteFile": null
   },
   {
     "Icon": "",
     "Id": 3006103,
-    "NameDesign": "属性交響・特攻 (AI)",
+    "NameDesign": "属性交響・特殊攻撃",
     "SpriteFile": null
   },
   {
     "Icon": "",
     "Id": 3006104,
-    "NameDesign": "属性交響・専精 (AI)",
+    "NameDesign": "属性交響・専精",
     "SpriteFile": null
   },
   {
     "Icon": "",
     "Id": 3006105,
-    "NameDesign": "属性交響・究極 (AI)",
+    "NameDesign": "属性交響・アルティメット",
     "SpriteFile": null
   },
   {
@@ -14774,7 +14774,7 @@
   {
     "Icon": "",
     "Id": 3006181,
-    "NameDesign": "属性交響・追加 (AI)",
+    "NameDesign": "属性交響・追加",
     "SpriteFile": null
   },
   {
@@ -14792,7 +14792,7 @@
   {
     "Icon": "",
     "Id": 3006192,
-    "NameDesign": "完璧な交響曲です (AI)",
+    "NameDesign": "完美交響",
     "SpriteFile": null
   },
   {

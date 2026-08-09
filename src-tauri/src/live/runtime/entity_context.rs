@@ -119,6 +119,8 @@ pub struct EntityContext {
     pending_skill_expiries: VecDeque<(MonoTimeMs, EntityUuid)>,
     skill_lifecycles: HashMap<EntityUuid, CasterSkillLifecycle>,
     active_season_items: HashSet<i32>,
+    active_season_id: i32,
+    active_season_template_ids: Vec<i32>,
     current_scene_id: Option<i32>,
     current_difficulty: Option<i32>,
     dungeon_flow_state: Option<i32>,
@@ -162,6 +164,8 @@ impl EntityContext {
         self.pending_skill_expiries.clear();
         self.skill_lifecycles.clear();
         self.active_season_items.clear();
+        self.active_season_id = 0;
+        self.active_season_template_ids.clear();
         self.dungeon_flow_state = None;
     }
 
@@ -948,19 +952,30 @@ impl EntityContext {
                 },
                 out,
             ),
-            ProtocolObservation::SeasonCultivateSnapshot { active_item_ids } => {
-                let normalized = normalized_ids(active_item_ids);
-                self.active_season_items = normalized.iter().copied().collect();
+            ProtocolObservation::SeasonCultivateSnapshot {
+                season_id,
+                active_template_ids,
+                active_item_ids,
+            } => {
+                let normalized_items = normalized_ids(active_item_ids);
+                let normalized_templates = normalized_ids(active_template_ids);
+                self.active_season_items = normalized_items.iter().copied().collect();
+                self.active_season_id = season_id;
+                self.active_season_template_ids = normalized_templates.clone();
                 self.emit(
                     meta,
                     DomainEvent::SeasonCultivateChanged {
-                        active_item_ids: normalized,
+                        season_id,
+                        active_template_ids: normalized_templates,
+                        active_item_ids: normalized_items,
                         is_baseline: true,
                     },
                     out,
                 );
             }
             ProtocolObservation::SeasonCultivateDelta {
+                season_id,
+                active_template_ids,
                 activated_item_ids,
                 deactivated_item_ids,
             } => {
@@ -971,6 +986,19 @@ impl EntityContext {
                 for id in deactivated_item_ids {
                     changed |= self.active_season_items.remove(&id);
                 }
+                // Which template is equipped and which middle-node item
+                // sockets are filled are independent, so the template set
+                // can change even when the item diff above is empty;
+                // compare full snapshots for it.
+                let normalized_templates = normalized_ids(active_template_ids);
+                if self.active_season_id != season_id {
+                    self.active_season_id = season_id;
+                    changed = true;
+                }
+                if self.active_season_template_ids != normalized_templates {
+                    self.active_season_template_ids = normalized_templates;
+                    changed = true;
+                }
                 if changed {
                     let mut active_item_ids: Vec<_> =
                         self.active_season_items.iter().copied().collect();
@@ -978,6 +1006,8 @@ impl EntityContext {
                     self.emit(
                         meta,
                         DomainEvent::SeasonCultivateChanged {
+                            season_id: self.active_season_id,
+                            active_template_ids: self.active_season_template_ids.clone(),
                             active_item_ids,
                             is_baseline: false,
                         },
@@ -2407,6 +2437,8 @@ mod tests {
                     change: ObservedBuffChange::Applied { buff: buff(1, 42) },
                 },
                 ProtocolObservation::SeasonCultivateSnapshot {
+                    season_id: 3,
+                    active_template_ids: vec![10],
                     active_item_ids: vec![1, 2],
                 },
                 ProtocolObservation::DungeonFlowChanged { state: 2 },
@@ -2441,6 +2473,8 @@ mod tests {
         assert!(context.current_attack_target().is_none());
         assert!(context.game_timer(timer_key).is_none());
         assert!(context.active_season_items.is_empty());
+        assert_eq!(context.active_season_id, 0);
+        assert!(context.active_season_template_ids.is_empty());
         assert!(context.dungeon_flow_state.is_none());
         assert_eq!(context.team_id, 99);
         assert_eq!(context.team_leader, Some(local));

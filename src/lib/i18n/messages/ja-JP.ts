@@ -1213,6 +1213,9 @@ export const jaJPMessages = {
   "skillMonitor.customPanel.newFactor": "新規ファクターエリア",
   "skillMonitor.customPanel.kind.manual": "手動エリア",
   "skillMonitor.customPanel.kind.factor": "ファクター設定エリア",
+  "skillMonitor.customPanel.kind.seasonNode": "シーズンノードエリア",
+  "skillMonitor.customPanel.factorSlots.seasonNodeNotice":
+    "このシーズンはアクティブなノードのbuff効果を自動的に表示します。表示名の設定は不要です。",
   "skillMonitor.customPanel.factorSlots.title": "ファクター表示名",
   "skillMonitor.customPanel.factorSlots.description":
     "ファクタースロットのカスタム表示名を設定。スロットテンプレートごとに保存され、そのスロットが表示される限りビルド切替後も維持されます。",

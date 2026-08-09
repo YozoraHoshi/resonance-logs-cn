@@ -13412,7 +13412,7 @@
   {
     "Icon": "",
     "Id": 3002521,
-    "NameDesign": "——效果",
+    "NameDesign": "专精伤害增加",
     "SpriteFile": null
   },
   {
@@ -13424,7 +13424,7 @@
   {
     "Icon": "",
     "Id": 3002531,
-    "NameDesign": "——效果",
+    "NameDesign": "伤害增加",
     "SpriteFile": null
   },
   {
@@ -13436,7 +13436,7 @@
   {
     "Icon": "",
     "Id": 3002541,
-    "NameDesign": "——效果",
+    "NameDesign": "专精最终伤害增加",
     "SpriteFile": null
   },
   {
@@ -13670,7 +13670,7 @@
   {
     "Icon": "",
     "Id": 3003033,
-    "NameDesign": "梦幻执念CD",
+    "NameDesign": "濒死锁血cd",
     "SpriteFile": null
   },
   {
@@ -14132,7 +14132,7 @@
   {
     "Icon": "",
     "Id": 3004901,
-    "NameDesign": "——幻灭崩界cd",
+    "NameDesign": "幻灭cd",
     "SpriteFile": null
   },
   {
@@ -14192,7 +14192,7 @@
   {
     "Icon": "",
     "Id": 3004981,
-    "NameDesign": "——幻灭·蚀痕",
+    "NameDesign": "幻灭·蚀痕",
     "SpriteFile": null
   },
   {
@@ -14204,7 +14204,7 @@
   {
     "Icon": "",
     "Id": 3004991,
-    "NameDesign": "——幻灭·坚毅",
+    "NameDesign": "幻灭·坚毅",
     "SpriteFile": null
   },
   {
@@ -14216,7 +14216,7 @@
   {
     "Icon": "",
     "Id": 3005001,
-    "NameDesign": "——幻灭·削弱",
+    "NameDesign": "幻灭·削弱",
     "SpriteFile": null
   },
   {
@@ -14252,7 +14252,7 @@
   {
     "Icon": "buff_icon138",
     "Id": 3005102,
-    "NameDesign": "——刻痕",
+    "NameDesign": "刻痕",
     "SpriteFile": "buff_icon138_-2731530954218048691.png"
   },
   {
@@ -14348,7 +14348,7 @@
   {
     "Icon": "",
     "Id": 3005331,
-    "NameDesign": "——效果",
+    "NameDesign": "共鸣主动技能伤害增加",
     "SpriteFile": null
   },
   {
@@ -14360,7 +14360,7 @@
   {
     "Icon": "",
     "Id": 3005341,
-    "NameDesign": "——定时器",
+    "NameDesign": "共鸣主动技能元素伤害增加",
     "SpriteFile": null
   },
   {
@@ -14384,7 +14384,7 @@
   {
     "Icon": "",
     "Id": 3005361,
-    "NameDesign": "——消耗强化印记",
+    "NameDesign": "共鸣技能伤害增加",
     "SpriteFile": null
   },
   {
@@ -14414,7 +14414,7 @@
   {
     "Icon": "buff_icon138",
     "Id": 3005501,
-    "NameDesign": "——战意",
+    "NameDesign": "战意",
     "SpriteFile": "buff_icon138_-2731530954218048691.png"
   },
   {
@@ -14510,7 +14510,7 @@
   {
     "Icon": "",
     "Id": 3005703,
-    "NameDesign": "——激励",
+    "NameDesign": "激励",
     "SpriteFile": null
   },
   {
@@ -14528,7 +14528,7 @@
   {
     "Icon": "",
     "Id": 3005721,
-    "NameDesign": "——破甲",
+    "NameDesign": "破甲",
     "SpriteFile": null
   },
   {
@@ -14540,7 +14540,7 @@
   {
     "Icon": "",
     "Id": 3005731,
-    "NameDesign": "——效果",
+    "NameDesign": "治疗强度增加",
     "SpriteFile": null
   },
   {
@@ -14552,7 +14552,7 @@
   {
     "Icon": "",
     "Id": 3005741,
-    "NameDesign": "——效果",
+    "NameDesign": "施法速度增加",
     "SpriteFile": null
   },
   {
@@ -14564,7 +14564,7 @@
   {
     "Icon": "",
     "Id": 3005751,
-    "NameDesign": "——效果",
+    "NameDesign": "攻击速度增加",
     "SpriteFile": null
   },
   {
@@ -14582,13 +14582,13 @@
   {
     "Icon": "buff_passive_icon_general_sup_inspire",
     "Id": 3005771,
-    "NameDesign": "——强化",
+    "NameDesign": "激励强化",
     "SpriteFile": "buff_passive_icon_general_sup_inspire_3011058618846226356.png"
   },
   {
     "Icon": "",
     "Id": 3005772,
-    "NameDesign": "——强化CD",
+    "NameDesign": "激励cd",
     "SpriteFile": null
   },
   {
@@ -14600,7 +14600,7 @@
   {
     "Icon": "",
     "Id": 3005781,
-    "NameDesign": "——目标对自己伤害降低",
+    "NameDesign": "减伤",
     "SpriteFile": null
   },
   {
@@ -14612,7 +14612,7 @@
   {
     "Icon": "",
     "Id": 3005801,
-    "NameDesign": "——激励对自己加强",
+    "NameDesign": "激励对自己加强",
     "SpriteFile": null
   },
   {
@@ -14624,13 +14624,13 @@
   {
     "Icon": "buff_icon07",
     "Id": 3005901,
-    "NameDesign": "——蓄势",
+    "NameDesign": "蓄势",
     "SpriteFile": "buff_icon07_2013332694871649288.png"
   },
   {
     "Icon": "buff_icon08",
     "Id": 3005902,
-    "NameDesign": "——迸破",
+    "NameDesign": "迸破",
     "SpriteFile": "buff_icon08_5301004452925753041.png"
   },
   {
@@ -14708,31 +14708,31 @@
   {
     "Icon": "buff_icon22",
     "Id": 3006101,
-    "NameDesign": "——属性交响",
+    "NameDesign": "属性交响",
     "SpriteFile": "buff_icon22_1472380432504903133.png"
   },
   {
     "Icon": "",
     "Id": 3006102,
-    "NameDesign": "——属性交响·普攻",
+    "NameDesign": "属性交响·普攻",
     "SpriteFile": null
   },
   {
     "Icon": "",
     "Id": 3006103,
-    "NameDesign": "——属性交响·特攻",
+    "NameDesign": "属性交响·特攻",
     "SpriteFile": null
   },
   {
     "Icon": "",
     "Id": 3006104,
-    "NameDesign": "——属性交响·专精",
+    "NameDesign": "属性交响·专精",
     "SpriteFile": null
   },
   {
     "Icon": "",
     "Id": 3006105,
-    "NameDesign": "——属性交响·终极",
+    "NameDesign": "属性交响·终极",
     "SpriteFile": null
   },
   {
@@ -14786,7 +14786,7 @@
   {
     "Icon": "",
     "Id": 3006181,
-    "NameDesign": "——属性交响·额外",
+    "NameDesign": "属性交响·额外",
     "SpriteFile": null
   },
   {
@@ -14804,7 +14804,7 @@
   {
     "Icon": "",
     "Id": 3006192,
-    "NameDesign": "——完美交响",
+    "NameDesign": "完美交响",
     "SpriteFile": null
   },
   {

@@ -7,7 +7,7 @@
   import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { goto } from "$app/navigation";
-  import { liveCombatStore } from "$lib/stores/live-topics.svelte";
+  import { liveCombatStore, liveStatusStore } from "$lib/stores/live-topics.svelte";
   import {
     isDailyScene,
     isSupportedMinimapScene,
@@ -210,6 +210,20 @@
         console.error("Failed to connect live combat stream", error);
       });
 
+    // The custom-panel settings tab needs the resolved season id to decide
+    // whether the shared "seasonCultivateFactor" group shows S3 factor
+    // slots or S4 node-buff content, so it's connected here too.
+    let disconnectStatus: (() => void) | null = null;
+    void liveStatusStore
+      .connect()
+      .then((disconnect) => {
+        if (disposed) disconnect();
+        else disconnectStatus = disconnect;
+      })
+      .catch((error) => {
+        console.error("Failed to connect live status stream", error);
+      });
+
     showFirstRunPrompt = shouldShowFirstRunPrompt();
 
     // Resolve the buff-icon directory once so settings previews can render
@@ -221,7 +235,7 @@
     void refreshOverlayWindowVisibility("live");
 
     // The inline voice-binding controls (buff monitor / counter editor / DBM
-    // table) need the phrase catalog for their "短语库引�? picker, so load
+    // table) need the phrase catalog for their "????�? picker, so load
     // it app-wide instead of only when the user visits the voice page.
     void (async () => {
       await ensureVoiceListeners();
@@ -281,6 +295,7 @@
     return () => {
       disposed = true;
       disconnectSnapshot?.();
+      disconnectStatus?.();
       if (runtimeSyncTimer) {
         clearTimeout(runtimeSyncTimer);
         runtimeSyncTimer = null;

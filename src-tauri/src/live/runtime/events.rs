@@ -605,9 +605,13 @@ pub enum ProtocolObservation {
         complete: bool,
     },
     SeasonCultivateSnapshot {
+        season_id: i32,
+        active_template_ids: Vec<i32>,
         active_item_ids: Vec<i32>,
     },
     SeasonCultivateDelta {
+        season_id: i32,
+        active_template_ids: Vec<i32>,
         activated_item_ids: Vec<i32>,
         deactivated_item_ids: Vec<i32>,
     },
@@ -856,6 +860,8 @@ pub enum DomainEvent {
         complete: bool,
     },
     SeasonCultivateChanged {
+        season_id: i32,
+        active_template_ids: Vec<i32>,
         active_item_ids: Vec<i32>,
         is_baseline: bool,
     },

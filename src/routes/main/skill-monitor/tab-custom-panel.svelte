@@ -27,6 +27,11 @@
     subjectHasBindings,
     type VoiceBindingSubject,
   } from "$lib/voice-binding-subject.svelte.js";
+  import { liveStatusStore } from "$lib/stores/live-topics.svelte";
+
+  /** S4+ moved the season panel's content from S3 factor-socket counters to
+   * basic-node buffs; mirrors the backend's `SEASON_NODE_BUFF_MIN_ID`. */
+  const SEASON_NODE_BUFF_MIN_ID = 4;
 
   type CounterRuleOption = CounterRulePreset & { origin: "preset" | "user" };
 
@@ -235,10 +240,16 @@
     );
   }
 
+  const seasonId = $derived(liveStatusStore.data?.seasonId ?? 0);
+  const isSeasonNodeBuffMode = $derived(seasonId >= SEASON_NODE_BUFF_MIN_ID);
+
   function getCustomPanelGroupKindLabel(group: CustomPanelGroup): string {
-    return group.kind === "seasonCultivateFactor"
-      ? t("skillMonitor.customPanel.kind.factor")
-      : t("skillMonitor.customPanel.kind.manual");
+    if (group.kind !== "seasonCultivateFactor") {
+      return t("skillMonitor.customPanel.kind.manual");
+    }
+    return isSeasonNodeBuffMode
+      ? t("skillMonitor.customPanel.kind.seasonNode")
+      : t("skillMonitor.customPanel.kind.factor");
   }
 
   function getSelectedGroupDisplayName(): string {
@@ -1112,14 +1123,20 @@
       <div
         class="border-border/60 bg-card/40 space-y-4 rounded-lg border p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
       >
-        <div class="space-y-1">
-          <div class="text-foreground text-sm font-medium">
-            {t("skillMonitor.customPanel.factorSlots.title")}
-          </div>
+        {#if isSeasonNodeBuffMode}
           <p class="text-muted-foreground text-xs">
-            {t("skillMonitor.customPanel.factorSlots.description")}
+            {t("skillMonitor.customPanel.factorSlots.seasonNodeNotice")}
           </p>
-        </div>
+        {:else}
+          <div class="space-y-1">
+            <div class="text-foreground text-sm font-medium">
+              {t("skillMonitor.customPanel.factorSlots.title")}
+            </div>
+            <p class="text-muted-foreground text-xs">
+              {t("skillMonitor.customPanel.factorSlots.description")}
+            </p>
+          </div>
+        {/if}
 
         <label
           class="border-border/60 bg-muted/20 text-foreground flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
@@ -1137,7 +1154,7 @@
           <span>{t("skillMonitor.customPanel.hideWhenZero")}</span>
         </label>
 
-        {#if customizedFactorSlots.length > 0}
+        {#if !isSeasonNodeBuffMode && customizedFactorSlots.length > 0}
           <div class="space-y-2">
             <div class="text-muted-foreground text-xs font-medium">
               {t("skillMonitor.customPanel.factorSlots.currentList")}
@@ -1177,6 +1194,7 @@
           </div>
         {/if}
 
+        {#if !isSeasonNodeBuffMode}
         <div class="border-border/60 space-y-2 border-t pt-4">
           <div class="text-muted-foreground text-xs font-medium">
             {t("skillMonitor.customPanel.factorSlots.searchTitle")}
@@ -1230,6 +1248,7 @@
             {/if}
           {/if}
         </div>
+        {/if}
       </div>
     {/if}
   {:else}

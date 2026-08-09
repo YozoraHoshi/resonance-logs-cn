@@ -173,6 +173,8 @@ impl PresentationProjection {
             factor_counters: counters.factor_counters,
             factor_source_item_ids: counters.factor_source_item_ids,
             factor_slot_item_ids: counters.factor_slot_item_ids,
+            season_id: counters.season_id,
+            season_active_template_ids: counters.season_active_template_ids,
             skill_cds: monitored.skill_cds.clone(),
             panel_attrs: monitored.panel_attrs.clone(),
             shield_current_hp: monitored.shield_current_hp,

@@ -1119,6 +1119,7 @@ export const zhCNMessages = {
   "skillMonitor.customPanel.newFactor": "新建因子区",
   "skillMonitor.customPanel.kind.manual": "普通自定义区",
   "skillMonitor.customPanel.kind.factor": "因子配置区",
+  "skillMonitor.customPanel.kind.seasonNode": "赛季节点区",
   "skillMonitor.customPanel.factorSlots.title": "因子显示名",
   "skillMonitor.customPanel.factorSlots.description":
     "为因子 slot 设置自定义显示名。按 slot 模板保存，方案切换后只要展示了该 slot 就会沿用你设置的名字。",
@@ -1130,6 +1131,8 @@ export const zhCNMessages = {
   "skillMonitor.customPanel.factorSlots.defaultName": "默认名：{name}",
   "skillMonitor.customPanel.factorSlots.customNamePlaceholder": "自定义显示名",
   "skillMonitor.customPanel.factorSlots.clear": "清除",
+  "skillMonitor.customPanel.factorSlots.seasonNodeNotice":
+    "当前赛季展示已激活节点的 buff 效果，随节点激活自动显示，无需配置显示名。",
   "skillMonitor.customPanel.currentEditing": "当前编辑：{name}",
   "skillMonitor.customPanel.chooseOrCreate": "请选择或新建一个监控区",
   "skillMonitor.customPanel.entryCount": "条目 {count} 个",

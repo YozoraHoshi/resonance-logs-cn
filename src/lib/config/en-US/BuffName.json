@@ -13400,7 +13400,7 @@
   {
     "Icon": "",
     "Id": 3002521,
-    "NameDesign": "Effects (AI)",
+    "NameDesign": "Mastery Damage Up",
     "SpriteFile": null
   },
   {
@@ -13412,7 +13412,7 @@
   {
     "Icon": "",
     "Id": 3002531,
-    "NameDesign": "Effects (AI)",
+    "NameDesign": "Damage Up",
     "SpriteFile": null
   },
   {
@@ -13424,7 +13424,7 @@
   {
     "Icon": "",
     "Id": 3002541,
-    "NameDesign": "Effects (AI)",
+    "NameDesign": "Mastery Final Damage Up",
     "SpriteFile": null
   },
   {
@@ -13658,7 +13658,7 @@
   {
     "Icon": "",
     "Id": 3003033,
-    "NameDesign": "DreamWorks CD (AI)",
+    "NameDesign": "Near-Death Lock HP CD",
     "SpriteFile": null
   },
   {
@@ -14120,7 +14120,7 @@
   {
     "Icon": "",
     "Id": 3004901,
-    "NameDesign": "- Phantom Fall cd (AI)",
+    "NameDesign": "Oblivion CD",
     "SpriteFile": null
   },
   {
@@ -14180,7 +14180,7 @@
   {
     "Icon": "",
     "Id": 3004981,
-    "NameDesign": "——Shattered Mirage · Scorch Mark (AI)",
+    "NameDesign": "Oblivion Rift: Scar",
     "SpriteFile": null
   },
   {
@@ -14192,7 +14192,7 @@
   {
     "Icon": "",
     "Id": 3004991,
-    "NameDesign": "Phantom Sword (AI)",
+    "NameDesign": "Oblivion Rift: Fortitude",
     "SpriteFile": null
   },
   {
@@ -14204,7 +14204,7 @@
   {
     "Icon": "",
     "Id": 3005001,
-    "NameDesign": "Phantom and weakness (AI)",
+    "NameDesign": "Oblivion Rift: Weaken",
     "SpriteFile": null
   },
   {
@@ -14240,7 +14240,7 @@
   {
     "Icon": "buff_icon138",
     "Id": 3005102,
-    "NameDesign": "Fragments (AI)",
+    "NameDesign": "Carved Mark",
     "SpriteFile": "buff_icon138_-2731530954218048691.png"
   },
   {
@@ -14336,7 +14336,7 @@
   {
     "Icon": "",
     "Id": 3005331,
-    "NameDesign": "Effects (AI)",
+    "NameDesign": "Resonance Active Skill Damage Up",
     "SpriteFile": null
   },
   {
@@ -14348,7 +14348,7 @@
   {
     "Icon": "",
     "Id": 3005341,
-    "NameDesign": "- timer (AI)",
+    "NameDesign": "Resonance Active Skill Elemental Damage Up",
     "SpriteFile": null
   },
   {
@@ -14372,7 +14372,7 @@
   {
     "Icon": "",
     "Id": 3005361,
-    "NameDesign": "- consumption enhance notation (AI)",
+    "NameDesign": "Resonance Skill Damage Up",
     "SpriteFile": null
   },
   {
@@ -14402,7 +14402,7 @@
   {
     "Icon": "buff_icon138",
     "Id": 3005501,
-    "NameDesign": "Campaign (AI)",
+    "NameDesign": "Fighting Spirit",
     "SpriteFile": "buff_icon138_-2731530954218048691.png"
   },
   {
@@ -14498,7 +14498,7 @@
   {
     "Icon": "",
     "Id": 3005703,
-    "NameDesign": "Stimulus (AI)",
+    "NameDesign": "Encouragement",
     "SpriteFile": null
   },
   {
@@ -14516,7 +14516,7 @@
   {
     "Icon": "",
     "Id": 3005721,
-    "NameDesign": "Breaking the Sword (AI)",
+    "NameDesign": "Armor Break",
     "SpriteFile": null
   },
   {
@@ -14528,7 +14528,7 @@
   {
     "Icon": "",
     "Id": 3005731,
-    "NameDesign": "Effects (AI)",
+    "NameDesign": "Healing Power Up",
     "SpriteFile": null
   },
   {
@@ -14540,7 +14540,7 @@
   {
     "Icon": "",
     "Id": 3005741,
-    "NameDesign": "Effects (AI)",
+    "NameDesign": "Cast Speed Up",
     "SpriteFile": null
   },
   {
@@ -14552,7 +14552,7 @@
   {
     "Icon": "",
     "Id": 3005751,
-    "NameDesign": "Effects (AI)",
+    "NameDesign": "Attack Speed Up",
     "SpriteFile": null
   },
   {
@@ -14570,13 +14570,13 @@
   {
     "Icon": "buff_passive_icon_general_sup_inspire",
     "Id": 3005771,
-    "NameDesign": "Strengthening (AI)",
+    "NameDesign": "Empowered Encouragement",
     "SpriteFile": "buff_passive_icon_general_sup_inspire_3011058618846226356.png"
   },
   {
     "Icon": "",
     "Id": 3005772,
-    "NameDesign": "Strengthened CD (AI)",
+    "NameDesign": "Encouragement CD",
     "SpriteFile": null
   },
   {
@@ -14588,7 +14588,7 @@
   {
     "Icon": "",
     "Id": 3005781,
-    "NameDesign": "Targets reduce damage to themselves. (AI)",
+    "NameDesign": "Damage Reduction",
     "SpriteFile": null
   },
   {
@@ -14600,7 +14600,7 @@
   {
     "Icon": "",
     "Id": 3005801,
-    "NameDesign": "- incentives strengthen themselves. (AI)",
+    "NameDesign": "Solo Verse Boost",
     "SpriteFile": null
   },
   {
@@ -14612,13 +14612,13 @@
   {
     "Icon": "buff_icon07",
     "Id": 3005901,
-    "NameDesign": "-Stamina (AI)",
+    "NameDesign": "Charge",
     "SpriteFile": "buff_icon07_2013332694871649288.png"
   },
   {
     "Icon": "buff_icon08",
     "Id": 3005902,
-    "NameDesign": "Breaking (AI)",
+    "NameDesign": "Burst",
     "SpriteFile": "buff_icon08_5301004452925753041.png"
   },
   {
@@ -14696,31 +14696,31 @@
   {
     "Icon": "buff_icon22",
     "Id": 3006101,
-    "NameDesign": "Attribute Symphony (AI)",
+    "NameDesign": "Attribute Symphony",
     "SpriteFile": "buff_icon22_1472380432504903133.png"
   },
   {
     "Icon": "",
     "Id": 3006102,
-    "NameDesign": "Attribute Symphony Psing (AI)",
+    "NameDesign": "Symphony: Basic Attack",
     "SpriteFile": null
   },
   {
     "Icon": "",
     "Id": 3006103,
-    "NameDesign": "Attribute Symphony (AI)",
+    "NameDesign": "Symphony: Special Attack",
     "SpriteFile": null
   },
   {
     "Icon": "",
     "Id": 3006104,
-    "NameDesign": "Attribute Symphony (AI)",
+    "NameDesign": "Symphony: Mastery",
     "SpriteFile": null
   },
   {
     "Icon": "",
     "Id": 3006105,
-    "NameDesign": "Attribute Symphony (AI)",
+    "NameDesign": "Symphony: Ultimate",
     "SpriteFile": null
   },
   {
@@ -14774,7 +14774,7 @@
   {
     "Icon": "",
     "Id": 3006181,
-    "NameDesign": "Attribute Symphony (AI)",
+    "NameDesign": "Symphony: Extra",
     "SpriteFile": null
   },
   {
@@ -14792,7 +14792,7 @@
   {
     "Icon": "",
     "Id": 3006192,
-    "NameDesign": "Perfect Symphony (AI)",
+    "NameDesign": "Perfect Symphony",
     "SpriteFile": null
   },
   {

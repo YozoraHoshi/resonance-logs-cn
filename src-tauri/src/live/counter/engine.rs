@@ -237,6 +237,8 @@ pub struct CounterSnapshot {
     pub factor_counters: Vec<CounterUpdateState>,
     pub factor_source_item_ids: Vec<i32>,
     pub factor_slot_item_ids: Vec<i32>,
+    pub season_id: i32,
+    pub season_active_template_ids: Vec<i32>,
 }
 
 #[derive(Debug, Error, PartialEq, Eq)]
@@ -439,6 +441,8 @@ impl Default for NamespaceState {
     }
 }
 
+const SEASON_NODE_BUFF_MIN_ID: i32 = 4;
+
 #[derive(Debug, Default)]
 pub struct CounterEngine {
     namespaces: [NamespaceState; 2],
@@ -447,6 +451,8 @@ pub struct CounterEngine {
     attrs: HashMap<i32, i64>,
     paused: bool,
     factor_compiler: FactorCounterCompiler,
+    season_id: i32,
+    season_active_template_ids: Vec<i32>,
 }
 
 impl CounterEngine {
@@ -532,10 +538,17 @@ impl CounterEngine {
                     changed |= self.set_local_player(*current);
                 }
                 DomainEvent::SeasonCultivateChanged {
+                    season_id,
+                    active_template_ids,
                     active_item_ids,
                     is_baseline: true,
                 } => {
-                    changed |= self.apply_factor_selection(active_item_ids, scheduler)?;
+                    changed |= self.apply_season_state(
+                        *season_id,
+                        active_template_ids,
+                        active_item_ids,
+                        scheduler,
+                    )?;
                 }
                 DomainEvent::SkillLifecycleChanged {
                     caster,
@@ -638,10 +651,17 @@ impl CounterEngine {
                 }
             }
             DomainEvent::SeasonCultivateChanged {
+                season_id,
+                active_template_ids,
                 active_item_ids,
                 is_baseline: _,
             } => {
-                changed |= self.apply_factor_selection(active_item_ids, scheduler)?;
+                changed |= self.apply_season_state(
+                    *season_id,
+                    active_template_ids,
+                    active_item_ids,
+                    scheduler,
+                )?;
             }
             _ => {}
         }
@@ -705,6 +725,8 @@ impl CounterEngine {
                 .snapshot(&self.attrs),
             factor_source_item_ids: selection.source_item_ids,
             factor_slot_item_ids: selection.slot_item_ids,
+            season_id: self.season_id,
+            season_active_template_ids: self.season_active_template_ids.clone(),
         }
     }
 
@@ -752,6 +774,33 @@ impl CounterEngine {
             return Ok(false);
         };
         self.apply_config(CounterNamespace::Factor, rules, scheduler)
+    }
+
+    /// Records the resolved season context and, for S3 and earlier, keeps
+    /// compiling the factor-socket rules from the active item ids. From S4
+    /// on an empty slice is fed instead so `FactorCounterCompiler` clears
+    /// its rules once and does no further work per batch.
+    fn apply_season_state(
+        &mut self,
+        season_id: i32,
+        active_template_ids: &[i32],
+        active_item_ids: &[i32],
+        scheduler: &mut DeadlineScheduler,
+    ) -> Result<bool, CounterConfigError> {
+        self.season_id = season_id;
+        let mut changed = self.season_active_template_ids != active_template_ids;
+        if changed {
+            self.season_active_template_ids.clear();
+            self.season_active_template_ids
+                .extend_from_slice(active_template_ids);
+        }
+        let factor_item_ids: &[i32] = if season_id >= SEASON_NODE_BUFF_MIN_ID {
+            &[]
+        } else {
+            active_item_ids
+        };
+        changed |= self.apply_factor_selection(factor_item_ids, scheduler)?;
+        Ok(changed)
     }
 
     fn record_attr(&mut self, attr_id: i32, value: i64) -> bool {
@@ -3094,6 +3143,8 @@ mod tests {
                     2,
                     20,
                     DomainEvent::SeasonCultivateChanged {
+                        season_id: 3,
+                        active_template_ids: Vec::new(),
                         active_item_ids: vec![200, 100, 100],
                         is_baseline: true,
                     },
@@ -3111,6 +3162,133 @@ mod tests {
         engine.end_batch();
 
         let snapshot = engine.snapshot();
+        assert_eq!(snapshot.factor_source_item_ids, vec![100]);
+        assert_eq!(snapshot.factor_slot_item_ids, vec![200]);
+        assert_eq!(
+            count(
+                &engine,
+                CounterNamespace::Factor,
+                crate::live::counter::season_cultivate::factor_rule_id(200)
+            ),
+            3
+        );
+    }
+
+    #[test]
+    fn season_4_short_circuits_s3_factor_rule_compilation() {
+        // S4+ moves the gameplay to basic-node buffs; `apply_season_state`
+        // must feed an empty slice into `apply_factor_selection` so the
+        // Factor namespace never compiles S3 factor-socket rules, even
+        // though the packet still reports the old item ids.
+        let mut scheduler = DeadlineScheduler::new();
+        let mut engine = CounterEngine::new();
+        engine
+            .apply_factor_templates(
+                vec![FactorCounterTemplate {
+                    item_ids: vec![100],
+                    sources: vec![CounterSource::AnyDamage {
+                        increment: 3,
+                        hits_required: None,
+                        required_type_flags: None,
+                    }],
+                    effect_slots: Vec::new(),
+                }],
+                &mut scheduler,
+            )
+            .expect("valid factor templates");
+        engine
+            .apply_event(&local_changed(1, 10), &mut scheduler)
+            .expect("local change");
+        engine
+            .apply_event(
+                &envelope(
+                    2,
+                    20,
+                    DomainEvent::SeasonCultivateChanged {
+                        season_id: 4,
+                        active_template_ids: vec![2301],
+                        active_item_ids: vec![100],
+                        is_baseline: true,
+                    },
+                ),
+                &mut scheduler,
+            )
+            .expect("s4 season change");
+        engine.begin_batch(BatchId(3));
+        engine
+            .apply_event(
+                &envelope(3, 30, DomainEvent::CombatHitAccepted(hit(999, TARGET_A))),
+                &mut scheduler,
+            )
+            .expect("accepted hit");
+        engine.end_batch();
+
+        let snapshot = engine.snapshot();
+        assert_eq!(snapshot.season_id, 4);
+        assert_eq!(snapshot.season_active_template_ids, vec![2301]);
+        assert!(snapshot.factor_source_item_ids.is_empty());
+        assert!(snapshot.factor_slot_item_ids.is_empty());
+        assert!(snapshot.factor_counters.is_empty());
+    }
+
+    #[test]
+    fn season_id_below_4_keeps_compiling_s3_factor_rules() {
+        // The inverse guard: seasons below the S4 threshold must keep
+        // building Factor namespace rules exactly as before (mirrors
+        // `decoded_active_factor_ids_build_rules_in_factor_namespace`, just
+        // with an explicit `season_id` on the event instead of the default).
+        let mut scheduler = DeadlineScheduler::new();
+        let mut engine = CounterEngine::new();
+        engine
+            .apply_factor_templates(
+                vec![
+                    FactorCounterTemplate {
+                        item_ids: vec![100],
+                        sources: vec![CounterSource::AnyDamage {
+                            increment: 3,
+                            hits_required: None,
+                            required_type_flags: None,
+                        }],
+                        effect_slots: Vec::new(),
+                    },
+                    FactorCounterTemplate {
+                        item_ids: vec![200],
+                        sources: Vec::new(),
+                        effect_slots: vec![slot(99)],
+                    },
+                ],
+                &mut scheduler,
+            )
+            .expect("valid factor templates");
+        engine
+            .apply_event(&local_changed(1, 10), &mut scheduler)
+            .expect("local change");
+        engine
+            .apply_event(
+                &envelope(
+                    2,
+                    20,
+                    DomainEvent::SeasonCultivateChanged {
+                        season_id: 3,
+                        active_template_ids: Vec::new(),
+                        active_item_ids: vec![200, 100],
+                        is_baseline: true,
+                    },
+                ),
+                &mut scheduler,
+            )
+            .expect("s3 season change");
+        engine.begin_batch(BatchId(3));
+        engine
+            .apply_event(
+                &envelope(3, 30, DomainEvent::CombatHitAccepted(hit(999, TARGET_A))),
+                &mut scheduler,
+            )
+            .expect("accepted hit");
+        engine.end_batch();
+
+        let snapshot = engine.snapshot();
+        assert_eq!(snapshot.season_id, 3);
         assert_eq!(snapshot.factor_source_item_ids, vec![100]);
         assert_eq!(snapshot.factor_slot_item_ids, vec![200]);
         assert_eq!(
@@ -3826,6 +4004,8 @@ mod tests {
                     2,
                     20,
                     DomainEvent::SeasonCultivateChanged {
+                        season_id: 3,
+                        active_template_ids: Vec::new(),
                         active_item_ids: vec![200, 100],
                         is_baseline: true,
                     },
@@ -3864,6 +4044,8 @@ mod tests {
                     5,
                     50,
                     DomainEvent::SeasonCultivateChanged {
+                        season_id: 3,
+                        active_template_ids: Vec::new(),
                         active_item_ids: vec![100],
                         is_baseline: false,
                     },

@@ -879,6 +879,8 @@ impl ProtocolDecoder {
         self.season_data = None;
         let Some(data) = message.v_data else {
             observations.push(ProtocolObservation::SeasonCultivateSnapshot {
+                season_id: 0,
+                active_template_ids: Vec::new(),
                 active_item_ids: Vec::new(),
             });
             return observations;
@@ -924,11 +926,17 @@ impl ProtocolDecoder {
         }
 
         if let Some(season) = data.season_cultivate_line_data {
-            let active_item_ids = season_active_item_ids(&season);
+            let state = season_cultivate_state(&season);
             self.season_data = Some(season);
-            observations.push(ProtocolObservation::SeasonCultivateSnapshot { active_item_ids });
+            observations.push(ProtocolObservation::SeasonCultivateSnapshot {
+                season_id: state.season_id,
+                active_template_ids: state.active_template_ids,
+                active_item_ids: state.active_item_ids,
+            });
         } else {
             observations.push(ProtocolObservation::SeasonCultivateSnapshot {
+                season_id: 0,
+                active_template_ids: Vec::new(),
                 active_item_ids: Vec::new(),
             });
         }
@@ -946,18 +954,25 @@ impl ProtocolDecoder {
         let Some(season) = self.season_data.as_mut() else {
             return Vec::new();
         };
-        // The active set is derived from the baseline both before and after
-        // the patch, so the diff needs no separate cached copy.
-        let previous = season_active_item_ids(season)
+
+        let previous_items = season_cultivate_state(season)
+            .active_item_ids
             .into_iter()
             .collect::<BTreeSet<_>>();
-        let next = match apply_season_dirty_and_collect_active_items(season, &bytes) {
-            Ok(active) => active.into_iter().collect::<BTreeSet<_>>(),
+        let next = match apply_season_dirty_and_collect_state(season, &bytes) {
+            Ok(state) => state,
             Err(_) => return vec![decode_issue(opcode, DecodeIssueCategory::Malformed)],
         };
+        let next_items = next
+            .active_item_ids
+            .iter()
+            .copied()
+            .collect::<BTreeSet<_>>();
         vec![ProtocolObservation::SeasonCultivateDelta {
-            activated_item_ids: next.difference(&previous).copied().collect(),
-            deactivated_item_ids: previous.difference(&next).copied().collect(),
+            season_id: next.season_id,
+            active_template_ids: next.active_template_ids,
+            activated_item_ids: next_items.difference(&previous_items).copied().collect(),
+            deactivated_item_ids: previous_items.difference(&next_items).copied().collect(),
         }]
     }
 }
@@ -1167,52 +1182,72 @@ fn push_team_member_id(members: &mut Vec<i64>, member_id: Option<i64>) {
     }
 }
 
-fn season_active_item_ids(data: &blueprotobuf::SeasonCultivateLineData) -> Vec<i32> {
-    let mut result = Vec::new();
-    for line_data in data.season_cultivate_line_map.values() {
-        let Some(sub_type) = line_data
-            .cultivate_line_map
-            .get(&SEASON_CULTIVATE_FUNCTION_DEEP_SLEEP)
-        else {
-            continue;
-        };
-        if sub_type.cultivate_line_area_list.is_empty() {
-            for area in sub_type
-                .cultivate_line_data_map
-                .values()
-                .filter(|area| area.is_active.unwrap_or(false))
-            {
-                result.extend(
-                    area.cultivate_middle_node_map
-                        .values()
-                        .filter_map(|node| node.item_id),
-                );
-            }
-        } else {
-            for area_id in &sub_type.cultivate_line_area_list {
-                let Some(area) = sub_type.cultivate_line_data_map.get(area_id) else {
-                    continue;
-                };
-                result.extend(
-                    area.cultivate_middle_node_map
-                        .values()
-                        .filter_map(|node| node.item_id),
-                );
-            }
-        }
-    }
-    result.sort_unstable();
-    result.dedup();
-    result
+struct SeasonCultivateState {
+    season_id: i32,
+    active_template_ids: Vec<i32>,
+    active_item_ids: Vec<i32>,
 }
 
-fn apply_season_dirty_and_collect_active_items(
+fn season_cultivate_state(data: &blueprotobuf::SeasonCultivateLineData) -> SeasonCultivateState {
+    let Some((&season_id, sub_type)) = data
+        .season_cultivate_line_map
+        .iter()
+        .filter_map(|(season_id, line)| {
+            let sub_type = line
+                .cultivate_line_map
+                .get(&SEASON_CULTIVATE_FUNCTION_DEEP_SLEEP)?;
+            (!sub_type.cultivate_line_data_map.is_empty()).then_some((season_id, sub_type))
+        })
+        .max_by_key(|(season_id, _)| **season_id)
+    else {
+        return SeasonCultivateState {
+            season_id: 0,
+            active_template_ids: Vec::new(),
+            active_item_ids: Vec::new(),
+        };
+    };
+
+    let mut active_template_ids: Vec<i32> = if sub_type.cultivate_line_area_list.is_empty() {
+        sub_type
+            .cultivate_line_data_map
+            .iter()
+            .filter(|(_, area)| area.is_active.unwrap_or(false))
+            .map(|(template_id, _)| *template_id)
+            .collect()
+    } else {
+        sub_type.cultivate_line_area_list.clone()
+    };
+
+    let mut active_item_ids = Vec::new();
+    for template_id in &active_template_ids {
+        if let Some(area) = sub_type.cultivate_line_data_map.get(template_id) {
+            active_item_ids.extend(
+                area.cultivate_middle_node_map
+                    .values()
+                    .filter_map(|node| node.item_id),
+            );
+        }
+    }
+
+    active_template_ids.sort_unstable();
+    active_template_ids.dedup();
+    active_item_ids.sort_unstable();
+    active_item_ids.dedup();
+
+    SeasonCultivateState {
+        season_id,
+        active_template_ids,
+        active_item_ids,
+    }
+}
+
+fn apply_season_dirty_and_collect_state(
     data: &mut blueprotobuf::SeasonCultivateLineData,
     bytes: &[u8],
-) -> DirtyResult<Vec<i32>> {
+) -> DirtyResult<SeasonCultivateState> {
     let mut reader = DirtyReader::new(bytes);
     merge_char_serialize_dirty(&mut reader, data)?;
-    Ok(season_active_item_ids(data))
+    Ok(season_cultivate_state(data))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1415,16 +1450,51 @@ fn merge_cultivate_area_data(
     let Some(end) = read_object_header(reader)? else {
         return Ok(());
     };
+    // Every tag `CultivateAreaData` defines is handled below. This matters
+    // beyond just dropping the unknown field's own value: the dirty-wire
+    // format has no per-field length prefix, so `_ => reader.skip_to(end)`
+    // jumps straight to the object's end and silently drops every field
+    // that would otherwise follow it in the same patch.
     while reader.offset < end {
         match reader.i32()? {
+            1 => merge_i32_object_map(
+                reader,
+                &mut data.cultivate_normal_node_map,
+                merge_cultivate_normal_node_data,
+                blueprotobuf::CultivateNormalNodeData::default,
+            )?,
             2 => merge_i32_object_map(
                 reader,
                 &mut data.cultivate_middle_node_map,
                 merge_cultivate_middle_node_data,
                 blueprotobuf::CultivateMiddleNodeData::default,
             )?,
+            3 => merge_i32_object_map(
+                reader,
+                &mut data.cultivate_big_node_map,
+                merge_cultivate_big_node_data,
+                blueprotobuf::CultivateBigNodeData::default,
+            )?,
+            4 => data.activate_effect_score = Some(reader.i32()?),
             5 => data.is_active = Some(reader.bool()?),
             _ => reader.skip_to(end)?,
+        }
+    }
+    finish_object(reader, end)
+}
+
+fn merge_cultivate_normal_node_data(
+    reader: &mut DirtyReader<'_>,
+    data: &mut blueprotobuf::CultivateNormalNodeData,
+) -> DirtyResult<()> {
+    let Some(end) = read_object_header(reader)? else {
+        return Ok(());
+    };
+    while reader.offset < end {
+        if reader.i32()? == 1 {
+            data.active_level = Some(reader.i32()?);
+        } else {
+            reader.skip_to(end)?;
         }
     }
     finish_object(reader, end)
@@ -1440,6 +1510,23 @@ fn merge_cultivate_middle_node_data(
     while reader.offset < end {
         if reader.i32()? == 1 {
             data.item_id = Some(reader.i32()?);
+        } else {
+            reader.skip_to(end)?;
+        }
+    }
+    finish_object(reader, end)
+}
+
+fn merge_cultivate_big_node_data(
+    reader: &mut DirtyReader<'_>,
+    data: &mut blueprotobuf::CultivateBigNodeData,
+) -> DirtyResult<()> {
+    let Some(end) = read_object_header(reader)? else {
+        return Ok(());
+    };
+    while reader.offset < end {
+        if reader.i32()? == 1 {
+            data.fantasy_id = Some(reader.i32()?);
         } else {
             reader.skip_to(end)?;
         }
@@ -2571,5 +2658,279 @@ mod tests {
                     }
                 ))
         );
+    }
+
+    fn cultivate_area(
+        normal_nodes: &[(i32, i32)],
+        item_ids: &[i32],
+        is_active: bool,
+    ) -> blueprotobuf::CultivateAreaData {
+        blueprotobuf::CultivateAreaData {
+            cultivate_normal_node_map: normal_nodes
+                .iter()
+                .map(|&(node_id, active_level)| {
+                    (
+                        node_id,
+                        blueprotobuf::CultivateNormalNodeData {
+                            active_level: Some(active_level),
+                        },
+                    )
+                })
+                .collect(),
+            cultivate_middle_node_map: item_ids
+                .iter()
+                .enumerate()
+                .map(|(index, &item_id)| {
+                    (
+                        i32::try_from(index).unwrap(),
+                        blueprotobuf::CultivateMiddleNodeData {
+                            item_id: Some(item_id),
+                        },
+                    )
+                })
+                .collect(),
+            is_active: Some(is_active),
+            ..Default::default()
+        }
+    }
+
+    fn deep_sleep_line(
+        area_id: i32,
+        area: blueprotobuf::CultivateAreaData,
+    ) -> blueprotobuf::CultivateLineData {
+        function_line(SEASON_CULTIVATE_FUNCTION_DEEP_SLEEP, area_id, area)
+    }
+
+    fn function_line(
+        function_id: i32,
+        area_id: i32,
+        area: blueprotobuf::CultivateAreaData,
+    ) -> blueprotobuf::CultivateLineData {
+        blueprotobuf::CultivateLineData {
+            cultivate_line_map: HashMap::from([(
+                function_id,
+                blueprotobuf::CultivateLineSubTypeData {
+                    cultivate_line_data_map: HashMap::from([(area_id, area)]),
+                    cultivate_line_area_list: vec![area_id],
+                },
+            )]),
+        }
+    }
+
+    #[test]
+    fn season_state_picks_the_highest_season_with_non_empty_deep_sleep_data() {
+        // Older seasons (still active on JP/EN) must not leak their item ids
+        // into the resolved state once a higher season (CN, S4) has data.
+        let data = blueprotobuf::SeasonCultivateLineData {
+            season_cultivate_line_map: HashMap::from([
+                (
+                    2,
+                    deep_sleep_line(1, cultivate_area(&[(100, 1)], &[9001], true)),
+                ),
+                (
+                    3,
+                    deep_sleep_line(1, cultivate_area(&[(200, 1)], &[9002], true)),
+                ),
+            ]),
+        };
+
+        let state = season_cultivate_state(&data);
+
+        assert_eq!(state.season_id, 3);
+        assert_eq!(state.active_template_ids, vec![1]);
+        assert_eq!(state.active_item_ids, vec![9002]);
+    }
+
+    #[test]
+    fn season_state_skips_seasons_with_no_deep_sleep_configuration() {
+        // A season key can exist in the map (e.g. reserved server-side)
+        // without ever having deep-sleep data; it must not win over a real
+        // lower season just because its id is numerically higher.
+        let data = blueprotobuf::SeasonCultivateLineData {
+            season_cultivate_line_map: HashMap::from([
+                (
+                    3,
+                    deep_sleep_line(1, cultivate_area(&[(200, 1)], &[9002], true)),
+                ),
+                (4, blueprotobuf::CultivateLineData::default()),
+            ]),
+        };
+
+        let state = season_cultivate_state(&data);
+
+        assert_eq!(state.season_id, 3);
+        assert_eq!(state.active_template_ids, vec![1]);
+    }
+
+    #[test]
+    fn season_state_never_reads_the_rogue_mode_line() {
+        // 800523 (rogue mode) shares the season map with 800522 (deep
+        // sleep) but must be excluded unconditionally, even when it is the
+        // only line with data for that season.
+        const SEASON_CULTIVATE_FUNCTION_ROGUE: i32 = 800_523;
+        let mut season4 = deep_sleep_line(14, cultivate_area(&[(2301, 1)], &[500], true));
+        season4.cultivate_line_map.insert(
+            SEASON_CULTIVATE_FUNCTION_ROGUE,
+            blueprotobuf::CultivateLineSubTypeData {
+                cultivate_line_data_map: HashMap::from([(
+                    20002,
+                    cultivate_area(&[(9999, 1)], &[9999], true),
+                )]),
+                cultivate_line_area_list: vec![20002],
+            },
+        );
+        let data = blueprotobuf::SeasonCultivateLineData {
+            season_cultivate_line_map: HashMap::from([(4, season4)]),
+        };
+
+        let state = season_cultivate_state(&data);
+
+        assert_eq!(state.season_id, 4);
+        assert_eq!(state.active_template_ids, vec![14]);
+        assert_eq!(state.active_item_ids, vec![500]);
+    }
+
+    #[test]
+    fn season_state_ignores_unequipped_templates_even_with_fully_leveled_nodes() {
+        // Regression for a real capture: a player can have fully invested
+        // (`activeLevel: 1` on every basic node) in several talent
+        // templates simultaneously, but `cultivateLineAreaList` still names
+        // only the one actually equipped (e.g. `[14]` while templates 9/13/
+        // 16 all sit at 100% node activation from past investment). Node
+        // activation must never be read as an "enabled" signal on its own --
+        // only membership in `cultivateLineAreaList` (or `isActive` as the
+        // fallback) may drive `active_template_ids`.
+        let data = blueprotobuf::SeasonCultivateLineData {
+            season_cultivate_line_map: HashMap::from([(
+                4,
+                blueprotobuf::CultivateLineData {
+                    cultivate_line_map: HashMap::from([(
+                        SEASON_CULTIVATE_FUNCTION_DEEP_SLEEP,
+                        blueprotobuf::CultivateLineSubTypeData {
+                            cultivate_line_data_map: HashMap::from([
+                                (13, cultivate_area(&[(2201, 1), (2202, 1)], &[100], false)),
+                                (14, cultivate_area(&[(2301, 1)], &[200], true)),
+                            ]),
+                            cultivate_line_area_list: vec![14],
+                        },
+                    )]),
+                },
+            )]),
+        };
+
+        let state = season_cultivate_state(&data);
+
+        assert_eq!(state.active_template_ids, vec![14]);
+        assert_eq!(state.active_item_ids, vec![200]);
+    }
+
+    #[test]
+    fn season_state_falls_back_to_is_active_when_area_list_is_empty() {
+        let data = blueprotobuf::SeasonCultivateLineData {
+            season_cultivate_line_map: HashMap::from([(
+                3,
+                blueprotobuf::CultivateLineData {
+                    cultivate_line_map: HashMap::from([(
+                        SEASON_CULTIVATE_FUNCTION_DEEP_SLEEP,
+                        blueprotobuf::CultivateLineSubTypeData {
+                            cultivate_line_data_map: HashMap::from([
+                                (1, cultivate_area(&[(100, 1)], &[9001], true)),
+                                (2, cultivate_area(&[(200, 1)], &[9002], false)),
+                            ]),
+                            cultivate_line_area_list: Vec::new(),
+                        },
+                    )]),
+                },
+            )]),
+        };
+
+        let state = season_cultivate_state(&data);
+
+        assert_eq!(state.active_template_ids, vec![1]);
+        assert_eq!(state.active_item_ids, vec![9001]);
+    }
+
+    fn dirty_object(body: Vec<u8>) -> Vec<u8> {
+        let mut out = Vec::new();
+        out.extend_from_slice(&DIRTY_BEGIN.to_le_bytes());
+        out.extend_from_slice(&i32::try_from(body.len()).unwrap().to_le_bytes());
+        out.extend_from_slice(&body);
+        out.extend_from_slice(&DIRTY_END.to_le_bytes());
+        out
+    }
+
+    fn single_field_update(field_tag: i32, value: i32) -> Vec<u8> {
+        let mut body = Vec::new();
+        body.extend_from_slice(&field_tag.to_le_bytes());
+        body.extend_from_slice(&value.to_le_bytes());
+        dirty_object(body)
+    }
+
+    /// `merge_i32_object_map`'s explicit-update-count form: `-1`, then the
+    /// count, then `key + nested-object` pairs.
+    fn map_single_update(key: i32, entry: &[u8]) -> Vec<u8> {
+        let mut out = Vec::new();
+        out.extend_from_slice(&(-1i32).to_le_bytes());
+        out.extend_from_slice(&1i32.to_le_bytes());
+        out.extend_from_slice(&key.to_le_bytes());
+        out.extend_from_slice(entry);
+        out
+    }
+
+    #[test]
+    fn cultivate_area_dirty_merge_applies_every_tag_regardless_of_order() {
+        // Regression guard: `CultivateAreaData` previously only recognized
+        // tags 2 and 5, so a patch touching tag 1 first hit the
+        // `_ => reader.skip_to(end)` branch and silently dropped every field
+        // that followed it in the same patch -- including tag 2 here.
+        let normal_node_map_patch = map_single_update(200, &single_field_update(1, 2));
+        let middle_node_map_patch = map_single_update(0, &single_field_update(1, 9099));
+
+        let mut area_body = Vec::new();
+        area_body.extend_from_slice(&1i32.to_le_bytes());
+        area_body.extend_from_slice(&normal_node_map_patch);
+        area_body.extend_from_slice(&2i32.to_le_bytes());
+        area_body.extend_from_slice(&middle_node_map_patch);
+        let area_patch = dirty_object(area_body);
+
+        let mut reader = DirtyReader::new(&area_patch);
+        let mut area = blueprotobuf::CultivateAreaData::default();
+        merge_cultivate_area_data(&mut reader, &mut area).expect("valid patch");
+
+        assert_eq!(
+            area.cultivate_normal_node_map
+                .get(&200)
+                .and_then(|node| node.active_level),
+            Some(2),
+        );
+        assert_eq!(
+            area.cultivate_middle_node_map
+                .get(&0)
+                .and_then(|node| node.item_id),
+            Some(9099),
+        );
+    }
+
+    #[test]
+    fn cultivate_area_dirty_merge_applies_big_node_and_effect_score_tags() {
+        let big_node_map_patch = map_single_update(5, &single_field_update(1, 777));
+        let mut area_body = Vec::new();
+        area_body.extend_from_slice(&3i32.to_le_bytes());
+        area_body.extend_from_slice(&big_node_map_patch);
+        area_body.extend_from_slice(&4i32.to_le_bytes());
+        area_body.extend_from_slice(&42i32.to_le_bytes());
+        let area_patch = dirty_object(area_body);
+
+        let mut reader = DirtyReader::new(&area_patch);
+        let mut area = blueprotobuf::CultivateAreaData::default();
+        merge_cultivate_area_data(&mut reader, &mut area).expect("valid patch");
+
+        assert_eq!(
+            area.cultivate_big_node_map
+                .get(&5)
+                .and_then(|node| node.fantasy_id),
+            Some(777),
+        );
+        assert_eq!(area.activate_effect_score, Some(42));
     }
 }

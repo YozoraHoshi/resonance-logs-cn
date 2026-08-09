@@ -7,6 +7,7 @@ import counterRulesRaw from "$lib/config/counter_rules.json";
 import counterSourceTemplatesRaw from "$lib/config/counter_source_templates.json";
 import counterSlotTemplatesRaw from "$lib/config/counter_slot_templates.json";
 import seasonCultivateFactorCostsRaw from "$lib/config/season_cultivate_factor_costs.json";
+import seasonNodeBuffTemplatesRaw from "$lib/config/season_node_buff_templates.json";
 import type {
   CounterAction,
   CounterSource,
@@ -143,6 +144,30 @@ export type SlotTemplate = {
   slot: Omit<CounterEffectSlotPreset, "slotId">;
 };
 
+export type SeasonNodeDisplayBuff = {
+  buffId: number;
+};
+
+/** Hides `hide` buffs while `whenBuffActive` is active, e.g. the individual
+ * 属性交响 stacks once 完美交响 (perfect symphony) is up. */
+export type SeasonNodeSuppressRule = {
+  whenBuffActive: number;
+  hide: number[];
+};
+
+export type SeasonNodeTemplate = {
+  templateId: number;
+  name: string;
+  displayBuffs: SeasonNodeDisplayBuff[];
+  suppressRules: SeasonNodeSuppressRule[];
+};
+
+export type SeasonNodeBuffConfig = {
+  seasonId: number;
+  functionId: number;
+  templates: SeasonNodeTemplate[];
+};
+
 export type CounterDisplayLabelInput = {
   sourceId: number;
   counterSlotId?: number | undefined;
@@ -204,6 +229,8 @@ export const SLOT_TEMPLATES: SlotTemplate[] =
   counterSlotTemplatesRaw as SlotTemplate[];
 export const SEASON_CULTIVATE_FACTOR_COSTS: Record<string, number> =
   seasonCultivateFactorCostsRaw as Record<string, number>;
+export const SEASON_NODE_BUFF_CONFIG: SeasonNodeBuffConfig =
+  seasonNodeBuffTemplatesRaw as SeasonNodeBuffConfig;
 
 const LOCALE_CONFIG_MODULES = import.meta.glob("./config/*/*.json", {
   eager: true,
@@ -229,6 +256,9 @@ const KEY_SKILL_MARKERS_BY_LOCALE = new Map<
   AppLocale,
   KeySkillMarkerDefinition[]
 >();
+let SEASON_NODE_BUFFS_BY_TEMPLATE_ID:
+  | Map<number, SeasonNodeDisplayBuff[]>
+  | null = null;
 
 function getLocaleConfig<T>(locale: AppLocale, fileName: string): T | null {
   const config = LOCALE_CONFIG_MODULES[`./config/${locale}/${fileName}`];
@@ -639,6 +669,56 @@ export function getSlotTemplates(locale = getLocale()): SlotTemplate[] {
 
 export function getSeasonCultivateFactorRuleId(itemId: number): number {
   return FACTOR_RULE_ID_BASE + itemId;
+}
+
+/** Every S4+ display buff id, across all templates. Used to seed
+ * `monitoredBuffIds` so the buff snapshot carries them regardless of which
+ * template ends up active (the frontend doesn't know the season yet when it
+ * builds the monitor snapshot). */
+export function getSeasonNodeBuffIds(): number[] {
+  return Array.from(
+    new Set(
+      SEASON_NODE_BUFF_CONFIG.templates.flatMap((template) =>
+        template.displayBuffs.map((buff) => buff.buffId),
+      ),
+    ),
+  ).sort((left, right) => left - right);
+}
+
+/** Every display buff configured on a template, keyed by templateId.
+ * Already deduplicated by the generator (`export_active_and_s4_buffs.py`).
+ * Display names come from `BuffName` / `resolveBuffDisplayName` at render
+ * time, not from this config.
+ *
+ * Gating is template-level, not node-level: a template's own basic nodes
+ * stay at `activeLevel > 0` forever once unlocked even while a *different*
+ * template is the one actually equipped (`cultivateLineAreaList`), so only
+ * "is this template the equipped one" (`seasonActiveTemplateIds()`) may be
+ * used to decide which buffs to show. */
+export function getSeasonNodeBuffsByTemplateId(): Map<
+  number,
+  SeasonNodeDisplayBuff[]
+> {
+  if (SEASON_NODE_BUFFS_BY_TEMPLATE_ID) return SEASON_NODE_BUFFS_BY_TEMPLATE_ID;
+
+  const map = new Map<number, SeasonNodeDisplayBuff[]>();
+  for (const template of SEASON_NODE_BUFF_CONFIG.templates) {
+    map.set(
+      template.templateId,
+      template.displayBuffs.map((buff) => ({ buffId: buff.buffId })),
+    );
+  }
+  SEASON_NODE_BUFFS_BY_TEMPLATE_ID = map;
+  return map;
+}
+
+/** Suppress rules across all S4+ templates, e.g. hiding the individual
+ * 属性交响 stacks once 完美交响 (perfect symphony) is active. Locale
+ * independent: only buff ids, no display text. */
+export function getSeasonNodeSuppressRules(): SeasonNodeSuppressRule[] {
+  return SEASON_NODE_BUFF_CONFIG.templates.flatMap(
+    (template) => template.suppressRules,
+  );
 }
 
 function normalizeTemplateItemIds(item: { itemIds: number[] }): number[] {

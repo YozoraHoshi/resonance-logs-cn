@@ -10,7 +10,11 @@ import {
   liveStatusStore,
 } from "$lib/stores/live-topics.svelte";
 import type { BuffDefinition } from "$lib/config/buff-name-table";
-import type { DragState, ResizeState, SkillDurationState } from "./overlay-types";
+import type {
+  DragState,
+  ResizeState,
+  SkillDurationState,
+} from "./overlay-types";
 
 function latestBuffsByBaseId(buffs: BuffUpdateState[]) {
   const result = new Map<number, BuffUpdateState>();
@@ -102,6 +106,22 @@ export function seasonCultivateFactorSourceItemIds() {
 
 export function seasonCultivateFactorSlotItemIds() {
   return liveStatusStore.data?.factorSlotItemIds ?? [];
+}
+
+const _seasonActiveTemplateIds = $derived.by(
+  () => new Set(liveStatusStore.data?.seasonActiveTemplateIds ?? []),
+);
+
+/** Highest deep-sleep (800522) `seasonId` resolved by the backend; `0`
+ * before any season data has been observed. */
+export function seasonCultivateSeasonId() {
+  return liveStatusStore.data?.seasonId ?? 0;
+}
+
+/** Talent template id(s) currently equipped (`cultivateLineAreaList`).
+ * Meaningful from S4 on (`seasonCultivateSeasonId() >= 4`). */
+export function seasonActiveTemplateIds() {
+  return _seasonActiveTemplateIds;
 }
 
 export function panelAttrMap() {

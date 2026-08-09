@@ -8,6 +8,8 @@ import {
   getSeasonCultivateFactorItemSlotTemplateMap,
   getSeasonCultivateFactorRuleId,
   getSeasonCultivateFactorRuleMap,
+  getSeasonNodeBuffsByTemplateId,
+  getSeasonNodeSuppressRules,
   type CounterRulePreset,
   type SpecialBuffDisplay,
 } from "$lib/skill-mappings";
@@ -20,6 +22,7 @@ import {
 import { resolveBuffIconSrc } from "$lib/buff-icons";
 import { buffIconDirUrlPrefix } from "$lib/buff-icon-dir.svelte";
 import type {
+  BuffAlertState,
   CustomPanelDisplayRow,
   IconBuffDisplay,
   SkillDisplay,
@@ -42,7 +45,7 @@ import {
   resolveAlertState,
   withFantasyTierSuffix,
 } from "./overlay-utils";
-import { ensureBuffAlerts } from "$lib/settings-store";
+import { ensureBuffAlerts, type BuffAliasMap } from "$lib/settings-store";
 import {
   activeProfile,
   buffAliases,
@@ -68,11 +71,17 @@ import {
   factorCounterMap,
   fightResMap,
   isLayoutScaffold,
+  seasonActiveTemplateIds,
   seasonCultivateFactorSlotItemIds,
+  seasonCultivateSeasonId,
   skillDurationMap,
 } from "./overlay-runtime.svelte.js";
 import type { InlineBuffEntry } from "$lib/settings-store";
 import { overlayNow } from "./overlay-clock.svelte.js";
+
+/** S4+ moved the season panel's content from S3 factor-socket counters to
+ * basic-node buffs; mirrors the backend's `SEASON_NODE_BUFF_MIN_ID`. */
+const SEASON_NODE_BUFF_MIN_ID = 4;
 
 type ResolvedSpecialBuffDisplay = Pick<
   IconBuffDisplay,
@@ -158,6 +167,14 @@ const _seasonCultivateFactorItemSlotTemplateMap = $derived.by(() =>
   getSeasonCultivateFactorItemSlotTemplateMap(),
 );
 
+const _seasonNodeBuffsByTemplateId = $derived.by(() =>
+  getSeasonNodeBuffsByTemplateId(),
+);
+
+const _seasonNodeSuppressRules = $derived.by(() =>
+  getSeasonNodeSuppressRules(),
+);
+
 const _seasonCultivateFactorOwnedEffectBuffIds = $derived.by(() => {
   const result = new Set<number>();
   const hasFactorPanelGroup = customPanelGroups().some(
@@ -170,6 +187,56 @@ const _seasonCultivateFactorOwnedEffectBuffIds = $derived.by(() => {
   }
   return result;
 });
+
+function buildSeasonNodeRows(
+  now: number,
+  currentBuffAliases: BuffAliasMap,
+  resolveAlert: (
+    baseId: number,
+    remainingMs: number,
+    durationMs: number,
+  ) => BuffAlertState | undefined,
+): CustomPanelDisplayRow[] {
+  const activeTemplateIds = seasonActiveTemplateIds();
+  const currentBuffMap = buffMap();
+
+  const hiddenBuffIds = new Set<number>();
+  for (const rule of _seasonNodeSuppressRules) {
+    if (isBuffActive(currentBuffMap.get(rule.whenBuffActive), now)) {
+      for (const buffId of rule.hide) hiddenBuffIds.add(buffId);
+    }
+  }
+
+  const seenBuffIds = new Set<number>();
+  const nextRows: CustomPanelDisplayRow[] = [];
+  for (const [templateId, displayBuffs] of _seasonNodeBuffsByTemplateId) {
+    if (!activeTemplateIds.has(templateId)) continue;
+    for (const buff of displayBuffs) {
+      if (seenBuffIds.has(buff.buffId) || hiddenBuffIds.has(buff.buffId)) {
+        continue;
+      }
+      seenBuffIds.add(buff.buffId);
+      const entry: InlineBuffEntry = {
+        id: `season_node_buff_${buff.buffId}`,
+        sourceType: "buff",
+        sourceId: buff.buffId,
+        label: resolveBuffDisplayName(buff.buffId, currentBuffAliases),
+        format: "timer",
+      };
+      const row = getCustomPanelDisplayRow(
+        entry,
+        now,
+        currentBuffMap,
+        factorCounterMap(),
+        _seasonCultivateFactorRuleMap,
+        (baseId) => resolveBuffDisplayName(baseId, currentBuffAliases),
+        resolveAlert,
+      );
+      if (row) nextRows.push(row);
+    }
+  }
+  return nextRows;
+}
 
 const _buffSnapshot = $derived.by(() => {
   const now = overlayNow();
@@ -353,6 +420,15 @@ const _buffSnapshot = $derived.by(() => {
   for (const group of panelGroups) {
     const nextRows: CustomPanelDisplayRow[] = [];
     if (group.kind === "seasonCultivateFactor") {
+      if (seasonCultivateSeasonId() >= SEASON_NODE_BUFF_MIN_ID) {
+        nextRows.push(
+          ...buildSeasonNodeRows(now, currentBuffAliases, resolveAlert),
+        );
+        nextCustomPanelRowsByGroup.set(group.id, nextRows);
+        continue;
+      }
+      // S3 and earlier: unchanged factor-socket counter + configured
+      // effect-buff display.
       const effectBuffIds = new Set<number>();
       const effectBuffEntries: InlineBuffEntry[] = [];
       for (const itemId of seasonCultivateFactorSlotItemIds()) {

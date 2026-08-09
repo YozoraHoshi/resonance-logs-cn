@@ -1226,6 +1226,9 @@ export const enUSMessages = {
   "skillMonitor.customPanel.newFactor": "New Factor Area",
   "skillMonitor.customPanel.kind.manual": "Manual Area",
   "skillMonitor.customPanel.kind.factor": "Factor Config Area",
+  "skillMonitor.customPanel.kind.seasonNode": "Season Node Area",
+  "skillMonitor.customPanel.factorSlots.seasonNodeNotice":
+    "This season shows buffs from your currently active nodes automatically as they activate; no display names to configure.",
   "skillMonitor.customPanel.factorSlots.title": "Factor Display Names",
   "skillMonitor.customPanel.factorSlots.description":
     "Set custom display names for factor slots. Names are saved per slot template, so they persist across build switches whenever that slot is shown.",
