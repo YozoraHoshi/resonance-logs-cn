@@ -16,7 +16,7 @@ use crate::live::projections::death::DeathProjection;
 use crate::live::projections::entity_monitor::EntityMonitorProjection;
 use crate::live::projections::history::HistoryProjection;
 use crate::live::projections::minimap::MinimapProjection;
-use crate::live::projections::presentation::PresentationProjection;
+use crate::live::projections::presentation::{ActiveCombat, PresentationProjection};
 use crate::live::projections::timeline::TimelineProjection;
 use crate::live::projections::voice::VoiceProjection;
 use crate::live::runtime::entity_context::EntityContext;
@@ -422,17 +422,25 @@ impl ProjectionSet {
         self.minimap.reset_runtime();
         self.timeline.reset_runtime();
         self.voice.reset_runtime(scheduler);
-        self.presentation.clear_display();
         self.counter_side_effect_dirty = true;
         self.dirty = ALL_TOPICS;
     }
 
+    /// The live combat payload for the segment currently being recorded, if
+    /// any. `CombatProjection::segment_id()` is the single source of truth
+    /// for "is a segment active" — presentation derives everything else from
+    /// it instead of mirroring the id itself.
+    fn active_combat(&self) -> Option<ActiveCombat> {
+        self.combat.segment_id().map(|segment_id| ActiveCombat {
+            segment_id,
+            payload: self.combat.payload(),
+        })
+    }
+
     #[must_use]
     pub fn peek_combat(&self, segment_state: &SegmentState) -> LiveCombatPayload {
-        self.presentation.peek_combat_payload(
-            self.combat.segment_id().map(|_| self.combat.payload()),
-            segment_state,
-        )
+        self.presentation
+            .peek_combat_payload(self.active_combat(), segment_state)
     }
 
     #[must_use]
@@ -497,10 +505,13 @@ impl ProjectionSet {
         let mut publications = Vec::new();
         for topic in due.iter() {
             publications.push(match topic {
-                Topic::Combat => TopicPublication::Combat(self.presentation.take_combat_payload(
-                    self.combat.segment_id().map(|_| self.combat.payload()),
-                    segment_state,
-                )),
+                Topic::Combat => {
+                    let active_combat = self.active_combat();
+                    TopicPublication::Combat(
+                        self.presentation
+                            .take_combat_payload(active_combat, segment_state),
+                    )
+                }
                 Topic::Status => TopicPublication::Status(
                     self.presentation
                         .take_status_payload(monitored(), self.counter.snapshot()),
@@ -732,6 +743,67 @@ mod tests {
             SEGMENT_TOPICS.union(TopicMask::SCENE).iter().count()
         );
         assert!(projections.dirty_mask().is_empty());
+
+        drop(projections);
+        join.join().expect("history writer stops after disconnect");
+    }
+
+    /// `LiveCore` always runs the container boundary (which ends and freezes
+    /// the active segment) before the `ContainerReset` event that follows it
+    /// reaches `ProjectionSet::apply`. By the time `reset_runtime` sees that
+    /// event, the presentation layer already holds the frozen display for
+    /// the just-ended segment — this asserts `reset_runtime` leaves it alone
+    /// instead of blanking the meter like a manual reset would.
+    #[test]
+    fn container_reset_clears_runtime_but_keeps_the_frozen_meter() {
+        use crate::live::ipc::models::LiveDataPayload;
+        use crate::live::runtime::events::{BatchId, EventMeta, SegmentId};
+
+        let (writer, join) = HistoryWriterHandle::start().expect("history writer starts");
+        let mut projections = ProjectionSet::new(writer);
+        let entities = EntityContext::new();
+        let mut scheduler = DeadlineScheduler::new();
+        let idle = SegmentState::Idle {
+            mode: IdleMode::Standard,
+        };
+
+        // Stand in for the state `end_segment` leaves behind for a
+        // non-manual boundary, without exercising the real history writer.
+        projections.presentation.segment_started(SegmentId(1));
+        projections
+            .presentation
+            .freeze_segment(SegmentId(1), LiveDataPayload::default());
+
+        let batch_id = BatchId(1);
+        let envelope = DomainEnvelope {
+            sequence: 1,
+            batch_id,
+            occurred_at_ms: 1_000,
+            meta: EventMeta {
+                batch_id,
+                capture_sequence: 1,
+                stream_id: 1,
+                stream_epoch: 1,
+                captured_wall_ms: 1_000,
+                captured_mono_ns: 1_000_000_000,
+                source_time_ms: None,
+            },
+            event_index: 0,
+            segment_id: None,
+            event: DomainEvent::ContainerReset,
+        };
+
+        projections
+            .apply(&envelope, &entities, &mut scheduler)
+            .expect("container reset clears runtime state");
+
+        let combat = projections.peek_combat(&idle);
+        assert_eq!(combat.active_segment_id, None);
+        assert_eq!(combat.displayed_segment_id, Some(1));
+        assert!(
+            combat.combat.is_some(),
+            "the meter must keep showing the segment finalized right before the resync"
+        );
 
         drop(projections);
         join.join().expect("history writer stops after disconnect");

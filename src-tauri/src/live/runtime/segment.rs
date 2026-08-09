@@ -425,14 +425,6 @@ impl SegmentController {
         self.immediate_boundary(meta, SegmentReason::ContainerResync, false, scheduler)
     }
 
-    pub fn scene_boundary(
-        &mut self,
-        meta: EventMeta,
-        scheduler: &mut DeadlineScheduler,
-    ) -> Vec<DomainEvent> {
-        self.immediate_boundary(meta, SegmentReason::SceneChanged, false, scheduler)
-    }
-
     pub fn shutdown_boundary(
         &mut self,
         meta: EventMeta,

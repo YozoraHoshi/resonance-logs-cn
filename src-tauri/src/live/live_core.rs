@@ -123,9 +123,6 @@ impl LiveCore {
         let mut transitions = Vec::with_capacity(3);
         for envelope in &events {
             let boundary = match &envelope.event {
-                DomainEvent::SceneChanged { .. } => self
-                    .segments
-                    .scene_boundary(envelope.meta, &mut self.scheduler),
                 DomainEvent::ContainerReset => self
                     .segments
                     .container_boundary(envelope.meta, &mut self.scheduler),

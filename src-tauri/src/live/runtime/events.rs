@@ -353,7 +353,6 @@ pub enum SegmentReason {
     Wipe,
     Manual,
     ContainerResync,
-    SceneChanged,
     TrainingStarted,
     TrainingElapsed,
     MaxDurationElapsed,

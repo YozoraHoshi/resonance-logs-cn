@@ -10,6 +10,19 @@ use crate::live::projections::entity_monitor::EntityMonitorSnapshot;
 use crate::live::runtime::events::SegmentId;
 use crate::live::runtime::segment::{IdleMode, RecordingMode, SegmentState};
 
+/// A live, in-progress combat payload paired with the segment it belongs to.
+/// Callers derive this straight from [`CombatProjection`] (`segment_id()` /
+/// `payload()`), so a live segment and its payload can never disagree about
+/// which segment is active — unlike the old `Option<LiveDataPayload>` +
+/// separately tracked id, which relied on an `expect()` to stay in sync.
+///
+/// [`CombatProjection`]: crate::live::projections::combat::projection::CombatProjection
+#[derive(Debug, Clone)]
+pub struct ActiveCombat {
+    pub segment_id: SegmentId,
+    pub payload: LiveDataPayload,
+}
+
 #[derive(Debug, Default)]
 pub struct PresentationProjection {
     combat_revision: u64,
@@ -19,14 +32,12 @@ pub struct PresentationProjection {
     fantasy_revision: u64,
     deaths_revision: u64,
     scene_revision: u64,
-    active_segment_id: Option<SegmentId>,
     displayed_segment_id: Option<SegmentId>,
     displayed_combat: Option<LiveDataPayload>,
 }
 
 impl PresentationProjection {
     pub fn segment_started(&mut self, segment_id: SegmentId) {
-        self.active_segment_id = Some(segment_id);
         self.displayed_segment_id = Some(segment_id);
         self.displayed_combat = None;
     }
@@ -34,14 +45,12 @@ impl PresentationProjection {
     /// Freezes only the combat (meter) payload. Counters are not segment
     /// scoped, so the status payload always reflects the live engine.
     pub fn freeze_segment(&mut self, segment_id: SegmentId, combat: LiveDataPayload) {
-        if self.active_segment_id == Some(segment_id) {
-            self.active_segment_id = None;
+        if self.displayed_segment_id == Some(segment_id) {
             self.displayed_combat = Some(combat);
         }
     }
 
     pub fn clear_display(&mut self) {
-        self.active_segment_id = None;
         self.displayed_segment_id = None;
         self.displayed_combat = None;
     }
@@ -49,7 +58,7 @@ impl PresentationProjection {
     /// Builds a combat payload and advances its revision (publication path).
     pub fn take_combat_payload(
         &mut self,
-        active_combat: Option<LiveDataPayload>,
+        active_combat: Option<ActiveCombat>,
         segment_state: &SegmentState,
     ) -> LiveCombatPayload {
         self.combat_revision = self.combat_revision.saturating_add(1);
@@ -60,7 +69,7 @@ impl PresentationProjection {
     #[must_use]
     pub fn peek_combat_payload(
         &self,
-        active_combat: Option<LiveDataPayload>,
+        active_combat: Option<ActiveCombat>,
         segment_state: &SegmentState,
     ) -> LiveCombatPayload {
         self.combat_payload(active_combat, segment_state)
@@ -154,17 +163,16 @@ impl PresentationProjection {
 
     fn combat_payload(
         &self,
-        active_combat: Option<LiveDataPayload>,
+        active_combat: Option<ActiveCombat>,
         segment_state: &SegmentState,
     ) -> LiveCombatPayload {
-        let combat = if self.active_segment_id.is_some() {
-            Some(active_combat.expect("active segment has a combat projection"))
-        } else {
-            self.displayed_combat.clone()
+        let (active_segment_id, combat) = match active_combat {
+            Some(active) => (Some(active.segment_id), Some(active.payload)),
+            None => (None, self.displayed_combat.clone()),
         };
         LiveCombatPayload {
             revision: self.combat_revision,
-            active_segment_id: self.active_segment_id.map(|segment| segment.0),
+            active_segment_id: active_segment_id.map(|segment| segment.0),
             displayed_segment_id: self.displayed_segment_id.map(|segment| segment.0),
             combat,
             training: TrainingDummyState {
@@ -300,5 +308,66 @@ mod tests {
         assert_eq!(peeked.revision, 1);
         let second = presentation.take_scene_payload(Some(101), Some(2));
         assert_eq!(second.revision, 2);
+    }
+
+    fn idle_state() -> SegmentState {
+        SegmentState::Idle {
+            mode: IdleMode::Standard,
+        }
+    }
+
+    fn payload_with_total_dmg(total_dmg: &str) -> LiveDataPayload {
+        LiveDataPayload {
+            total_dmg: total_dmg.to_string(),
+            ..LiveDataPayload::default()
+        }
+    }
+
+    /// A container resync ends the segment (freezing its combat payload) but
+    /// never runs `CombatProjection::start_segment` again on its own, so
+    /// there is no active combat to report until the next real segment
+    /// starts. The frozen payload from the just-ended segment must stay
+    /// visible in the meantime, exactly as it did before the resync.
+    #[test]
+    fn frozen_segment_stays_visible_without_an_active_one() {
+        let mut presentation = PresentationProjection::default();
+        presentation.segment_started(SegmentId(1));
+        let frozen = payload_with_total_dmg("1234");
+        presentation.freeze_segment(SegmentId(1), frozen.clone());
+
+        let payload = presentation.take_combat_payload(None, &idle_state());
+
+        assert_eq!(payload.active_segment_id, None);
+        assert_eq!(payload.displayed_segment_id, Some(1));
+        assert_eq!(
+            payload.combat.map(|combat| combat.total_dmg),
+            Some(frozen.total_dmg)
+        );
+    }
+
+    /// Once a segment is actively recording again, its live payload must
+    /// take priority over whatever was frozen from the previous one — the
+    /// active/frozen distinction is derived entirely from the `Option`
+    /// passed in by the caller, not from any state mirrored inside
+    /// `PresentationProjection` itself.
+    #[test]
+    fn active_segment_payload_shadows_the_frozen_one() {
+        let mut presentation = PresentationProjection::default();
+        presentation.segment_started(SegmentId(1));
+        presentation.freeze_segment(SegmentId(1), payload_with_total_dmg("1234"));
+
+        let live = payload_with_total_dmg("5678");
+        let active = ActiveCombat {
+            segment_id: SegmentId(1),
+            payload: live.clone(),
+        };
+
+        let payload = presentation.take_combat_payload(Some(active), &idle_state());
+
+        assert_eq!(payload.active_segment_id, Some(1));
+        assert_eq!(
+            payload.combat.map(|combat| combat.total_dmg),
+            Some(live.total_dmg)
+        );
     }
 }

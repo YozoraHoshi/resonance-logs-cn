@@ -690,12 +690,6 @@ export type LiveFantasyPayload = { revision: number; teammateFantasies: Teammate
  */
 export type LiveMonsterPayload = { revision: number; bossBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; teammateBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; bossMechanics: BossDbmEvent[]; hateLists: Partial<{ [key in string]: HateEntry[] }>; stun: StunEntry[]; playerNames: Partial<{ [key in string]: string }>; monsterIds: Partial<{ [key in string]: number }> }
 export type LiveRuntimeSnapshot = { eventUpdateRateMs: number }
-/**
- * Current scene, pushed only to `main` (`live-scene`). Dirty only on
- * `SceneChanged`, so `main`'s daily-scene auto-hide logic for the
- * game/monster/minimap overlay windows can react without subscribing to the
- * much heavier `live-combat` cadence.
- */
 export type LiveScenePayload = { revision: number; sceneId: number | null; dungeonDifficulty: number | null }
 /**
  * Skill CD / panel attrs / fight resource / shields / counters
