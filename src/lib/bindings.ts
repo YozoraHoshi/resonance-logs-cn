@@ -322,6 +322,14 @@ async createDiagnosticsBundle(destinationPath: string | null) : Promise<Result<s
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Diagnostic bridge that lets the frontend write into the same rotating
+ * log file. Uses the `app::live` target so release builds keep these
+ * records (the release filter keeps `app::live` at info+).
+ */
+async frontendLog(level: string, message: string) : Promise<void> {
+    await TAURI_INVOKE("frontend_log", { level, message });
+},
 async checkGpuSupport() : Promise<GpuSupport> {
     return await TAURI_INVOKE("check_gpu_support");
 },

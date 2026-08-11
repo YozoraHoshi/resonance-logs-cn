@@ -11,6 +11,7 @@
     RECOVERY_NOTICE_STORAGE_KEY,
   } from "$lib/settings-migrations";
   import { commands } from "$lib/bindings";
+  import { liveDebugError, liveDebugLog } from "$lib/live-debug";
   import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
   import { onMount } from "svelte";
   import AlertTriangleIcon from "virtual:icons/lucide/triangle-alert";
@@ -51,6 +52,12 @@
         }
       })
       .catch((error) => {
+        // Packaged builds have no visible console; surface gate failures in
+        // the backend log file so a stuck window is diagnosable.
+        liveDebugLog(
+          `settings_gate_error window=${windowLabel} error=${liveDebugError(error)}`,
+          "error",
+        );
         console.error("[monitoring-settings] initialization failed", error);
         bootstrapState = {
           status: "error",

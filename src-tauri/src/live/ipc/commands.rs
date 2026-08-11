@@ -5,6 +5,7 @@ use crate::live::ipc::models::{
     LiveScenePayload, LiveStatusPayload,
 };
 use crate::live::runtime_handle::LiveRuntimeHandle;
+use log::warn;
 use tauri::Manager;
 use window_vibrancy::{apply_blur, clear_blur};
 
@@ -15,7 +16,13 @@ use window_vibrancy::{apply_blur, clear_blur};
 pub async fn get_live_combat(
     runtime: tauri::State<'_, LiveRuntimeHandle>,
 ) -> Result<LiveCombatPayload, String> {
-    runtime.combat().await
+    let result = runtime.combat().await;
+    // The frontend has no visible console in packaged builds; make sure a
+    // failed bootstrap is visible in the log file.
+    if let Err(error) = &result {
+        warn!(target: "app::live", "bootstrap_get_live_combat err error={error}");
+    }
+    result
 }
 
 /// Bootstrap for the `live-status` topic.

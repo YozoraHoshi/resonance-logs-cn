@@ -87,6 +87,7 @@ fn api_builder() -> Builder<tauri::Wry> {
             packets::npcap::check_npcap_status,
             debug_commands::open_log_dir,
             debug_commands::create_diagnostics_bundle,
+            debug_commands::frontend_log,
             module_optimizer::commands::check_gpu_support,
             module_optimizer::commands::get_latest_modules,
             module_optimizer::commands::optimize_latest_modules,
@@ -145,12 +146,25 @@ pub fn run() {
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     export_typescript_bindings().expect("Failed to export typescript bindings");
 
+    // Command-consumed state must be registered on the Builder: config windows
+    // start loading their pages before `setup` runs, so state registered inside
+    // `setup` can lose the race against early invokes (observed in packaged
+    // builds: `get_live_combat` rejected with "state not managed for field
+    // `runtime`", leaving the live window permanently empty).
+    let (live_runtime, runtime_commands) =
+        crate::live::runtime_handle::LiveRuntimeHandle::new();
+    let (history_writer, history_join) =
+        crate::live::history_writer::HistoryWriterHandle::start()
+            .expect("failed to start history writer");
+
     let tauri_builder = tauri::Builder::default()
+        .manage(live_runtime)
+        .manage(history_writer.clone())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(builder.invoke_handler())
-        .setup(|app| {
+        .setup(move |app| {
             let app_handle = app.handle().clone();
 
             // Setup logs as early as possible so we don't lose startup context.
@@ -256,15 +270,6 @@ pub fn run() {
                 }
             }
 
-            let (live_runtime, runtime_commands) =
-                crate::live::runtime_handle::LiveRuntimeHandle::new();
-            app.manage(live_runtime);
-
-            let (history_writer, history_join) =
-                crate::live::history_writer::HistoryWriterHandle::start()
-                    .map_err(|error| format!("failed to start history writer: {error}"))?;
-            app.manage(history_writer.clone());
-
             // Voice broadcasting / cloning feature: model, catalog and playback are all
             // owned by this single service, independent of the live capture pipeline.
             match crate::voice::VoiceService::new(app_handle.clone()) {
@@ -278,6 +283,11 @@ pub fn run() {
                     tauri::async_runtime::spawn(async move {
                         warmup_service.warm_up_backend_probes().await;
                     });
+                    // Invariant: command-consumed state belongs on the Builder
+                    // (registered before window creation). This one stays in
+                    // `setup` only because construction needs an AppHandle, and
+                    // voice commands are unreachable until the user opens the
+                    // voice page in the main window, long after setup.
                     app.manage(voice_service);
                 }
                 Err(e) => warn!(target: "app::voice", "failed to initialize VoiceService: {e}"),
@@ -634,6 +644,19 @@ mod debug_commands {
         destination_path: Option<String>,
     ) -> Result<String, String> {
         crate::create_diagnostics_bundle(&app_handle, destination_path)
+    }
+
+    /// Diagnostic bridge that lets the frontend write into the same rotating
+    /// log file. Uses the `app::live` target so release builds keep these
+    /// records (the release filter keeps `app::live` at info+).
+    #[tauri::command]
+    #[specta::specta]
+    pub fn frontend_log(level: String, message: String) {
+        match level.as_str() {
+            "warn" => warn!(target: "app::live", "[frontend] {message}"),
+            "error" => log::error!(target: "app::live", "[frontend] {message}"),
+            _ => info!(target: "app::live", "[frontend] {message}"),
+        }
     }
 }
 

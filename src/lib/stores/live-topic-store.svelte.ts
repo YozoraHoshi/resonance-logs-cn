@@ -1,4 +1,5 @@
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { liveDebugError, liveDebugLog } from "$lib/live-debug";
 
 export type LiveTopicStatus =
   | { state: "idle" }
@@ -91,6 +92,12 @@ export class LiveTopicStore<T extends Revisioned> {
         state: "error",
         message: error instanceof Error ? error.message : String(error),
       };
+      // Packaged builds have no visible console; a silent failure here leaves
+      // the window permanently empty, so surface it in the backend log file.
+      liveDebugLog(
+        `live_topic_connect_failed topic=${this.#eventName} error=${liveDebugError(error)}`,
+        "error",
+      );
       throw error;
     }
   }
