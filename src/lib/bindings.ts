@@ -7,68 +7,47 @@
 
 
 export const commands = {
-/**
- * Bootstrap for the `live-combat` topic. Topic payloads are sliced out of the
- * runtime snapshot so a window can hydrate before its first pushed event.
- */
-async getLiveCombat() : Promise<Result<LiveCombatPayload, string>> {
+async pullLiveWindowFrame(request: LiveWindowFrameRequest) : Promise<Result<LiveWindowFrame, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_live_combat") };
+    return { status: "ok", data: await TAURI_INVOKE("pull_live_window_frame", { request }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
+async pullGameOverlayFrame(request: GameOverlayFrameRequest) : Promise<Result<GameOverlayFrame, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("pull_game_overlay_frame", { request }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async pullMonsterOverlayFrame(request: MonsterOverlayFrameRequest) : Promise<Result<MonsterOverlayFrame, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("pull_monster_overlay_frame", { request }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async pullMinimapOverlayFrame(request: MinimapOverlayFrameRequest) : Promise<Result<MinimapOverlayFrame, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("pull_minimap_overlay_frame", { request }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setLivePullActive(window: LivePullWindow, active: boolean) : Promise<void> {
+    await TAURI_INVOKE("set_live_pull_active", { window, active });
+},
 /**
- * Bootstrap for the `live-status` topic.
+ * One-shot status read for the main-window settings preview.
  */
 async getLiveStatus() : Promise<Result<LiveStatusPayload, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_live_status") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-/**
- * Bootstrap for the `live-buffs` topic.
- */
-async getLiveBuffs() : Promise<Result<LiveBuffsPayload, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_live_buffs") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-/**
- * Bootstrap for the `live-monster` topic.
- */
-async getLiveMonster() : Promise<Result<LiveMonsterPayload, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_live_monster") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-/**
- * Bootstrap for the `live-fantasy` topic.
- */
-async getLiveFantasy() : Promise<Result<LiveFantasyPayload, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_live_fantasy") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-/**
- * Bootstrap for the `live-deaths` topic.
- */
-async getLiveDeaths() : Promise<Result<LiveDeathsPayload, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_live_deaths") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -660,6 +639,8 @@ entries: FightResourceEntry[];
 receivedAt: number }
 export type FineTunedVoiceMeta = { packagePath: string; transformerPath: string; displayName: string; speakerName: string; speakerTokenId: number; modelSha256: string; sizeBytes: number; quantization: string; tokenizerAbi: string; importedAtMs: number }
 export type FineTunedVoiceState = { kind: "notConfigured" } | { kind: "ready"; voice: FineTunedVoiceMeta } | { kind: "missing"; voice: FineTunedVoiceMeta } | { kind: "modified"; voice: FineTunedVoiceMeta }
+export type GameOverlayFrame = { active: boolean; epoch: number; status: LiveStatusPayload | null; buffs: LiveBuffsPayload | null }
+export type GameOverlayFrameRequest = { epoch: number | null; statusRevision: number | null; buffsRevision: number | null }
 export type GenerationState = { kind: "idle" } | { kind: "running" } | { kind: "cancelling" }
 export type GenerationSummary = { completed: number; failed: number; profileId: string | null; assetIds: string[] }
 export type GpuSupport = { cuda_available: boolean; opencl_available: boolean }
@@ -697,6 +678,7 @@ export type LiveFantasyPayload = { revision: number; teammateFantasies: Teammate
  * Monster overlay topic (`live-monster`), 50ms throttle.
  */
 export type LiveMonsterPayload = { revision: number; bossBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; teammateBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; bossMechanics: BossDbmEvent[]; hateLists: Partial<{ [key in string]: HateEntry[] }>; stun: StunEntry[]; playerNames: Partial<{ [key in string]: string }>; monsterIds: Partial<{ [key in string]: number }> }
+export type LivePullWindow = "live" | "game-overlay" | "monster-overlay" | "minimap-overlay"
 export type LiveRuntimeSnapshot = { eventUpdateRateMs: number }
 export type LiveScenePayload = { revision: number; sceneId: number | null; dungeonDifficulty: number | null }
 /**
@@ -710,6 +692,8 @@ export type LiveStatusPayload = { revision: number; counters: CounterUpdateState
  * container sync/patch; `0` before any season data has been observed.
  */
 seasonId: number; seasonActiveTemplateIds: number[]; skillCds: SkillCdState[]; panelAttrs: PanelAttrState[]; shieldCurrentHp: number; shieldMaxHp: number; shieldEntries: ShieldDetailEntry[]; fightResource: FightResourceState | null }
+export type LiveWindowFrame = { active: boolean; epoch: number; combat: LiveCombatPayload | null; fantasy: LiveFantasyPayload | null; deaths: LiveDeathsPayload | null }
+export type LiveWindowFrameRequest = { epoch: number | null; combatRevision: number | null; fantasyRevision: number | null; deathsRevision: number | null; includeDeaths: boolean }
 /**
  * A single active buff fact currently known to the minimap.
  */
@@ -838,6 +822,8 @@ export type MinimapMarker = {
  * Displayed marker number 1..=6, derived as `skill_id - MARKER_SKILL_ID_BASE`.
  */
 marker: number; skillId: number; x: number | null; z: number | null }
+export type MinimapOverlayFrame = { active: boolean; epoch: number; snapshot: MinimapSnapshotUpdate | null; skillCasts: MinimapSkillCast[]; skillCastCursor: number; castsReset: boolean }
+export type MinimapOverlayFrameRequest = { epoch: number | null; snapshotRevision: number | null; skillCastCursor: number | null }
 /**
  * One monster skill cast event observed from `ATTR_SKILL_ID` (attribute 100).
  */
@@ -890,10 +876,7 @@ buffs: MinimapBuffFact[];
  * Active in-game player markers
  */
 markers: MinimapMarker[] }
-/**
- * Event payload wrapping a [`MinimapSnapshot`] for the minimap overlay window.
- */
-export type MinimapUpdatePayload = { snapshot: MinimapSnapshot | null; skillCasts: MinimapSkillCast[] }
+export type MinimapSnapshotUpdate = { revision: number; snapshot: MinimapSnapshot | null }
 export type ModelDownloadSource = "auto" | "huggingFace" | "hfMirror"
 export type ModelState = { kind: "notInstalled" } | { kind: "installing" } | { kind: "ready"; version: string } | { kind: "corrupt"; version: string; reason: string }
 export type ModuleInfo = { name: string; config_id: number; uuid: number; quality: number; parts: ModulePart[] }
@@ -904,6 +887,8 @@ export type MonitorRuntimeSnapshot = { i18n: I18nRuntimeSnapshot; live: LiveRunt
  * Which caster population a monster-buff voice rule observes.
  */
 export type MonsterBuffSourceScope = "anySource" | "localPlayerSource"
+export type MonsterOverlayFrame = { active: boolean; epoch: number; monster: LiveMonsterPayload | null; fantasy: LiveFantasyPayload | null }
+export type MonsterOverlayFrameRequest = { epoch: number | null; monsterRevision: number | null; fantasyRevision: number | null }
 export type MonsterRuntimeSnapshot = { enabled: boolean; globalIds: number[]; selfAppliedIds: number[]; monitorAllSelfApplied: boolean }
 export type PanelAttrState = { attrId: number; value: number }
 /**

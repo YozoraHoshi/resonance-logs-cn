@@ -1,11 +1,9 @@
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { untrack } from "svelte";
-import {
-  liveBuffsStore,
-  liveStatusStore,
-} from "$lib/stores/live-topics.svelte";
-import { connectTopics } from "$lib/stores/live-topic-store.svelte";
+import { liveStatusStore } from "$lib/stores/live-topics.svelte";
+import { gameOverlaySession } from "$lib/stores/live-window-sessions.svelte";
+import { listenLivePullGate } from "$lib/live-pull-gate";
 import {
   getAvailableBuffDefinitions,
   type BuffDefinition,
@@ -84,7 +82,8 @@ export function initOverlay() {
       });
     });
   });
-  const disconnectTopics = connectTopics(liveStatusStore, liveBuffsStore);
+  const unlistenPullGate = listenLivePullGate(gameOverlaySession);
+  gameOverlaySession.start();
 
   window.addEventListener("pointermove", onGlobalPointerMove);
   window.addEventListener("pointerup", onGlobalPointerUp);
@@ -97,8 +96,9 @@ export function initOverlay() {
     overlayRuntime.resizeState = null;
     unlistenEditToggle.then((fn) => fn());
     unlistenReferenceToggle.then((fn) => fn());
+    void unlistenPullGate.then((unlisten) => unlisten());
     stopSkillDurationEffect();
-    disconnectTopics();
+    gameOverlaySession.stop();
     window.removeEventListener("pointermove", onGlobalPointerMove);
     window.removeEventListener("pointerup", onGlobalPointerUp);
     cleanupClock();

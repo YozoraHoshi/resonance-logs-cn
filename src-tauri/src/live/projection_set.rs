@@ -438,46 +438,10 @@ impl ProjectionSet {
     }
 
     #[must_use]
+    #[cfg(test)]
     pub fn peek_combat(&self, segment_state: &SegmentState) -> LiveCombatPayload {
         self.presentation
             .peek_combat_payload(self.active_combat(), segment_state)
-    }
-
-    #[must_use]
-    pub fn peek_deaths(&self) -> LiveDeathsPayload {
-        self.presentation.peek_deaths_payload(self.death.snapshot())
-    }
-
-    #[must_use]
-    pub fn peek_scene(&self, entities: &EntityContext) -> LiveScenePayload {
-        self.presentation
-            .peek_scene_payload(entities.current_scene_id(), entities.current_difficulty())
-    }
-
-    #[must_use]
-    pub fn peek_status(&self, entities: &EntityContext) -> LiveStatusPayload {
-        self.presentation.peek_status_payload(
-            &self.entity_monitor.snapshot(entities),
-            self.counter.snapshot(),
-        )
-    }
-
-    #[must_use]
-    pub fn peek_buffs(&self, entities: &EntityContext) -> LiveBuffsPayload {
-        self.presentation
-            .peek_buffs_payload(&self.entity_monitor.snapshot(entities))
-    }
-
-    #[must_use]
-    pub fn peek_monster(&self, entities: &EntityContext) -> LiveMonsterPayload {
-        self.presentation
-            .peek_monster_payload(&self.entity_monitor.snapshot(entities))
-    }
-
-    #[must_use]
-    pub fn peek_fantasy(&self, entities: &EntityContext) -> LiveFantasyPayload {
-        self.presentation
-            .peek_fantasy_payload(&self.entity_monitor.snapshot(entities))
     }
 
     /// Builds one payload per topic that is both requested and dirty, clearing

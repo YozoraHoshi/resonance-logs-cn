@@ -6,6 +6,7 @@
  * no cross-window event broadcasting is needed.
  */
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { emitLivePullGate } from "$lib/live-pull-gate";
 
 export type OverlayWindowLabel =
   | "game-overlay"
@@ -56,8 +57,10 @@ export async function setOverlayWindowVisible(
     if (shouldShow) {
       await win.show();
       await win.unminimize();
+      await emitLivePullGate(win, true);
       if (opts.focus) await win.setFocus();
     } else {
+      await emitLivePullGate(win, false);
       await win.hide();
     }
     visibility[label] = shouldShow;

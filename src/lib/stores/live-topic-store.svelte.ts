@@ -8,44 +8,57 @@ export type LiveTopicStatus =
   | { state: "error"; message: string };
 
 type Revisioned = { revision: number };
+type BootstrapResult<T> =
+  | { status: "ok"; data: T }
+  | { status: "error"; error: string };
 
 /**
- * Generic replace-only store for one live publication topic.
- * Ignores out-of-order revisions; consumers connect/disconnect by refcount.
- * When the last consumer disconnects, `data` is cleared so a later reconnect
- * never renders one stale frame before the bootstrap lands.
+ * Replace-only state for one pulled live topic.
+ *
+ * Window sessions own transport and lifecycle. This store only accepts a
+ * revisioned value or clears it, while protecting consumers from a late
+ * lower-revision frame within the same backend epoch.
  */
 export class LiveTopicStore<T extends Revisioned> {
   data = $state.raw<T | null>(null);
   status = $state.raw<LiveTopicStatus>({ state: "idle" });
 
-  #eventName: string;
-  #bootstrap: () => Promise<
-    { status: "ok"; data: T } | { status: "error"; error: string }
-  >;
+  apply(next: T): void {
+    if (this.data && next.revision < this.data.revision) return;
+    this.data = next;
+    this.status = { state: "ready" };
+  }
+
+  clear(status: LiveTopicStatus = { state: "idle" }): void {
+    this.data = null;
+    this.status = status;
+  }
+}
+
+/**
+ * The main window keeps `live-scene` as a low-frequency event stream. It is
+ * intentionally isolated from the invoke-only stores used by overlay windows.
+ */
+export class LiveSceneEventStore<
+  T extends Revisioned,
+> extends LiveTopicStore<T> {
+  readonly #eventName: string;
+  readonly #bootstrap: () => Promise<BootstrapResult<T>>;
   #connectPromise: Promise<void> | null = null;
   #unlisten: UnlistenFn | null = null;
   #consumers = 0;
 
-  constructor(
-    eventName: string,
-    bootstrap: () => Promise<
-      { status: "ok"; data: T } | { status: "error"; error: string }
-    >,
-  ) {
+  constructor(eventName: string, bootstrap: () => Promise<BootstrapResult<T>>) {
+    super();
     this.#eventName = eventName;
     this.#bootstrap = bootstrap;
-  }
-
-  get topicLabel(): string {
-    return this.#eventName;
   }
 
   async connect(): Promise<() => void> {
     this.#consumers += 1;
     try {
       if (!this.#connectPromise) {
-        this.status = { state: "loading" };
+        this.clear({ state: "loading" });
         this.#connectPromise = this.#connect();
       }
       await this.#connectPromise;
@@ -64,15 +77,8 @@ export class LiveTopicStore<T extends Revisioned> {
       this.#unlisten?.();
       this.#unlisten = null;
       this.#connectPromise = null;
-      this.data = null;
-      this.status = { state: "idle" };
+      this.clear();
     };
-  }
-
-  apply(next: T) {
-    if (this.data && next.revision < this.data.revision) return;
-    this.data = next;
-    this.status = { state: "ready" };
   }
 
   async #connect(): Promise<void> {
@@ -88,10 +94,10 @@ export class LiveTopicStore<T extends Revisioned> {
       this.#unlisten?.();
       this.#unlisten = null;
       this.#connectPromise = null;
-      this.status = {
+      this.clear({
         state: "error",
         message: error instanceof Error ? error.message : String(error),
-      };
+      });
       // Packaged builds have no visible console; a silent failure here leaves
       // the window permanently empty, so surface it in the backend log file.
       liveDebugLog(
@@ -101,35 +107,4 @@ export class LiveTopicStore<T extends Revisioned> {
       throw error;
     }
   }
-}
-
-/**
- * Connects several topic stores and returns one disposer. Individual connect
- * failures are logged instead of failing the whole window. Disconnects that
- * happen before the async connect resolves are handled by checking the
- * disposer state at resolve time.
- */
-export function connectTopics(
-  ...stores: LiveTopicStore<Revisioned>[]
-): () => void {
-  let disposed = false;
-  const disconnects: Array<() => void> = [];
-  for (const store of stores) {
-    void store
-      .connect()
-      .then((disconnect) => {
-        if (disposed) disconnect();
-        else disconnects.push(disconnect);
-      })
-      .catch((error) => {
-        console.error(
-          `Failed to connect live topic "${store.topicLabel}"`,
-          error,
-        );
-      });
-  }
-  return () => {
-    disposed = true;
-    for (const disconnect of disconnects.splice(0)) disconnect();
-  };
 }

@@ -11,9 +11,10 @@ use tokio::sync::{mpsc, oneshot};
 
 use crate::live::bootstrap_snapshot::{MonitorRuntimeSnapshot, load_monitor_runtime_snapshot};
 use crate::live::history_writer::HistoryWriterHandle;
+use crate::live::ipc::models::LiveScenePayload;
+use crate::live::ipc::publisher::LivePublicationCache;
 use crate::live::ipc::topic::Topic;
 use crate::live::live_core::{LiveCore, LiveCoreFlow, Publications};
-use crate::live::projection_set::TopicPublication;
 use crate::live::runtime::events::{MonoTimeMs, monotonic_now_ms};
 use crate::live::runtime_handle::RuntimeCommand;
 use crate::packets;
@@ -26,6 +27,7 @@ const DECODE_CHANNEL_CAPACITY: usize = 4_096;
 pub async fn start(
     app: AppHandle,
     mut commands: mpsc::Receiver<RuntimeCommand>,
+    publication_cache: LivePublicationCache,
     history_writer: HistoryWriterHandle,
     history_join: std::thread::JoinHandle<()>,
 ) {
@@ -55,18 +57,18 @@ pub async fn start(
     let mut failure: Option<String> = None;
 
     match core.publish_now() {
-        Ok(publications) => emit_publications(&app, publications),
+        Ok(publications) => publish_publications(&app, &publication_cache, publications),
         Err(error) => {
-            warn!(target: "app::live", "initial_snapshot_emit_failed error={error}");
+            warn!(target: "app::live", "initial_snapshot_publish_failed error={error}");
         }
     }
 
     loop {
         if pending_command.is_some() && outstanding_count(&outstanding) == 0 {
             let command = pending_command.take().expect("checked above");
-                let result = core.handle_command(command).map(|flow| match flow {
+            let result = core.handle_command(command).map(|flow| match flow {
                 LiveCoreFlow::Continue => {
-                    emit_due(&app, &mut core, monotonic_now_ms());
+                    publish_due(&app, &publication_cache, &mut core, monotonic_now_ms());
                     flow
                 }
                 LiveCoreFlow::ShutdownRequested { .. } => flow,
@@ -109,7 +111,7 @@ pub async fn start(
                             failure = Some(error);
                             break;
                         }
-                        emit_due(&app, &mut core, batch_time);
+                        publish_due(&app, &publication_cache, &mut core, batch_time);
                     }
                     None => {
                         batches_open = false;
@@ -123,7 +125,7 @@ pub async fn start(
                 }
                 let now = monotonic_now_ms();
                 outstanding.store(0, Ordering::Release);
-                emit_due(&app, &mut core, now);
+                publish_due(&app, &publication_cache, &mut core, now);
             }
         }
     }
@@ -140,7 +142,7 @@ pub async fn start(
             if let Err(error) = core.process_batch(batch) {
                 record_failure(&mut failure, error);
             } else {
-                emit_due(&app, &mut core, batch_time);
+                publish_due(&app, &publication_cache, &mut core, batch_time);
             }
         }
         decrement_outstanding(&outstanding);
@@ -153,7 +155,7 @@ pub async fn start(
         record_failure(&mut failure, error);
     } else {
         match core.publish_now() {
-            Ok(publications) => emit_publications(&app, publications),
+            Ok(publications) => publish_publications(&app, &publication_cache, publications),
             Err(error) => record_failure(&mut failure, error),
         }
     }
@@ -174,34 +176,36 @@ pub async fn start(
     }
 }
 
-fn emit_due(app: &AppHandle, core: &mut LiveCore, now: MonoTimeMs) {
+fn publish_due(
+    app: &AppHandle,
+    publication_cache: &LivePublicationCache,
+    core: &mut LiveCore,
+    now: MonoTimeMs,
+) {
     let Ok(publications) = core.take_due_publications(now) else {
         return;
     };
-    emit_publications(app, publications);
+    publish_publications(app, publication_cache, publications);
 }
 
-fn emit_publications(app: &AppHandle, publications: Publications) {
-    for publication in publications.topics {
-        let topic = publication.topic();
-        match publication {
-            TopicPublication::Combat(payload) => emit_to_topic_windows(app, topic, &payload),
-            TopicPublication::Status(payload) => emit_to_topic_windows(app, topic, &payload),
-            TopicPublication::Buffs(payload) => emit_to_topic_windows(app, topic, &payload),
-            TopicPublication::Monster(payload) => emit_to_topic_windows(app, topic, &payload),
-            TopicPublication::Fantasy(payload) => emit_to_topic_windows(app, topic, &payload),
-            TopicPublication::Minimap(payload) => emit_to_topic_windows(app, topic, &payload),
-            TopicPublication::Deaths(payload) => emit_to_topic_windows(app, topic, &payload),
-            TopicPublication::Scene(payload) => emit_to_topic_windows(app, topic, &payload),
-        }
+fn publish_publications(
+    app: &AppHandle,
+    publication_cache: &LivePublicationCache,
+    publications: Publications,
+) {
+    if let Some(scene) = publication_cache.publish(publications.topics) {
+        emit_scene(app, &scene);
     }
 }
 
-/// Delivers a topic payload to the windows that render it. Emit failures are
-/// logged and skipped: a webview in a transient state must not take down the
-/// capture pipeline.
-fn emit_to_topic_windows<P: serde::Serialize>(app: &AppHandle, topic: Topic, payload: &P) {
-    let event = topic.event_name();
+/// Scene is the only live topic that remains event-driven. It is tiny and must
+/// continue reaching `main` while that window is hidden so the toolbox can
+/// control the overlay auto-hide policy.
+fn emit_scene(app: &AppHandle, payload: &LiveScenePayload) {
+    let topic = Topic::Scene;
+    let event = topic
+        .event_name()
+        .expect("scene is the only event-backed live topic");
     for label in topic.window_labels() {
         let Some(window) = app.get_webview_window(label) else {
             continue;

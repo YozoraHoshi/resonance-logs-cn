@@ -5,8 +5,9 @@
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { applyCustomFonts } from "$lib/font-loader";
   import { ipcNumber } from "$lib/ipc-decimal";
-  import { liveCombatStore, liveFantasyStore } from "$lib/stores/live-topics.svelte";
-  import { connectTopics } from "$lib/stores/live-topic-store.svelte";
+  import { liveCombatStore } from "$lib/stores/live-topics.svelte";
+  import { liveWindowSession } from "$lib/stores/live-window-sessions.svelte";
+  import { listenLivePullGate } from "$lib/live-pull-gate";
   import { applyLiveClickthrough } from "$lib/utils.svelte";
   import { writable } from "svelte/store";
   import { beforeNavigate, afterNavigate } from "$app/navigation";
@@ -45,7 +46,8 @@
   });
 
   onMount(() => {
-    const disconnectTopics = connectTopics(liveCombatStore, liveFantasyStore);
+    const unlistenPullGate = listenLivePullGate(liveWindowSession);
+    liveWindowSession.start();
 
     listen<boolean>("live-clickthrough-changed", (event) => {
       SETTINGS.accessibility.state.clickthrough = event.payload;
@@ -61,7 +63,8 @@
       });
 
     return () => {
-      disconnectTopics();
+      void unlistenPullGate.then((unlisten) => unlisten());
+      liveWindowSession.stop();
       if (clickthroughUnlisten) {
         clickthroughUnlisten();
         clickthroughUnlisten = null;

@@ -1,73 +1,76 @@
 use crate::WINDOW_LIVE_LABEL;
 use crate::live::bootstrap_snapshot::{MonitorRuntimeSnapshot, save_monitor_runtime_snapshot};
 use crate::live::ipc::models::{
-    LiveBuffsPayload, LiveCombatPayload, LiveDeathsPayload, LiveFantasyPayload, LiveMonsterPayload,
-    LiveScenePayload, LiveStatusPayload,
+    GameOverlayFrame, GameOverlayFrameRequest, LivePullWindow, LiveScenePayload, LiveStatusPayload,
+    LiveWindowFrame, LiveWindowFrameRequest, MinimapOverlayFrame, MinimapOverlayFrameRequest,
+    MonsterOverlayFrame, MonsterOverlayFrameRequest,
 };
+use crate::live::ipc::publisher::LivePublicationCache;
 use crate::live::runtime_handle::LiveRuntimeHandle;
-use log::warn;
 use tauri::Manager;
 use window_vibrancy::{apply_blur, clear_blur};
 
-/// Bootstrap for the `live-combat` topic. Topic payloads are sliced out of the
-/// runtime snapshot so a window can hydrate before its first pushed event.
 #[tauri::command]
 #[specta::specta]
-pub async fn get_live_combat(
-    runtime: tauri::State<'_, LiveRuntimeHandle>,
-) -> Result<LiveCombatPayload, String> {
-    let result = runtime.combat().await;
-    // The frontend has no visible console in packaged builds; make sure a
-    // failed bootstrap is visible in the log file.
-    if let Err(error) = &result {
-        warn!(target: "app::live", "bootstrap_get_live_combat err error={error}");
-    }
-    result
+pub fn pull_live_window_frame(
+    window: tauri::WebviewWindow,
+    cache: tauri::State<'_, LivePublicationCache>,
+    request: LiveWindowFrameRequest,
+) -> Result<LiveWindowFrame, String> {
+    let active = pull_window_active(&window, &cache, LivePullWindow::Live)?;
+    Ok(cache.pull_live_window(&request, active))
 }
 
-/// Bootstrap for the `live-status` topic.
 #[tauri::command]
 #[specta::specta]
-pub async fn get_live_status(
-    runtime: tauri::State<'_, LiveRuntimeHandle>,
+pub fn pull_game_overlay_frame(
+    window: tauri::WebviewWindow,
+    cache: tauri::State<'_, LivePublicationCache>,
+    request: GameOverlayFrameRequest,
+) -> Result<GameOverlayFrame, String> {
+    let active = pull_window_active(&window, &cache, LivePullWindow::GameOverlay)?;
+    Ok(cache.pull_game_overlay(&request, active))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn pull_monster_overlay_frame(
+    window: tauri::WebviewWindow,
+    cache: tauri::State<'_, LivePublicationCache>,
+    request: MonsterOverlayFrameRequest,
+) -> Result<MonsterOverlayFrame, String> {
+    let active = pull_window_active(&window, &cache, LivePullWindow::MonsterOverlay)?;
+    Ok(cache.pull_monster_overlay(&request, active))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn pull_minimap_overlay_frame(
+    window: tauri::WebviewWindow,
+    cache: tauri::State<'_, LivePublicationCache>,
+    request: MinimapOverlayFrameRequest,
+) -> Result<MinimapOverlayFrame, String> {
+    let active = pull_window_active(&window, &cache, LivePullWindow::MinimapOverlay)?;
+    Ok(cache.pull_minimap_overlay(&request, active))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_live_pull_active(
+    cache: tauri::State<'_, LivePublicationCache>,
+    window: LivePullWindow,
+    active: bool,
+) {
+    cache.set_window_active(window, active);
+}
+
+/// One-shot status read for the main-window settings preview.
+#[tauri::command]
+#[specta::specta]
+pub fn get_live_status(
+    cache: tauri::State<'_, LivePublicationCache>,
 ) -> Result<LiveStatusPayload, String> {
-    runtime.status().await
-}
-
-/// Bootstrap for the `live-buffs` topic.
-#[tauri::command]
-#[specta::specta]
-pub async fn get_live_buffs(
-    runtime: tauri::State<'_, LiveRuntimeHandle>,
-) -> Result<LiveBuffsPayload, String> {
-    runtime.buffs().await
-}
-
-/// Bootstrap for the `live-monster` topic.
-#[tauri::command]
-#[specta::specta]
-pub async fn get_live_monster(
-    runtime: tauri::State<'_, LiveRuntimeHandle>,
-) -> Result<LiveMonsterPayload, String> {
-    runtime.monster().await
-}
-
-/// Bootstrap for the `live-fantasy` topic.
-#[tauri::command]
-#[specta::specta]
-pub async fn get_live_fantasy(
-    runtime: tauri::State<'_, LiveRuntimeHandle>,
-) -> Result<LiveFantasyPayload, String> {
-    runtime.fantasy().await
-}
-
-/// Bootstrap for the `live-deaths` topic.
-#[tauri::command]
-#[specta::specta]
-pub async fn get_live_deaths(
-    runtime: tauri::State<'_, LiveRuntimeHandle>,
-) -> Result<LiveDeathsPayload, String> {
-    runtime.deaths().await
+    Ok(cache.current_status())
 }
 
 /// Bootstrap for the `live-scene` topic. `main`-only: drives the daily-scene
@@ -75,10 +78,25 @@ pub async fn get_live_deaths(
 /// subscribing to the far heavier `live-combat` cadence.
 #[tauri::command]
 #[specta::specta]
-pub async fn get_live_scene(
-    runtime: tauri::State<'_, LiveRuntimeHandle>,
+pub fn get_live_scene(
+    cache: tauri::State<'_, LivePublicationCache>,
 ) -> Result<LiveScenePayload, String> {
-    runtime.scene().await
+    Ok(cache.current_scene())
+}
+
+fn pull_window_active(
+    window: &tauri::WebviewWindow,
+    cache: &LivePublicationCache,
+    expected: LivePullWindow,
+) -> Result<bool, String> {
+    let expected_label = expected.label();
+    if window.label() != expected_label {
+        return Err(format!(
+            "pull command for {expected_label} called by {}",
+            window.label()
+        ));
+    }
+    Ok(cache.is_window_active(expected))
 }
 
 #[tauri::command]

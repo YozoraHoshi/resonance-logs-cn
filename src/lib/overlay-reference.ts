@@ -1,6 +1,7 @@
 import { emit } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { Window } from "@tauri-apps/api/window";
+import { emitLivePullGate } from "$lib/live-pull-gate";
 
 /**
  * Cross-overlay reference orchestration.
@@ -57,6 +58,7 @@ export async function enableSiblingReference(params: {
     await alignSiblingToSelf(self, sibling);
     await sibling.show();
     await sibling.unminimize();
+    await emitLivePullGate(sibling, true);
     await emit(referenceEvent, true);
     // Both overlays are alwaysOnTop; re-assert ours so it stays above the reference.
     await self.setAlwaysOnTop(true);
@@ -92,7 +94,10 @@ export async function disableSiblingReference(params: {
     await emit(referenceEvent, false);
     if (!session.siblingWasVisible) {
       const sibling = await WebviewWindow.getByLabel(siblingLabel);
-      if (sibling) await sibling.hide();
+      if (sibling) {
+        await emitLivePullGate(sibling, false);
+        await sibling.hide();
+      }
     }
   } catch (error) {
     console.error(

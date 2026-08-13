@@ -1,10 +1,7 @@
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import {
-  liveFantasyStore,
-  liveMonsterStore,
-} from "$lib/stores/live-topics.svelte";
-import { connectTopics } from "$lib/stores/live-topic-store.svelte";
+import { monsterOverlaySession } from "$lib/stores/live-window-sessions.svelte";
+import { listenLivePullGate } from "$lib/live-pull-gate";
 import {
   onGlobalPointerMove,
   onGlobalPointerUp,
@@ -43,7 +40,8 @@ export function initMonsterOverlay() {
       setMonsterReferenceMode(event.payload);
     },
   );
-  const disconnectTopics = connectTopics(liveMonsterStore, liveFantasyStore);
+  const unlistenPullGate = listenLivePullGate(monsterOverlaySession);
+  monsterOverlaySession.start();
 
   window.addEventListener("pointermove", onGlobalPointerMove);
   window.addEventListener("pointerup", onGlobalPointerUp);
@@ -63,7 +61,8 @@ export function initMonsterOverlay() {
     monsterRuntime.dbmRows = [];
     unlistenEditToggle.then((fn) => fn());
     unlistenReferenceToggle.then((fn) => fn());
-    disconnectTopics();
+    void unlistenPullGate.then((unlisten) => unlisten());
+    monsterOverlaySession.stop();
     window.removeEventListener("pointermove", onGlobalPointerMove);
     window.removeEventListener("pointerup", onGlobalPointerUp);
     if (monsterRuntime.rafId) {

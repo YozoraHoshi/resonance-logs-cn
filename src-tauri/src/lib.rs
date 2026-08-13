@@ -40,6 +40,7 @@ pub const WINDOW_MONSTER_OVERLAY_LABEL: &str = "monster-overlay";
 /// The label for the 2D minimap overlay window.
 pub const WINDOW_MINIMAP_OVERLAY_LABEL: &str = "minimap-overlay";
 const LIVE_CLICKTHROUGH_CHANGED_EVENT: &str = "live-clickthrough-changed";
+const LIVE_PULL_GATE_EVENT: &str = "live-pull-gate";
 
 /// Keeps the non-blocking tracing appender worker alive for the lifetime of the process.
 /// If this guard is dropped, file logging may stop flushing.
@@ -53,12 +54,12 @@ static LOGGING_INIT: OnceLock<Result<(), String>> = OnceLock::new();
 fn api_builder() -> Builder<tauri::Wry> {
     Builder::<tauri::Wry>::new()
         .commands(collect_commands![
-            live::ipc::commands::get_live_combat,
+            live::ipc::commands::pull_live_window_frame,
+            live::ipc::commands::pull_game_overlay_frame,
+            live::ipc::commands::pull_monster_overlay_frame,
+            live::ipc::commands::pull_minimap_overlay_frame,
+            live::ipc::commands::set_live_pull_active,
             live::ipc::commands::get_live_status,
-            live::ipc::commands::get_live_buffs,
-            live::ipc::commands::get_live_monster,
-            live::ipc::commands::get_live_fantasy,
-            live::ipc::commands::get_live_deaths,
             live::ipc::commands::get_live_scene,
             live::ipc::commands::enable_blur,
             live::ipc::commands::disable_blur,
@@ -113,7 +114,6 @@ fn api_builder() -> Builder<tauri::Wry> {
             voice::commands::voice_upsert_phrase,
             voice::commands::voice_stop_playback,
         ])
-        .typ::<live::ipc::models::MinimapUpdatePayload>()
 }
 
 #[cfg(debug_assertions)]
@@ -149,16 +149,17 @@ pub fn run() {
     // Command-consumed state must be registered on the Builder: config windows
     // start loading their pages before `setup` runs, so state registered inside
     // `setup` can lose the race against early invokes (observed in packaged
-    // builds: `get_live_combat` rejected with "state not managed for field
-    // `runtime`", leaving the live window permanently empty).
+    // builds as a rejected live bootstrap that left the window empty).
     let (live_runtime, runtime_commands) =
         crate::live::runtime_handle::LiveRuntimeHandle::new();
+    let publication_cache = crate::live::ipc::publisher::LivePublicationCache::new();
     let (history_writer, history_join) =
         crate::live::history_writer::HistoryWriterHandle::start()
             .expect("failed to start history writer");
 
     let tauri_builder = tauri::Builder::default()
         .manage(live_runtime)
+        .manage(publication_cache.clone())
         .manage(history_writer.clone())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
@@ -299,6 +300,7 @@ pub fn run() {
                 live::live_main::start(
                     app_handle.clone(),
                     runtime_commands,
+                    publication_cache,
                     history_writer,
                     history_join,
                 )
@@ -946,6 +948,9 @@ fn show_window_and_focus(window: &tauri::WebviewWindow) {
     if let Err(e) = window.unminimize() {
         warn!("failed to unminimize window {}: {}", window.label(), e);
     }
+    if is_live_pull_window(window.label()) {
+        set_live_pull_window_active(window.app_handle(), window.label(), true);
+    }
     if let Err(e) = window.set_focus() {
         warn!("failed to focus window {}: {}", window.label(), e);
     }
@@ -1110,9 +1115,17 @@ fn on_window_event_fn(window: &Window, event: &WindowEvent) {
         // when you click the X button to close a window
         WindowEvent::CloseRequested { api, .. } => {
             api.prevent_close();
+            if is_live_pull_window(window.label()) {
+                set_live_pull_window_active(window.app_handle(), window.label(), false);
+            }
             if let Err(e) = window.hide() {
                 warn!("failed to hide window {}: {}", window.label(), e);
             }
+        }
+        WindowEvent::Resized(_) if is_live_pull_window(window.label()) => {
+            let active =
+                window.is_visible().unwrap_or(false) && !window.is_minimized().unwrap_or(false);
+            set_live_pull_window_active(window.app_handle(), window.label(), active);
         }
         WindowEvent::Focused(focused) if !focused => {
             if let Err(e) = window.app_handle().save_window_state(StateFlags::all()) {
@@ -1120,5 +1133,31 @@ fn on_window_event_fn(window: &Window, event: &WindowEvent) {
             }
         }
         _ => {}
+    }
+}
+
+fn is_live_pull_window(label: &str) -> bool {
+    crate::live::ipc::models::LivePullWindow::from_label(label).is_some()
+}
+
+fn set_live_pull_window_active(app: &tauri::AppHandle, label: &str, active: bool) {
+    let Some(surface) = crate::live::ipc::models::LivePullWindow::from_label(label) else {
+        return;
+    };
+    let mut changed = true;
+    if let Some(cache) = app.try_state::<crate::live::ipc::publisher::LivePublicationCache>() {
+        changed = cache.set_window_active(surface, active);
+    }
+    if !changed {
+        return;
+    }
+    let Some(window) = app.get_webview_window(label) else {
+        return;
+    };
+    if let Err(error) = window.emit(LIVE_PULL_GATE_EVENT, active) {
+        warn!(
+            "failed to set live pull gate for window {} active={}: {}",
+            label, active, error
+        );
     }
 }

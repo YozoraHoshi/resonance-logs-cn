@@ -23,7 +23,7 @@ use crate::live::runtime::events::{
 };
 use crate::live::runtime::scheduler::{DeadlineScheduler, TimerTask};
 use crate::live::runtime::segment::{CombatGate, SegmentController, SegmentState};
-use crate::live::runtime_handle::{BootstrapTopic, RuntimeCommand, TopicBootstrap};
+use crate::live::runtime_handle::RuntimeCommand;
 
 #[derive(Debug, Default)]
 pub struct Publications {
@@ -251,35 +251,6 @@ impl LiveCore {
 
     pub fn handle_command(&mut self, command: RuntimeCommand) -> Result<LiveCoreFlow, String> {
         match command {
-            RuntimeCommand::GetTopic { topic, reply } => {
-                let now = self.refresh_clock();
-                self.drain_due_through(now)?;
-                let bootstrap = match topic {
-                    BootstrapTopic::Combat => {
-                        TopicBootstrap::Combat(self.projections.peek_combat(self.segments.state()))
-                    }
-                    BootstrapTopic::Status => {
-                        TopicBootstrap::Status(self.projections.peek_status(&self.entities))
-                    }
-                    BootstrapTopic::Buffs => {
-                        TopicBootstrap::Buffs(self.projections.peek_buffs(&self.entities))
-                    }
-                    BootstrapTopic::Monster => {
-                        TopicBootstrap::Monster(self.projections.peek_monster(&self.entities))
-                    }
-                    BootstrapTopic::Fantasy => {
-                        TopicBootstrap::Fantasy(self.projections.peek_fantasy(&self.entities))
-                    }
-                    BootstrapTopic::Deaths => {
-                        TopicBootstrap::Deaths(self.projections.peek_deaths())
-                    }
-                    BootstrapTopic::Scene => {
-                        TopicBootstrap::Scene(self.projections.peek_scene(&self.entities))
-                    }
-                };
-                let _ = reply.send(bootstrap);
-                Ok(LiveCoreFlow::Continue)
-            }
             RuntimeCommand::ManualReset => {
                 self.manual_reset()?;
                 Ok(LiveCoreFlow::Continue)

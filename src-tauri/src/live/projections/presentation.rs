@@ -67,6 +67,7 @@ impl PresentationProjection {
 
     /// Read-only combat payload for command-side bootstrap.
     #[must_use]
+    #[cfg(test)]
     pub fn peek_combat_payload(
         &self,
         active_combat: Option<ActiveCombat>,
@@ -85,6 +86,7 @@ impl PresentationProjection {
     }
 
     #[must_use]
+    #[cfg(test)]
     pub fn peek_status_payload(
         &self,
         monitored: &EntityMonitorSnapshot,
@@ -98,21 +100,11 @@ impl PresentationProjection {
         self.buffs_payload(monitored)
     }
 
-    #[must_use]
-    pub fn peek_buffs_payload(&self, monitored: &EntityMonitorSnapshot) -> LiveBuffsPayload {
-        self.buffs_payload(monitored)
-    }
-
     pub fn take_monster_payload(
         &mut self,
         monitored: &EntityMonitorSnapshot,
     ) -> LiveMonsterPayload {
         self.monster_revision = self.monster_revision.saturating_add(1);
-        self.monster_payload(monitored)
-    }
-
-    #[must_use]
-    pub fn peek_monster_payload(&self, monitored: &EntityMonitorSnapshot) -> LiveMonsterPayload {
         self.monster_payload(monitored)
     }
 
@@ -124,11 +116,6 @@ impl PresentationProjection {
         self.fantasy_payload(monitored)
     }
 
-    #[must_use]
-    pub fn peek_fantasy_payload(&self, monitored: &EntityMonitorSnapshot) -> LiveFantasyPayload {
-        self.fantasy_payload(monitored)
-    }
-
     /// Builds a deaths payload and advances its revision (publication path).
     pub fn take_deaths_payload(&mut self, deaths: Vec<DeathRecord>) -> LiveDeathsPayload {
         self.deaths_revision = self.deaths_revision.saturating_add(1);
@@ -137,6 +124,7 @@ impl PresentationProjection {
 
     /// Read-only deaths payload for command-side bootstrap.
     #[must_use]
+    #[cfg(test)]
     pub fn peek_deaths_payload(&self, deaths: Vec<DeathRecord>) -> LiveDeathsPayload {
         self.deaths_payload(deaths)
     }
@@ -153,6 +141,7 @@ impl PresentationProjection {
 
     /// Read-only scene payload for command-side bootstrap.
     #[must_use]
+    #[cfg(test)]
     pub fn peek_scene_payload(
         &self,
         scene_id: Option<i32>,

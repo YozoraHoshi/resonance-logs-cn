@@ -34,6 +34,118 @@ pub struct LiveScenePayload {
     pub dungeon_difficulty: Option<i32>,
 }
 
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum LivePullWindow {
+    Live,
+    GameOverlay,
+    MonsterOverlay,
+    MinimapOverlay,
+}
+
+impl LivePullWindow {
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Live => crate::WINDOW_LIVE_LABEL,
+            Self::GameOverlay => crate::WINDOW_GAME_OVERLAY_LABEL,
+            Self::MonsterOverlay => crate::WINDOW_MONSTER_OVERLAY_LABEL,
+            Self::MinimapOverlay => crate::WINDOW_MINIMAP_OVERLAY_LABEL,
+        }
+    }
+
+    #[must_use]
+    pub fn from_label(label: &str) -> Option<Self> {
+        match label {
+            crate::WINDOW_LIVE_LABEL => Some(Self::Live),
+            crate::WINDOW_GAME_OVERLAY_LABEL => Some(Self::GameOverlay),
+            crate::WINDOW_MONSTER_OVERLAY_LABEL => Some(Self::MonsterOverlay),
+            crate::WINDOW_MINIMAP_OVERLAY_LABEL => Some(Self::MinimapOverlay),
+            _ => None,
+        }
+    }
+}
+
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LiveWindowFrameRequest {
+    pub epoch: Option<u64>,
+    pub combat_revision: Option<u64>,
+    pub fantasy_revision: Option<u64>,
+    pub deaths_revision: Option<u64>,
+    pub include_deaths: bool,
+}
+
+#[derive(specta::Type, serde::Serialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LiveWindowFrame {
+    pub active: bool,
+    pub epoch: u64,
+    pub combat: Option<LiveCombatPayload>,
+    pub fantasy: Option<LiveFantasyPayload>,
+    pub deaths: Option<LiveDeathsPayload>,
+}
+
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GameOverlayFrameRequest {
+    pub epoch: Option<u64>,
+    pub status_revision: Option<u64>,
+    pub buffs_revision: Option<u64>,
+}
+
+#[derive(specta::Type, serde::Serialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GameOverlayFrame {
+    pub active: bool,
+    pub epoch: u64,
+    pub status: Option<LiveStatusPayload>,
+    pub buffs: Option<LiveBuffsPayload>,
+}
+
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MonsterOverlayFrameRequest {
+    pub epoch: Option<u64>,
+    pub monster_revision: Option<u64>,
+    pub fantasy_revision: Option<u64>,
+}
+
+#[derive(specta::Type, serde::Serialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MonsterOverlayFrame {
+    pub active: bool,
+    pub epoch: u64,
+    pub monster: Option<LiveMonsterPayload>,
+    pub fantasy: Option<LiveFantasyPayload>,
+}
+
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MinimapOverlayFrameRequest {
+    pub epoch: Option<u64>,
+    pub snapshot_revision: Option<u64>,
+    pub skill_cast_cursor: Option<u64>,
+}
+
+#[derive(specta::Type, serde::Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MinimapSnapshotUpdate {
+    pub revision: u64,
+    pub snapshot: Option<MinimapSnapshot>,
+}
+
+#[derive(specta::Type, serde::Serialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MinimapOverlayFrame {
+    pub active: bool,
+    pub epoch: u64,
+    pub snapshot: Option<MinimapSnapshotUpdate>,
+    pub skill_casts: Vec<MinimapSkillCast>,
+    pub skill_cast_cursor: u64,
+    pub casts_reset: bool,
+}
+
 /// Skill CD / panel attrs / fight resource / shields / counters
 /// (`live-status`). Published once per batch when dirty (no time throttle), so
 /// the shield bar gets the low latency it needs.
@@ -537,9 +649,8 @@ pub struct MinimapSnapshot {
     pub markers: Vec<MinimapMarker>,
 }
 
-/// Event payload wrapping a [`MinimapSnapshot`] for the minimap overlay window.
-#[derive(specta::Type, serde::Serialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
+/// Internal publication payload archived by the minimap pull cache.
+#[derive(Debug, Clone)]
 pub struct MinimapUpdatePayload {
     pub snapshot: Option<MinimapSnapshot>,
     pub skill_casts: Vec<MinimapSkillCast>,

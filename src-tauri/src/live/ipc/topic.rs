@@ -1,9 +1,6 @@
 //! Per-window live publication topics and dirty masks.
 
-use crate::{
-    WINDOW_GAME_OVERLAY_LABEL, WINDOW_LIVE_LABEL, WINDOW_MAIN_LABEL, WINDOW_MINIMAP_OVERLAY_LABEL,
-    WINDOW_MONSTER_OVERLAY_LABEL,
-};
+use crate::WINDOW_MAIN_LABEL;
 
 /// Bitmask of dirty publication topics.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -132,32 +129,20 @@ impl Topic {
     }
 
     #[must_use]
-    pub const fn event_name(self) -> &'static str {
+    pub const fn event_name(self) -> Option<&'static str> {
         match self {
-            Self::Combat => "live-combat",
-            Self::Status => "live-status",
-            Self::Buffs => "live-buffs",
-            Self::Monster => "live-monster",
-            Self::Fantasy => "live-fantasy",
-            Self::Minimap => "minimap-snapshot",
-            Self::Deaths => "live-deaths",
-            Self::Scene => "live-scene",
+            Self::Scene => Some("live-scene"),
+            _ => None,
         }
     }
 
-    /// Target window labels for directed emit. Empty means broadcast (unused).
+    /// Target window labels for the remaining low-frequency event path.
+    /// High-frequency topics are exposed exclusively through invoke pull.
     #[must_use]
     pub const fn window_labels(self) -> &'static [&'static str] {
         match self {
-            Self::Combat => &[WINDOW_LIVE_LABEL],
-            Self::Status | Self::Buffs => &[WINDOW_GAME_OVERLAY_LABEL],
-            Self::Monster => &[WINDOW_MONSTER_OVERLAY_LABEL],
-            Self::Fantasy => &[WINDOW_LIVE_LABEL, WINDOW_MONSTER_OVERLAY_LABEL],
-            Self::Minimap => &[WINDOW_MINIMAP_OVERLAY_LABEL],
-            Self::Deaths => &[WINDOW_LIVE_LABEL],
-            // The only consumer is the daily-scene auto-hide logic for the
-            // game/monster/minimap overlay windows, which runs in `main`.
             Self::Scene => &[WINDOW_MAIN_LABEL],
+            _ => &[],
         }
     }
 
@@ -171,8 +156,30 @@ impl Topic {
         match self {
             Self::Combat => None, // uses configured event_update_rate_ms
             Self::Status => None, // per-batch immediate
-            Self::Buffs | Self::Monster | Self::Fantasy | Self::Minimap | Self::Deaths
+            Self::Buffs
+            | Self::Monster
+            | Self::Fantasy
+            | Self::Minimap
+            | Self::Deaths
             | Self::Scene => Some(50),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn scene_is_the_only_webview_event_topic() {
+        for topic in Topic::ALL {
+            if topic == Topic::Scene {
+                assert_eq!(topic.window_labels(), &[WINDOW_MAIN_LABEL]);
+                assert_eq!(topic.event_name(), Some("live-scene"));
+            } else {
+                assert!(topic.window_labels().is_empty());
+                assert_eq!(topic.event_name(), None);
+            }
         }
     }
 }

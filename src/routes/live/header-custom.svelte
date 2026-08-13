@@ -37,6 +37,7 @@
   } from "$lib/live-header-layout";
   import { ipcNumber, ipcRatio } from "$lib/ipc-decimal";
   import { liveCombatStore } from "$lib/stores/live-topics.svelte";
+  import { emitLivePullGate } from "$lib/live-pull-gate";
   import { resolveMonsterName, resolveSceneName } from "$lib/config/game-names";
   import { formatNumber, t } from "$lib/i18n/index.svelte";
 
@@ -126,6 +127,12 @@
   let appWindow = $state<ReturnType<typeof getCurrentWebviewWindow> | null>(
     null,
   );
+
+  async function hideLiveWindow() {
+    if (!appWindow) return;
+    await emitLivePullGate(appWindow, false);
+    await appWindow.hide();
+  }
 
   async function openSettings() {
     const mainWindow = await WebviewWindow.getByLabel("main");
@@ -448,7 +455,7 @@
       <button
         class="text-muted-foreground hover:text-foreground hover:bg-popover/60 rounded-lg transition-all duration-200"
         style="padding: {h.minimizeButtonPadding}px"
-        onclick={() => appWindow?.hide()}
+        onclick={hideLiveWindow}
         {@attach tooltip(() => t("live.header.tooltip.minimize"))}
       >
         <MinusIcon
@@ -720,7 +727,7 @@
           <button
             class="text-muted-foreground hover:text-foreground hover:bg-popover/60 rounded-lg transition-all duration-200"
             style="padding: {h.minimizeButtonPadding}px"
-            onclick={() => appWindow?.hide()}
+            onclick={hideLiveWindow}
             {@attach tooltip(() => t("live.header.tooltip.minimize"))}
           >
             <MinusIcon

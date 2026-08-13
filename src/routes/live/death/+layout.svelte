@@ -1,20 +1,18 @@
 <script lang="ts">
   /**
-   * @file Scopes the `live-deaths` topic connection to the death route
-   * subtree. `connectTopics` refcounts consumers, so leaving `/live/death/*`
-   * automatically disconnects the topic instead of keeping it live for the
-   * whole `live` window.
+   * @file Scopes the deaths interest bit to the death route subtree. The live
+   * window keeps one pull session; this route only asks that session to include
+   * or omit the optional deaths slice.
    */
   import { onMount } from "svelte";
-  import { liveDeathsStore } from "$lib/stores/live-topics.svelte";
-  import { connectTopics } from "$lib/stores/live-topic-store.svelte";
+  import { liveWindowSession } from "$lib/stores/live-window-sessions.svelte";
 
   let { children } = $props();
 
   onMount(() => {
-    const disconnectTopics = connectTopics(liveDeathsStore);
+    liveWindowSession.setIncludeDeaths(true);
     return () => {
-      disconnectTopics();
+      liveWindowSession.setIncludeDeaths(false);
     };
   });
 </script>

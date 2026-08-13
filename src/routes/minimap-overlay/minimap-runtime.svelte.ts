@@ -18,7 +18,7 @@ let snapshot = $state.raw<MinimapSnapshot | null>(null);
 /**
  * Reactive runtime state for the minimap overlay window.
  *
- * `snapshot` is replaced wholesale on each `minimap-snapshot` event; consumers
+ * `snapshot` is replaced wholesale on each pulled snapshot update; consumers
  * read it via `$derived`/`$effect` so canvas and info bar stay in sync.
  */
 export const minimapRuntime = $state({
@@ -49,8 +49,13 @@ export function minimapSkillCasts() {
   return minimapRuntime.skillCastLog;
 }
 
-export function clearSkillCastLog() {
+/** Clears only cast history, without resetting scene-derived runtime state. */
+export function clearSkillCastEntries() {
   minimapRuntime.skillCastLog = [];
+}
+
+export function clearSkillCastLog() {
+  clearSkillCastEntries();
   minimapRuntime.entityFirstSeenMs.clear();
   minimapRuntime.electromagneticRingResetMs = 0;
 }
@@ -99,8 +104,8 @@ export function electromagneticRingResetMs(): number {
  * virtual body is present in the snapshot. As long as at least one virtual
  * body exists the reset timestamp is left untouched, preserving the in-cycle
  * skill sequence; once all three disappear the next cast window begins at
- * the current time. Called from the minimap-snapshot event handler (outside
- * $derived) so the write stays a side effect, not a derived computation.
+ * the current time. Called from the minimap frame handler (outside $derived)
+ * so the write stays a side effect, not a derived computation.
  */
 export function updateElectromagneticRingCycle(
   snapshot: MinimapSnapshot,
