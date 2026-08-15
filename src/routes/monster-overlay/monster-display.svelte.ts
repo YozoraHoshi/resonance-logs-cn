@@ -4,6 +4,7 @@ import {
   resolveBuffDisplayName,
   type BuffCategoryKey,
 } from "$lib/config/buff-name-table";
+import { untrack } from "svelte";
 import { resolveDbmSkillName } from "$lib/config/dbm-table";
 import { resolveMonsterName } from "$lib/config/game-names";
 import { t } from "$lib/i18n/index.svelte";
@@ -14,12 +15,7 @@ import {
   getGlobalBuffAliases,
   type TeammateBuffColumnKey,
 } from "$lib/settings-store";
-import type {
-  BuffUpdateState,
-  HateEntry,
-  StunEntry,
-  TeammateFantasyState,
-} from "$lib/api";
+import type { HateEntry, StunEntry, TeammateFantasyState } from "$lib/api";
 import {
   buildBuffTextRow,
   formatTimerText,
@@ -59,6 +55,7 @@ import type {
   MonsterTeammateBuffColumn,
   MonsterTeammateBuffRow,
 } from "./monster-types";
+import { latestBuffsByCategory } from "./monster-teammate-projection";
 
 const FANTASY_DISPLAY_TTL_MS = 5000;
 const STUN_BROKEN_HIGHLIGHT_COLOR = "#ff4d4f";
@@ -180,6 +177,10 @@ function stabilizeTeammateDisplay(
   return next;
 }
 
+export function resetMonsterTeammateDisplayStabilizer(): void {
+  lastTeammateDisplay = { columns: [], rows: [] };
+}
+
 type TeammateColumnDefinition =
   | {
       key: TeammateBuffColumnKey;
@@ -194,6 +195,12 @@ type TeammateColumnDefinition =
       categoryKey: BuffCategoryKey;
       buffIds: number[];
     };
+
+type TeammateColumnProjection = {
+  definitions: TeammateColumnDefinition[];
+  displayColumns: MonsterTeammateBuffColumn[];
+  categoryKeysByBuffId: Map<number, BuffCategoryKey[]>;
+};
 
 function selectedMonsterBuffIds() {
   return Array.from(
@@ -401,19 +408,17 @@ function filterInactiveTeammateColumns(
   };
 }
 
-function pickLatestBuff(
-  buffMap: Map<number, BuffUpdateState>,
-  buffIds: number[],
-): BuffUpdateState | undefined {
-  let latest: BuffUpdateState | undefined;
-  for (const buffId of buffIds) {
-    const buff = buffMap.get(buffId);
-    if (!buff) continue;
-    if (!latest || buff.createTimeMs >= latest.createTimeMs) {
-      latest = buff;
-    }
-  }
-  return latest;
+function createBuffNameResolver(
+  aliases: ReturnType<typeof getGlobalBuffAliases>,
+) {
+  const names = new Map<number, string>();
+  return (baseId: number): string => {
+    const cached = names.get(baseId);
+    if (cached !== undefined) return cached;
+    const resolved = resolveBuffDisplayName(baseId, aliases);
+    names.set(baseId, resolved);
+    return resolved;
+  };
 }
 
 function resolveEntityDisplayName(entityUuid: EntityId): string {
@@ -723,14 +728,20 @@ function buildBossBuffPriorityIndex() {
   return priorityIndex;
 }
 
-function buildTeammateDisplay(now: number): {
+function buildTeammateDisplay(
+  now: number,
+  columnProjection: TeammateColumnProjection,
+  aliases: ReturnType<typeof getGlobalBuffAliases>,
+): {
   columns: MonsterTeammateBuffColumn[];
   rows: MonsterTeammateBuffRow[];
   nextDeadlineMs: number | null;
 } {
-  const aliases = getGlobalBuffAliases();
-  const teammateColumns = buildTeammateColumnDefinitions(aliases);
-  const fullTeammateDisplayColumns = toTeammateDisplayColumns(teammateColumns);
+  const teammateColumns = columnProjection.definitions;
+  const fullTeammateDisplayColumns = columnProjection.displayColumns;
+  const resolveTeammateBuffName = createBuffNameResolver(aliases);
+  const alertMap = ensureBuffAlerts(SETTINGS.monsterMonitor.state.buffAlerts);
+  const resolveTeammateAlert = (baseId: number) => alertMap[String(baseId)];
   const nextTeammateRows: MonsterTeammateBuffRow[] = [];
   const deadlines = createDeadlineTracker(now);
   const teammateBuffs = monsterTeammateBuffs();
@@ -746,6 +757,10 @@ function buildTeammateDisplay(now: number): {
 
   for (const teammateUuid of sortedTeammateUuids) {
     const buffMap = teammateBuffs.get(teammateUuid) ?? new Map();
+    const latestByCategory = latestBuffsByCategory(
+      buffMap,
+      columnProjection.categoryKeysByBuffId,
+    );
     const cells = teammateColumns.map((column) => {
       if (column.kind === "buff") {
         const buff = buffMap.get(column.buffId);
@@ -768,7 +783,7 @@ function buildTeammateDisplay(now: number): {
           now,
           false,
           false,
-          resolveAlertFor,
+          resolveTeammateAlert,
         );
         if (!row) {
           return {
@@ -794,9 +809,9 @@ function buildTeammateDisplay(now: number): {
         };
       }
 
-      const buff = pickLatestBuff(buffMap, column.buffIds);
+      const buff = latestByCategory.get(column.categoryKey);
       const buffName = buff
-        ? resolveBuffDisplayName(buff.baseId, aliases)
+        ? resolveTeammateBuffName(buff.baseId)
         : column.label;
       if (!buff) {
         return {
@@ -817,7 +832,7 @@ function buildTeammateDisplay(now: number): {
         now,
         false,
         false,
-        resolveAlertFor,
+        resolveTeammateAlert,
       );
       if (!row) {
         return {
@@ -1041,9 +1056,35 @@ function buildDbmDisplay(now: number): {
   return { rows, nextDeadlineMs: deadlines.value() };
 }
 
+const globalBuffAliasesProjection = $derived.by(() => getGlobalBuffAliases());
+
+const teammateColumnProjection = $derived.by(() => {
+  const definitions = buildTeammateColumnDefinitions(
+    globalBuffAliasesProjection,
+  );
+  const categoryKeysByBuffId = new Map<number, BuffCategoryKey[]>();
+  for (const column of definitions) {
+    if (column.kind !== "category") continue;
+    for (const buffId of column.buffIds) {
+      const categories = categoryKeysByBuffId.get(buffId) ?? [];
+      categories.push(column.categoryKey);
+      categoryKeysByBuffId.set(buffId, categories);
+    }
+  }
+  return {
+    definitions,
+    displayColumns: toTeammateDisplayColumns(definitions),
+    categoryKeysByBuffId,
+  };
+});
+
 const teammateDisplayProjection = $derived.by(() => {
   void hudProjectionRevision(MONSTER_TEAMMATE_DEADLINE_SOURCE);
-  return buildTeammateDisplay(Date.now());
+  return buildTeammateDisplay(
+    Date.now(),
+    teammateColumnProjection,
+    globalBuffAliasesProjection,
+  );
 });
 
 const bossDisplayProjection = $derived.by(() => {
@@ -1075,7 +1116,7 @@ function assignRuntime<
     | "fantasyRows"
     | "dbmRows",
 >(key: K, value: (typeof monsterRuntime)[K]) {
-  if (monsterRuntime[key] !== value) {
+  if (untrack(() => monsterRuntime[key]) !== value) {
     monsterRuntime[key] = value;
   }
 }

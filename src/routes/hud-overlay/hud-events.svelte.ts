@@ -48,6 +48,7 @@ import {
 } from "../game-overlay/overlay-layout.svelte.js";
 import {
   clearMonsterProjectionDeadlines,
+  resetMonsterTeammateDisplayStabilizer,
   syncMonsterProjectionDeadlines,
   updateMonsterDisplay,
 } from "../monster-overlay/monster-display.svelte.js";
@@ -366,6 +367,7 @@ function ensureActiveProfileDefaults(): void {
 }
 
 function clearMonsterDisplay(): void {
+  resetMonsterTeammateDisplayStabilizer();
   monsterRuntime.bossSections = [];
   monsterRuntime.teammateColumns = [];
   monsterRuntime.teammateRows = [];
