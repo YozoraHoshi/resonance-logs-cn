@@ -245,11 +245,23 @@ fn training_phase(state: &SegmentState) -> TrainingDummyPhase {
             mode: IdleMode::Standard,
         }
         | SegmentState::Recording {
-            mode: RecordingMode::Standard { .. },
+            mode:
+                RecordingMode::Standard {
+                    training_armed: false,
+                    ..
+                },
             ..
         } => TrainingDummyPhase::Idle,
         SegmentState::Idle {
             mode: IdleMode::TrainingArmed,
+        }
+        | SegmentState::Recording {
+            mode:
+                RecordingMode::Standard {
+                    training_armed: true,
+                    ..
+                },
+            ..
         } => TrainingDummyPhase::Armed,
         SegmentState::Recording {
             mode: RecordingMode::Training { .. },
@@ -263,6 +275,8 @@ fn training_phase(state: &SegmentState) -> TrainingDummyPhase {
 mod tests {
     use super::*;
     use crate::live::projections::entity_monitor::EntityMonitorSnapshot;
+    use crate::live::runtime::events::{EntityRef, EntityUuid, MonoTimeMs};
+    use crate::live::runtime::segment::{ActiveSegment, BoundaryState};
 
     #[test]
     fn peek_does_not_advance_revision() {
@@ -302,6 +316,86 @@ mod tests {
     fn idle_state() -> SegmentState {
         SegmentState::Idle {
             mode: IdleMode::Standard,
+        }
+    }
+
+    fn recording_segment() -> ActiveSegment {
+        ActiveSegment {
+            id: SegmentId(1),
+            started_at_mono_ms: MonoTimeMs(0),
+            started_at_wall_ms: 0,
+        }
+    }
+
+    fn dummy_target() -> EntityRef {
+        EntityRef {
+            uuid: EntityUuid(22),
+            generation: 1,
+        }
+    }
+
+    #[test]
+    fn training_phase_maps_every_segment_state() {
+        let recording = recording_segment();
+        let target = dummy_target();
+        let cases = [
+            (
+                SegmentState::Idle {
+                    mode: IdleMode::Standard,
+                },
+                TrainingDummyPhase::Idle,
+            ),
+            (
+                SegmentState::Idle {
+                    mode: IdleMode::TrainingArmed,
+                },
+                TrainingDummyPhase::Armed,
+            ),
+            (
+                SegmentState::Recording {
+                    segment: recording,
+                    mode: RecordingMode::Standard {
+                        boundary: BoundaryState::Clear,
+                        training_armed: false,
+                    },
+                },
+                TrainingDummyPhase::Idle,
+            ),
+            (
+                SegmentState::Recording {
+                    segment: recording,
+                    mode: RecordingMode::Standard {
+                        boundary: BoundaryState::Clear,
+                        training_armed: true,
+                    },
+                },
+                TrainingDummyPhase::Armed,
+            ),
+            (
+                SegmentState::Recording {
+                    segment: recording,
+                    mode: RecordingMode::Training {
+                        target,
+                        monster_id: 115,
+                        deadline: MonoTimeMs(183_000),
+                    },
+                },
+                TrainingDummyPhase::Running,
+            ),
+            (
+                SegmentState::FrozenTraining {
+                    segment: recording,
+                    target,
+                    monster_id: 115,
+                    ended_at_mono_ms: MonoTimeMs(183_000),
+                    ended_at_wall_ms: 183_000,
+                },
+                TrainingDummyPhase::Finished,
+            ),
+        ];
+
+        for (state, expected) in cases {
+            assert_eq!(training_phase(&state), expected, "{state:?}");
         }
     }
 

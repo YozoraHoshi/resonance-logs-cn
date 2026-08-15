@@ -6,8 +6,8 @@ use crate::live::bootstrap_snapshot::MonitorRuntimeSnapshot;
 use crate::live::counter::engine::{CounterEngine, CounterNamespace};
 use crate::live::history_writer::HistoryWriterHandle;
 use crate::live::ipc::models::{
-    LiveBuffsPayload, LiveCombatPayload, LiveDeathsPayload, LiveFantasyPayload, LiveMonsterPayload,
-    LiveScenePayload, LiveStatusPayload, MinimapUpdatePayload,
+    LiveBuffsPayload, LiveCombatPayload, LiveDataPayload, LiveDeathsPayload, LiveFantasyPayload,
+    LiveMonsterPayload, LiveScenePayload, LiveStatusPayload, MinimapUpdatePayload,
 };
 use crate::live::ipc::topic::{Topic, TopicMask};
 use crate::live::projections::combat::accumulator::CombatHitFact;
@@ -24,7 +24,7 @@ use crate::live::runtime::events::{
     AttributeValue, DomainEnvelope, DomainEvent, MonoTimeMs, SegmentReason,
 };
 use crate::live::runtime::scheduler::{DeadlineScheduler, DueTimer};
-use crate::live::runtime::segment::SegmentState;
+use crate::live::runtime::segment::{SegmentState, TRAINING_WINDOW_MS};
 use crate::voice::models::VoiceCueIntent;
 
 /// Topics served by [`EntityMonitorProjection::snapshot`].
@@ -414,6 +414,13 @@ impl ProjectionSet {
         self.dirty |= SEGMENT_TOPICS;
     }
 
+    /// Marks topics dirty without changing projection state. Used when
+    /// segment policy changes (e.g. arming training) so the next combat
+    /// publication can carry the new phase.
+    pub fn mark_dirty(&mut self, mask: TopicMask) {
+        self.dirty |= mask;
+    }
+
     fn reset_runtime(&mut self, scheduler: &mut DeadlineScheduler) {
         self.combat.clear_segment();
         self.combat.set_local_player(None);
@@ -552,14 +559,17 @@ impl ProjectionSet {
         reason: SegmentReason,
         ended_at_wall_ms: i64,
     ) -> Result<(), String> {
+        let observed_ms = self.combat.observed_duration_ms();
+        let duration_ms = finalized_duration_ms(reason, observed_ms);
         if reason == SegmentReason::Manual {
             self.presentation.clear_display();
         } else {
-            self.presentation
-                .freeze_segment(segment_id, self.combat.payload());
+            self.presentation.freeze_segment(
+                segment_id,
+                payload_for_end(self.combat.payload(), reason, duration_ms),
+            );
         }
 
-        let duration_ms = self.combat.observed_duration_ms();
         let active_ms = self.combat.active_combat_time_ms().min(duration_ms);
         let total_damage_exact = self.combat.total_damage();
         let total_healing_exact = self.combat.total_healing();
@@ -647,9 +657,28 @@ fn clamp_u128_to_i64(value: u128) -> i64 {
     value.min(i64::MAX as u128) as i64
 }
 
+fn finalized_duration_ms(reason: SegmentReason, observed_ms: u128) -> u128 {
+    match reason {
+        SegmentReason::TrainingElapsed => u128::from(TRAINING_WINDOW_MS),
+        _ => observed_ms,
+    }
+}
+
+fn payload_for_end(
+    mut payload: LiveDataPayload,
+    reason: SegmentReason,
+    duration_ms: u128,
+) -> LiveDataPayload {
+    if reason == SegmentReason::TrainingElapsed {
+        payload.elapsed_ms = duration_ms.to_string();
+    }
+    payload
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::live::ipc::models::TrainingDummyPhase;
     use crate::live::runtime::segment::IdleMode;
 
     #[test]
@@ -678,6 +707,78 @@ mod tests {
 
         drop(projections);
         join.join().expect("history writer stops after disconnect");
+    }
+
+    #[test]
+    fn arming_training_publishes_armed_only_after_combat_is_dirtied() {
+        let (writer, join) = HistoryWriterHandle::start().expect("history writer starts");
+        let mut projections = ProjectionSet::new(writer);
+        let entities = EntityContext::new();
+        let idle = SegmentState::Idle {
+            mode: IdleMode::Standard,
+        };
+        let armed = SegmentState::Idle {
+            mode: IdleMode::TrainingArmed,
+        };
+
+        let _ = projections.take_publications(&entities, &idle, ALL_TOPICS);
+        assert!(projections.dirty_mask().is_empty());
+        assert!(
+            projections
+                .take_publications(&entities, &armed, TopicMask::COMBAT)
+                .is_empty()
+        );
+
+        projections.mark_dirty(TopicMask::COMBAT);
+        let publications = projections.take_publications(&entities, &armed, TopicMask::COMBAT);
+        let [TopicPublication::Combat(publication)] = publications.as_slice() else {
+            panic!("dirtied combat should publish");
+        };
+        assert_eq!(publication.training.phase, TrainingDummyPhase::Armed);
+
+        drop(projections);
+        join.join().expect("history writer stops after disconnect");
+    }
+
+    #[test]
+    fn training_elapsed_uses_the_window_not_the_last_hit() {
+        assert_eq!(
+            finalized_duration_ms(SegmentReason::TrainingElapsed, 182_500),
+            u128::from(TRAINING_WINDOW_MS)
+        );
+        assert_eq!(
+            finalized_duration_ms(SegmentReason::Manual, 60_000),
+            60_000
+        );
+        assert_eq!(
+            finalized_duration_ms(SegmentReason::Wipe, 12_345),
+            12_345
+        );
+    }
+
+    #[test]
+    fn training_elapsed_freeze_payload_reports_the_window() {
+        let frozen = payload_for_end(
+            LiveDataPayload {
+                elapsed_ms: "182500".to_string(),
+                active_combat_time_ms: "182000".to_string(),
+                ..LiveDataPayload::default()
+            },
+            SegmentReason::TrainingElapsed,
+            u128::from(TRAINING_WINDOW_MS),
+        );
+        assert_eq!(frozen.elapsed_ms, TRAINING_WINDOW_MS.to_string());
+        assert_eq!(frozen.active_combat_time_ms, "182000");
+
+        let early = payload_for_end(
+            LiveDataPayload {
+                elapsed_ms: "60000".to_string(),
+                ..LiveDataPayload::default()
+            },
+            SegmentReason::Manual,
+            60_000,
+        );
+        assert_eq!(early.elapsed_ms, "60000");
     }
 
     #[test]
@@ -720,7 +821,6 @@ mod tests {
     /// instead of blanking the meter like a manual reset would.
     #[test]
     fn container_reset_clears_runtime_but_keeps_the_frozen_meter() {
-        use crate::live::ipc::models::LiveDataPayload;
         use crate::live::runtime::events::{BatchId, EventMeta, SegmentId};
 
         let (writer, join) = HistoryWriterHandle::start().expect("history writer starts");

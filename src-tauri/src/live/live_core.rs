@@ -267,6 +267,7 @@ impl LiveCore {
                 let now = self.refresh_clock();
                 self.drain_due_through(now)?;
                 self.segments.arm_training(&mut self.scheduler);
+                self.projections.mark_dirty(TopicMask::COMBAT);
                 self.request_publications(now, true);
                 Ok(LiveCoreFlow::Continue)
             }
