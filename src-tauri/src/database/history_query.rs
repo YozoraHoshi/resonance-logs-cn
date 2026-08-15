@@ -370,12 +370,7 @@ impl HistoryProjectionReducer {
                         .or_default()
                         .entry(bucket_offset)
                         .or_default();
-                    add_chart_amount(
-                        entity_bucket,
-                        fact.metric,
-                        fact.amount,
-                        &mut self.quality,
-                    );
+                    add_chart_amount(entity_bucket, fact.metric, fact.amount, &mut self.quality);
                 }
             }
             HistoryEvent::SkillCast(cast) if self.collect_dynamic_series => {
@@ -533,9 +528,7 @@ impl HistoryProjectionReducer {
                     class_id: inferred_spec
                         .map(get_class_id_from_spec)
                         .or_else(|| context.and_then(|value| value.class_id)),
-                    class_spec: inferred_spec
-                        .map(|spec| spec as i32)
-                        .or(context_spec),
+                    class_spec: inferred_spec.map(|spec| spec as i32).or(context_spec),
                     class_spec_name: spec_name.map(get_class_spec),
                     ability_score: context.and_then(|value| value.ability_score),
                     season_strength: context.and_then(|value| value.season_strength),

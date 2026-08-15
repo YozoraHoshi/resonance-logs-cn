@@ -70,7 +70,7 @@
             <div class="res-energy-track">
               <div
                 class="res-energy-fill"
-                style:width={`${energyPercent}%`}
+                style:transform={`scaleX(${energyPercent / 100})`}
               ></div>
             </div>
           </div>
@@ -273,11 +273,14 @@
   }
 
   .res-energy-fill {
+    width: 100%;
     height: 100%;
     border-radius: 999px;
     background: #ffffff;
     box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
-    transition: width 100ms linear;
+    transform-origin: left center;
+    transition: transform 100ms linear;
+    will-change: transform;
   }
 
   .res-text {

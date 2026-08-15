@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { emit } from "@tauri-apps/api/event";
-  import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
   import ExternalLinkIcon from "virtual:icons/lucide/external-link";
   import MapIcon from "virtual:icons/lucide/map";
   import PenSquareIcon from "virtual:icons/lucide/pen-square";
@@ -9,21 +7,17 @@
   import { t } from "$lib/i18n/index.svelte";
   import {
     isOverlayWindowVisible,
+    toggleHudEditing,
     toggleOverlayWindow,
   } from "$lib/overlay-window-visibility.svelte";
 
   let { children } = $props();
 
-  const overlayVisible = $derived(isOverlayWindowVisible("minimap-overlay"));
+  const overlayVisible = $derived(isOverlayWindowVisible("minimap"));
 
   async function toggleMinimapOverlayEditMode() {
     try {
-      const overlayWindow = await WebviewWindow.getByLabel("minimap-overlay");
-      if (overlayWindow !== null) {
-        await emit("minimap-overlay-edit-toggle");
-      } else {
-        console.warn("Minimap overlay window not found");
-      }
+      await toggleHudEditing();
     } catch (error) {
       console.error("Failed to toggle minimap overlay edit mode", error);
     }
@@ -51,7 +45,7 @@
         class="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium shadow-sm transition-colors {overlayVisible
           ? 'border border-border/60 bg-muted/30 text-foreground hover:bg-muted/50'
           : 'bg-primary text-primary-foreground hover:bg-primary/90'}"
-        onclick={() => toggleOverlayWindow("minimap-overlay")}
+        onclick={() => toggleOverlayWindow("minimap")}
       >
         {#if overlayVisible}
           <PauseIcon class="h-4 w-4" />

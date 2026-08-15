@@ -1,9 +1,8 @@
 use crate::WINDOW_LIVE_LABEL;
 use crate::live::bootstrap_snapshot::{MonitorRuntimeSnapshot, save_monitor_runtime_snapshot};
 use crate::live::ipc::models::{
-    GameOverlayFrame, GameOverlayFrameRequest, LivePullWindow, LiveScenePayload, LiveStatusPayload,
-    LiveWindowFrame, LiveWindowFrameRequest, MinimapOverlayFrame, MinimapOverlayFrameRequest,
-    MonsterOverlayFrame, MonsterOverlayFrameRequest,
+    HudFrame, HudFrameRequest, LivePullWindow, LiveScenePayload, LiveStatusPayload,
+    LiveWindowFrame, LiveWindowFrameRequest,
 };
 use crate::live::ipc::publisher::LivePublicationCache;
 use crate::live::runtime_handle::LiveRuntimeHandle;
@@ -23,35 +22,13 @@ pub fn pull_live_window_frame(
 
 #[tauri::command]
 #[specta::specta]
-pub fn pull_game_overlay_frame(
+pub fn pull_hud_frame(
     window: tauri::WebviewWindow,
     cache: tauri::State<'_, LivePublicationCache>,
-    request: GameOverlayFrameRequest,
-) -> Result<GameOverlayFrame, String> {
-    let active = pull_window_active(&window, &cache, LivePullWindow::GameOverlay)?;
-    Ok(cache.pull_game_overlay(&request, active))
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn pull_monster_overlay_frame(
-    window: tauri::WebviewWindow,
-    cache: tauri::State<'_, LivePublicationCache>,
-    request: MonsterOverlayFrameRequest,
-) -> Result<MonsterOverlayFrame, String> {
-    let active = pull_window_active(&window, &cache, LivePullWindow::MonsterOverlay)?;
-    Ok(cache.pull_monster_overlay(&request, active))
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn pull_minimap_overlay_frame(
-    window: tauri::WebviewWindow,
-    cache: tauri::State<'_, LivePublicationCache>,
-    request: MinimapOverlayFrameRequest,
-) -> Result<MinimapOverlayFrame, String> {
-    let active = pull_window_active(&window, &cache, LivePullWindow::MinimapOverlay)?;
-    Ok(cache.pull_minimap_overlay(&request, active))
+    request: HudFrameRequest,
+) -> Result<HudFrame, String> {
+    let active = pull_window_active(&window, &cache, LivePullWindow::HudOverlay)?;
+    Ok(cache.pull_hud(&request, active))
 }
 
 #[tauri::command]
@@ -74,7 +51,7 @@ pub fn get_live_status(
 }
 
 /// Bootstrap for the `live-scene` topic. `main`-only: drives the daily-scene
-/// auto-hide logic for the game/monster/minimap overlay windows without
+/// auto-hide logic for the unified HUD overlay without
 /// subscribing to the far heavier `live-combat` cadence.
 #[tauri::command]
 #[specta::specta]

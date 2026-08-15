@@ -1,5 +1,4 @@
 import { SETTINGS, createDefaultMinimapConfig } from "$lib/settings-store";
-import { minimapRuntime } from "./minimap-runtime.svelte.js";
 
 function patchMinimapSettings(
   updater: (
@@ -7,13 +6,6 @@ function patchMinimapSettings(
   ) => typeof SETTINGS.minimap.state,
 ) {
   Object.assign(SETTINGS.minimap.state, updater(SETTINGS.minimap.state));
-}
-
-export async function setMinimapEditMode(editing: boolean) {
-  minimapRuntime.isEditing = editing;
-  if (minimapRuntime.currentWindow) {
-    await minimapRuntime.currentWindow.setIgnoreCursorEvents(!editing);
-  }
 }
 
 export function resetMinimapPositions() {
@@ -32,7 +24,6 @@ export function resetMinimapPositions() {
     },
   }));
 }
-
 export function resetMinimapSizes() {
   const defaults = createDefaultMinimapConfig();
   patchMinimapSettings((config) => ({
@@ -48,18 +39,4 @@ export function resetMinimapSizes() {
       scale: defaults.infoPanel.scale,
     },
   }));
-}
-
-export function onWindowDragPointerDown(e: PointerEvent) {
-  if (
-    !minimapRuntime.isEditing ||
-    e.button !== 0 ||
-    !minimapRuntime.currentWindow
-  ) {
-    return;
-  }
-  const el = e.target as HTMLElement | null;
-  if (el?.closest("button,a,input,textarea,select")) return;
-  e.preventDefault();
-  void minimapRuntime.currentWindow.startDragging();
 }

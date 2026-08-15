@@ -170,7 +170,7 @@
               <div class="bar-bg hp-bar-bg">
                 <div
                   class="bar-fill"
-                  style:width={`${hpPercent}%`}
+                  style:transform={`scaleX(${hpPercent / 100})`}
                   style:background={style.hpColor}
                 ></div>
               </div>
@@ -193,14 +193,14 @@
                 {#each layers as layer, i}
                   <div
                     class="bar-fill shield-layer"
-                    style:width={`${layer.pct}%`}
+                    style:transform={`scaleX(${layer.pct / 100})`}
                     style:background={style.shieldColor}
                     style:z-index={i + 1}
                   ></div>
                   {#if layer.darken > 0}
                     <div
                       class="bar-fill shield-layer-darken"
-                      style:width={`${layer.pct}%`}
+                      style:transform={`scaleX(${layer.pct / 100})`}
                       style:background={`rgba(0,0,0,${layer.darken})`}
                       style:z-index={i + 1}
                     ></div>
@@ -243,7 +243,7 @@
                 <div class="bar-bg">
                   <div
                     class="bar-fill"
-                    style:width={`${pct}%`}
+                    style:transform={`scaleX(${pct / 100})`}
                     style:background={entryColor(entry.displayType)}
                   ></div>
                 </div>
@@ -345,9 +345,12 @@
     position: absolute;
     top: 0;
     left: 0;
+    width: 100%;
     height: 100%;
     border-radius: 3px;
-    transition: width 0.15s ease;
+    transform-origin: left center;
+    transition: transform 0.15s ease;
+    will-change: transform;
   }
 
   .bar-text {

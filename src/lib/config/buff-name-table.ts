@@ -217,8 +217,8 @@ function normalizeAliasMap(aliases?: BuffAliasMap): BuffAliasMap {
 }
 
 function getAlias(baseId: number, aliases?: BuffAliasMap): string | null {
-  const normalizedAliases = normalizeAliasMap(aliases);
-  const alias = normalizedAliases[String(baseId)]?.trim();
+  if (!aliases) return null;
+  const alias = aliases[String(baseId)]?.trim();
   return alias ? alias : null;
 }
 

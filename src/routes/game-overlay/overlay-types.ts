@@ -1,8 +1,9 @@
-import type {
-  OverlayPositions,
-  PanelAttrConfig,
-} from "$lib/settings-store";
+import type { OverlayPositions, PanelAttrConfig } from "$lib/settings-store";
 import type { BuffCategoryKey } from "$lib/config/buff-name-table";
+import type {
+  HudAlertState,
+  HudTemporalValue,
+} from "$lib/hud-temporal.svelte.js";
 
 export type OverlayScaleKey =
   | "skillCdGroupScale"
@@ -22,12 +23,7 @@ export type SkillDisplay = {
   maxCharges?: number;
 };
 
-export type BuffAlertState = {
-  highlightColor: string;
-  flash: boolean;
-  flashIntervalMs: number;
-  applyToProgress: boolean;
-};
+export type BuffAlertState = HudAlertState;
 
 export type IconBuffDisplay = {
   baseId: number;
@@ -45,6 +41,7 @@ export type IconBuffDisplay = {
   specialImages?: string[];
   specialDisplayStyle?: "woodCounter";
   alert?: BuffAlertState | undefined;
+  temporal?: HudTemporalValue | undefined;
 };
 
 export type SkillDurationState = {
@@ -60,6 +57,7 @@ export type SkillDurationDisplay = {
   imagePath?: string;
   text: string;
   isPlaceholder?: boolean;
+  temporal?: HudTemporalValue | undefined;
 };
 
 export type TextBuffRowDisplay = {
@@ -71,6 +69,7 @@ export type TextBuffRowDisplay = {
   showProgress: boolean;
   isPlaceholder?: boolean | undefined;
   alert?: BuffAlertState | undefined;
+  temporal?: HudTemporalValue | undefined;
 };
 
 export type TextBuffDisplay = TextBuffRowDisplay;
@@ -100,6 +99,8 @@ export type DragState = {
   startX: number;
   startY: number;
   startPos: { x: number; y: number };
+  nextPos: { x: number; y: number };
+  element: HTMLElement | null;
 };
 
 export type ResizeTarget =
@@ -119,6 +120,8 @@ export type ResizeState = {
   startX: number;
   startY: number;
   startValue: number;
+  nextValue: number;
+  element: HTMLElement | null;
 };
 
 export type CustomPanelDisplayRow = TextBuffRowDisplay;

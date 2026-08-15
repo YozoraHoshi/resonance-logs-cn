@@ -22,7 +22,6 @@ import {
 import { resolveBuffIconSrc } from "$lib/buff-icons";
 import { buffIconDirUrlPrefix } from "$lib/buff-icon-dir.svelte";
 import type {
-  BuffAlertState,
   CustomPanelDisplayRow,
   IconBuffDisplay,
   SkillDisplay,
@@ -38,6 +37,7 @@ import {
   formatTimerText,
   getBuffRemainingMs,
   getBuffRemainPercent,
+  getBuffTemporalValue,
   getCustomPanelDisplayRow,
   isBuffActive,
   getResourcePreciseValue as getResourcePreciseValueValue,
@@ -45,7 +45,11 @@ import {
   resolveAlertState,
   withFantasyTierSuffix,
 } from "./overlay-utils";
-import { ensureBuffAlerts, type BuffAliasMap } from "$lib/settings-store";
+import {
+  ensureBuffAlerts,
+  type BuffAlertRule,
+  type BuffAliasMap,
+} from "$lib/settings-store";
 import {
   activeProfile,
   buffAliases,
@@ -78,10 +82,15 @@ import {
 } from "./overlay-runtime.svelte.js";
 import type { InlineBuffEntry } from "$lib/settings-store";
 import { overlayNow } from "./overlay-clock.svelte.js";
+import {
+  hudProjectionRevision,
+  type HudTemporalValue,
+} from "$lib/hud-temporal.svelte.js";
 
 /** S4+ moved the season panel's content from S3 factor-socket counters to
  * basic-node buffs; mirrors the backend's `SEASON_NODE_BUFF_MIN_ID`. */
 const SEASON_NODE_BUFF_MIN_ID = 4;
+export const GAME_PROJECTION_DEADLINE_SOURCE = "game-overlay:display";
 
 type ResolvedSpecialBuffDisplay = Pick<
   IconBuffDisplay,
@@ -191,11 +200,7 @@ const _seasonCultivateFactorOwnedEffectBuffIds = $derived.by(() => {
 function buildSeasonNodeRows(
   now: number,
   currentBuffAliases: BuffAliasMap,
-  resolveAlert: (
-    baseId: number,
-    remainingMs: number,
-    durationMs: number,
-  ) => BuffAlertState | undefined,
+  resolveAlert: (baseId: number) => BuffAlertRule | undefined,
 ): CustomPanelDisplayRow[] {
   const activeTemplateIds = seasonActiveTemplateIds();
   const currentBuffMap = buffMap();
@@ -239,7 +244,8 @@ function buildSeasonNodeRows(
 }
 
 const _buffSnapshot = $derived.by(() => {
-  const now = overlayNow();
+  void hudProjectionRevision(GAME_PROJECTION_DEADLINE_SOURCE);
+  const now = Date.now();
   const explicitSelectedBuffIds = monitoredBuffIds();
   const priorityIds = buffPriorityIds();
   const buffDefinitionsMap = buffDefinitions();
@@ -247,11 +253,7 @@ const _buffSnapshot = $derived.by(() => {
   const iconDirUrl = buffIconDirUrlPrefix();
   const panelGroups = customPanelGroups();
   const alertMap = ensureBuffAlerts(activeProfile()?.buffAlerts);
-  const resolveAlert = (
-    baseId: number,
-    remainingMs: number,
-    durationMs: number,
-  ) => resolveAlertState(alertMap[String(baseId)], remainingMs, durationMs);
+  const resolveAlert = (baseId: number) => alertMap[String(baseId)];
   const skippedInlineBuffIds = new Set(
     panelGroups
       .filter((group) => group.kind === "manual")
@@ -261,7 +263,6 @@ const _buffSnapshot = $derived.by(() => {
   );
   const currentBuffAliases = buffAliases();
   const nextActiveBuffIds = new Set<number>();
-  const nextBuffDurationPercents = new Map<number, number>();
   const nextIconBuffs: IconBuffDisplay[] = [];
   const nextTextBuffs: TextBuffDisplay[] = [];
   const nextCustomPanelRowsByGroup = new Map<string, CustomPanelDisplayRow[]>();
@@ -272,15 +273,20 @@ const _buffSnapshot = $derived.by(() => {
       .filter((g) => !g.monitorAll)
       .flatMap((g) => g.buffIds),
   ]);
+  let nextDeadlineMs: number | null = null;
+  const includeDeadline = (deadlineMs: number) => {
+    if (deadlineMs <= now) return;
+    if (nextDeadlineMs === null || deadlineMs < nextDeadlineMs) {
+      nextDeadlineMs = deadlineMs;
+    }
+  };
   for (const [baseId, buff] of buffMap()) {
+    if (buff.durationMs > 0) {
+      includeDeadline(buff.createTimeMs + buff.durationMs);
+    }
     if (skippedInlineBuffIds.has(baseId)) continue;
 
     const remaining = getBuffRemainingMs(buff, now);
-    const remainPercent = getBuffRemainPercent(buff, now);
-
-    if (buff.durationMs > 0) {
-      nextBuffDurationPercents.set(baseId, remainPercent);
-    }
     if (isBuffActive(buff, now)) {
       nextActiveBuffIds.add(baseId);
     } else {
@@ -301,7 +307,9 @@ const _buffSnapshot = $derived.by(() => {
       buff,
     );
     const timeText = formatTimerText(remaining);
-    const alert = resolveAlert(baseId, remaining, buff.durationMs);
+    const alertRule = resolveAlert(baseId);
+    const alert = resolveAlertState(alertRule, remaining, buff.durationMs);
+    const temporal = getBuffTemporalValue(buff, alertRule);
     const iconSrc = resolveBuffIconSrc(
       baseId,
       definition?.spriteFile,
@@ -332,6 +340,7 @@ const _buffSnapshot = $derived.by(() => {
         layer: buff.layer,
         ...(specialDisplay.specialImages ? specialDisplay : {}),
         ...(alert ? { alert } : {}),
+        ...(temporal ? { temporal } : {}),
       });
     } else {
       const row = buildBuffTextRow(
@@ -536,20 +545,25 @@ const _buffSnapshot = $derived.by(() => {
     nextCustomPanelRowsByGroup.set(group.id, nextRows);
   }
 
+  for (const rows of nextCustomPanelRowsByGroup.values()) {
+    for (const row of rows) {
+      if (row.temporal) includeDeadline(row.temporal.deadlineMs);
+    }
+  }
+
   return {
     activeBuffIds: nextActiveBuffIds,
-    buffDurationPercents: nextBuffDurationPercents,
     iconDisplayBuffs: nextIconBuffs,
     textBuffs: nextTextBuffs,
     customPanelRowsByGroup: nextCustomPanelRowsByGroup,
+    nextDeadlineMs,
   };
 });
 
-const _skillSnapshot = $derived.by(() => {
+const _displayMap = $derived.by(() => {
   const now = overlayNow();
   const classKey = selectedClassKey();
   const nextDisplayMap = new Map<number, SkillDisplay>();
-  const nextSkillDurationDisplays: SkillDurationDisplay[] = [];
 
   for (const [skillId, cd] of cdMap()) {
     const display = computeDisplay(classKey, skillId, cd, now);
@@ -557,22 +571,36 @@ const _skillSnapshot = $derived.by(() => {
       nextDisplayMap.set(skillId, display);
     }
   }
+  return nextDisplayMap;
+});
 
+const _skillDurationSnapshot = $derived.by(() => {
+  void hudProjectionRevision(GAME_PROJECTION_DEADLINE_SOURCE);
+  const now = Date.now();
+  const classKey = selectedClassKey();
+  const nextSkillDurationDisplays: SkillDurationDisplay[] = [];
+  let nextDeadlineMs: number | null = null;
   for (const skillId of monitoredSkillDurationIds()) {
     const skill = findAnySkillByBaseId(classKey, skillId);
     if (!skill) continue;
     const durationState = skillDurationMap().get(skillId);
     if (durationState) {
-      const remaining = Math.max(
-        0,
-        durationState.startedAtMs + durationState.durationMs - now,
-      );
+      const deadlineMs = durationState.startedAtMs + durationState.durationMs;
+      const remaining = Math.max(0, deadlineMs - now);
       if (remaining > 0) {
+        if (nextDeadlineMs === null || deadlineMs < nextDeadlineMs) {
+          nextDeadlineMs = deadlineMs;
+        }
+        const temporal: HudTemporalValue = {
+          deadlineMs,
+          durationMs: durationState.durationMs,
+        };
         nextSkillDurationDisplays.push({
           skillId,
           name: skill.name,
           imagePath: skill.imagePath,
           text: formatTimerText(remaining),
+          temporal,
         });
         continue;
       }
@@ -590,23 +618,29 @@ const _skillSnapshot = $derived.by(() => {
   }
 
   return {
-    displayMap: nextDisplayMap,
     skillDurationDisplays: nextSkillDurationDisplays,
+    nextDeadlineMs,
   };
 });
 
 const _activeBuffIds = $derived.by(() => _buffSnapshot.activeBuffIds);
-const _buffDurationPercents = $derived.by(
-  () => _buffSnapshot.buffDurationPercents,
-);
+const _buffDurationPercents = $derived.by(() => {
+  const now = overlayNow();
+  const result = new Map<number, number>();
+  for (const [baseId, buff] of buffMap()) {
+    if (buff.durationMs > 0) {
+      result.set(baseId, getBuffRemainPercent(buff, now));
+    }
+  }
+  return result;
+});
 const _iconDisplayBuffs = $derived.by(() => _buffSnapshot.iconDisplayBuffs);
 const _textBuffs = $derived.by(() => _buffSnapshot.textBuffs);
 const _customPanelRowsByGroup = $derived.by(
   () => _buffSnapshot.customPanelRowsByGroup,
 );
-const _displayMap = $derived.by(() => _skillSnapshot.displayMap);
 const _skillDurationDisplays = $derived.by(
-  () => _skillSnapshot.skillDurationDisplays,
+  () => _skillDurationSnapshot.skillDurationDisplays,
 );
 
 const _groupedIconBuffs = $derived.by(() => {
@@ -785,6 +819,14 @@ export function limitedTextBuffs() {
 
 export function customPanelRowsByGroup() {
   return _customPanelRowsByGroup;
+}
+
+export function nextOverlayProjectionDeadline(): number | null {
+  const buffDeadline = _buffSnapshot.nextDeadlineMs;
+  const skillDeadline = _skillDurationSnapshot.nextDeadlineMs;
+  if (buffDeadline === null) return skillDeadline;
+  if (skillDeadline === null) return buffDeadline;
+  return Math.min(buffDeadline, skillDeadline);
 }
 
 export function getResourceValue(resourceId: number): number {

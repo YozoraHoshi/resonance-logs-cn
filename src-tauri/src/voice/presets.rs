@@ -126,7 +126,10 @@ pub fn display_name(locale: VoicePresetLocale) -> String {
 /// (`resolve_sidecar_path` in `voice/mod.rs`): a dev-mode path relative to
 /// this crate for `cargo run`/`tauri dev`, then the installed app's
 /// resource directory for a bundled release build.
-pub fn resolve_audio_path(app_handle: &AppHandle, locale: VoicePresetLocale) -> VoiceResult<PathBuf> {
+pub fn resolve_audio_path(
+    app_handle: &AppHandle,
+    locale: VoicePresetLocale,
+) -> VoiceResult<PathBuf> {
     let file_name = locale.file_name();
 
     #[cfg(debug_assertions)]

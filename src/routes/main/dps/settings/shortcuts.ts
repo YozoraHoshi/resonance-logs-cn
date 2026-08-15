@@ -6,10 +6,9 @@ import {
 } from "$lib/utils.svelte";
 import {
   setOverlayWindowVisible,
+  toggleHudEditing,
   toggleOverlayWindow,
 } from "$lib/overlay-window-visibility.svelte";
-import { emit } from "@tauri-apps/api/event";
-import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { register, unregisterAll } from "@tauri-apps/plugin-global-shortcut";
 
 export async function setupShortcuts() {
@@ -52,7 +51,7 @@ export async function registerShortcut(cmdId: string, shortcutKey: string) {
       case "toggleOverlayWindow":
         await register(shortcutKey, async (event) => {
           if (event.state === "Pressed") {
-            await toggleOverlayWindow("game-overlay");
+            await toggleOverlayWindow("game");
           }
         });
         break;
@@ -117,10 +116,7 @@ export async function registerShortcut(cmdId: string, shortcutKey: string) {
       case "toggleOverlayEdit":
         await register(shortcutKey, async (event) => {
           if (event.state === "Pressed") {
-            const overlayWindow = await WebviewWindow.getByLabel("game-overlay");
-            if (overlayWindow) {
-              await emit("overlay-edit-toggle");
-            }
+            await toggleHudEditing();
           }
         });
         break;

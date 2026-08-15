@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-  import { emit } from "@tauri-apps/api/event";
   import SwordsIcon from "virtual:icons/lucide/swords";
   import ExternalLinkIcon from "virtual:icons/lucide/external-link";
   import PlayIcon from "virtual:icons/lucide/play";
@@ -10,21 +8,17 @@
   import { t } from "$lib/i18n/index.svelte";
   import {
     isOverlayWindowVisible,
+    toggleHudEditing,
     toggleOverlayWindow,
   } from "$lib/overlay-window-visibility.svelte";
 
   let { children } = $props();
 
-  const overlayVisible = $derived(isOverlayWindowVisible("game-overlay"));
+  const overlayVisible = $derived(isOverlayWindowVisible("game"));
 
   async function toggleOverlayEditMode() {
     try {
-      const overlayWindow = await WebviewWindow.getByLabel("game-overlay");
-      if (overlayWindow !== null) {
-        await emit("overlay-edit-toggle");
-      } else {
-        console.warn("Game overlay window not found");
-      }
+      await toggleHudEditing();
     } catch (error) {
       console.error("Failed to toggle overlay edit mode", error);
     }
@@ -50,7 +44,7 @@
         class="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm shadow-sm transition-colors {overlayVisible
           ? 'border border-border/60 bg-muted/30 text-foreground hover:bg-muted/50'
           : 'bg-primary text-primary-foreground hover:bg-primary/90'}"
-        onclick={() => toggleOverlayWindow("game-overlay")}
+        onclick={() => toggleOverlayWindow("game")}
       >
         {#if overlayVisible}
           <PauseIcon class="w-4 h-4" />

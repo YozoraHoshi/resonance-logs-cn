@@ -48,12 +48,9 @@ import type {
   SkillDisplay,
   TextBuffDisplay,
 } from "./overlay-types";
+import type { HudTemporalValue } from "$lib/hud-temporal.svelte.js";
 
-type BuffAlertResolver = (
-  baseId: number,
-  remainingMs: number,
-  durationMs: number,
-) => BuffAlertState | undefined;
+type BuffAlertResolver = (baseId: number) => BuffAlertRule | undefined;
 
 export function ensureOverlayPositions(
   profile: SkillMonitorProfile,
@@ -170,11 +167,34 @@ export function resolveAlertState(
 ): BuffAlertState | undefined {
   if (!rule || durationMs <= 0) return undefined;
   if (remainingMs > rule.thresholdSeconds * 1000) return undefined;
+  return alertStateFromRule(rule);
+}
+
+function alertStateFromRule(rule: BuffAlertRule): BuffAlertState {
   return {
     highlightColor: rule.highlightColor,
     flash: rule.flash,
     flashIntervalMs: rule.flashIntervalMs ?? 600,
     applyToProgress: rule.applyToProgress ?? true,
+  };
+}
+
+export function getBuffTemporalValue(
+  buff: BuffUpdateState | undefined,
+  alertRule?: BuffAlertRule,
+): HudTemporalValue | undefined {
+  if (!buff || buff.durationMs <= 0) return undefined;
+  return {
+    deadlineMs: buff.createTimeMs + buff.durationMs,
+    durationMs: buff.durationMs,
+    ...(alertRule
+      ? {
+          alert: {
+            thresholdMs: alertRule.thresholdSeconds * 1000,
+            state: alertStateFromRule(alertRule),
+          },
+        }
+      : {}),
   };
 }
 
@@ -211,9 +231,13 @@ export function buildBuffTextRow(
 
   const remainingMs = getBuffRemainingMs(buff, now);
   const layer = Math.max(1, buff.layer);
+  const alertRule = isPlaceholder ? undefined : alertResolver?.(buff.baseId);
   const alert = isPlaceholder
     ? undefined
-    : alertResolver?.(buff.baseId, remainingMs, buff.durationMs);
+    : resolveAlertState(alertRule, remainingMs, buff.durationMs);
+  const temporal = isPlaceholder
+    ? undefined
+    : getBuffTemporalValue(buff, alertRule);
 
   return {
     key,
@@ -226,6 +250,7 @@ export function buildBuffTextRow(
     showProgress: !isPlaceholder && buff.durationMs > 0,
     ...(isPlaceholder ? { isPlaceholder: true } : {}),
     ...(alert ? { alert } : {}),
+    ...(temporal ? { temporal } : {}),
   };
 }
 
@@ -332,6 +357,14 @@ export function getCustomPanelDisplayRow(
       metaText: t("gameOverlay.counter.cooling"),
       progressPercent,
       showProgress: freezeDurationMs > 0,
+      ...(freezeDurationMs > 0
+        ? {
+            temporal: {
+              deadlineMs: fixedFreezeUntilMs,
+              durationMs: freezeDurationMs,
+            },
+          }
+        : {}),
     };
   }
   if (selectedSlot.isCounting) {
@@ -361,6 +394,9 @@ export function getCustomPanelDisplayRow(
     metaText: t("gameOverlay.counter.cooling"),
     progressPercent: getBuffRemainPercent(linkedBuff, now),
     showProgress: active && Boolean(linkedBuff && linkedBuff.durationMs > 0),
+    ...(active && linkedBuff
+      ? { temporal: getBuffTemporalValue(linkedBuff) }
+      : {}),
   };
 }
 

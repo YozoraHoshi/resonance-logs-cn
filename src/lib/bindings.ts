@@ -15,25 +15,9 @@ async pullLiveWindowFrame(request: LiveWindowFrameRequest) : Promise<Result<Live
     else return { status: "error", error: e  as any };
 }
 },
-async pullGameOverlayFrame(request: GameOverlayFrameRequest) : Promise<Result<GameOverlayFrame, string>> {
+async pullHudFrame(request: HudFrameRequest) : Promise<Result<HudFrame, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("pull_game_overlay_frame", { request }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async pullMonsterOverlayFrame(request: MonsterOverlayFrameRequest) : Promise<Result<MonsterOverlayFrame, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("pull_monster_overlay_frame", { request }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async pullMinimapOverlayFrame(request: MinimapOverlayFrameRequest) : Promise<Result<MinimapOverlayFrame, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("pull_minimap_overlay_frame", { request }) };
+    return { status: "ok", data: await TAURI_INVOKE("pull_hud_frame", { request }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -55,12 +39,20 @@ async getLiveStatus() : Promise<Result<LiveStatusPayload, string>> {
 },
 /**
  * Bootstrap for the `live-scene` topic. `main`-only: drives the daily-scene
- * auto-hide logic for the game/monster/minimap overlay windows without
+ * auto-hide logic for the unified HUD overlay without
  * subscribing to the far heavier `live-combat` cadence.
  */
 async getLiveScene() : Promise<Result<LiveScenePayload, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_live_scene") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async migrateHudLayout(complete: boolean) : Promise<Result<HudLayoutMigration, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("migrate_hud_layout", { complete }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -639,8 +631,6 @@ entries: FightResourceEntry[];
 receivedAt: number }
 export type FineTunedVoiceMeta = { packagePath: string; transformerPath: string; displayName: string; speakerName: string; speakerTokenId: number; modelSha256: string; sizeBytes: number; quantization: string; tokenizerAbi: string; importedAtMs: number }
 export type FineTunedVoiceState = { kind: "notConfigured" } | { kind: "ready"; voice: FineTunedVoiceMeta } | { kind: "missing"; voice: FineTunedVoiceMeta } | { kind: "modified"; voice: FineTunedVoiceMeta }
-export type GameOverlayFrame = { active: boolean; epoch: number; status: LiveStatusPayload | null; buffs: LiveBuffsPayload | null }
-export type GameOverlayFrameRequest = { epoch: number | null; statusRevision: number | null; buffsRevision: number | null }
 export type GenerationState = { kind: "idle" } | { kind: "running" } | { kind: "cancelling" }
 export type GenerationSummary = { completed: number; failed: number; profileId: string | null; assetIds: string[] }
 export type GpuSupport = { cuda_available: boolean; opencl_available: boolean }
@@ -648,6 +638,9 @@ export type HateEntry = { entityUuid: string; hateVal: number }
 export type HistoryCastKind = "boss_skill" | "fantasy" | "key_skill"
 export type HistoryMetric = "damage" | "healing" | "damage_taken"
 export type HistoryQualityFlag = "incompleteSegment" | "missingEntityContext" | "saturatedAmount"
+export type HudFrame = { active: boolean; epoch: number; status: LiveStatusPayload | null; buffs: LiveBuffsPayload | null; monster: LiveMonsterPayload | null; fantasy: LiveFantasyPayload | null; snapshot: MinimapSnapshotUpdate | null; skillCasts: MinimapSkillCast[]; skillCastCursor: number; castsReset: boolean }
+export type HudFrameRequest = { epoch: number | null; statusRevision: number | null; buffsRevision: number | null; monsterRevision: number | null; fantasyRevision: number | null; snapshotRevision: number | null; skillCastCursor: number | null; gameInterest: boolean; monsterInterest: boolean; minimapInterest: boolean }
+export type HudLayoutMigration = { translateMinimap: boolean; minimapOffsetX: number; minimapOffsetY: number }
 export type I18nRuntimeSnapshot = { locale: AppLocale }
 /**
  * Local player buff list (`live-buffs`), 50ms throttle.
@@ -678,7 +671,7 @@ export type LiveFantasyPayload = { revision: number; teammateFantasies: Teammate
  * Monster overlay topic (`live-monster`), 50ms throttle.
  */
 export type LiveMonsterPayload = { revision: number; bossBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; teammateBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; bossMechanics: BossDbmEvent[]; hateLists: Partial<{ [key in string]: HateEntry[] }>; stun: StunEntry[]; playerNames: Partial<{ [key in string]: string }>; monsterIds: Partial<{ [key in string]: number }> }
-export type LivePullWindow = "live" | "game-overlay" | "monster-overlay" | "minimap-overlay"
+export type LivePullWindow = "live" | "hud-overlay"
 export type LiveRuntimeSnapshot = { eventUpdateRateMs: number }
 export type LiveScenePayload = { revision: number; sceneId: number | null; dungeonDifficulty: number | null }
 /**
@@ -822,8 +815,6 @@ export type MinimapMarker = {
  * Displayed marker number 1..=6, derived as `skill_id - MARKER_SKILL_ID_BASE`.
  */
 marker: number; skillId: number; x: number | null; z: number | null }
-export type MinimapOverlayFrame = { active: boolean; epoch: number; snapshot: MinimapSnapshotUpdate | null; skillCasts: MinimapSkillCast[]; skillCastCursor: number; castsReset: boolean }
-export type MinimapOverlayFrameRequest = { epoch: number | null; snapshotRevision: number | null; skillCastCursor: number | null }
 /**
  * One monster skill cast event observed from `ATTR_SKILL_ID` (attribute 100).
  */
@@ -887,8 +878,6 @@ export type MonitorRuntimeSnapshot = { i18n: I18nRuntimeSnapshot; live: LiveRunt
  * Which caster population a monster-buff voice rule observes.
  */
 export type MonsterBuffSourceScope = "anySource" | "localPlayerSource"
-export type MonsterOverlayFrame = { active: boolean; epoch: number; monster: LiveMonsterPayload | null; fantasy: LiveFantasyPayload | null }
-export type MonsterOverlayFrameRequest = { epoch: number | null; monsterRevision: number | null; fantasyRevision: number | null }
 export type MonsterRuntimeSnapshot = { enabled: boolean; globalIds: number[]; selfAppliedIds: number[]; monitorAllSelfApplied: boolean }
 export type PanelAttrState = { attrId: number; value: number }
 /**

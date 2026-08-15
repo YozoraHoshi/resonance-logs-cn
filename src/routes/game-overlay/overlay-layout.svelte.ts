@@ -1,17 +1,13 @@
 import {
-  createReferenceSession,
-  disableSiblingReference,
-  enableSiblingReference,
-} from "$lib/overlay-reference";
-import {
   DEFAULT_OVERLAY_POSITIONS,
   DEFAULT_OVERLAY_SIZES,
 } from "./overlay-constants";
 import { type BuffCategoryKey } from "$lib/config/buff-name-table";
-import { activeProfile, updateActiveProfile } from "./overlay-profile.svelte.js";
 import {
-  overlayRuntime,
-} from "./overlay-runtime.svelte.js";
+  activeProfile,
+  updateActiveProfile,
+} from "./overlay-profile.svelte.js";
+import { overlayRuntime } from "./overlay-runtime.svelte.js";
 import {
   iconDisplayBuffs,
   skillDurationDisplays,
@@ -122,9 +118,7 @@ export function getOverlaySizes() {
   return ensureOverlaySizes(profile);
 }
 
-export function getGroupPosition(
-  key: OverlayPositionKey,
-) {
+export function getGroupPosition(key: OverlayPositionKey) {
   return getOverlayPositions()[key];
 }
 
@@ -143,7 +137,9 @@ export function getSkillDurationPosition(skillId: number, fallbackIndex = 0) {
   const positions = getOverlayPositions();
   const cached = positions.skillDurationPositions[skillId];
   if (cached) return cached;
-  const idx = skillDurationDisplays().findIndex((skill) => skill.skillId === skillId);
+  const idx = skillDurationDisplays().findIndex(
+    (skill) => skill.skillId === skillId,
+  );
   const resolvedIndex = idx >= 0 ? idx : fallbackIndex;
   return {
     x: DEFAULT_OVERLAY_POSITIONS.specialBuffGroup.x + (resolvedIndex % 6) * 60,
@@ -176,16 +172,11 @@ export function getDisplayIconPosition(
   return getIconBuffPosition(buff.baseId);
 }
 
-export function getGroupScale(
-  key: OverlaySizeKey,
-): number {
+export function getGroupScale(key: OverlaySizeKey): number {
   return getOverlaySizes()[key];
 }
 
-export function setGroupScale(
-  key: OverlaySizeKey,
-  value: number,
-) {
+export function setGroupScale(key: OverlaySizeKey, value: number) {
   const nextValue = clampGroupScale(value);
   updateOverlaySizes((sizes) => ({
     ...sizes,
@@ -323,7 +314,10 @@ export function setCustomPanelGroupScale(groupId: string, value: number) {
   );
 }
 
-export function setIndividualAllGroupPosition(nextPos: { x: number; y: number }) {
+export function setIndividualAllGroupPosition(nextPos: {
+  x: number;
+  y: number;
+}) {
   updateIndividualAllGroup((group) => ({
     ...group,
     position: nextPos,
@@ -338,7 +332,10 @@ export function setIndividualAllGroupIconSize(value: number) {
   }));
 }
 
-export function setCategoryIconSize(categoryKey: BuffCategoryKey, value: number) {
+export function setCategoryIconSize(
+  categoryKey: BuffCategoryKey,
+  value: number,
+) {
   const nextValue = clampIconSize(value);
   updateOverlaySizes((sizes) => ({
     ...sizes,
@@ -362,6 +359,8 @@ export function startDrag(
     startX: e.clientX,
     startY: e.clientY,
     startPos,
+    nextPos: startPos,
+    element: previewElement(e),
   };
 }
 
@@ -378,47 +377,24 @@ export function startResize(
     startX: e.clientX,
     startY: e.clientY,
     startValue,
+    nextValue: startValue,
+    element: previewElement(e),
   };
 }
 
 export function onGlobalPointerMove(e: PointerEvent) {
   if (overlayRuntime.resizeState) {
     const delta =
-      e.clientX - overlayRuntime.resizeState.startX +
+      e.clientX -
+      overlayRuntime.resizeState.startX +
       (e.clientY - overlayRuntime.resizeState.startY);
-    if (overlayRuntime.resizeState.target.kind === "group") {
-      setGroupScale(
-        overlayRuntime.resizeState.target.key,
-        overlayRuntime.resizeState.startValue + delta / 300,
-      );
-    } else if (overlayRuntime.resizeState.target.kind === "customPanelGroup") {
-      setCustomPanelGroupScale(
-        overlayRuntime.resizeState.target.groupId,
-        overlayRuntime.resizeState.startValue + delta / 300,
-      );
-    } else if (overlayRuntime.resizeState.target.kind === "individualAllGroup") {
-      setIndividualAllGroupIconSize(overlayRuntime.resizeState.startValue + delta / 2);
-    } else if (overlayRuntime.resizeState.target.kind === "buffGroup") {
-      setBuffGroupIconSize(
-        overlayRuntime.resizeState.target.groupId,
-        overlayRuntime.resizeState.startValue + delta / 2,
-      );
-    } else if (overlayRuntime.resizeState.target.kind === "categoryIcon") {
-      setCategoryIconSize(
-        overlayRuntime.resizeState.target.categoryKey,
-        overlayRuntime.resizeState.startValue + delta / 2,
-      );
-    } else if (overlayRuntime.resizeState.target.kind === "skillDuration") {
-      setSkillDurationSize(
-        overlayRuntime.resizeState.target.skillId,
-        overlayRuntime.resizeState.startValue + delta / 2,
-      );
-    } else {
-      setIconBuffSize(
-        overlayRuntime.resizeState.target.baseId,
-        overlayRuntime.resizeState.startValue + delta / 2,
-      );
-    }
+    const isIconSize =
+      overlayRuntime.resizeState.target.kind !== "group" &&
+      overlayRuntime.resizeState.target.kind !== "customPanelGroup";
+    overlayRuntime.resizeState.nextValue = isIconSize
+      ? clampIconSize(overlayRuntime.resizeState.startValue + delta / 2)
+      : clampGroupScale(overlayRuntime.resizeState.startValue + delta / 300);
+    scheduleLayoutPreview();
     return;
   }
 
@@ -441,68 +417,108 @@ export function onGlobalPointerMove(e: PointerEvent) {
       ),
     ),
   };
-  if (overlayRuntime.dragState.target.kind === "group") {
-    setGroupPosition(overlayRuntime.dragState.target.key, nextPos);
-  } else if (overlayRuntime.dragState.target.kind === "customPanelGroup") {
-    setCustomPanelGroupPosition(overlayRuntime.dragState.target.groupId, nextPos);
-  } else if (overlayRuntime.dragState.target.kind === "individualAllGroup") {
-    setIndividualAllGroupPosition(nextPos);
-  } else if (overlayRuntime.dragState.target.kind === "buffGroup") {
-    setBuffGroupPosition(overlayRuntime.dragState.target.groupId, nextPos);
-  } else if (overlayRuntime.dragState.target.kind === "categoryIcon") {
-    setCategoryIconPosition(overlayRuntime.dragState.target.categoryKey, nextPos);
-  } else if (overlayRuntime.dragState.target.kind === "skillDuration") {
-    setSkillDurationPosition(overlayRuntime.dragState.target.skillId, nextPos);
-  } else {
-    setIconBuffPosition(overlayRuntime.dragState.target.baseId, nextPos);
-  }
+  overlayRuntime.dragState.nextPos = nextPos;
+  scheduleLayoutPreview();
 }
 
 export function onGlobalPointerUp() {
+  cancelScheduledLayoutPreview();
+  commitDragPreview();
+  commitResizePreview();
+  clearLayoutPreviewStyles();
   overlayRuntime.dragState = null;
   overlayRuntime.resizeState = null;
 }
 
-const MONSTER_OVERLAY_LABEL = "monster-overlay";
-const MONSTER_OVERLAY_REFERENCE_EVENT = "monster-overlay-reference-toggle";
-// Active-role session: this overlay driving the monster-overlay as its reference.
-const referenceSession = createReferenceSession();
+function previewElement(event: PointerEvent): HTMLElement | null {
+  const current = event.currentTarget;
+  if (!(current instanceof HTMLElement)) return null;
+  return current.classList.contains("overlay-group")
+    ? current
+    : current.closest<HTMLElement>(".overlay-group");
+}
 
-export async function setEditMode(editing: boolean) {
-  overlayRuntime.isEditing = editing;
-  if (overlayRuntime.currentWindow) {
-    await overlayRuntime.currentWindow.setIgnoreCursorEvents(!editing);
+function scheduleLayoutPreview() {
+  if (overlayRuntime.layoutPreviewRafId !== null) return;
+  overlayRuntime.layoutPreviewRafId = window.requestAnimationFrame(() => {
+    overlayRuntime.layoutPreviewRafId = null;
+    applyLayoutPreviewStyles();
+  });
+}
+
+function cancelScheduledLayoutPreview() {
+  if (overlayRuntime.layoutPreviewRafId === null) return;
+  window.cancelAnimationFrame(overlayRuntime.layoutPreviewRafId);
+  overlayRuntime.layoutPreviewRafId = null;
+}
+
+function applyLayoutPreviewStyles() {
+  const drag = overlayRuntime.dragState;
+  if (drag?.element) {
+    drag.element.style.translate = `${drag.nextPos.x - drag.startPos.x}px ${
+      drag.nextPos.y - drag.startPos.y
+    }px`;
   }
-  if (editing) {
-    await enableSiblingReference({
-      self: overlayRuntime.currentWindow,
-      siblingLabel: MONSTER_OVERLAY_LABEL,
-      referenceEvent: MONSTER_OVERLAY_REFERENCE_EVENT,
-      session: referenceSession,
-    });
+  const resize = overlayRuntime.resizeState;
+  if (resize?.element) {
+    const ratio =
+      resize.startValue > 0 ? resize.nextValue / resize.startValue : 1;
+    resize.element.style.scale = String(ratio);
+  }
+}
+
+function clearLayoutPreviewStyles() {
+  const elements = [
+    overlayRuntime.dragState?.element,
+    overlayRuntime.resizeState?.element,
+  ];
+  for (const element of elements) {
+    if (!element) continue;
+    element.style.removeProperty("translate");
+    element.style.removeProperty("scale");
+  }
+}
+
+function commitDragPreview() {
+  const drag = overlayRuntime.dragState;
+  if (!drag) return;
+  const nextPos = drag.nextPos;
+  if (drag.target.kind === "group") {
+    setGroupPosition(drag.target.key, nextPos);
+  } else if (drag.target.kind === "customPanelGroup") {
+    setCustomPanelGroupPosition(drag.target.groupId, nextPos);
+  } else if (drag.target.kind === "individualAllGroup") {
+    setIndividualAllGroupPosition(nextPos);
+  } else if (drag.target.kind === "buffGroup") {
+    setBuffGroupPosition(drag.target.groupId, nextPos);
+  } else if (drag.target.kind === "categoryIcon") {
+    setCategoryIconPosition(drag.target.categoryKey, nextPos);
+  } else if (drag.target.kind === "skillDuration") {
+    setSkillDurationPosition(drag.target.skillId, nextPos);
   } else {
-    await disableSiblingReference({
-      siblingLabel: MONSTER_OVERLAY_LABEL,
-      referenceEvent: MONSTER_OVERLAY_REFERENCE_EVENT,
-      session: referenceSession,
-    });
+    setIconBuffPosition(drag.target.baseId, nextPos);
   }
 }
 
-// Reference mode shows the overlay beneath the monster-overlay as a full-opacity
-// live alignment reference. It does NOT touch cursor events (stays clickthrough).
-export function setReferenceMode(enabled: boolean) {
-  overlayRuntime.isReferenceMode = enabled;
-}
-
-export function onWindowDragPointerDown(e: PointerEvent) {
-  if (!overlayRuntime.isEditing || e.button !== 0 || !overlayRuntime.currentWindow) {
-    return;
+function commitResizePreview() {
+  const resize = overlayRuntime.resizeState;
+  if (!resize) return;
+  const nextValue = resize.nextValue;
+  if (resize.target.kind === "group") {
+    setGroupScale(resize.target.key, nextValue);
+  } else if (resize.target.kind === "customPanelGroup") {
+    setCustomPanelGroupScale(resize.target.groupId, nextValue);
+  } else if (resize.target.kind === "individualAllGroup") {
+    setIndividualAllGroupIconSize(nextValue);
+  } else if (resize.target.kind === "buffGroup") {
+    setBuffGroupIconSize(resize.target.groupId, nextValue);
+  } else if (resize.target.kind === "categoryIcon") {
+    setCategoryIconSize(resize.target.categoryKey, nextValue);
+  } else if (resize.target.kind === "skillDuration") {
+    setSkillDurationSize(resize.target.skillId, nextValue);
+  } else {
+    setIconBuffSize(resize.target.baseId, nextValue);
   }
-  const el = e.target as HTMLElement | null;
-  if (el?.closest("button,a,input,textarea,select")) return;
-  e.preventDefault();
-  void overlayRuntime.currentWindow.startDragging();
 }
 
 export function resetOverlaySizes() {

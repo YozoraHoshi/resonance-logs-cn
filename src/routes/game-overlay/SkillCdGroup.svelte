@@ -113,7 +113,10 @@
           </div>
         {:else if isRechargingUsable}
           <div class="recharge-bar-wrap">
-            <div class="recharge-bar" style={`--recharge-pct: ${(1 - percent) * 100}%`}></div>
+            <div
+              class="recharge-bar"
+              style:transform={`scaleX(${Math.max(0, Math.min(1, 1 - percent))})`}
+            ></div>
           </div>
           {#if displayText}
             <span class="recharge-text">{displayText}</span>
@@ -160,7 +163,6 @@
   }
 
   .skill-cell.empty {
-    border-style: dashed;
     border-color: rgba(255, 255, 255, 0.1);
   }
 
@@ -232,10 +234,12 @@
 
   .recharge-bar {
     height: 100%;
-    width: var(--recharge-pct);
+    width: 100%;
     background: linear-gradient(90deg, #60a5fa, #93c5fd);
     border-radius: 0 0 5px 5px;
-    transition: width 200ms linear;
+    transform-origin: left center;
+    transition: transform 200ms linear;
+    will-change: transform;
   }
 
   .recharge-text {

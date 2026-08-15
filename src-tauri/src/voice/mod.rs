@@ -1384,7 +1384,8 @@ impl VoiceService {
             .iter()
             .find(|profile| profile.id == profile_id.as_str())
             .ok_or_else(|| VoiceError::not_found("voice profile", profile_id.to_string()))?;
-        if profile.model_version != model_version.as_str() || profile.model_sha256 != base_model_sha256
+        if profile.model_version != model_version.as_str()
+            || profile.model_sha256 != base_model_sha256
         {
             return Err(VoiceError::Incompatible(format!(
                 "profile {} was created for a different model",
@@ -1478,8 +1479,12 @@ impl VoiceService {
     ) -> Option<ProfileId> {
         let profile_id = {
             let catalog = self.inner.catalog.lock();
-            let id =
-                find_preset_profile_id_in_catalog(&catalog, tag, model_version.as_str(), base_model_sha256)?;
+            let id = find_preset_profile_id_in_catalog(
+                &catalog,
+                tag,
+                model_version.as_str(),
+                base_model_sha256,
+            )?;
             ProfileId::parse(id.to_string()).ok()?
         };
         let q3sp_path = catalog::profile_q3sp_path(&self.inner.voice_root, profile_id.as_str());

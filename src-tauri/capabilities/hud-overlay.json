@@ -1,13 +1,13 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
-  "identifier": "monster-overlay",
-  "description": "Capability for monster-overlay window",
-  "windows": [
-    "monster-overlay"
-  ],
+  "identifier": "hud-overlay",
+  "description": "Minimal capability for the unified HUD overlay window",
+  "windows": ["hud-overlay"],
   "permissions": [
     "core:event:default",
+    "svelte:default",
     "core:window:allow-start-dragging",
+    "core:window:allow-scale-factor",
     "core:window:allow-inner-size",
     "core:window:allow-set-size",
     "core:window:allow-set-position",

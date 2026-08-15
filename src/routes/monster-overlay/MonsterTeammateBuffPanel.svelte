@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from "$lib/i18n/index.svelte";
+  import { overlayNow } from "../game-overlay/overlay-clock.svelte.js";
   import {
     overlayPanelBackground,
     overlayTextShadow,
@@ -15,6 +16,7 @@
     startMonsterResize,
     teammatePanelStyle,
   } from "./monster-state.svelte.js";
+  import MonsterTeammateBuffCell from "./MonsterTeammateBuffCell.svelte";
 
   const editing = $derived(isMonsterEditing());
   const scaffold = $derived(isMonsterLayoutScaffold());
@@ -31,6 +33,7 @@
           label: cell.buffName,
         })) ?? []),
   );
+  const teammateNowMs = $derived(Math.floor(overlayNow() / 1000) * 1000);
 </script>
 
 {#if rows.length > 0 || scaffold}
@@ -93,42 +96,13 @@
               {row.teammateName}
             </div>
             {#each row.cells as cell (cell.key)}
-              <div
-                class="buff-cell"
-                class:active={cell.hasBuff}
-                class:empty={!cell.hasBuff}
-                class:alert-flash={cell.alert?.flash === true}
-                title={cell.hasBuff
-                  ? `${cell.categoryKey ? `${cell.buffName} ` : ""}${cell.metaText ? `${cell.metaText} ` : ""}${cell.valueText}`.trim()
-                  : cell.buffName}
-                style:--alert-color={cell.alert?.highlightColor}
-                style:--alert-flash-duration={cell.alert
-                  ? `${cell.alert.flashIntervalMs}ms`
-                  : undefined}
-              >
-                {#if cell.hasBuff}
-                  <div class="cell-progress-track">
-                    <div
-                      class="cell-progress-fill"
-                      style:width={`${cell.progressPercent}%`}
-                      style:background={cell.alert?.applyToProgress
-                        ? cell.alert.highlightColor
-                        : styleConfig.progressColor}
-                      style:opacity={styleConfig.progressOpacity ?? 0.4}
-                    ></div>
-                  </div>
-                  <span
-                    class="cell-value"
-                    style:color={cell.alert?.highlightColor ??
-                      styleConfig.valueColor}
-                  >
-                    {#if cell.metaText}
-                      <span class="cell-meta">{cell.metaText}</span>
-                    {/if}
-                    {cell.valueText}
-                  </span>
-                {/if}
-              </div>
+              <MonsterTeammateBuffCell
+                {cell}
+                nowMs={teammateNowMs}
+                progressColor={styleConfig.progressColor}
+                progressOpacity={styleConfig.progressOpacity ?? 0.4}
+                valueColor={styleConfig.valueColor}
+              />
             {/each}
           </div>
         {/each}
@@ -191,8 +165,7 @@
 
   .teammate-header,
   .buff-header,
-  .teammate-name,
-  .buff-cell {
+  .teammate-name {
     text-shadow: var(
       --overlay-text-shadow,
       0 0 3px rgba(0, 0, 0, 1),
@@ -237,72 +210,5 @@
     line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .buff-cell {
-    position: relative;
-    min-height: var(--row-height);
-    overflow: hidden;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  .buff-cell.empty {
-    opacity: 0.22;
-  }
-
-  .buff-cell.active {
-    background: rgba(255, 255, 255, 0.15);
-  }
-
-  .buff-cell.alert-flash {
-    animation: teammate-buff-alert-flash var(--alert-flash-duration, 600ms)
-      ease-in-out infinite alternate;
-  }
-
-  .cell-progress-track {
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.12);
-  }
-
-  .cell-progress-fill {
-    height: 100%;
-    transition: width 100ms linear;
-  }
-
-  .cell-value {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    min-width: 0;
-    height: 100%;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 2px 5px;
-    font-variant-numeric: tabular-nums;
-    font-weight: 700;
-    line-height: 1;
-    white-space: nowrap;
-  }
-
-  .cell-meta {
-    font-size: max(10px, calc(var(--font-size) - 2px));
-    opacity: 0.9;
-  }
-
-  @keyframes teammate-buff-alert-flash {
-    0% {
-      opacity: 1;
-      filter: brightness(1);
-    }
-
-    100% {
-      opacity: 0.48;
-      filter: brightness(1.55);
-    }
   }
 </style>

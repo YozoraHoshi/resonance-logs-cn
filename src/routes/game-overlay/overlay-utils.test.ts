@@ -64,10 +64,41 @@ describe("buff display membership", () => {
     });
   });
 
+  it("describes finite row timing without coupling structure to the clock", () => {
+    const row = buildBuffTextRow(
+      "buff_100",
+      "Buff",
+      buff({ durationMs: 5_000, createTimeMs: 10_000 }),
+      11_000,
+      false,
+      false,
+      () => ({
+        thresholdSeconds: 2,
+        highlightColor: "#ff0000",
+        flash: true,
+      }),
+    );
+
+    expect(row?.temporal).toEqual({
+      deadlineMs: 15_000,
+      durationMs: 5_000,
+      alert: {
+        thresholdMs: 2_000,
+        state: {
+          highlightColor: "#ff0000",
+          flash: true,
+          flashIntervalMs: 600,
+          applyToProgress: true,
+        },
+      },
+    });
+  });
+
   it("keeps placeholders visible regardless of guards", () => {
     const expired = buff();
-    expect(buildBuffTextRow("buff_100", "Buff", expired, 2_001, true))
-      .toMatchObject({ valueText: "--", isPlaceholder: true });
+    expect(
+      buildBuffTextRow("buff_100", "Buff", expired, 2_001, true),
+    ).toMatchObject({ valueText: "--", isPlaceholder: true });
 
     const permanentSingleLayer = buff({ durationMs: 0 });
     expect(

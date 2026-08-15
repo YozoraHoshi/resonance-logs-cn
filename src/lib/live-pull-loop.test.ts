@@ -104,6 +104,33 @@ describe("LivePullLoop", () => {
     loop.stop();
   });
 
+  it("starts paused and refreshes changed request parameters without overlap", async () => {
+    const stale = deferred<number>();
+    const pull = vi
+      .fn<() => Promise<number>>()
+      .mockReturnValueOnce(stale.promise)
+      .mockResolvedValueOnce(2);
+    const onFrame = vi.fn();
+    const loop = new LivePullLoop({ pull, onFrame });
+
+    loop.start(false);
+    expect(pull).not.toHaveBeenCalled();
+
+    loop.setActive(true);
+    expect(pull).toHaveBeenCalledOnce();
+    loop.refresh();
+    expect(pull).toHaveBeenCalledOnce();
+
+    stale.resolve(1);
+    await flushPromises();
+
+    expect(pull).toHaveBeenCalledTimes(2);
+    await flushPromises();
+    expect(onFrame).toHaveBeenCalledOnce();
+    expect(onFrame).toHaveBeenCalledWith(2);
+    loop.stop();
+  });
+
   it("backs off exponentially and returns to the 50ms cadence", async () => {
     const pull = vi
       .fn<() => Promise<number>>()

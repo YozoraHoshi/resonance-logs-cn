@@ -1,12 +1,9 @@
 import {
   commands,
-  type GameOverlayFrame,
+  type HudFrame,
   type LiveWindowFrame,
-  type MinimapOverlayFrame,
-  type MonsterOverlayFrame,
   type Result,
 } from "$lib/bindings";
-export type { MinimapOverlayFrame } from "$lib/bindings";
 import { liveDebugError, liveDebugLog } from "$lib/live-debug";
 import { LivePullLoop } from "$lib/live-pull-loop";
 import type { LiveTopicStatus } from "$lib/stores/live-topic-store.svelte";
@@ -199,69 +196,49 @@ class LiveWindowPullSession implements WindowPullSession {
 
 export const liveWindowSession = new LiveWindowPullSession();
 
-export const gameOverlaySession: WindowPullSession =
-  new TopicWindowSession<GameOverlayFrame>({
-    label: "game-overlay",
-    activeTopics: () => [liveStatusStore, liveBuffsStore],
-    allTopics: [liveStatusStore, liveBuffsStore],
-    pull: async (epoch) =>
-      unwrapResult(
-        commands.pullGameOverlayFrame({
-          epoch,
-          statusRevision: revisionOf(liveStatusStore.data),
-          buffsRevision: revisionOf(liveBuffsStore.data),
-        }),
-      ),
-    apply: (frame) => {
-      if (frame.status) liveStatusStore.apply(frame.status);
-      if (frame.buffs) liveBuffsStore.apply(frame.buffs);
-    },
-  });
+export type HudInterests = {
+  game: boolean;
+  monster: boolean;
+  minimap: boolean;
+};
 
-export const monsterOverlaySession: WindowPullSession =
-  new TopicWindowSession<MonsterOverlayFrame>({
-    label: "monster-overlay",
-    activeTopics: () => [liveMonsterStore, liveFantasyStore],
-    allTopics: [liveMonsterStore, liveFantasyStore],
-    pull: async (epoch) =>
-      unwrapResult(
-        commands.pullMonsterOverlayFrame({
-          epoch,
-          monsterRevision: revisionOf(liveMonsterStore.data),
-          fantasyRevision: revisionOf(liveFantasyStore.data),
-        }),
-      ),
-    apply: (frame) => {
-      if (frame.monster) liveMonsterStore.apply(frame.monster);
-      if (frame.fantasy) liveFantasyStore.apply(frame.fantasy);
-    },
-  });
-
-export type MinimapFrameContext = {
+export type HudFrameContext = {
   epochChanged: boolean;
 };
 
-export type MinimapFrameHandler = (
-  frame: MinimapOverlayFrame,
-  context: MinimapFrameContext,
+export type HudMinimapFrameHandler = (
+  frame: HudFrame,
+  context: HudFrameContext,
 ) => void;
 
-class MinimapOverlayPullSession implements WindowPullSession {
-  readonly #loop = new LivePullLoop<MinimapOverlayFrame>({
+class HudOverlayPullSession implements WindowPullSession {
+  readonly #loop = new LivePullLoop<HudFrame>({
     pull: () =>
       unwrapResult(
-        commands.pullMinimapOverlayFrame({
+        commands.pullHudFrame({
           epoch: this.#epoch,
+          statusRevision: revisionOf(liveStatusStore.data),
+          buffsRevision: revisionOf(liveBuffsStore.data),
+          monsterRevision: revisionOf(liveMonsterStore.data),
+          fantasyRevision: revisionOf(liveFantasyStore.data),
           snapshotRevision: this.#snapshotRevision,
           skillCastCursor: this.#skillCastCursor,
+          gameInterest: this.#interests.game,
+          monsterInterest: this.#interests.monster,
+          minimapInterest: this.#interests.minimap,
         }),
       ),
     onFrame: (frame) => this.#handleFrame(frame),
     onError: (error) => {
       const message = liveDebugError(error);
-      console.error("[live-pull] minimap-overlay frame failed", error);
+      for (const topic of this.#activeTopics()) {
+        if (topic.data === null) {
+          topic.clear({ state: "error", message });
+        }
+      }
+      console.error("[live-pull] hud-overlay frame failed", error);
       liveDebugLog(
-        `live_pull_failed window=minimap-overlay error=${message}`,
+        `live_pull_failed window=hud-overlay error=${message}`,
         "error",
       );
     },
@@ -272,15 +249,21 @@ class MinimapOverlayPullSession implements WindowPullSession {
   #epoch: number | null = null;
   #snapshotRevision: number | null = null;
   #skillCastCursor: number | null = null;
-  #handler: MinimapFrameHandler | null = null;
+  #interests: HudInterests = {
+    game: false,
+    monster: false,
+    minimap: false,
+  };
+  #handler: HudMinimapFrameHandler | null = null;
 
   start(): void {
     if (this.#started) return;
 
     this.#started = true;
-    this.#active = true;
+    this.#active = false;
     this.#resetProtocolState();
-    this.#loop.start();
+    clearTopics(this.#allTopics());
+    this.#loop.start(false);
   }
 
   stop(): void {
@@ -290,6 +273,7 @@ class MinimapOverlayPullSession implements WindowPullSession {
     this.#active = false;
     this.#loop.stop();
     this.#resetProtocolState();
+    clearTopics(this.#allTopics());
   }
 
   setActive(active: boolean): void {
@@ -297,19 +281,50 @@ class MinimapOverlayPullSession implements WindowPullSession {
 
     this.#active = active;
     if (!active) {
-      // A null cursor makes the first resumed request an initial pull. Rust
-      // advances the cursor but deliberately omits casts accumulated while
-      // this window was hidden.
       this.#skillCastCursor = null;
+      clearTopics(this.#allTopics());
+    } else if (this.#started) {
+      clearTopics(this.#activeTopics(), { state: "loading" });
     }
     this.#loop.setActive(active);
   }
 
-  setFrameHandler(handler: MinimapFrameHandler | null): void {
+  setInterests(interests: HudInterests): void {
+    if (
+      this.#interests.game === interests.game &&
+      this.#interests.monster === interests.monster &&
+      this.#interests.minimap === interests.minimap
+    ) {
+      return;
+    }
+
+    const previous = this.#interests;
+    this.#interests = { ...interests };
+
+    if (!interests.game) {
+      clearTopics([liveStatusStore, liveBuffsStore]);
+    } else if (!previous.game && this.#started && this.#active) {
+      clearTopics([liveStatusStore, liveBuffsStore], { state: "loading" });
+    }
+
+    if (!interests.monster) {
+      clearTopics([liveMonsterStore, liveFantasyStore]);
+    } else if (!previous.monster && this.#started && this.#active) {
+      clearTopics([liveMonsterStore, liveFantasyStore], { state: "loading" });
+    }
+
+    if (!interests.minimap) {
+      this.#snapshotRevision = null;
+      this.#skillCastCursor = null;
+    }
+    this.#loop.refresh();
+  }
+
+  setMinimapFrameHandler(handler: HudMinimapFrameHandler | null): void {
     this.#handler = handler;
   }
 
-  #handleFrame(frame: MinimapOverlayFrame): void {
+  #handleFrame(frame: HudFrame): void {
     if (!frame.active) {
       this.#epoch = frame.epoch;
       this.setActive(false);
@@ -320,14 +335,25 @@ class MinimapOverlayPullSession implements WindowPullSession {
     if (epochChanged) {
       this.#snapshotRevision = null;
       this.#skillCastCursor = null;
+      clearTopics(this.#activeTopics(), { state: "loading" });
     }
 
     this.#epoch = frame.epoch;
-    if (frame.snapshot) {
-      this.#snapshotRevision = frame.snapshot.revision;
+    if (this.#interests.game) {
+      if (frame.status) liveStatusStore.apply(frame.status);
+      if (frame.buffs) liveBuffsStore.apply(frame.buffs);
+    }
+    if (this.#interests.monster) {
+      if (frame.monster) liveMonsterStore.apply(frame.monster);
+      if (frame.fantasy) liveFantasyStore.apply(frame.fantasy);
     }
     this.#skillCastCursor = frame.skillCastCursor;
-    this.#handler?.(frame, { epochChanged });
+    if (this.#interests.minimap) {
+      if (frame.snapshot) {
+        this.#snapshotRevision = frame.snapshot.revision;
+      }
+      this.#handler?.(frame, { epochChanged });
+    }
   }
 
   #resetProtocolState(): void {
@@ -335,9 +361,27 @@ class MinimapOverlayPullSession implements WindowPullSession {
     this.#snapshotRevision = null;
     this.#skillCastCursor = null;
   }
+
+  #activeTopics(): ResettableTopicStore[] {
+    return [
+      ...(this.#interests.game ? [liveStatusStore, liveBuffsStore] : []),
+      ...(this.#interests.monster
+        ? [liveMonsterStore, liveFantasyStore]
+        : []),
+    ];
+  }
+
+  #allTopics(): ResettableTopicStore[] {
+    return [
+      liveStatusStore,
+      liveBuffsStore,
+      liveMonsterStore,
+      liveFantasyStore,
+    ];
+  }
 }
 
-export const minimapOverlaySession = new MinimapOverlayPullSession();
+export const hudOverlaySession = new HudOverlayPullSession();
 
 function revisionOf(value: Revisioned | null): number | null {
   return value?.revision ?? null;

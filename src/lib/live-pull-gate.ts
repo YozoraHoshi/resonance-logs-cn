@@ -1,4 +1,3 @@
-import type { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { commands, type LivePullWindow } from "$lib/bindings";
 
@@ -6,6 +5,11 @@ export const LIVE_PULL_GATE_EVENT = "live-pull-gate";
 
 export type LivePullGateTarget = {
   setActive(active: boolean): void;
+};
+
+export type LivePullGateWindow = {
+  readonly label: string;
+  emit<T>(event: string, payload?: T): Promise<void>;
 };
 
 export function listenLivePullGate(
@@ -21,7 +25,7 @@ export function listenLivePullGate(
  * Data remains invoke-only; this event only starts or stops the timer.
  */
 export async function emitLivePullGate(
-  window: WebviewWindow,
+  window: LivePullGateWindow,
   active: boolean,
 ): Promise<void> {
   try {

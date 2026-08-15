@@ -21,24 +21,21 @@ use tauri::{
     Emitter, LogicalPosition, LogicalSize, Manager, PhysicalPosition, Position, Size, Window,
     WindowEvent,
 };
-use tauri_plugin_window_state::{AppHandleExt, StateFlags};
+use tauri_plugin_window_state::{AppHandleExt, StateFlags, WindowExt};
 // NOTE: the updater extension trait is imported next to the helper that uses it
 // and is cfg-gated to avoid unused-import warnings on builds that don't enable
 // the updater plugin.
 use tauri_specta::{Builder, collect_commands};
 mod database;
+mod hud_layout;
 use serde_json::json;
 
 /// The label for the live window.
 pub const WINDOW_LIVE_LABEL: &str = "live";
 /// The label for the main window.
 pub const WINDOW_MAIN_LABEL: &str = "main";
-/// The label for the unified game overlay window.
-pub const WINDOW_GAME_OVERLAY_LABEL: &str = "game-overlay";
-/// The label for the monster overlay window.
-pub const WINDOW_MONSTER_OVERLAY_LABEL: &str = "monster-overlay";
-/// The label for the 2D minimap overlay window.
-pub const WINDOW_MINIMAP_OVERLAY_LABEL: &str = "minimap-overlay";
+/// The label for the unified HUD overlay window.
+pub const WINDOW_HUD_OVERLAY_LABEL: &str = "hud-overlay";
 const LIVE_CLICKTHROUGH_CHANGED_EVENT: &str = "live-clickthrough-changed";
 const LIVE_PULL_GATE_EVENT: &str = "live-pull-gate";
 
@@ -52,68 +49,66 @@ static LOGGING_INIT: OnceLock<Result<(), String>> = OnceLock::new();
 ///
 /// This function sets up and runs the Tauri application.
 fn api_builder() -> Builder<tauri::Wry> {
-    Builder::<tauri::Wry>::new()
-        .commands(collect_commands![
-            live::ipc::commands::pull_live_window_frame,
-            live::ipc::commands::pull_game_overlay_frame,
-            live::ipc::commands::pull_monster_overlay_frame,
-            live::ipc::commands::pull_minimap_overlay_frame,
-            live::ipc::commands::set_live_pull_active,
-            live::ipc::commands::get_live_status,
-            live::ipc::commands::get_live_scene,
-            live::ipc::commands::enable_blur,
-            live::ipc::commands::disable_blur,
-            live::ipc::commands::reset_encounter,
-            live::ipc::commands::toggle_pause_encounter,
-            live::ipc::commands::start_training_dummy,
-            live::ipc::commands::stop_training_dummy,
-            live::ipc::commands::save_and_apply_monitor_runtime_snapshot,
-            database::commands::get_unique_scene_ids,
-            database::commands::get_unique_boss_monster_ids,
-            database::commands::get_player_names_filtered,
-            database::commands::get_recent_encounters_filtered,
-            database::commands::get_encounter_detail,
-            database::commands::get_encounter_range,
-            database::commands::delete_encounter,
-            database::commands::delete_encounters,
-            database::commands::toggle_favorite_encounter,
-            packet_settings_commands::save_packet_capture_settings,
-            settings_backup_commands::backup_settings_stores,
-            settings_backup_commands::backup_failed_monitoring_stores,
-            loadout_commands::export_loadout,
-            buff_icons::commands::buff_icon_dir,
-            buff_icons::commands::import_buff_icon,
-            buff_icons::commands::delete_buff_icon,
-            packets::npcap::get_network_devices,
-            packets::npcap::check_npcap_status,
-            debug_commands::open_log_dir,
-            debug_commands::create_diagnostics_bundle,
-            debug_commands::frontend_log,
-            module_optimizer::commands::check_gpu_support,
-            module_optimizer::commands::get_latest_modules,
-            module_optimizer::commands::optimize_latest_modules,
-            voice::commands::voice_get_status,
-            voice::commands::voice_install_model,
-            voice::commands::voice_cancel_model_download,
-            voice::commands::voice_manual_import_model,
-            voice::commands::voice_remove_model,
-            voice::commands::voice_verify_model,
-            voice::commands::voice_inspect_finetuned_package,
-            voice::commands::voice_set_finetuned_voice,
-            voice::commands::voice_relink_finetuned_voice,
-            voice::commands::voice_remove_finetuned_voice,
-            voice::commands::voice_delete_profile,
-            voice::commands::voice_create_phrase,
-            voice::commands::voice_update_phrase,
-            voice::commands::voice_delete_phrase,
-            voice::commands::voice_generate,
-            voice::commands::voice_cancel_generation,
-            voice::commands::voice_preview_asset,
-            voice::commands::voice_test_trigger,
-            voice::commands::voice_enqueue_phrase,
-            voice::commands::voice_upsert_phrase,
-            voice::commands::voice_stop_playback,
-        ])
+    Builder::<tauri::Wry>::new().commands(collect_commands![
+        live::ipc::commands::pull_live_window_frame,
+        live::ipc::commands::pull_hud_frame,
+        live::ipc::commands::set_live_pull_active,
+        live::ipc::commands::get_live_status,
+        live::ipc::commands::get_live_scene,
+        hud_layout::migrate_hud_layout,
+        live::ipc::commands::enable_blur,
+        live::ipc::commands::disable_blur,
+        live::ipc::commands::reset_encounter,
+        live::ipc::commands::toggle_pause_encounter,
+        live::ipc::commands::start_training_dummy,
+        live::ipc::commands::stop_training_dummy,
+        live::ipc::commands::save_and_apply_monitor_runtime_snapshot,
+        database::commands::get_unique_scene_ids,
+        database::commands::get_unique_boss_monster_ids,
+        database::commands::get_player_names_filtered,
+        database::commands::get_recent_encounters_filtered,
+        database::commands::get_encounter_detail,
+        database::commands::get_encounter_range,
+        database::commands::delete_encounter,
+        database::commands::delete_encounters,
+        database::commands::toggle_favorite_encounter,
+        packet_settings_commands::save_packet_capture_settings,
+        settings_backup_commands::backup_settings_stores,
+        settings_backup_commands::backup_failed_monitoring_stores,
+        loadout_commands::export_loadout,
+        buff_icons::commands::buff_icon_dir,
+        buff_icons::commands::import_buff_icon,
+        buff_icons::commands::delete_buff_icon,
+        packets::npcap::get_network_devices,
+        packets::npcap::check_npcap_status,
+        debug_commands::open_log_dir,
+        debug_commands::create_diagnostics_bundle,
+        debug_commands::frontend_log,
+        module_optimizer::commands::check_gpu_support,
+        module_optimizer::commands::get_latest_modules,
+        module_optimizer::commands::optimize_latest_modules,
+        voice::commands::voice_get_status,
+        voice::commands::voice_install_model,
+        voice::commands::voice_cancel_model_download,
+        voice::commands::voice_manual_import_model,
+        voice::commands::voice_remove_model,
+        voice::commands::voice_verify_model,
+        voice::commands::voice_inspect_finetuned_package,
+        voice::commands::voice_set_finetuned_voice,
+        voice::commands::voice_relink_finetuned_voice,
+        voice::commands::voice_remove_finetuned_voice,
+        voice::commands::voice_delete_profile,
+        voice::commands::voice_create_phrase,
+        voice::commands::voice_update_phrase,
+        voice::commands::voice_delete_phrase,
+        voice::commands::voice_generate,
+        voice::commands::voice_cancel_generation,
+        voice::commands::voice_preview_asset,
+        voice::commands::voice_test_trigger,
+        voice::commands::voice_enqueue_phrase,
+        voice::commands::voice_upsert_phrase,
+        voice::commands::voice_stop_playback,
+    ])
 }
 
 #[cfg(debug_assertions)]
@@ -150,12 +145,10 @@ pub fn run() {
     // start loading their pages before `setup` runs, so state registered inside
     // `setup` can lose the race against early invokes (observed in packaged
     // builds as a rejected live bootstrap that left the window empty).
-    let (live_runtime, runtime_commands) =
-        crate::live::runtime_handle::LiveRuntimeHandle::new();
+    let (live_runtime, runtime_commands) = crate::live::runtime_handle::LiveRuntimeHandle::new();
     let publication_cache = crate::live::ipc::publisher::LivePublicationCache::new();
-    let (history_writer, history_join) =
-        crate::live::history_writer::HistoryWriterHandle::start()
-            .expect("failed to start history writer");
+    let (history_writer, history_join) = crate::live::history_writer::HistoryWriterHandle::start()
+        .expect("failed to start history writer");
 
     let tauri_builder = tauri::Builder::default()
         .manage(live_runtime)
@@ -186,6 +179,13 @@ pub fn run() {
             let _setup_guard = setup_span.enter();
 
             log::info!(target: "app::startup", "starting app v{}", app.package_info().version);
+            if let Some(hud_window) = app.get_webview_window(WINDOW_HUD_OVERLAY_LABEL) {
+                if let Err(error) =
+                    hud_window.restore_state(StateFlags::POSITION | StateFlags::SIZE)
+                {
+                    warn!("failed to restore HUD geometry: {error}");
+                }
+            }
             stop_windivert();
             remove_windivert();
 
@@ -310,7 +310,11 @@ pub fn run() {
         })
         .on_window_event(on_window_event_fn)
         .plugin(tauri_plugin_clipboard_manager::init()) // used to read/write to the clipboard
-        .plugin(tauri_plugin_window_state::Builder::default().build()) // used to remember window size/position https://v2.tauri.app/plugin/window-state/
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .skip_initial_state(WINDOW_HUD_OVERLAY_LABEL)
+                .build(),
+        ) // used to remember window size/position https://v2.tauri.app/plugin/window-state/
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             let Some(main_window) = app.get_webview_window(WINDOW_MAIN_LABEL) else {
                 return;
@@ -1062,14 +1066,8 @@ fn setup_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
                 }
                 show_window_and_focus(&live_meter_window);
 
-                for label in [
-                    WINDOW_GAME_OVERLAY_LABEL,
-                    WINDOW_MONSTER_OVERLAY_LABEL,
-                    WINDOW_MINIMAP_OVERLAY_LABEL,
-                ] {
-                    if let Some(window) = tray_app.get_webview_window(label) {
-                        center_window_on_primary_monitor(&window);
-                    }
+                if let Some(window) = tray_app.get_webview_window(WINDOW_HUD_OVERLAY_LABEL) {
+                    center_window_on_primary_monitor(&window);
                 }
             }
             "clickthrough" => {

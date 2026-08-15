@@ -2,9 +2,10 @@
   import type { MinimapEntity, MinimapSnapshot } from "$lib/api";
   import { t } from "$lib/i18n/index.svelte";
   import { SETTINGS } from "$lib/settings-store";
-  import { overlayNow } from "../game-overlay/overlay-clock.svelte.js";
+  import { untrack } from "svelte";
   import { minimapSkillCasts } from "./minimap-runtime.svelte.js";
   import { slotColor } from "./colors";
+  import MinimapTimer from "./MinimapTimer.svelte";
   import { resolveScene } from "./scene-registry";
   import type { MechanicRow } from "./scene-types";
 
@@ -29,16 +30,21 @@
   }
 
   const groups = $derived.by<SkillGroup[]>(() => {
-    if (!snapshot) return [];
-    const scene = resolveScene(snapshot.sceneId);
+    const currentSnapshot = snapshot;
+    if (!currentSnapshot) return [];
+    const scene = resolveScene(currentSnapshot.sceneId);
     const skillCasts = minimapSkillCasts();
-    const view = scene?.resolveView(snapshot, displayName, skillCasts);
+    const view = untrack(() =>
+      scene?.resolveView(currentSnapshot, displayName, skillCasts),
+    );
     if (!view) return [];
-    const skillRows =
-      scene?.resolveSkillRows?.({
-        skillCasts,
-        displayName,
-      }) ?? [];
+    const skillRows = untrack(
+      () =>
+        scene?.resolveSkillRows?.({
+          skillCasts,
+          displayName,
+        }) ?? [],
+    );
     const groups: SkillGroup[] = [];
     for (const row of [...view.rows, ...skillRows]) {
       const existing = groups.find((group) => group.group === row.group);
@@ -55,18 +61,6 @@
       ),
     }));
   });
-
-  function remainingMs(row: MechanicRow): number {
-    if (row.durationMs <= 0 || row.createTimeMs <= 0)
-      return Number.POSITIVE_INFINITY;
-    return Math.max(0, row.createTimeMs + row.durationMs - overlayNow());
-  }
-
-  function remainingText(row: MechanicRow): string {
-    const ms = remainingMs(row);
-    if (!Number.isFinite(ms)) return "--";
-    return `${Math.floor(ms / 1000)}s`;
-  }
 
   function targetText(row: MechanicRow): string {
     return row.targets.length > 0 ? row.targets.join(", ") : "";
@@ -112,7 +106,7 @@
               {/if}
             </span>
             {#if !row.hideTimer}
-              <span class="time">{remainingText(row)}</span>
+              <MinimapTimer {row} />
             {/if}
           </div>
         {/each}
@@ -201,19 +195,5 @@
   }
   .status-chip {
     font-weight: 700;
-  }
-  .time {
-    flex: none;
-    margin-top: 2px;
-    min-width: 3ch;
-    padding: 2px 6px;
-    border-radius: 999px;
-    color: #e0f2fe;
-    background: rgba(14, 165, 233, 0.12);
-    border: 1px solid rgba(125, 211, 252, 0.28);
-    font-size: 12px;
-    font-variant-numeric: tabular-nums;
-    font-weight: 800;
-    text-align: right;
   }
 </style>

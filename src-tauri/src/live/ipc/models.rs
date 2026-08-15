@@ -38,9 +38,7 @@ pub struct LiveScenePayload {
 #[serde(rename_all = "kebab-case")]
 pub enum LivePullWindow {
     Live,
-    GameOverlay,
-    MonsterOverlay,
-    MinimapOverlay,
+    HudOverlay,
 }
 
 impl LivePullWindow {
@@ -48,9 +46,7 @@ impl LivePullWindow {
     pub const fn label(self) -> &'static str {
         match self {
             Self::Live => crate::WINDOW_LIVE_LABEL,
-            Self::GameOverlay => crate::WINDOW_GAME_OVERLAY_LABEL,
-            Self::MonsterOverlay => crate::WINDOW_MONSTER_OVERLAY_LABEL,
-            Self::MinimapOverlay => crate::WINDOW_MINIMAP_OVERLAY_LABEL,
+            Self::HudOverlay => crate::WINDOW_HUD_OVERLAY_LABEL,
         }
     }
 
@@ -58,9 +54,7 @@ impl LivePullWindow {
     pub fn from_label(label: &str) -> Option<Self> {
         match label {
             crate::WINDOW_LIVE_LABEL => Some(Self::Live),
-            crate::WINDOW_GAME_OVERLAY_LABEL => Some(Self::GameOverlay),
-            crate::WINDOW_MONSTER_OVERLAY_LABEL => Some(Self::MonsterOverlay),
-            crate::WINDOW_MINIMAP_OVERLAY_LABEL => Some(Self::MinimapOverlay),
+            crate::WINDOW_HUD_OVERLAY_LABEL => Some(Self::HudOverlay),
             _ => None,
         }
     }
@@ -88,44 +82,17 @@ pub struct LiveWindowFrame {
 
 #[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct GameOverlayFrameRequest {
+pub struct HudFrameRequest {
     pub epoch: Option<u64>,
     pub status_revision: Option<u64>,
     pub buffs_revision: Option<u64>,
-}
-
-#[derive(specta::Type, serde::Serialize, Debug, Default, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct GameOverlayFrame {
-    pub active: bool,
-    pub epoch: u64,
-    pub status: Option<LiveStatusPayload>,
-    pub buffs: Option<LiveBuffsPayload>,
-}
-
-#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct MonsterOverlayFrameRequest {
-    pub epoch: Option<u64>,
     pub monster_revision: Option<u64>,
     pub fantasy_revision: Option<u64>,
-}
-
-#[derive(specta::Type, serde::Serialize, Debug, Default, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct MonsterOverlayFrame {
-    pub active: bool,
-    pub epoch: u64,
-    pub monster: Option<LiveMonsterPayload>,
-    pub fantasy: Option<LiveFantasyPayload>,
-}
-
-#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct MinimapOverlayFrameRequest {
-    pub epoch: Option<u64>,
     pub snapshot_revision: Option<u64>,
     pub skill_cast_cursor: Option<u64>,
+    pub game_interest: bool,
+    pub monster_interest: bool,
+    pub minimap_interest: bool,
 }
 
 #[derive(specta::Type, serde::Serialize, Debug, Clone)]
@@ -137,9 +104,13 @@ pub struct MinimapSnapshotUpdate {
 
 #[derive(specta::Type, serde::Serialize, Debug, Default, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct MinimapOverlayFrame {
+pub struct HudFrame {
     pub active: bool,
     pub epoch: u64,
+    pub status: Option<LiveStatusPayload>,
+    pub buffs: Option<LiveBuffsPayload>,
+    pub monster: Option<LiveMonsterPayload>,
+    pub fantasy: Option<LiveFantasyPayload>,
     pub snapshot: Option<MinimapSnapshotUpdate>,
     pub skill_casts: Vec<MinimapSkillCast>,
     pub skill_cast_cursor: u64,
@@ -789,6 +760,21 @@ pub struct DeathRecord {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pull_window_labels_only_accept_live_and_hud() {
+        assert_eq!(
+            LivePullWindow::from_label(crate::WINDOW_LIVE_LABEL),
+            Some(LivePullWindow::Live)
+        );
+        assert_eq!(
+            LivePullWindow::from_label(crate::WINDOW_HUD_OVERLAY_LABEL),
+            Some(LivePullWindow::HudOverlay)
+        );
+        for retired in ["game-overlay", "monster-overlay", "minimap-overlay"] {
+            assert_eq!(LivePullWindow::from_label(retired), None);
+        }
+    }
 
     #[test]
     fn combat_totals_serialize_as_exact_decimal_strings() {

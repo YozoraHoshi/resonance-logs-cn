@@ -1,6 +1,11 @@
 <script lang="ts">
   import type { MinimapEntity, MinimapSnapshot } from "$lib/api";
+  import {
+    browserFrameApi,
+    createFrameInvalidator,
+  } from "$lib/hud-scheduler.svelte.js";
   import { SETTINGS } from "$lib/settings-store";
+  import { untrack } from "svelte";
   import { slotColor } from "./colors";
   import { minimapSkillCasts } from "./minimap-runtime.svelte.js";
   import { resolveScene } from "./scene-registry";
@@ -13,6 +18,16 @@
   let { snapshot }: { snapshot: MinimapSnapshot | null } = $props();
 
   let canvas: HTMLCanvasElement | null = $state(null);
+  let frameInvalidator = $state.raw<
+    ReturnType<typeof createFrameInvalidator> | null
+  >(null);
+  let arenaCache = $state.raw<
+    | {
+        key: string;
+        canvas: HTMLCanvasElement;
+      }
+    | null
+  >(null);
 
   const PADDING = 10;
   const DEFAULT_BOSS_COLOR = "#ef4444";
@@ -29,11 +44,14 @@
   }
 
   const sceneView = $derived.by<SceneView>(() => {
-    if (!snapshot) return emptySceneView();
-    const scene = resolveScene(snapshot.sceneId);
-    return (
-      scene?.resolveView(snapshot, displayName, minimapSkillCasts()) ??
-      emptySceneView(snapshot.entities, snapshot.markers)
+    const currentSnapshot = snapshot;
+    if (!currentSnapshot) return emptySceneView();
+    const scene = resolveScene(currentSnapshot.sceneId);
+    const skillCasts = minimapSkillCasts();
+    return untrack(
+      () =>
+        scene?.resolveView(currentSnapshot, displayName, skillCasts) ??
+        emptySceneView(currentSnapshot.entities, currentSnapshot.markers),
     );
   });
 
@@ -243,31 +261,37 @@
     ctx.stroke();
   }
 
-  function draw() {
-    const el = canvas;
-    if (!el) return;
-    const ctx = el.getContext("2d");
-    if (!ctx) return;
+  function arenaCacheKey(
+    sceneId: number | null,
+    cssW: number,
+    cssH: number,
+    dpr: number,
+    view: SceneView,
+  ): string {
+    return JSON.stringify([
+      sceneId,
+      cssW,
+      cssH,
+      dpr,
+      normalizedRotationQuarters(view.rotationQuarters),
+      view.worldHalfX,
+      view.worldHalfZ,
+      view.layout,
+    ]);
+  }
 
-    const dpr = window.devicePixelRatio || 1;
-    const cssW = el.clientWidth || 360;
-    const cssH = el.clientHeight || Math.round(cssW / aspect);
-    const pxW = Math.round(cssW * dpr);
-    const pxH = Math.round(cssH * dpr);
-    if (el.width !== pxW || el.height !== pxH) {
-      el.width = pxW;
-      el.height = pxH;
-    }
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, cssW, cssH);
-
+  function drawArenaBase(
+    ctx: CanvasRenderingContext2D,
+    cssW: number,
+    cssH: number,
+    view: SceneView,
+  ) {
     ctx.fillStyle = "rgba(15, 23, 42, 0.68)";
     ctx.fillRect(0, 0, cssW, cssH);
     ctx.strokeStyle = "rgba(203, 213, 225, 0.72)";
     ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, cssW - 2, cssH - 2);
 
-    const view = sceneView;
     const { project, scale } = makeProjector(cssW, cssH, view);
     const [ox, oy] = project(0, 0);
 
@@ -302,6 +326,69 @@
         ctx.stroke();
       }
     }
+  }
+
+  function resolveArenaLayer(
+    key: string,
+    cssW: number,
+    cssH: number,
+    dpr: number,
+    view: SceneView,
+  ): HTMLCanvasElement | null {
+    if (arenaCache?.key === key) return arenaCache.canvas;
+    if (typeof document === "undefined") return null;
+
+    try {
+      const layer = document.createElement("canvas");
+      layer.width = Math.round(cssW * dpr);
+      layer.height = Math.round(cssH * dpr);
+      const layerContext = layer.getContext("2d");
+      if (!layerContext) return null;
+      layerContext.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawArenaBase(layerContext, cssW, cssH, view);
+      arenaCache = { key, canvas: layer };
+      return layer;
+    } catch {
+      arenaCache = null;
+      return null;
+    }
+  }
+
+  function draw() {
+    const el = canvas;
+    if (!el) return;
+    const ctx = el.getContext("2d");
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = el.clientWidth || 360;
+    const cssH = el.clientHeight || Math.round(cssW / aspect);
+    const pxW = Math.round(cssW * dpr);
+    const pxH = Math.round(cssH * dpr);
+    if (el.width !== pxW || el.height !== pxH) {
+      el.width = pxW;
+      el.height = pxH;
+    }
+    const view = sceneView;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    const cacheKey = arenaCacheKey(
+      snapshot?.sceneId ?? null,
+      cssW,
+      cssH,
+      dpr,
+      view,
+    );
+    const arenaLayer = resolveArenaLayer(cacheKey, cssW, cssH, dpr, view);
+    if (arenaLayer) {
+      ctx.drawImage(arenaLayer, 0, 0, cssW, cssH);
+    } else {
+      drawArenaBase(ctx, cssW, cssH, view);
+    }
+
+    const { project, scale } = makeProjector(cssW, cssH, view);
+    const [ox, oy] = project(0, 0);
 
     for (const region of view.regions) {
       drawRegion(ctx, region, project, scale, ox, oy);
@@ -657,6 +744,33 @@
   }
 
   $effect(() => {
+    const el = canvas;
+    if (typeof window === "undefined" || !el) return;
+
+    const invalidator = createFrameInvalidator(draw, browserFrameApi());
+    frameInvalidator = invalidator;
+    const invalidateSize = () => {
+      arenaCache = null;
+      invalidator.invalidate();
+    };
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(invalidateSize);
+    resizeObserver?.observe(el);
+    window.addEventListener("resize", invalidateSize);
+    invalidator.invalidate();
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", invalidateSize);
+      invalidator.cancel();
+      if (frameInvalidator === invalidator) frameInvalidator = null;
+      arenaCache = null;
+    };
+  });
+
+  $effect(() => {
     void snapshot;
     void aspect;
     void sceneView;
@@ -679,9 +793,7 @@
     void minimapSettings.entitySizes?.teammate;
     void minimapSettings.entitySizes?.boss;
     void minimapSettings.entitySizes?.other;
-    if (typeof window === "undefined") return;
-    const id = window.requestAnimationFrame(draw);
-    return () => window.cancelAnimationFrame(id);
+    frameInvalidator?.invalidate();
   });
 </script>
 

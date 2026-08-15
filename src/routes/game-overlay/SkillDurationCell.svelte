@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { hudTemporalRemainingMs } from "$lib/hud-temporal.svelte.js";
   import type { SkillDurationDisplay } from "./overlay-types";
+  import { overlayNow } from "./overlay-clock.svelte.js";
+  import { formatTimerText } from "./overlay-utils";
 
   type PointerHandler = ((event: PointerEvent) => void) | undefined;
 
@@ -20,6 +23,13 @@
     onPointerDown?: PointerHandler;
     onResizePointerDown?: PointerHandler;
   } = $props();
+
+  const temporalNow = $derived(skill.temporal ? overlayNow() : 0);
+  const timeText = $derived(
+    skill.temporal
+      ? formatTimerText(hudTemporalRemainingMs(skill.temporal, temporalNow))
+      : skill.text,
+  );
 </script>
 
 <div
@@ -48,7 +58,7 @@
     class="skill-time"
     style:font-size={`${Math.max(10, Math.round(iconSize * 0.26))}px`}
   >
-    {skill.text}
+    {timeText}
   </div>
 
   {#if editable && onResizePointerDown}

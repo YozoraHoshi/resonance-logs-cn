@@ -64,15 +64,15 @@ export class LivePullLoop<T> {
     this.#scheduler = options.scheduler ?? defaultScheduler;
   }
 
-  start(): void {
+  start(active = true): void {
     if (this.#started) return;
 
     this.#started = true;
-    this.#active = true;
+    this.#active = active;
     this.#generation += 1;
     this.#failures = 0;
     this.#deadlineMs = this.#scheduler.now();
-    this.#startImmediately();
+    if (active) this.#startImmediately();
   }
 
   stop(): void {
@@ -99,6 +99,20 @@ export class LivePullLoop<T> {
       return;
     }
 
+    this.#deadlineMs = this.#scheduler.now();
+    this.#startImmediately();
+  }
+
+  /**
+   * Invalidates an in-flight request whose request parameters changed and
+   * starts a fresh generation without creating concurrent invokes.
+   */
+  refresh(): void {
+    if (!this.#started || !this.#active) return;
+
+    this.#generation += 1;
+    this.#failures = 0;
+    this.#clearScheduledTimer();
     this.#deadlineMs = this.#scheduler.now();
     this.#startImmediately();
   }

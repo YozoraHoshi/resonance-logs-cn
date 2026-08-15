@@ -104,9 +104,9 @@
       // Read via untrack() so this effect only reacts to setting/scene changes,
       // not to visibility changes it (or the toggle buttons) makes itself -
       // otherwise a manual toggle would immediately be "corrected" back.
-      if (untrack(() => isOverlayWindowVisible("game-overlay")) === shouldShow)
+      if (untrack(() => isOverlayWindowVisible("game")) === shouldShow)
         return;
-      await setOverlayWindowVisible("game-overlay", shouldShow);
+      await setOverlayWindowVisible("game", shouldShow);
     })();
   });
 
@@ -119,10 +119,10 @@
 
     void (async () => {
       if (
-        untrack(() => isOverlayWindowVisible("monster-overlay")) === shouldShow
+        untrack(() => isOverlayWindowVisible("monster")) === shouldShow
       )
         return;
-      await setOverlayWindowVisible("monster-overlay", shouldShow);
+      await setOverlayWindowVisible("monster", shouldShow);
     })();
   });
 
@@ -138,10 +138,10 @@
     void (async () => {
       if (!shouldControl) return;
       if (
-        untrack(() => isOverlayWindowVisible("minimap-overlay")) === shouldShow
+        untrack(() => isOverlayWindowVisible("minimap")) === shouldShow
       )
         return;
-      await setOverlayWindowVisible("minimap-overlay", shouldShow);
+      await setOverlayWindowVisible("minimap", shouldShow);
     })();
   });
 

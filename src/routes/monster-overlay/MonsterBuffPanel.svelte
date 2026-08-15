@@ -72,6 +72,7 @@
                 columnGap={styleConfig.columnGap}
                 placeholder={row.isPlaceholder}
                 alert={row.alert}
+                temporal={row.temporal}
               />
             {/each}
           </div>

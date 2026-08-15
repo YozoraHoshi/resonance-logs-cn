@@ -40,15 +40,19 @@
       };
 
   let dragState: DragState | null = $state(null);
+  let previewOffset = $state({ x: 0, y: 0 });
+  let previewScale = $state(1);
+  let pendingPointer = $state<{ x: number; y: number } | null>(null);
+  let previewRafId: number | null = null;
 
-  const panelScale = $derived(rect.scale ?? 1);
+  const panelScale = $derived((rect.scale ?? 1) * previewScale);
   const panelWidth = $derived(
     scaleMode === "width" ? rect.width * panelScale : rect.width,
   );
   const panelStyle = $derived(
     [
-      `left: ${rect.x}px`,
-      `top: ${rect.y}px`,
+      `left: ${rect.x + previewOffset.x}px`,
+      `top: ${rect.y + previewOffset.y}px`,
       `width: ${panelWidth}px`,
       scaleMode === "transform"
         ? `transform: scale(${panelScale}); transform-origin: top left`
@@ -99,31 +103,70 @@
 
   function onPointerMove(e: PointerEvent) {
     if (!dragState) return;
+    pendingPointer = { x: e.clientX, y: e.clientY };
+    if (previewRafId !== null) return;
+    previewRafId = window.requestAnimationFrame(() => {
+      previewRafId = null;
+      applyPendingPreview();
+    });
+  }
+
+  function applyPendingPreview() {
+    if (!dragState || !pendingPointer) return;
     if (dragState.kind === "resize") {
       const delta =
-        (e.clientX - dragState.startX + e.clientY - dragState.startY) / 300;
-      rect.scale = Math.max(
+        (pendingPointer.x -
+          dragState.startX +
+          pendingPointer.y -
+          dragState.startY) /
+        300;
+      const nextScale = Math.max(
         MIN_SCALE,
         Math.min(MAX_SCALE, dragState.startScale + delta),
       );
+      previewScale =
+        dragState.startScale > 0 ? nextScale / dragState.startScale : 1;
       return;
     }
 
     const next = clampPosition(
-      dragState.startRect.x + e.clientX - dragState.startX,
-      dragState.startRect.y + e.clientY - dragState.startY,
+      dragState.startRect.x + pendingPointer.x - dragState.startX,
+      dragState.startRect.y + pendingPointer.y - dragState.startY,
     );
-    rect.x = next.x;
-    rect.y = next.y;
+    previewOffset = {
+      x: next.x - dragState.startRect.x,
+      y: next.y - dragState.startRect.y,
+    };
   }
 
   function stopDrag() {
+    if (previewRafId !== null) {
+      window.cancelAnimationFrame(previewRafId);
+      previewRafId = null;
+    }
+    applyPendingPreview();
+    if (dragState?.kind === "move") {
+      rect.x = dragState.startRect.x + previewOffset.x;
+      rect.y = dragState.startRect.y + previewOffset.y;
+    } else if (dragState?.kind === "resize") {
+      rect.scale = Math.max(
+        MIN_SCALE,
+        Math.min(MAX_SCALE, dragState.startScale * previewScale),
+      );
+    }
     dragState = null;
+    pendingPointer = null;
+    previewOffset = { x: 0, y: 0 };
+    previewScale = 1;
     window.removeEventListener("pointermove", onPointerMove);
   }
 
   $effect(() => {
     return () => {
+      if (previewRafId !== null) {
+        window.cancelAnimationFrame(previewRafId);
+        previewRafId = null;
+      }
       window.removeEventListener("pointermove", onPointerMove);
     };
   });

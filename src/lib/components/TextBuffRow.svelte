@@ -1,5 +1,13 @@
 <script lang="ts">
+  import {
+    hudTemporalAlert,
+    hudTemporalProgressPercent,
+    hudTemporalRemainingMs,
+    type HudTemporalValue,
+  } from "$lib/hud-temporal.svelte.js";
   import type { BuffAlertState } from "../../routes/game-overlay/overlay-types";
+  import { overlayNow } from "../../routes/game-overlay/overlay-clock.svelte.js";
+  import { formatTimerText } from "../../routes/game-overlay/overlay-utils";
 
   interface Props {
     label: string;
@@ -15,6 +23,7 @@
     columnGap?: number | undefined;
     placeholder?: boolean | undefined;
     alert?: BuffAlertState | undefined;
+    temporal?: HudTemporalValue | undefined;
   }
 
   let {
@@ -31,25 +40,44 @@
     columnGap = 8,
     placeholder = false,
     alert = undefined,
+    temporal = undefined,
   }: Props = $props();
+
+  const temporalNow = $derived(temporal ? overlayNow() : 0);
+  const effectiveValueText = $derived(
+    temporal
+      ? formatTimerText(hudTemporalRemainingMs(temporal, temporalNow))
+      : valueText,
+  );
+  const effectiveProgressPercent = $derived(
+    temporal
+      ? hudTemporalProgressPercent(temporal, temporalNow)
+      : progressPercent,
+  );
+  const effectiveAlert = $derived(
+    temporal ? hudTemporalAlert(temporal, temporalNow) : alert,
+  );
 </script>
 
 <div
   class="text-buff-row"
   class:placeholder
-  class:alert-flash={alert?.flash === true}
-  style:--alert-color={alert?.highlightColor}
-  style:--alert-flash-duration={alert
-    ? `${alert.flashIntervalMs}ms`
+  class:alert-flash={effectiveAlert?.flash === true}
+  style:--alert-color={effectiveAlert?.highlightColor}
+  style:--alert-flash-duration={effectiveAlert
+    ? `${effectiveAlert.flashIntervalMs}ms`
     : undefined}
 >
   {#if showProgress}
     <div class="text-buff-progress-track">
       <div
         class="text-buff-progress-fill"
-        style:width={`${progressPercent}%`}
-        style:background={alert?.applyToProgress
-          ? alert.highlightColor
+        style:transform={`scaleX(${Math.max(
+          0,
+          Math.min(100, effectiveProgressPercent),
+        ) / 100})`}
+        style:background={effectiveAlert?.applyToProgress
+          ? effectiveAlert.highlightColor
           : progressColor}
         style:opacity={progressOpacity}
       ></div>
@@ -59,7 +87,7 @@
   <div class="text-buff-main" style:gap={`${columnGap}px`}>
     <span
       class="text-buff-name"
-      style:color={alert?.highlightColor ?? nameColor}
+      style:color={effectiveAlert?.highlightColor ?? nameColor}
       style:font-size={`${fontSize}px`}
     >
       {label}
@@ -68,7 +96,7 @@
       {#if metaText}
         <span
           class="text-buff-meta"
-          style:color={alert?.highlightColor ?? valueColor}
+          style:color={effectiveAlert?.highlightColor ?? valueColor}
           style:font-size={`${Math.max(10, fontSize - 1)}px`}
         >
           {metaText}
@@ -76,10 +104,10 @@
       {/if}
       <span
         class="text-buff-value"
-        style:color={alert?.highlightColor ?? valueColor}
+        style:color={effectiveAlert?.highlightColor ?? valueColor}
         style:font-size={`${fontSize}px`}
       >
-        {valueText}
+        {effectiveValueText}
       </span>
     </span>
   </div>
@@ -111,8 +139,11 @@
   }
 
   .text-buff-progress-fill {
+    width: 100%;
     height: 100%;
-    transition: width 100ms linear;
+    transform-origin: left center;
+    transition: transform 100ms linear;
+    will-change: transform;
   }
 
   .text-buff-main {

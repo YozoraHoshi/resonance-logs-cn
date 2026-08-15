@@ -1,13 +1,5 @@
-import {
-  SETTINGS,
-  ensureTeammatePanelStyle,
-} from "$lib/settings-store";
+import { SETTINGS, ensureTeammatePanelStyle } from "$lib/settings-store";
 import { normalizeCustomPanelStyle } from "$lib/skill-monitor-normalize";
-import {
-  createReferenceSession,
-  disableSiblingReference,
-  enableSiblingReference,
-} from "$lib/overlay-reference";
 import {
   DEFAULT_MONSTER_OVERLAY_POSITIONS,
   DEFAULT_MONSTER_OVERLAY_SIZES,
@@ -17,11 +9,6 @@ import {
 } from "./monster-constants";
 import { monsterRuntime } from "./monster-runtime.svelte.js";
 import type { MonsterDragTarget, MonsterResizeTarget } from "./monster-types";
-
-const GAME_OVERLAY_LABEL = "game-overlay";
-const GAME_OVERLAY_REFERENCE_EVENT = "game-overlay-reference-toggle";
-// Active-role session: this overlay driving the game-overlay as its reference.
-const referenceSession = createReferenceSession();
 
 function patchMonsterMonitor(
   updater: (
@@ -263,33 +250,6 @@ export function setDbmPanelScale(value: number) {
   }));
 }
 
-export async function setMonsterEditMode(editing: boolean) {
-  monsterRuntime.isEditing = editing;
-  if (monsterRuntime.currentWindow) {
-    await monsterRuntime.currentWindow.setIgnoreCursorEvents(!editing);
-  }
-  if (editing) {
-    await enableSiblingReference({
-      self: monsterRuntime.currentWindow,
-      siblingLabel: GAME_OVERLAY_LABEL,
-      referenceEvent: GAME_OVERLAY_REFERENCE_EVENT,
-      session: referenceSession,
-    });
-  } else {
-    await disableSiblingReference({
-      siblingLabel: GAME_OVERLAY_LABEL,
-      referenceEvent: GAME_OVERLAY_REFERENCE_EVENT,
-      session: referenceSession,
-    });
-  }
-}
-
-// Passive role: this overlay is shown beneath the game-overlay as its reference
-// layer. Only toggles the scaffold flag; does not touch cursor events.
-export function setMonsterReferenceMode(enabled: boolean) {
-  monsterRuntime.isReferenceMode = enabled;
-}
-
 export function startMonsterDrag(
   event: PointerEvent,
   target: MonsterDragTarget,
@@ -303,6 +263,8 @@ export function startMonsterDrag(
     startX: event.clientX,
     startY: event.clientY,
     startPos,
+    nextPos: startPos,
+    element: previewElement(event),
   };
 }
 
@@ -319,6 +281,8 @@ export function startMonsterResize(
     startX: event.clientX,
     startY: event.clientY,
     startValue,
+    nextValue: startValue,
+    element: previewElement(event),
   };
 }
 
@@ -330,50 +294,115 @@ export function onGlobalPointerMove(event: PointerEvent) {
       x: Math.max(0, Math.round(monsterRuntime.dragState.startPos.x + deltaX)),
       y: Math.max(0, Math.round(monsterRuntime.dragState.startPos.y + deltaY)),
     };
-    if (monsterRuntime.dragState.target.kind === "buffPanel") {
-      setMonsterPanelPosition(nextPos);
-    } else if (monsterRuntime.dragState.target.kind === "teammatePanel") {
-      setTeammatePanelPosition(nextPos);
-    } else if (monsterRuntime.dragState.target.kind === "hatePanel") {
-      setHatePanelPosition(nextPos);
-    } else if (monsterRuntime.dragState.target.kind === "stunPanel") {
-      setStunPanelPosition(nextPos);
-    } else if (monsterRuntime.dragState.target.kind === "dbmPanel") {
-      setDbmPanelPosition(nextPos);
-    } else {
-      setFantasyPanelPosition(nextPos);
-    }
+    monsterRuntime.dragState.nextPos = nextPos;
+    scheduleLayoutPreview();
   }
 
   if (monsterRuntime.resizeState) {
     const deltaX = event.clientX - monsterRuntime.resizeState.startX;
     const deltaY = event.clientY - monsterRuntime.resizeState.startY;
     const delta = (deltaX + deltaY) / 300;
-    if (monsterRuntime.resizeState.target.kind === "buffPanel") {
-      setMonsterPanelScale(monsterRuntime.resizeState.startValue + delta);
-    } else if (monsterRuntime.resizeState.target.kind === "teammatePanel") {
-      setTeammatePanelScale(monsterRuntime.resizeState.startValue + delta);
-    } else if (monsterRuntime.resizeState.target.kind === "hatePanel") {
-      setHatePanelScale(monsterRuntime.resizeState.startValue + delta);
-    } else if (monsterRuntime.resizeState.target.kind === "stunPanel") {
-      setStunPanelScale(monsterRuntime.resizeState.startValue + delta);
-    } else if (monsterRuntime.resizeState.target.kind === "dbmPanel") {
-      setDbmPanelScale(monsterRuntime.resizeState.startValue + delta);
-    } else {
-      setFantasyPanelScale(monsterRuntime.resizeState.startValue + delta);
-    }
+    monsterRuntime.resizeState.nextValue = clampPanelScale(
+      monsterRuntime.resizeState.startValue + delta,
+    );
+    scheduleLayoutPreview();
   }
 }
 
 export function onGlobalPointerUp() {
+  cancelScheduledLayoutPreview();
+  commitDragPreview();
+  commitResizePreview();
+  clearLayoutPreviewStyles();
   monsterRuntime.dragState = null;
   monsterRuntime.resizeState = null;
 }
 
-export async function onWindowDragPointerDown(event: PointerEvent) {
-  if (!monsterRuntime.currentWindow) return;
-  event.preventDefault();
-  await monsterRuntime.currentWindow.startDragging();
+function previewElement(event: PointerEvent): HTMLElement | null {
+  const current = event.currentTarget;
+  if (!(current instanceof HTMLElement)) return null;
+  return current.classList.contains("overlay-group")
+    ? current
+    : current.closest<HTMLElement>(".overlay-group");
+}
+
+function scheduleLayoutPreview() {
+  if (monsterRuntime.layoutPreviewRafId !== null) return;
+  monsterRuntime.layoutPreviewRafId = window.requestAnimationFrame(() => {
+    monsterRuntime.layoutPreviewRafId = null;
+    applyLayoutPreviewStyles();
+  });
+}
+
+function cancelScheduledLayoutPreview() {
+  if (monsterRuntime.layoutPreviewRafId === null) return;
+  window.cancelAnimationFrame(monsterRuntime.layoutPreviewRafId);
+  monsterRuntime.layoutPreviewRafId = null;
+}
+
+function applyLayoutPreviewStyles() {
+  const drag = monsterRuntime.dragState;
+  if (drag?.element) {
+    drag.element.style.translate = `${drag.nextPos.x - drag.startPos.x}px ${
+      drag.nextPos.y - drag.startPos.y
+    }px`;
+  }
+  const resize = monsterRuntime.resizeState;
+  if (resize?.element) {
+    const ratio =
+      resize.startValue > 0 ? resize.nextValue / resize.startValue : 1;
+    resize.element.style.scale = String(ratio);
+  }
+}
+
+function clearLayoutPreviewStyles() {
+  const elements = [
+    monsterRuntime.dragState?.element,
+    monsterRuntime.resizeState?.element,
+  ];
+  for (const element of elements) {
+    if (!element) continue;
+    element.style.removeProperty("translate");
+    element.style.removeProperty("scale");
+  }
+}
+
+function commitDragPreview() {
+  const drag = monsterRuntime.dragState;
+  if (!drag) return;
+  const nextPos = drag.nextPos;
+  if (drag.target.kind === "buffPanel") {
+    setMonsterPanelPosition(nextPos);
+  } else if (drag.target.kind === "teammatePanel") {
+    setTeammatePanelPosition(nextPos);
+  } else if (drag.target.kind === "hatePanel") {
+    setHatePanelPosition(nextPos);
+  } else if (drag.target.kind === "stunPanel") {
+    setStunPanelPosition(nextPos);
+  } else if (drag.target.kind === "dbmPanel") {
+    setDbmPanelPosition(nextPos);
+  } else {
+    setFantasyPanelPosition(nextPos);
+  }
+}
+
+function commitResizePreview() {
+  const resize = monsterRuntime.resizeState;
+  if (!resize) return;
+  const nextValue = resize.nextValue;
+  if (resize.target.kind === "buffPanel") {
+    setMonsterPanelScale(nextValue);
+  } else if (resize.target.kind === "teammatePanel") {
+    setTeammatePanelScale(nextValue);
+  } else if (resize.target.kind === "hatePanel") {
+    setHatePanelScale(nextValue);
+  } else if (resize.target.kind === "stunPanel") {
+    setStunPanelScale(nextValue);
+  } else if (resize.target.kind === "dbmPanel") {
+    setDbmPanelScale(nextValue);
+  } else {
+    setFantasyPanelScale(nextValue);
+  }
 }
 
 export function resetMonsterOverlayPositions() {

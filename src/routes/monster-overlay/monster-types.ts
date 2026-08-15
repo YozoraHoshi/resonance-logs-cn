@@ -2,6 +2,7 @@ import type { BuffCategoryKey } from "$lib/config/buff-name-table";
 import type { TextBuffDisplay } from "../game-overlay/overlay-types";
 import type { BuffAlertState } from "../game-overlay/overlay-types";
 import type { EntityId } from "$lib/entity-id";
+import type { HudTemporalValue } from "$lib/hud-temporal.svelte.js";
 
 export type MonsterBossBuffSection = {
   bossEntityUuid: EntityId;
@@ -34,6 +35,7 @@ export type MonsterTeammateBuffCell = {
   progressPercent: number;
   hasBuff: boolean;
   alert?: BuffAlertState | undefined;
+  temporal?: HudTemporalValue | undefined;
   categoryKey?: BuffCategoryKey | undefined;
   matchedBuffId?: number | undefined;
 };
@@ -87,6 +89,8 @@ export type MonsterDragState = {
   startX: number;
   startY: number;
   startPos: { x: number; y: number };
+  nextPos: { x: number; y: number };
+  element: HTMLElement | null;
 };
 
 export type MonsterResizeState = {
@@ -94,6 +98,8 @@ export type MonsterResizeState = {
   startX: number;
   startY: number;
   startValue: number;
+  nextValue: number;
+  element: HTMLElement | null;
 };
 
 export type GhostArea = {

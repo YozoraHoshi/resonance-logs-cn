@@ -1,5 +1,11 @@
 <script lang="ts">
+  import {
+    hudTemporalAlert,
+    hudTemporalRemainingMs,
+  } from "$lib/hud-temporal.svelte.js";
   import type { IconBuffDisplay } from "./overlay-types";
+  import { overlayNow } from "./overlay-clock.svelte.js";
+  import { formatTimerText } from "./overlay-utils";
 
   type PointerHandler = ((event: PointerEvent) => void) | undefined;
 
@@ -33,7 +39,17 @@
     Boolean(buff.specialImages && buff.specialImages.length > 0),
   );
   const specialDisplayStyle = $derived(buff.specialDisplayStyle);
-  const alert = $derived(buff.alert);
+  const temporalNow = $derived(buff.temporal ? overlayNow() : 0);
+  const alert = $derived(
+    buff.temporal
+      ? hudTemporalAlert(buff.temporal, temporalNow)
+      : buff.alert,
+  );
+  const timeText = $derived(
+    buff.temporal
+      ? formatTimerText(hudTemporalRemainingMs(buff.temporal, temporalNow))
+      : buff.text,
+  );
 
   // A player-override icon file can vanish from disk (asset protocol 403):
   // fall back to the game sprite, then hide rather than render a broken
@@ -119,7 +135,7 @@
       style:font-size={`${Math.max(10, Math.round(iconSize * 0.26))}px`}
       style:color={alert?.highlightColor}
     >
-      {buff.text}
+      {timeText}
     </div>
   {/if}
 

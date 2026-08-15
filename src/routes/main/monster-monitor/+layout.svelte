@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { emit } from "@tauri-apps/api/event";
-  import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
   import ExternalLinkIcon from "virtual:icons/lucide/external-link";
   import PenSquareIcon from "virtual:icons/lucide/pen-square";
   import PlayIcon from "virtual:icons/lucide/play";
@@ -10,21 +8,17 @@
   import ProfileSwitcher from "./profile-switcher.svelte";
   import {
     isOverlayWindowVisible,
+    toggleHudEditing,
     toggleOverlayWindow,
   } from "$lib/overlay-window-visibility.svelte";
 
   let { children } = $props();
 
-  const overlayVisible = $derived(isOverlayWindowVisible("monster-overlay"));
+  const overlayVisible = $derived(isOverlayWindowVisible("monster"));
 
   async function toggleMonsterOverlayEditMode() {
     try {
-      const overlayWindow = await WebviewWindow.getByLabel("monster-overlay");
-      if (overlayWindow !== null) {
-        await emit("monster-overlay-edit-toggle");
-      } else {
-        console.warn("Monster overlay window not found");
-      }
+      await toggleHudEditing();
     } catch (error) {
       console.error("Failed to toggle monster overlay edit mode", error);
     }
@@ -50,7 +44,7 @@
         class="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm shadow-sm transition-colors {overlayVisible
           ? 'border border-border/60 bg-muted/30 text-foreground hover:bg-muted/50'
           : 'bg-primary text-primary-foreground hover:bg-primary/90'}"
-        onclick={() => toggleOverlayWindow("monster-overlay")}
+        onclick={() => toggleOverlayWindow("monster")}
       >
         {#if overlayVisible}
           <PauseIcon class="w-4 h-4" />

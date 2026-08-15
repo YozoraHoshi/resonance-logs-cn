@@ -81,6 +81,7 @@
             columnGap={styleConfig.columnGap}
             placeholder={row.isPlaceholder}
             alert={row.alert}
+            temporal={row.temporal}
           />
         {/each}
       </div>
@@ -129,7 +130,6 @@
   .empty-tip {
     padding: 8px 10px;
     border-radius: 8px;
-    border: 1px dashed rgba(255, 255, 255, 0.18);
     color: rgba(241, 245, 249, 0.72);
     font-size: 12px;
   }
