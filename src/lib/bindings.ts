@@ -676,8 +676,9 @@ export type LiveRuntimeSnapshot = { eventUpdateRateMs: number }
 export type LiveScenePayload = { revision: number; sceneId: number | null; dungeonDifficulty: number | null }
 /**
  * Skill CD / panel attrs / fight resource / shields / counters
- * (`live-status`). Published once per batch when dirty (no time throttle), so
- * the shield bar gets the low latency it needs.
+ * (`live-status`). Published on the same 50ms cadence as the other overlay
+ * pull topics when dirty. Overlay windows still read this through invoke
+ * pull; it is not emitted as a WebView event.
  */
 export type LiveStatusPayload = { revision: number; counters: CounterUpdateState[]; factorCounters: CounterUpdateState[]; factorSourceItemIds: number[]; factorSlotItemIds: number[];
 /**

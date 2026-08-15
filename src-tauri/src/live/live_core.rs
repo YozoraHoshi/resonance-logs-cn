@@ -560,12 +560,12 @@ impl LiveCore {
         }
     }
 
-    /// Schedules every dirty topic on its own cadence. Immediate topics and
-    /// forced publications land on `now` so the caller's `take_due_publications`
-    /// picks them up within the same turn.
+    /// Schedules every dirty topic on its own cadence. Forced publications
+    /// (`immediate`) land on `now` so the caller's `take_due_publications`
+    /// picks them up within the same turn. No topic is inherently immediate.
     fn request_publications(&mut self, now: MonoTimeMs, immediate: bool) {
         for topic in self.projections.dirty_mask().iter() {
-            let deadline = if immediate || topic.is_immediate() {
+            let deadline = if immediate {
                 now
             } else {
                 let interval = topic.throttle_ms().unwrap_or(self.live_publish_interval_ms);

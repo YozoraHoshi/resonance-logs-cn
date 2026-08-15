@@ -147,16 +147,11 @@ impl Topic {
     }
 
     #[must_use]
-    pub const fn is_immediate(self) -> bool {
-        matches!(self, Self::Status)
-    }
-
-    #[must_use]
     pub const fn throttle_ms(self) -> Option<u64> {
         match self {
             Self::Combat => None, // uses configured event_update_rate_ms
-            Self::Status => None, // per-batch immediate
-            Self::Buffs
+            Self::Status
+            | Self::Buffs
             | Self::Monster
             | Self::Fantasy
             | Self::Minimap
@@ -181,5 +176,21 @@ mod tests {
                 assert_eq!(topic.event_name(), None);
             }
         }
+    }
+
+    #[test]
+    fn status_shares_fifty_ms_throttle_with_other_pull_topics() {
+        for topic in [
+            Topic::Status,
+            Topic::Buffs,
+            Topic::Monster,
+            Topic::Fantasy,
+            Topic::Minimap,
+            Topic::Deaths,
+            Topic::Scene,
+        ] {
+            assert_eq!(topic.throttle_ms(), Some(50));
+        }
+        assert_eq!(Topic::Combat.throttle_ms(), None);
     }
 }
