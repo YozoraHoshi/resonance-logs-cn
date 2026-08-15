@@ -35,11 +35,13 @@ pub fn check_gpu_support() -> GpuSupport {
 }
 
 fn load_latest_char_serialize() -> Result<CharSerialize, String> {
-    let vdata_bytes: Option<Vec<u8>> = db_exec(|conn| {
+    let vdata_bytes = db_exec(|conn| {
         dpd::detailed_playerdata
             .select(dpd::vdata_bytes)
             .order(dpd::last_seen_ms.desc())
-            .first(conn)
+            .first::<Option<Vec<u8>>>(conn)
+            .optional()
+            .map(|row| row.flatten())
             .map_err(|e| e.to_string())
     })?;
 
@@ -48,11 +50,10 @@ fn load_latest_char_serialize() -> Result<CharSerialize, String> {
         vdata_bytes.as_ref().map(|b| b.len())
     );
 
-    if let Some(bytes) = vdata_bytes {
-        CharSerialize::decode(bytes.as_slice()).map_err(|e| e.to_string())
-    } else {
-        Err("No player data found".to_string())
-    }
+    let Some(bytes) = vdata_bytes else {
+        return Err("No player data found".to_string());
+    };
+    CharSerialize::decode(bytes.as_slice()).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

@@ -13,6 +13,7 @@ use diesel::sqlite::SqliteConnection;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness};
 use serde::{Deserialize, Serialize};
 
+use crate::database::models as m;
 use crate::database::schema as sch;
 
 use self::event_journal::{FinalizeEncounter, FinalizeOutcome, InsertOutcome, RecordingEncounter};
@@ -269,6 +270,42 @@ where
     }
 }
 
+fn upsert_playerdata(
+    conn: &mut SqliteConnection,
+    player_id: i64,
+    last_seen_ms: i64,
+    vdata_bytes: &[u8],
+) -> QueryResult<usize> {
+    use sch::detailed_playerdata::dsl as dp;
+
+    let insert = m::NewDetailedPlayerData {
+        player_id,
+        last_seen_ms,
+        vdata_bytes: Some(vdata_bytes),
+    };
+    let update = m::UpdateDetailedPlayerData {
+        last_seen_ms,
+        vdata_bytes: Some(vdata_bytes),
+    };
+
+    diesel::insert_into(dp::detailed_playerdata)
+        .values(&insert)
+        .on_conflict(dp::player_id)
+        .do_update()
+        .set(&update)
+        .execute(conn)
+}
+
+/// Fire-and-forget upsert of the local player's `CharSerialize` bytes.
+/// Does not wait for SQLite; the decode thread only blocks if the actor queue is full.
+pub fn flush_playerdata(player_id: i64, last_seen_ms: i64, vdata_bytes: Vec<u8>) {
+    db_send(move |conn| {
+        if let Err(error) = upsert_playerdata(conn, player_id, last_seen_ms, &vdata_bytes) {
+            log::warn!(target: "app::db", "flush_playerdata_failed error={error}");
+        }
+    });
+}
+
 pub fn begin_history_recording(recording: RecordingEncounter) -> Result<i32, String> {
     request(|reply| DatabaseRequest::BeginRecording { recording, reply })
 }
@@ -356,4 +393,41 @@ fn prune_encounters(conn: &mut SqliteConnection, keep: i64) -> Result<(), String
         .map_err(|error| error.to_string())?;
     log::info!(target: "app::db", "startup_maintenance_pruned deleted={deleted} keep={keep}");
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::database::schema::detailed_playerdata::dsl as dp;
+
+    fn memory_conn() -> SqliteConnection {
+        let mut conn = SqliteConnection::establish(":memory:").expect("open in-memory sqlite");
+        apply_sqlite_pragmas(&mut conn).expect("apply sqlite pragmas");
+        conn.run_pending_migrations(MIGRATIONS)
+            .expect("run embedded migrations");
+        conn
+    }
+
+    fn load_row(conn: &mut SqliteConnection, player_id: i64) -> (i64, Option<Vec<u8>>) {
+        dp::detailed_playerdata
+            .filter(dp::player_id.eq(player_id))
+            .select((dp::last_seen_ms, dp::vdata_bytes))
+            .first(conn)
+            .expect("load playerdata row")
+    }
+
+    #[test]
+    fn upsert_playerdata_inserts_then_overwrites() {
+        let mut conn = memory_conn();
+
+        upsert_playerdata(&mut conn, 42, 1_000, b"first").expect("insert playerdata");
+        let (seen, bytes) = load_row(&mut conn, 42);
+        assert_eq!(seen, 1_000);
+        assert_eq!(bytes.as_deref(), Some(b"first".as_slice()));
+
+        upsert_playerdata(&mut conn, 42, 2_000, b"second").expect("update playerdata");
+        let (seen, bytes) = load_row(&mut conn, 42);
+        assert_eq!(seen, 2_000);
+        assert_eq!(bytes.as_deref(), Some(b"second".as_slice()));
+    }
 }

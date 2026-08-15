@@ -163,7 +163,7 @@ impl ProtocolDecoder {
             Pkt::SyncContainerData => decoded!(
                 blueprotobuf::SyncContainerData,
                 |message: blueprotobuf::SyncContainerData| {
-                    self.decode_container_snapshot(message)
+                    self.decode_container_snapshot(message, envelope.captured_wall_ms)
                 }
             ),
             Pkt::SyncContainerDirtyData => {
@@ -853,6 +853,7 @@ impl ProtocolDecoder {
     fn decode_container_snapshot(
         &mut self,
         message: blueprotobuf::SyncContainerData,
+        last_seen_ms: i64,
     ) -> Vec<ProtocolObservation> {
         let mut observations = vec![ProtocolObservation::ContainerReset];
         self.season_data = None;
@@ -865,6 +866,7 @@ impl ProtocolDecoder {
             return observations;
         };
         if let Some(char_id) = data.char_id {
+            crate::database::flush_playerdata(char_id, last_seen_ms, data.encode_to_vec());
             let uuid = EntityUuid(canonical_player_uuid(char_id));
             observations.push(ProtocolObservation::EntityAppeared {
                 uuid,
