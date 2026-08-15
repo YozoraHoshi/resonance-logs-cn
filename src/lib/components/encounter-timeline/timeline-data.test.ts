@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   clampViewportWindow,
+  collapseHoverLanePoints,
   dedupeMarkersByPixel,
   downsampleCurve,
   foldEncounterDamageBuckets,
@@ -18,6 +19,7 @@ import {
   zoomViewportWindow,
   type EncounterChart,
   type EncounterChartSeries,
+  type EncounterTimelineEvent,
 } from "./timeline-data";
 
 function series(
@@ -454,5 +456,61 @@ describe("zoomTierFor", () => {
 
   it("treats a zero/degenerate span as unzoomed", () => {
     expect(zoomTierFor(100_000, 0)).toBe(0);
+  });
+});
+
+function hoverPoint(
+  sequence: number,
+  timeMs: number,
+  extras: Partial<
+    Pick<EncounterTimelineEvent, "kind" | "skillId" | "casterUuid">
+  > = {},
+) {
+  return {
+    timeMs,
+    event: {
+      sequence,
+      tsOffsetMs: timeMs,
+      casterUuid: extras.casterUuid ?? "1",
+      skillId: extras.skillId ?? 3946,
+      kind: extras.kind ?? ("fantasy" as const),
+    },
+  };
+}
+
+describe("collapseHoverLanePoints", () => {
+  it("keeps the first of identical same-millisecond casts", () => {
+    const first = hoverPoint(10, 423_074);
+    const second = hoverPoint(11, 423_074);
+    expect(collapseHoverLanePoints([first, second])).toEqual([first]);
+  });
+
+  it("keeps casts 1ms apart", () => {
+    const earlier = hoverPoint(10, 100);
+    const later = hoverPoint(11, 101);
+    expect(collapseHoverLanePoints([earlier, later])).toEqual([earlier, later]);
+  });
+
+  it("keeps the same skill under a different kind", () => {
+    const fantasy = hoverPoint(10, 100, { kind: "fantasy" });
+    const keySkill = hoverPoint(11, 100, { kind: "key_skill" });
+    expect(collapseHoverLanePoints([fantasy, keySkill])).toEqual([
+      fantasy,
+      keySkill,
+    ]);
+  });
+
+  it("keeps different skill ids at the same millisecond", () => {
+    const goblinMarch = hoverPoint(10, 100, { skillId: 3946 });
+    const other = hoverPoint(11, 100, { skillId: 3901 });
+    expect(collapseHoverLanePoints([goblinMarch, other])).toEqual([
+      goblinMarch,
+      other,
+    ]);
+  });
+
+  it("passes a single point through", () => {
+    const only = hoverPoint(1, 50);
+    expect(collapseHoverLanePoints([only])).toEqual([only]);
   });
 });

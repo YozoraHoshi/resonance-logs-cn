@@ -14,6 +14,8 @@ export type EncounterChart = {
 };
 
 export type EncounterTimelineEvent = {
+  /** Journal sequence; the only stable identity for keyed each-blocks. */
+  sequence: number;
   tsOffsetMs: number;
   casterUuid: string;
   skillId: number;
@@ -391,6 +393,37 @@ export function dedupeMarkersByPixel<T extends TimeStamped>(
     kept.push(point);
   }
   kept.reverse();
+  return kept;
+}
+
+/** Structural shape for tooltip collapse; `LanePoint` satisfies this without
+ * this module importing `timeline-types`. */
+type HoverLanePoint = {
+  timeMs: number;
+  event: Pick<EncounterTimelineEvent, "kind" | "skillId" | "casterUuid">;
+};
+
+/** Drops later hover hits that are the same cast fact: same kind, skill,
+ * caster and exact millisecond. Multi-summon fantasies (e.g. Goblin March)
+ * share one resonance skill id and land on the same offset, so the tooltip
+ * shows one row. Distinct casts 1ms apart, or a key_skill vs fantasy of the
+ * same id, stay separate. Callers pass an already distance-sorted, truncated
+ * list. */
+export function collapseHoverLanePoints<T extends HoverLanePoint>(
+  points: readonly T[],
+): T[] {
+  if (points.length < 2) return points as T[];
+  const kept: T[] = [];
+  for (const point of points) {
+    const isDuplicate = kept.some(
+      (prior) =>
+        prior.timeMs === point.timeMs &&
+        prior.event.kind === point.event.kind &&
+        prior.event.skillId === point.event.skillId &&
+        prior.event.casterUuid === point.event.casterUuid,
+    );
+    if (!isDuplicate) kept.push(point);
+  }
   return kept;
 }
 

@@ -45,6 +45,9 @@ export function timelineGestures(
     let pointerDownClientX = 0;
     let lastPanClientX = 0;
     let activePointerId: number | null = null;
+    let hoverRaf: number | null = null;
+    let pendingHover: { timeMs: number; y: number } | undefined;
+    let lastHover: { timeMs: number; y: number } | null = null;
 
     function currentWindow() {
       const viewport = options.getViewport();
@@ -58,6 +61,52 @@ export function timelineGestures(
       const timeMs =
         rect.width > 0 ? xToTime(x, currentWindow(), rect.width) : 0;
       return { timeMs, y };
+    }
+
+    function cancelHoverRaf() {
+      if (hoverRaf !== null) {
+        cancelAnimationFrame(hoverRaf);
+        hoverRaf = null;
+      }
+      pendingHover = undefined;
+    }
+
+    function emitHover(point: { timeMs: number; y: number } | null) {
+      if (point === null) {
+        if (lastHover === null) return;
+        lastHover = null;
+        options.onHover(null);
+        return;
+      }
+      if (
+        lastHover !== null &&
+        lastHover.timeMs === point.timeMs &&
+        lastHover.y === point.y
+      ) {
+        return;
+      }
+      lastHover = point;
+      options.onHover(point);
+    }
+
+    function flushHover() {
+      hoverRaf = null;
+      if (pendingHover === undefined) return;
+      const point = pendingHover;
+      pendingHover = undefined;
+      emitHover(point);
+    }
+
+    function scheduleHover(point: { timeMs: number; y: number }) {
+      pendingHover = point;
+      if (hoverRaf === null) {
+        hoverRaf = requestAnimationFrame(flushHover);
+      }
+    }
+
+    function clearHover() {
+      cancelHoverRaf();
+      emitHover(null);
     }
 
     function onWheel(event: WheelEvent) {
@@ -91,7 +140,7 @@ export function timelineGestures(
         return;
       }
 
-      options.onHover(null);
+      clearHover();
       activePointerId = event.pointerId;
       node.setPointerCapture(activePointerId);
       event.preventDefault();
@@ -112,7 +161,7 @@ export function timelineGestures(
         options.onBrushPreview([brushStartMs, toTimeAndY(event).timeMs]);
         return;
       }
-      options.onHover(toTimeAndY(event));
+      scheduleHover(toTimeAndY(event));
     }
 
     function endDrag(event: PointerEvent) {
@@ -146,7 +195,7 @@ export function timelineGestures(
     }
 
     function onPointerLeave() {
-      if (mode === "idle") options.onHover(null);
+      if (mode === "idle") clearHover();
     }
 
     node.addEventListener("wheel", onWheel, { passive: false });
@@ -158,6 +207,7 @@ export function timelineGestures(
     node.addEventListener("pointerleave", onPointerLeave);
 
     return () => {
+      cancelHoverRaf();
       node.removeEventListener("wheel", onWheel);
       node.removeEventListener("pointerdown", onPointerDown);
       node.removeEventListener("pointermove", onPointerMove);

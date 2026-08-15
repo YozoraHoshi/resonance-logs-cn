@@ -3,14 +3,15 @@
   // hover tooltip (replaces ECharts' axis tooltip), plus the live brush
   // preview and the persisted selection highlight. Everything here is
   // `pointer-events: none` - the gesture layer underneath owns all input.
-  import { interpolateCurveValue } from "./timeline-data";
+  import {
+    collapseHoverLanePoints,
+    interpolateCurveValue,
+    type EncounterCurvePoint,
+    type EncounterTimelineEvent,
+  } from "./timeline-data";
   import { formatTimeMs, formatValue } from "./timeline-format";
   import { t } from "$lib/i18n/index.svelte";
   import { SETTINGS } from "$lib/settings-store";
-  import type {
-    EncounterCurvePoint,
-    EncounterTimelineEvent,
-  } from "./timeline-data";
   import type {
     Lane,
     TimelineEventDisplay,
@@ -80,13 +81,16 @@
     const lane = lanes[hoverLaneIndex];
     if (!lane) return [];
     const point = hoverPoint;
-    return lane.points
-      .filter((p) => Math.abs(p.timeMs - point.timeMs) <= toleranceMs)
-      .sort(
-        (a, b) =>
-          Math.abs(a.timeMs - point.timeMs) - Math.abs(b.timeMs - point.timeMs),
-      )
-      .slice(0, 6);
+    return collapseHoverLanePoints(
+      lane.points
+        .filter((p) => Math.abs(p.timeMs - point.timeMs) <= toleranceMs)
+        .sort(
+          (a, b) =>
+            Math.abs(a.timeMs - point.timeMs) -
+            Math.abs(b.timeMs - point.timeMs),
+        )
+        .slice(0, 6),
+    );
   });
 
   const hoverCurveInfo = $derived.by(() => {
@@ -142,7 +146,7 @@
     >
       <div class="tl-tooltip-time">{formatTimeMs(hoverPoint.timeMs, true)}</div>
       {#if hoverLaneIndex !== null}
-        {#each hoverLaneEvents as point (point.event.tsOffsetMs + ":" + point.event.casterUuid + ":" + point.event.skillId)}
+        {#each hoverLaneEvents as point (point.event.sequence)}
           {@const display = resolveEvent(point.event)}
           <div class="tl-tooltip-row">
             {#if display.iconPath}

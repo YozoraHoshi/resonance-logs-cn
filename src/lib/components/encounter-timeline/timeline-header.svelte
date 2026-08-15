@@ -63,6 +63,9 @@
         {t("history.timeline.series.average")}
       </span>
     </button>
+    <span class="text-[10px]" style="color: var(--tl-fg-muted)">
+      {t("history.timeline.hint.gestures")}
+    </span>
 
     {#if viewport.isZoomed}
       <span

@@ -414,7 +414,6 @@
       {@attach gestureAttachment}
       role="img"
       aria-label={t("history.timeline.chartAriaLabel")}
-      title={t("history.timeline.hint.gestures")}
     >
       <TimelineOverlay
         {lanes}

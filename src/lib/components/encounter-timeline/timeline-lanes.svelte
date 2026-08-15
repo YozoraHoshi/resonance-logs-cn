@@ -81,7 +81,7 @@
       class="absolute inset-x-0"
       style="top: {laneIndex * laneH}px; height: {laneH}px"
     >
-      {#each points as point, index (point.event.tsOffsetMs + ":" + point.event.casterUuid + ":" + point.event.skillId + ":" + index)}
+      {#each points as point, index (point.event.sequence)}
         {@const display = resolveEvent(point.event)}
         {@const left = toLeftPct(point.timeMs)}
         {@const isFantasy = point.event.kind === "fantasy"}

@@ -362,6 +362,7 @@
 
   const timelineEvents = $derived.by<EncounterTimelineEvent[]>(() =>
     (detail?.markers ?? []).map((marker) => ({
+      sequence: marker.sequence,
       tsOffsetMs: marker.offsetMs - (detail?.startMs ?? 0),
       casterUuid: marker.casterEntityId,
       skillId: ipcNumber(marker.skillId),
