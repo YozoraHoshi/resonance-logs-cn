@@ -383,7 +383,7 @@ export const zhCNMessages = {
   "history.list.table.deselectAll": "取消全选",
   "history.list.table.select": "选择",
   "history.list.table.deselect": "取消选择",
-  "history.list.table.id": "ID",
+  "history.list.table.id": "序号",
   "history.list.table.encounter": "战斗",
   "history.list.table.players": "玩家",
   "history.list.table.duration": "时长",

@@ -647,7 +647,7 @@
             </td>
             <td class="text-muted-foreground px-3 py-2 text-sm">
               <span class="inline-flex items-center gap-1">
-                {enc.id}
+                {enc.displayIndex}
                 {#if enc.isFavorite}
                   <svg
                     class="h-3.5 w-3.5 flex-shrink-0 text-yellow-500"

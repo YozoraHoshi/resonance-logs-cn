@@ -486,6 +486,7 @@ mod tests {
                 remote_encounter_id: None,
                 is_favorite: false,
                 detail_available: true,
+                display_index: 0,
             },
         )
     }

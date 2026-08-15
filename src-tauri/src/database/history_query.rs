@@ -1161,6 +1161,7 @@ fn empty_summary(encounter_id: i32) -> EncounterSummaryDto {
         remote_encounter_id: None,
         is_favorite: false,
         detail_available: false,
+        display_index: 0,
     }
 }
 

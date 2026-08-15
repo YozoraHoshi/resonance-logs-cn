@@ -611,10 +611,8 @@ mod tests {
         let deaths = presentation.peek_deaths_payload(true, vec![death_record("21")]);
         assert_eq!(deaths.deaths[0].victim_entity_uuid, "21");
 
-        let fantasy = presentation.peek_fantasy_payload(
-            true,
-            &monitored_with_fantasies(vec![fantasy_state("31")]),
-        );
+        let fantasy = presentation
+            .peek_fantasy_payload(true, &monitored_with_fantasies(vec![fantasy_state("31")]));
         assert_eq!(fantasy.teammate_fantasies[0].summon_uuid, "31");
     }
 

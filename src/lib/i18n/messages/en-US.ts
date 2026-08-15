@@ -435,7 +435,7 @@ export const enUSMessages = {
   "history.list.table.deselectAll": "Deselect all",
   "history.list.table.select": "Select",
   "history.list.table.deselect": "Deselect",
-  "history.list.table.id": "ID",
+  "history.list.table.id": "#",
   "history.list.table.encounter": "Encounter",
   "history.list.table.players": "Players",
   "history.list.table.duration": "Duration",

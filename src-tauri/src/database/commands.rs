@@ -34,6 +34,7 @@ pub struct EncounterSummaryDto {
     pub remote_encounter_id: Option<i64>,
     pub is_favorite: bool,
     pub detail_available: bool,
+    pub display_index: i32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -174,7 +175,68 @@ fn map_summary(row: EncounterSummaryRow) -> Result<EncounterSummaryDto, String> 
             .collect(),
         players: parse_player_entries(&row.player_names),
         detail_available: row.projection_encounter_id.is_some(),
+        display_index: DisplayIndex::UNASSIGNED.as_i32(),
     })
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct DisplayIndex(i32);
+
+impl DisplayIndex {
+    const UNASSIGNED: Self = Self(0);
+
+    fn from_rank(rank: usize) -> Result<Self, String> {
+        let index = i32::try_from(rank.saturating_add(1))
+            .map_err(|_| "display index exceeds i32".to_string())?;
+        if index <= 0 {
+            return Err("display index must be positive".to_string());
+        }
+        Ok(Self(index))
+    }
+
+    fn from_count(count: i64) -> Result<Self, String> {
+        let index = i32::try_from(count).map_err(|_| "display index exceeds i32".to_string())?;
+        if index <= 0 {
+            return Err("display index must be positive".to_string());
+        }
+        Ok(Self(index))
+    }
+
+    fn as_i32(self) -> i32 {
+        self.0
+    }
+}
+
+fn assign_display_indices(summaries: &mut [EncounterSummaryDto]) -> Result<(), String> {
+    let mut order: Vec<usize> = (0..summaries.len()).collect();
+    order.sort_by_key(|&index| (summaries[index].started_at_ms, summaries[index].id));
+    for (rank, index) in order.into_iter().enumerate() {
+        summaries[index].display_index = DisplayIndex::from_rank(rank)?.as_i32();
+    }
+    Ok(())
+}
+
+fn load_display_index(
+    conn: &mut diesel::sqlite::SqliteConnection,
+    started_at_ms: i64,
+    encounter_id: i32,
+    ended_at_ms: Option<i64>,
+) -> Result<i32, String> {
+    if ended_at_ms.is_none() {
+        return Ok(DisplayIndex::UNASSIGNED.as_i32());
+    }
+    use sch::encounters::dsl as e;
+    let count = e::encounters
+        .filter(e::ended_at_ms.is_not_null())
+        .filter(
+            e::started_at_ms.lt(started_at_ms).or(e::started_at_ms
+                .eq(started_at_ms)
+                .and(e::id.le(encounter_id))),
+        )
+        .count()
+        .get_result::<i64>(conn)
+        .map_err(|error| error.to_string())?;
+    Ok(DisplayIndex::from_count(count)?.as_i32())
 }
 
 fn summary_total(
@@ -234,6 +296,11 @@ pub(crate) fn load_encounter_summary(
         .first::<EncounterSummaryRow>(conn)
         .map_err(|error| error.to_string())
         .and_then(map_summary)
+        .and_then(|mut summary| {
+            summary.display_index =
+                load_display_index(conn, summary.started_at_ms, summary.id, summary.ended_at_ms)?;
+            Ok(summary)
+        })
 }
 
 #[tauri::command]
@@ -393,6 +460,7 @@ fn get_recent_encounters_filtered_blocking(
             .into_iter()
             .map(map_summary)
             .collect::<Result<Vec<_>, _>>()?;
+        assign_display_indices(&mut summaries)?;
         summaries.retain(|summary| {
             (boss_filter.is_empty()
                 || summary
@@ -549,6 +617,7 @@ mod tests {
         let json = serde_json::to_value(summary).expect("serialize encounter summary");
         assert_eq!(json["totalDmg"], i64::MAX.to_string());
         assert_eq!(json["totalHeal"], "0");
+        assert_eq!(json["displayIndex"], 0);
     }
 
     #[test]
@@ -569,5 +638,89 @@ mod tests {
         let error = map_summary(summary_row(true, None, Some("0".to_string())))
             .expect_err("missing exact damage must fail");
         assert!(error.contains("missing its exact damage total"));
+    }
+
+    fn ranked_summary(id: i32, started_at_ms: i64, is_favorite: bool) -> EncounterSummaryDto {
+        EncounterSummaryDto {
+            id,
+            started_at_ms,
+            ended_at_ms: Some(started_at_ms + 1),
+            total_dmg: "0".to_string(),
+            total_heal: "0".to_string(),
+            scene_id: None,
+            dungeon_difficulty: None,
+            duration: 1.0,
+            active_combat_duration: Some(1.0),
+            local_player_id: None,
+            bosses: Vec::new(),
+            players: Vec::new(),
+            remote_encounter_id: None,
+            is_favorite,
+            detail_available: true,
+            display_index: 0,
+        }
+    }
+
+    #[test]
+    fn assign_display_indices_numbers_oldest_finalized_row_as_one() {
+        let mut summaries = vec![
+            ranked_summary(30, 3_000, false),
+            ranked_summary(10, 1_000, false),
+            ranked_summary(20, 2_000, false),
+        ];
+
+        assign_display_indices(&mut summaries).expect("assign display indices");
+
+        assert_eq!(
+            summaries
+                .iter()
+                .map(|summary| (summary.id, summary.display_index))
+                .collect::<Vec<_>>(),
+            vec![(30, 3), (10, 1), (20, 2)]
+        );
+    }
+
+    #[test]
+    fn assign_display_indices_uses_id_as_tiebreak_when_started_at_matches() {
+        let mut summaries = vec![
+            ranked_summary(12, 1_000, false),
+            ranked_summary(11, 1_000, false),
+        ];
+
+        assign_display_indices(&mut summaries).expect("assign display indices");
+
+        assert_eq!(summaries[0].display_index, 2);
+        assert_eq!(summaries[1].display_index, 1);
+    }
+
+    #[test]
+    fn assign_display_indices_keeps_favorites_in_the_same_sequence() {
+        let mut summaries = vec![
+            ranked_summary(1, 1_000, true),
+            ranked_summary(2, 2_000, false),
+            ranked_summary(3, 3_000, true),
+        ];
+
+        assign_display_indices(&mut summaries).expect("assign display indices");
+
+        assert_eq!(summaries[0].display_index, 1);
+        assert_eq!(summaries[1].display_index, 2);
+        assert_eq!(summaries[2].display_index, 3);
+    }
+
+    #[test]
+    fn assign_display_indices_survives_later_filter_without_renumbering() {
+        let mut summaries = vec![
+            ranked_summary(1, 1_000, false),
+            ranked_summary(2, 2_000, true),
+            ranked_summary(3, 3_000, false),
+        ];
+
+        assign_display_indices(&mut summaries).expect("assign display indices");
+        summaries.retain(|summary| summary.is_favorite);
+
+        assert_eq!(summaries.len(), 1);
+        assert_eq!(summaries[0].id, 2);
+        assert_eq!(summaries[0].display_index, 2);
     }
 }

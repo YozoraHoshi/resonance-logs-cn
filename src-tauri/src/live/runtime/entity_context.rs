@@ -3644,7 +3644,9 @@ mod tests {
             .iter()
             .position(|envelope| matches!(envelope.event, DomainEvent::DeathOccurred { .. }));
         assert!(
-            hit_pos.zip(death_pos).is_some_and(|(hit, death)| hit < death),
+            hit_pos
+                .zip(death_pos)
+                .is_some_and(|(hit, death)| hit < death),
             "same-batch ActorState death must follow the killing blow: {events:?}"
         );
         assert_eq!(death_events(&events).len(), 1);

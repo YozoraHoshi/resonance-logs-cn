@@ -417,7 +417,7 @@ export const jaJPMessages = {
   "history.list.table.deselectAll": "すべて解除",
   "history.list.table.select": "選択",
   "history.list.table.deselect": "選択解除",
-  "history.list.table.id": "ID",
+  "history.list.table.id": "番号",
   "history.list.table.encounter": "エンカウント",
   "history.list.table.players": "プレイヤー",
   "history.list.table.duration": "時間",

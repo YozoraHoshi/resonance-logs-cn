@@ -752,7 +752,7 @@
                 duration: formatDuration(currentEncounter.duration * 1_000),
               })}</span
             >
-            <span>#{currentEncounter.id}</span>
+            <span>#{currentEncounter.displayIndex}</span>
           </div>
         </div>
       </div>
