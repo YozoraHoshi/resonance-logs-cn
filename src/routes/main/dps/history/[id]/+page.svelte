@@ -45,7 +45,6 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import StarIcon from "@lucide/svelte/icons/star";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
-  import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { SvelteMap, SvelteURLSearchParams } from "svelte/reactivity";
   import { toast } from "svelte-sonner";
 
@@ -401,10 +400,6 @@
     }
     return [...seen].map(([entityUuid, name]) => ({ entityUuid, name }));
   });
-
-  const hasIncompleteData = $derived(
-    detail?.qualityFlags.includes("incompleteSegment") ?? false,
-  );
 
   // ---- Data loading --------------------------------------------------------
   $effect(() => {
@@ -804,14 +799,6 @@
         </div>
       </section>
     {:else}
-      {#if hasIncompleteData}
-        <div
-          class="mb-3 flex items-center gap-2 rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200"
-        >
-          <TriangleAlertIcon class="size-3.5 shrink-0" />
-          {t("history.timeline.markersIncomplete")}
-        </div>
-      {/if}
       {#if chart}
         <section class="mb-5">
           <EncounterTimelineChart

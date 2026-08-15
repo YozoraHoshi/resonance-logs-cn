@@ -331,14 +331,6 @@ impl ProjectionSet {
                 reported |= self.entity_monitor.apply(envelope, entities, scheduler);
                 self.voice.apply(envelope, entities, scheduler);
             }
-            DomainEvent::DataQualityIssue(_) => {
-                self.history.apply(
-                    envelope,
-                    entities,
-                    self.combat.segment_offset_ms(envelope.meta.mono_ms()),
-                    None,
-                )?;
-            }
             DomainEvent::AttackTargetChanged { .. } => {
                 reported |= self.entity_monitor.apply(envelope, entities, scheduler);
                 self.voice.apply(envelope, entities, scheduler);

@@ -465,7 +465,6 @@ export const jaJPMessages = {
   "history.detail.breakdown.damageSource": "ダメージソース",
   "history.timeline.title": "タイムライン",
   "history.timeline.incomplete": "ヒットデータが不完全なため、曲線のみ表示",
-  "history.timeline.markersIncomplete": "イベントマーカーが不完全です",
   "history.timeline.series.instant": "瞬間DPS (10s)",
   "history.timeline.series.average": "累計DPS",
   "history.timeline.lanes.boss": "BOSS",

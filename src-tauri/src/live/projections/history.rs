@@ -13,9 +13,7 @@ use crate::live::projections::death::DeathReplaySnapshot;
 use crate::live::projections::timeline::TimelineMarker;
 use crate::live::protocol::attrs as attr_type;
 use crate::live::runtime::entity_context::{EntityContext, EntityState};
-use crate::live::runtime::events::{
-    DataQualityIssue, DomainEnvelope, DomainEvent, EntityRef, EntityUuid, SegmentId,
-};
+use crate::live::runtime::events::{DomainEnvelope, DomainEvent, EntityRef, EntityUuid, SegmentId};
 
 #[derive(Debug)]
 struct ActiveHistoryProjection {
@@ -135,7 +133,6 @@ impl HistoryProjection {
             {
                 self.record_context(entity.uuid.0, entities, segment_offset_ms)?;
             }
-            DomainEvent::DataQualityIssue(issue) => self.note_quality(issue),
             _ => {}
         }
         Ok(())
@@ -264,12 +261,6 @@ impl HistoryProjection {
         self.active
             .as_ref()
             .is_some_and(|active| active.segment_id == segment_id)
-    }
-
-    fn note_quality(&mut self, _issue: &DataQualityIssue) {
-        if let Some(active) = &mut self.active {
-            active.reducer.mark_incomplete();
-        }
     }
 
     fn add_quality(&mut self, flag: HistoryQualityFlag) {

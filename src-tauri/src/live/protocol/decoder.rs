@@ -1,8 +1,9 @@
 //! Protocol decoder for the live event pipeline.
 //!
 //! Protobuf and dirty-wire formats terminate in this module. Every input
-//! capture envelope produces exactly one protocol-neutral batch, including
-//! unsupported and malformed inputs, so downstream watermarks always advance.
+//! capture envelope produces exactly one protocol-neutral batch so downstream
+//! watermarks always advance. Unsupported or malformed packets yield an empty
+//! observation list.
 //!
 //! The decoder is deliberately close to stateless: it only keeps what cannot
 //! be reconstructed from a single packet (the season-cultivate baseline the
@@ -15,19 +16,18 @@ use crate::live::monster_registry::{self, MonsterType};
 use crate::live::protocol::MARKER_SKILL_ID_BASE;
 use crate::live::protocol::attrs as attr_type;
 use crate::live::runtime::events::{
-    AttributeValue, BatchId, BossMechanicObservation, CaptureEnvelope, DataQualityIssue,
-    DecodeIssueCategory, EntityIdentityPatch, EntityKind, EntityUuid, FieldPatch, GameTimerKey,
-    GameTimerState, HateEntry, HitChannel, HitKind, LOCAL_PLAYER, MonoTimeMs, ObservationOrigin,
-    ObservedBuff, ObservedBuffChange, ObservedHit, PacketDirection, PassiveSkillObservation,
-    Position, ProtocolBatch, ProtocolObservation, ShieldDetail, SkillCooldownState, SkillPhase,
+    AttributeValue, BatchId, BossMechanicObservation, CaptureEnvelope, EntityIdentityPatch,
+    EntityKind, EntityUuid, FieldPatch, GameTimerKey, GameTimerState, HateEntry, HitChannel,
+    HitKind, LOCAL_PLAYER, MonoTimeMs, ObservationOrigin, ObservedBuff, ObservedBuffChange,
+    ObservedHit, PacketDirection, PassiveSkillObservation, Position, ProtocolBatch,
+    ProtocolObservation, ShieldDetail, SkillCooldownState, SkillPhase,
 };
 use crate::packets::opcodes::{
     GRPC_TEAM_NTF_SERVICE_ID, Pkt, WORLD_CALL_SERVICE_ID, WORLD_NTF_SERVICE_ID, grpc_team_method,
     world_call_method,
 };
 use crate::packets::packet_process::{
-    CaptureDecodeIssueCategory, SYNTHETIC_DECODE_ISSUE_OPCODE, SYNTHETIC_REASSEMBLY_RESET_OPCODE,
-    SYNTHETIC_STREAM_GAP_OPCODE,
+    SYNTHETIC_DECODE_ISSUE_OPCODE, SYNTHETIC_REASSEMBLY_RESET_OPCODE, SYNTHETIC_STREAM_GAP_OPCODE,
 };
 use blueprotobuf_lib::blueprotobuf;
 use bytes::Buf;
@@ -101,8 +101,8 @@ impl ProtocolDecoder {
         envelope: &CaptureEnvelope,
         source_time_ms: &mut Option<i64>,
     ) -> Vec<ProtocolObservation> {
-        if let Some(observation) = decode_synthetic_observation(envelope) {
-            return vec![observation];
+        if is_synthetic_opcode(envelope.key.opcode) {
+            return Vec::new();
         }
 
         let service_id = envelope.key.service_id.map(u64::from);
@@ -110,10 +110,7 @@ impl ProtocolDecoder {
             && envelope.direction == PacketDirection::ServerToClient
         {
             let Ok(opcode) = Pkt::try_from(envelope.key.opcode) else {
-                return vec![decode_issue(
-                    envelope.key.opcode,
-                    DecodeIssueCategory::Unsupported,
-                )];
+                return Vec::new();
             };
             return self.decode_world_notify(opcode, envelope, source_time_ms);
         }
@@ -130,10 +127,7 @@ impl ProtocolDecoder {
             return decode_team(envelope);
         }
 
-        vec![decode_issue(
-            envelope.key.opcode,
-            DecodeIssueCategory::Unsupported,
-        )]
+        Vec::new()
     }
 
     fn decode_world_notify(
@@ -146,7 +140,7 @@ impl ProtocolDecoder {
             ($message:ty, $handler:expr) => {
                 match decode_message::<$message>(&envelope.payload) {
                     Ok(message) => ($handler)(message),
-                    Err(category) => vec![decode_issue(envelope.key.opcode, category)],
+                    Err(_) => Vec::new(),
                 }
             };
         }
@@ -176,7 +170,7 @@ impl ProtocolDecoder {
                 decoded!(
                     blueprotobuf::SyncContainerDirtyData,
                     |message: blueprotobuf::SyncContainerDirtyData| {
-                        self.decode_container_delta(message, envelope.key.opcode)
+                        self.decode_container_delta(message)
                     }
                 )
             }
@@ -199,7 +193,7 @@ impl ProtocolDecoder {
                 decoded!(
                     blueprotobuf::SyncDungeonDirtyData,
                     |message: blueprotobuf::SyncDungeonDirtyData| {
-                        decode_dungeon_delta(message, envelope.key.opcode)
+                        decode_dungeon_delta(message)
                     }
                 )
             }
@@ -253,14 +247,9 @@ impl ProtocolDecoder {
                 }
             ),
             // Standalone BuffInfoSync packets are ignored like the legacy
-            // pipeline did: the wire behavior is unverified, and falling
-            // through to `Unsupported` would flag every encounter history
-            // as incomplete via `DataQualityIssue`.
+            // pipeline did: the wire behavior is unverified.
             Pkt::BuffInfoSync => Vec::new(),
-            _ => vec![decode_issue(
-                envelope.key.opcode,
-                DecodeIssueCategory::Unsupported,
-            )],
+            _ => Vec::new(),
         }
     }
 
@@ -484,11 +473,10 @@ impl ProtocolDecoder {
         // are observed before reset/condition Buff edges from the same AOI
         // delta. Batch-aware `DamageBySkillKeyOnce` commits before the first
         // following non-hit counter event.
-        if let Some(raw) = delta.buff_effect.as_deref() {
-            match decode_message::<blueprotobuf::BuffEffectSync>(raw) {
-                Ok(effects) => self.decode_buff_effect_sync(uuid, &effects, envelope, observations),
-                Err(category) => observations.push(decode_issue(envelope.key.opcode, category)),
-            }
+        if let Some(raw) = delta.buff_effect.as_deref()
+            && let Ok(effects) = decode_message::<blueprotobuf::BuffEffectSync>(raw)
+        {
+            self.decode_buff_effect_sync(uuid, &effects, envelope, observations);
         }
     }
 
@@ -946,7 +934,6 @@ impl ProtocolDecoder {
     fn decode_container_delta(
         &mut self,
         message: blueprotobuf::SyncContainerDirtyData,
-        opcode: u32,
     ) -> Vec<ProtocolObservation> {
         let Some(bytes) = message.v_data.and_then(|stream| stream.buffer) else {
             return Vec::new();
@@ -961,7 +948,7 @@ impl ProtocolDecoder {
             .collect::<BTreeSet<_>>();
         let next = match apply_season_dirty_and_collect_state(season, &bytes) {
             Ok(state) => state,
-            Err(_) => return vec![decode_issue(opcode, DecodeIssueCategory::Malformed)],
+            Err(_) => return Vec::new(),
         };
         let next_items = next
             .active_item_ids
@@ -979,14 +966,11 @@ impl ProtocolDecoder {
 
 fn decode_world_call(envelope: &CaptureEnvelope) -> Vec<ProtocolObservation> {
     if envelope.key.method_id != Some(world_call_method::USE_SLOT) {
-        return vec![decode_issue(
-            envelope.key.opcode,
-            DecodeIssueCategory::Unsupported,
-        )];
+        return Vec::new();
     }
     let use_slot = match decode_message::<blueprotobuf::UseSlot>(&envelope.payload) {
         Ok(message) => message,
-        Err(category) => return vec![decode_issue(envelope.key.opcode, category)],
+        Err(_) => return Vec::new(),
     };
     let Some(request) = use_slot.v_request else {
         return Vec::new();
@@ -999,7 +983,7 @@ fn decode_world_call(envelope: &CaptureEnvelope) -> Vec<ProtocolObservation> {
     };
     let param = match decode_message::<blueprotobuf::UseSkillParam>(&extra) {
         Ok(message) => message,
-        Err(category) => return vec![decode_issue(envelope.key.opcode, category)],
+        Err(_) => return Vec::new(),
     };
     let Some(skill_id) = param.skillid else {
         return Vec::new();
@@ -1012,16 +996,10 @@ fn decode_world_call(envelope: &CaptureEnvelope) -> Vec<ProtocolObservation> {
 
 fn decode_team(envelope: &CaptureEnvelope) -> Vec<ProtocolObservation> {
     let Some(method_id) = envelope.key.method_id else {
-        return vec![decode_issue(
-            envelope.key.opcode,
-            DecodeIssueCategory::Malformed,
-        )];
+        return Vec::new();
     };
     let Some(event) = decode_team_event(method_id, &envelope.payload) else {
-        return vec![decode_issue(
-            envelope.key.opcode,
-            DecodeIssueCategory::Unsupported,
-        )];
+        return Vec::new();
     };
     match event {
         TeamWireEvent::TeamInfoUpdated {
@@ -1879,16 +1857,13 @@ fn decode_dungeon_snapshot(message: blueprotobuf::SyncDungeonData) -> Vec<Protoc
     observations
 }
 
-fn decode_dungeon_delta(
-    message: blueprotobuf::SyncDungeonDirtyData,
-    opcode: u32,
-) -> Vec<ProtocolObservation> {
+fn decode_dungeon_delta(message: blueprotobuf::SyncDungeonDirtyData) -> Vec<ProtocolObservation> {
     let Some(bytes) = message.v_data.and_then(|stream| stream.buffer) else {
         return Vec::new();
     };
     let decoded = match crate::live::dungeon_dirty_blob::parse_dirty_dungeon_data(&bytes) {
         Ok(decoded) => decoded,
-        Err(_) => return vec![decode_issue(opcode, DecodeIssueCategory::Malformed)],
+        Err(_) => return Vec::new(),
     };
     let mut observations = Vec::with_capacity(decoded.targets.len() + 1);
     if let Some(state) = decoded.flow_state {
@@ -1904,72 +1879,20 @@ fn decode_dungeon_delta(
     observations
 }
 
-fn decode_message<M>(payload: &[u8]) -> Result<M, DecodeIssueCategory>
+fn decode_message<M>(payload: &[u8]) -> Result<M, prost::DecodeError>
 where
     M: Message + Default,
 {
-    M::decode(payload).map_err(|error| {
-        let description = error.to_string().to_ascii_lowercase();
-        if description.contains("buffer underflow")
-            || description.contains("unexpected eof")
-            || description.contains("truncated")
-        {
-            DecodeIssueCategory::Truncated
-        } else {
-            DecodeIssueCategory::Malformed
-        }
-    })
+    M::decode(payload)
 }
 
-fn decode_issue(opcode: u32, category: DecodeIssueCategory) -> ProtocolObservation {
-    ProtocolObservation::DataQualityIssue(DataQualityIssue::DecodeIssue { opcode, category })
-}
-
-fn decode_synthetic_observation(envelope: &CaptureEnvelope) -> Option<ProtocolObservation> {
-    match envelope.key.opcode {
-        SYNTHETIC_STREAM_GAP_OPCODE => {
-            let expected = envelope
-                .payload
-                .get(0..4)
-                .and_then(|value| value.try_into().ok())
-                .map(u32::from_be_bytes)
-                .map(u64::from);
-            let observed = envelope
-                .payload
-                .get(4..8)
-                .and_then(|value| value.try_into().ok())
-                .map(u32::from_be_bytes)
-                .map(u64::from);
-            Some(ProtocolObservation::DataQualityIssue(
-                DataQualityIssue::StreamGap {
-                    stream_id: Some(envelope.stream_id),
-                    expected_sequence: expected,
-                    observed_sequence: observed,
-                },
-            ))
-        }
-        SYNTHETIC_REASSEMBLY_RESET_OPCODE => Some(ProtocolObservation::DataQualityIssue(
-            DataQualityIssue::ReassemblyReset {
-                stream_id: Some(envelope.stream_id),
-            },
-        )),
-        SYNTHETIC_DECODE_ISSUE_OPCODE => {
-            let category = match envelope.payload.first().copied() {
-                Some(value) if value == CaptureDecodeIssueCategory::Truncated as u8 => {
-                    DecodeIssueCategory::Truncated
-                }
-                _ => DecodeIssueCategory::Malformed,
-            };
-            let opcode = envelope
-                .payload
-                .get(1..5)
-                .and_then(|value| value.try_into().ok())
-                .map(u32::from_be_bytes)
-                .unwrap_or_default();
-            Some(decode_issue(opcode, category))
-        }
-        _ => None,
-    }
+fn is_synthetic_opcode(opcode: u32) -> bool {
+    matches!(
+        opcode,
+        SYNTHETIC_STREAM_GAP_OPCODE
+            | SYNTHETIC_REASSEMBLY_RESET_OPCODE
+            | SYNTHETIC_DECODE_ISSUE_OPCODE
+    )
 }
 
 fn timer_state(info: blueprotobuf::TimerInfo) -> Option<GameTimerState> {
@@ -2156,7 +2079,7 @@ mod tests {
     }
 
     #[test]
-    fn every_input_produces_a_batch_and_malformed_is_typed() {
+    fn every_input_produces_a_batch_and_malformed_is_dropped() {
         let mut decoder = ProtocolDecoder::new();
         let mut envelope = notify(
             9,
@@ -2167,15 +2090,7 @@ mod tests {
 
         let batch = decoder.decode(envelope);
         assert_eq!(batch.meta.capture_sequence, 9);
-        assert!(matches!(
-            batch.observations.as_slice(),
-            [ProtocolObservation::DataQualityIssue(
-                DataQualityIssue::DecodeIssue {
-                    category: DecodeIssueCategory::Truncated | DecodeIssueCategory::Malformed,
-                    ..
-                }
-            )]
-        ));
+        assert!(batch.observations.is_empty());
     }
 
     #[test]

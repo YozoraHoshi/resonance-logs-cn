@@ -430,7 +430,6 @@ export const zhCNMessages = {
   "history.detail.breakdown.damageSource": "伤害来源",
   "history.timeline.title": "时间轴",
   "history.timeline.incomplete": "命中记录不完整，仅展示曲线",
-  "history.timeline.markersIncomplete": "事件节点记录不完整",
   "history.timeline.series.instant": "瞬时DPS (10s)",
   "history.timeline.series.average": "累计DPS",
   "history.timeline.lanes.boss": "BOSS",

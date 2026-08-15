@@ -784,12 +784,10 @@ mod tests {
             meta,
             event_index: 0,
             segment_id: None,
-            event: DomainEvent::DataQualityIssue(
-                super::super::events::DataQualityIssue::DecodeIssue {
-                    opcode: 1,
-                    category: super::super::events::DecodeIssueCategory::Unsupported,
-                },
-            ),
+            event: DomainEvent::WipeDetected {
+                entity: None,
+                buff_instance_id: None,
+            },
         }
     }
 

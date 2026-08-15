@@ -1053,9 +1053,6 @@ impl EntityContext {
                     self.emit(meta, DomainEvent::PauseChanged { is_paused }, out);
                 }
             }
-            ProtocolObservation::DataQualityIssue(issue) => {
-                self.emit(meta, DomainEvent::DataQualityIssue(issue), out);
-            }
         }
     }
 

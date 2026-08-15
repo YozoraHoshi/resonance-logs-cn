@@ -454,29 +454,6 @@ pub enum TimerScope {
     Segment(SegmentId),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DataQualityIssue {
-    StreamGap {
-        stream_id: Option<u64>,
-        expected_sequence: Option<u64>,
-        observed_sequence: Option<u64>,
-    },
-    DecodeIssue {
-        opcode: u32,
-        category: DecodeIssueCategory,
-    },
-    ReassemblyReset {
-        stream_id: Option<u64>,
-    },
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DecodeIssueCategory {
-    Malformed,
-    Truncated,
-    Unsupported,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct HateEntry {
     pub entity_uuid: EntityUuid,
@@ -625,7 +602,6 @@ pub enum ProtocolObservation {
     PauseChanged {
         is_paused: bool,
     },
-    DataQualityIssue(DataQualityIssue),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -879,7 +855,6 @@ pub enum DomainEvent {
     PauseChanged {
         is_paused: bool,
     },
-    DataQualityIssue(DataQualityIssue),
     SegmentStarted {
         segment_id: SegmentId,
         reason: SegmentReason,

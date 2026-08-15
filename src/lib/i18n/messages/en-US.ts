@@ -482,7 +482,6 @@ export const enUSMessages = {
   "history.detail.breakdown.damageSource": "Damage source",
   "history.timeline.title": "Timeline",
   "history.timeline.incomplete": "Hit data incomplete; curves only",
-  "history.timeline.markersIncomplete": "Timeline markers incomplete",
   "history.timeline.series.instant": "Instant DPS (10s)",
   "history.timeline.series.average": "Average DPS",
   "history.timeline.lanes.boss": "BOSS",

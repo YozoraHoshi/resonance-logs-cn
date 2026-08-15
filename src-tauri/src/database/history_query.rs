@@ -316,10 +316,6 @@ impl HistoryProjectionReducer {
         self
     }
 
-    pub fn mark_incomplete(&mut self) {
-        self.quality.insert(HistoryQualityFlag::IncompleteSegment);
-    }
-
     pub fn add_quality_flags(&mut self, flags: impl IntoIterator<Item = HistoryQualityFlag>) {
         self.quality.extend(flags);
     }
