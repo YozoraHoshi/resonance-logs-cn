@@ -3,7 +3,7 @@
 use crate::live::counter::engine::CounterSnapshot;
 use crate::live::ipc::models::{
     DeathRecord, LiveBuffsPayload, LiveCombatPayload, LiveDataPayload, LiveDeathsPayload,
-    LiveFantasyPayload, LiveMonsterPayload, LiveScenePayload, LiveStatusPayload,
+    LiveDisplayClock, LiveFantasyPayload, LiveMonsterPayload, LiveScenePayload, LiveStatusPayload,
     TrainingDummyPhase, TrainingDummyState,
 };
 use crate::live::projections::entity_monitor::EntityMonitorSnapshot;
@@ -21,6 +21,7 @@ use crate::live::runtime::segment::{IdleMode, RecordingMode, SegmentState};
 pub struct ActiveCombat {
     pub segment_id: SegmentId,
     pub payload: LiveDataPayload,
+    pub clock: LiveDisplayClock,
 }
 
 #[derive(Debug, Default)]
@@ -34,25 +35,34 @@ pub struct PresentationProjection {
     scene_revision: u64,
     displayed_segment_id: Option<SegmentId>,
     displayed_combat: Option<LiveDataPayload>,
+    displayed_clock: Option<LiveDisplayClock>,
 }
 
 impl PresentationProjection {
     pub fn segment_started(&mut self, segment_id: SegmentId) {
         self.displayed_segment_id = Some(segment_id);
         self.displayed_combat = None;
+        self.displayed_clock = None;
     }
 
     /// Freezes only the combat (meter) payload. Counters are not segment
     /// scoped, so the status payload always reflects the live engine.
-    pub fn freeze_segment(&mut self, segment_id: SegmentId, combat: LiveDataPayload) {
+    pub fn freeze_segment(
+        &mut self,
+        segment_id: SegmentId,
+        combat: LiveDataPayload,
+        clock: LiveDisplayClock,
+    ) {
         if self.displayed_segment_id == Some(segment_id) {
             self.displayed_combat = Some(combat);
+            self.displayed_clock = Some(clock);
         }
     }
 
     pub fn clear_display(&mut self) {
         self.displayed_segment_id = None;
         self.displayed_combat = None;
+        self.displayed_clock = None;
     }
 
     /// Builds a combat payload and advances its revision (publication path).
@@ -155,15 +165,20 @@ impl PresentationProjection {
         active_combat: Option<ActiveCombat>,
         segment_state: &SegmentState,
     ) -> LiveCombatPayload {
-        let (active_segment_id, combat) = match active_combat {
-            Some(active) => (Some(active.segment_id), Some(active.payload)),
-            None => (None, self.displayed_combat.clone()),
+        let (active_segment_id, combat, display_clock) = match active_combat {
+            Some(active) => (
+                Some(active.segment_id),
+                Some(active.payload),
+                Some(active.clock),
+            ),
+            None => (None, self.displayed_combat.clone(), self.displayed_clock),
         };
         LiveCombatPayload {
             revision: self.combat_revision,
             active_segment_id: active_segment_id.map(|segment| segment.0),
             displayed_segment_id: self.displayed_segment_id.map(|segment| segment.0),
             combat,
+            display_clock,
             training: TrainingDummyState {
                 phase: training_phase(segment_state),
             },
@@ -406,6 +421,24 @@ mod tests {
         }
     }
 
+    fn frozen_clock() -> LiveDisplayClock {
+        LiveDisplayClock {
+            started_at_wall_ms: 1_000,
+            accumulated_paused_ms: 0,
+            paused_at_wall_ms: None,
+            ended_at_wall_ms: Some(4_000),
+        }
+    }
+
+    fn live_clock() -> LiveDisplayClock {
+        LiveDisplayClock {
+            started_at_wall_ms: 5_000,
+            accumulated_paused_ms: 0,
+            paused_at_wall_ms: None,
+            ended_at_wall_ms: None,
+        }
+    }
+
     /// A container resync ends the segment (freezing its combat payload) but
     /// never runs `CombatProjection::start_segment` again on its own, so
     /// there is no active combat to report until the next real segment
@@ -416,7 +449,7 @@ mod tests {
         let mut presentation = PresentationProjection::default();
         presentation.segment_started(SegmentId(1));
         let frozen = payload_with_total_dmg("1234");
-        presentation.freeze_segment(SegmentId(1), frozen.clone());
+        presentation.freeze_segment(SegmentId(1), frozen.clone(), frozen_clock());
 
         let payload = presentation.take_combat_payload(None, &idle_state());
 
@@ -426,6 +459,7 @@ mod tests {
             payload.combat.map(|combat| combat.total_dmg),
             Some(frozen.total_dmg)
         );
+        assert_eq!(payload.display_clock, Some(frozen_clock()));
     }
 
     /// Once a segment is actively recording again, its live payload must
@@ -437,12 +471,13 @@ mod tests {
     fn active_segment_payload_shadows_the_frozen_one() {
         let mut presentation = PresentationProjection::default();
         presentation.segment_started(SegmentId(1));
-        presentation.freeze_segment(SegmentId(1), payload_with_total_dmg("1234"));
+        presentation.freeze_segment(SegmentId(1), payload_with_total_dmg("1234"), frozen_clock());
 
         let live = payload_with_total_dmg("5678");
         let active = ActiveCombat {
             segment_id: SegmentId(1),
             payload: live.clone(),
+            clock: live_clock(),
         };
 
         let payload = presentation.take_combat_payload(Some(active), &idle_state());
@@ -452,5 +487,18 @@ mod tests {
             payload.combat.map(|combat| combat.total_dmg),
             Some(live.total_dmg)
         );
+        assert_eq!(payload.display_clock, Some(live_clock()));
+    }
+
+    #[test]
+    fn clear_display_drops_the_frozen_clock() {
+        let mut presentation = PresentationProjection::default();
+        presentation.segment_started(SegmentId(1));
+        presentation.freeze_segment(SegmentId(1), payload_with_total_dmg("1234"), frozen_clock());
+        presentation.clear_display();
+
+        let payload = presentation.take_combat_payload(None, &idle_state());
+        assert_eq!(payload.displayed_segment_id, None);
+        assert_eq!(payload.display_clock, None);
     }
 }

@@ -3,8 +3,8 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::live::ipc::models::{
-    BossHealth, LiveDataPayload, RawEntityData, build_taken_per_source, to_raw_combat_stats,
-    to_raw_skill_stats,
+    BossHealth, LiveDataPayload, LiveDisplayClock, RawEntityData, build_taken_per_source,
+    to_raw_combat_stats, to_raw_skill_stats,
 };
 use crate::live::projections::combat::accumulator::{
     CombatAccumulator, CombatHitFact, CombatMetric, CombatantStats,
@@ -118,7 +118,9 @@ pub struct CombatProjection {
     dungeon_difficulty: Option<i32>,
     is_paused: bool,
     paused_at_mono_ms: Option<MonoTimeMs>,
+    paused_at_wall_ms: Option<i64>,
     accumulated_paused_ms: u64,
+    accumulated_paused_wall_ms: u64,
     combatants: HashMap<i64, CombatantProjection>,
     bosses: HashMap<EntityUuid, BossHealth>,
     /// Bosses that disappeared mid-segment. Their entries stay in `bosses`
@@ -153,6 +155,7 @@ impl CombatProjection {
             dungeon_difficulty,
             is_paused,
             paused_at_mono_ms: is_paused.then_some(started_at_mono_ms),
+            paused_at_wall_ms: is_paused.then_some(started_at_wall_ms),
             ..Self::default()
         };
     }
@@ -172,16 +175,30 @@ impl CombatProjection {
     }
 
     /// Returns whether the payload-visible pause state changed.
-    pub fn set_paused(&mut self, paused: bool, occurred_at_mono_ms: MonoTimeMs) -> bool {
+    pub fn set_paused(
+        &mut self,
+        paused: bool,
+        occurred_at_mono_ms: MonoTimeMs,
+        occurred_at_wall_ms: i64,
+    ) -> bool {
         if paused == self.is_paused {
             return false;
         }
         if paused {
             self.paused_at_mono_ms = Some(occurred_at_mono_ms);
-        } else if let Some(started_at) = self.paused_at_mono_ms.take() {
-            self.accumulated_paused_ms = self
-                .accumulated_paused_ms
-                .saturating_add(occurred_at_mono_ms.0.saturating_sub(started_at.0));
+            self.paused_at_wall_ms = Some(occurred_at_wall_ms);
+        } else {
+            if let Some(started_at) = self.paused_at_mono_ms.take() {
+                self.accumulated_paused_ms = self
+                    .accumulated_paused_ms
+                    .saturating_add(occurred_at_mono_ms.0.saturating_sub(started_at.0));
+            }
+            if let Some(started_at) = self.paused_at_wall_ms.take() {
+                let current_pause = occurred_at_wall_ms.saturating_sub(started_at).max(0);
+                self.accumulated_paused_wall_ms = self
+                    .accumulated_paused_wall_ms
+                    .saturating_add(u64::try_from(current_pause).unwrap_or(0));
+            }
         }
         self.is_paused = paused;
         true
@@ -406,6 +423,16 @@ impl CombatProjection {
     #[must_use]
     pub const fn active_combat_time_ms(&self) -> u128 {
         self.active_combat_time_ms
+    }
+
+    #[must_use]
+    pub const fn display_clock(&self) -> LiveDisplayClock {
+        LiveDisplayClock {
+            started_at_wall_ms: self.started_at_wall_ms,
+            accumulated_paused_ms: self.accumulated_paused_wall_ms,
+            paused_at_wall_ms: self.paused_at_wall_ms,
+            ended_at_wall_ms: None,
+        }
     }
 
     #[must_use]
@@ -757,9 +784,9 @@ mod tests {
             MonoTimeMs(1_000),
             &entities,
         );
-        projection.set_paused(true, MonoTimeMs(1_000));
+        projection.set_paused(true, MonoTimeMs(1_000), 1_000);
         assert_eq!(projection.segment_offset_ms(MonoTimeMs(5_000)), 1_000);
-        projection.set_paused(false, MonoTimeMs(6_000));
+        projection.set_paused(false, MonoTimeMs(6_000), 6_000);
         apply_hit(
             &mut projection,
             hit(true, HitKind::Damage),
@@ -841,5 +868,57 @@ mod tests {
         assert_eq!(summaries[0].monster_id, 900);
         assert!(summaries[0].is_defeated);
         assert_eq!(projection.boss_monster_ids(), vec![900]);
+    }
+
+    #[test]
+    fn display_clock_exports_start_without_an_end_while_recording() {
+        let mut projection = CombatProjection::default();
+        projection.start_segment(SegmentId(1), MonoTimeMs(10_000), 1_700_000_000_000);
+        assert_eq!(
+            projection.display_clock(),
+            LiveDisplayClock {
+                started_at_wall_ms: 1_700_000_000_000,
+                accumulated_paused_ms: 0,
+                paused_at_wall_ms: None,
+                ended_at_wall_ms: None,
+            }
+        );
+        assert_eq!(projection.observed_duration_ms(), 0);
+    }
+
+    #[test]
+    fn display_clock_tracks_wall_pause_separately_from_observed_duration() {
+        let mut projection = CombatProjection::default();
+        projection.start_segment(SegmentId(1), MonoTimeMs(0), 1_000);
+        let entities = EntityContext::new();
+        apply_hit(
+            &mut projection,
+            hit(true, HitKind::Damage),
+            1_000,
+            MonoTimeMs(0),
+            &entities,
+        );
+        projection.set_paused(true, MonoTimeMs(1_000), 2_000);
+        assert_eq!(
+            projection.display_clock(),
+            LiveDisplayClock {
+                started_at_wall_ms: 1_000,
+                accumulated_paused_ms: 0,
+                paused_at_wall_ms: Some(2_000),
+                ended_at_wall_ms: None,
+            }
+        );
+
+        projection.set_paused(false, MonoTimeMs(6_000), 7_000);
+        assert_eq!(
+            projection.display_clock(),
+            LiveDisplayClock {
+                started_at_wall_ms: 1_000,
+                accumulated_paused_ms: 5_000,
+                paused_at_wall_ms: None,
+                ended_at_wall_ms: None,
+            }
+        );
+        assert_eq!(projection.observed_duration_ms(), 1);
     }
 }

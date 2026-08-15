@@ -6,6 +6,7 @@
   import { applyCustomFonts } from "$lib/font-loader";
   import { ipcNumber } from "$lib/ipc-decimal";
   import { liveCombatStore } from "$lib/stores/live-topics.svelte";
+  import { initLiveDisplayClock } from "$lib/live-display-clock.svelte";
   import { liveWindowSession } from "$lib/stores/live-window-sessions.svelte";
   import { listenLivePullGate } from "$lib/live-pull-gate";
   import { applyLiveClickthrough } from "$lib/utils.svelte";
@@ -46,6 +47,7 @@
   });
 
   onMount(() => {
+    const stopDisplayClock = initLiveDisplayClock();
     const unlistenPullGate = listenLivePullGate(liveWindowSession);
     liveWindowSession.start();
 
@@ -63,6 +65,7 @@
       });
 
     return () => {
+      stopDisplayClock();
       void unlistenPullGate.then((unlisten) => unlisten());
       liveWindowSession.stop();
       if (clickthroughUnlisten) {

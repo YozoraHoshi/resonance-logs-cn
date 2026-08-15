@@ -652,7 +652,7 @@ export type LiveBuffsPayload = { revision: number; localBuffs: BuffUpdateState[]
  * they were duplicated at this level, but every consumer already reads them
  * from `combat.sceneId`/`combat.dungeonDifficulty`.
  */
-export type LiveCombatPayload = { revision: number; activeSegmentId: number | null; displayedSegmentId: number | null; combat: LiveDataPayload | null; training: TrainingDummyState }
+export type LiveCombatPayload = { revision: number; activeSegmentId: number | null; displayedSegmentId: number | null; combat: LiveDataPayload | null; displayClock: LiveDisplayClock | null; training: TrainingDummyState }
 /**
  * Represents a raw
  */
@@ -663,6 +663,11 @@ export type LiveDataPayload = { elapsedMs: string; activeCombatTimeMs: string; f
  * publication cadence.
  */
 export type LiveDeathsPayload = { revision: number; deaths: DeathRecord[] }
+/**
+ * Wall-clock anchors for the live header timer. Interpolation happens in
+ * the UI; this DTO is never the DPS / history duration clock.
+ */
+export type LiveDisplayClock = { startedAtWallMs: number; accumulatedPausedMs: number; pausedAtWallMs: number | null; endedAtWallMs: number | null }
 /**
  * Fantasy cast icons shared by live + monster overlay (`live-fantasy`).
  */

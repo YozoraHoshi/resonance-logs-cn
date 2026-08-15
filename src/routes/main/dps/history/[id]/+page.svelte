@@ -754,12 +754,7 @@
             <span>{formatDateTime(currentEncounter.startedAtMs)}</span>
             <span
               >{t("history.detail.encounter.duration", {
-                duration: formatDuration(
-                  Math.max(
-                    1,
-                    currentDetail.endMsExclusive - currentDetail.startMs,
-                  ),
-                ),
+                duration: formatDuration(currentEncounter.duration * 1_000),
               })}</span
             >
             <span>#{currentEncounter.id}</span>

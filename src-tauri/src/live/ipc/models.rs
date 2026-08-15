@@ -2,6 +2,33 @@ use crate::live::projections::combat::accumulator::CombatSourceStats;
 use crate::live::projections::combat::stats::{CombatStats, Skill};
 use std::collections::HashMap;
 
+/// Wall-clock anchors for the live header timer. Interpolation happens in
+/// the UI; this DTO is never the DPS / history duration clock.
+#[derive(
+    specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq,
+)]
+#[serde(rename_all = "camelCase")]
+pub struct LiveDisplayClock {
+    pub started_at_wall_ms: i64,
+    pub accumulated_paused_ms: u64,
+    pub paused_at_wall_ms: Option<i64>,
+    pub ended_at_wall_ms: Option<i64>,
+}
+
+impl LiveDisplayClock {
+    /// Stops the display clock at `ended_at_wall_ms`, folding an in-flight
+    /// pause into `accumulated_paused_ms` so the frontend can ignore `now`.
+    pub fn freeze(&mut self, ended_at_wall_ms: i64) {
+        if let Some(paused_at) = self.paused_at_wall_ms.take() {
+            let current_pause = ended_at_wall_ms.saturating_sub(paused_at).max(0);
+            self.accumulated_paused_ms = self
+                .accumulated_paused_ms
+                .saturating_add(u64::try_from(current_pause).unwrap_or(0));
+        }
+        self.ended_at_wall_ms = Some(ended_at_wall_ms);
+    }
+}
+
 /// Combat / segment topic for the live meter window (`live-combat`).
 /// `scene_id`/`dungeon_difficulty` live only on the nested `combat` payload;
 /// they were duplicated at this level, but every consumer already reads them
@@ -13,6 +40,7 @@ pub struct LiveCombatPayload {
     pub active_segment_id: Option<u64>,
     pub displayed_segment_id: Option<u64>,
     pub combat: Option<LiveDataPayload>,
+    pub display_clock: Option<LiveDisplayClock>,
     pub training: TrainingDummyState,
 }
 
@@ -825,5 +853,39 @@ mod tests {
         let json = serde_json::to_value(dto).expect("serialize damage DTO");
         assert!(json["timestampMs"].is_string());
         assert!(json["value"].is_string());
+    }
+
+    #[test]
+    fn display_clock_freeze_folds_an_open_pause() {
+        let mut clock = LiveDisplayClock {
+            started_at_wall_ms: 1_000,
+            accumulated_paused_ms: 200,
+            paused_at_wall_ms: Some(5_000),
+            ended_at_wall_ms: None,
+        };
+        clock.freeze(8_000);
+        assert_eq!(
+            clock,
+            LiveDisplayClock {
+                started_at_wall_ms: 1_000,
+                accumulated_paused_ms: 3_200,
+                paused_at_wall_ms: None,
+                ended_at_wall_ms: Some(8_000),
+            }
+        );
+    }
+
+    #[test]
+    fn display_clock_freeze_without_pause_only_stamps_the_end() {
+        let mut clock = LiveDisplayClock {
+            started_at_wall_ms: 1_000,
+            accumulated_paused_ms: 0,
+            paused_at_wall_ms: None,
+            ended_at_wall_ms: None,
+        };
+        clock.freeze(4_000);
+        assert_eq!(clock.ended_at_wall_ms, Some(4_000));
+        assert_eq!(clock.accumulated_paused_ms, 0);
+        assert_eq!(clock.paused_at_wall_ms, None);
     }
 }

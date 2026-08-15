@@ -321,7 +321,11 @@ impl ProjectionSet {
                 reported |= TopicMask::SCENE;
             }
             DomainEvent::PauseChanged { is_paused } => {
-                combat_changed |= self.combat.set_paused(*is_paused, envelope.meta.mono_ms());
+                combat_changed |= self.combat.set_paused(
+                    *is_paused,
+                    envelope.meta.mono_ms(),
+                    envelope.occurred_at_ms,
+                );
             }
             DomainEvent::DeadlineReached { .. } => {
                 reported |= self.entity_monitor.apply(envelope, entities, scheduler);
@@ -441,6 +445,7 @@ impl ProjectionSet {
         self.combat.segment_id().map(|segment_id| ActiveCombat {
             segment_id,
             payload: self.combat.payload(),
+            clock: self.combat.display_clock(),
         })
     }
 
@@ -570,9 +575,12 @@ impl ProjectionSet {
         if reason == SegmentReason::Manual {
             self.presentation.clear_display();
         } else {
+            let mut clock = self.combat.display_clock();
+            clock.freeze(ended_at_wall_ms);
             self.presentation.freeze_segment(
                 segment_id,
                 payload_for_end(self.combat.payload(), reason, duration_ms),
+                clock,
             );
         }
 
@@ -688,7 +696,7 @@ fn payload_for_end(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::live::ipc::models::TrainingDummyPhase;
+    use crate::live::ipc::models::{LiveDisplayClock, TrainingDummyPhase};
     use crate::live::runtime::segment::{IdleMode, TRAINING_WINDOW_MS};
 
     #[test]
@@ -765,7 +773,11 @@ mod tests {
             60_000
         );
         assert_eq!(
-            finalized_duration_ms(SegmentReason::Manual, 60_000, u128::from(TRAINING_WINDOW_MS)),
+            finalized_duration_ms(
+                SegmentReason::Manual,
+                60_000,
+                u128::from(TRAINING_WINDOW_MS)
+            ),
             60_000
         );
         assert_eq!(
@@ -852,9 +864,16 @@ mod tests {
         // Stand in for the state `end_segment` leaves behind for a
         // non-manual boundary, without exercising the real history writer.
         projections.presentation.segment_started(SegmentId(1));
-        projections
-            .presentation
-            .freeze_segment(SegmentId(1), LiveDataPayload::default());
+        projections.presentation.freeze_segment(
+            SegmentId(1),
+            LiveDataPayload::default(),
+            LiveDisplayClock {
+                started_at_wall_ms: 1_000,
+                accumulated_paused_ms: 0,
+                paused_at_wall_ms: None,
+                ended_at_wall_ms: Some(4_000),
+            },
+        );
 
         let batch_id = BatchId(1);
         let envelope = DomainEnvelope {
@@ -885,6 +904,15 @@ mod tests {
         assert!(
             combat.combat.is_some(),
             "the meter must keep showing the segment finalized right before the resync"
+        );
+        assert_eq!(
+            combat.display_clock,
+            Some(LiveDisplayClock {
+                started_at_wall_ms: 1_000,
+                accumulated_paused_ms: 0,
+                paused_at_wall_ms: None,
+                ended_at_wall_ms: Some(4_000),
+            })
         );
 
         drop(projections);

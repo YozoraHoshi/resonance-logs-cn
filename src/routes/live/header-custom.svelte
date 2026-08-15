@@ -37,6 +37,11 @@
   } from "$lib/live-header-layout";
   import { ipcNumber, ipcRatio } from "$lib/ipc-decimal";
   import { liveCombatStore } from "$lib/stores/live-topics.svelte";
+  import { displayElapsedMs as computeDisplayElapsedMs } from "$lib/live-display-clock";
+  import {
+    liveDisplayNow,
+    syncLiveDisplayClock,
+  } from "$lib/live-display-clock.svelte";
   import { emitLivePullGate } from "$lib/live-pull-gate";
   import { resolveMonsterName, resolveSceneName } from "$lib/config/game-names";
   import { formatNumber, t } from "$lib/i18n/index.svelte";
@@ -48,6 +53,7 @@
   );
 
   const liveData = $derived(liveCombatStore.data?.combat ?? null);
+  const displayClock = $derived(liveCombatStore.data?.displayClock ?? null);
   const runtimeTrainingDummyState = $derived(
     liveCombatStore.data?.training ?? null,
   );
@@ -112,7 +118,14 @@
   });
 
   const displayHeaderInfo = $derived(headerInfo);
-  const displayElapsedMs = $derived(headerInfo.elapsedMs);
+  const displayElapsedMs = $derived(
+    computeDisplayElapsedMs(displayClock, liveDisplayNow()),
+  );
+
+  $effect(() => {
+    const clock = displayClock;
+    syncLiveDisplayClock(clock);
+  });
   const displaySceneName = $derived(
     resolveSceneName(headerInfo.sceneId, headerInfo.dungeonDifficulty),
   );
