@@ -70,6 +70,13 @@ const WIPE_BUFF_BASE_ID: i32 = 510_072;
 const IMMEDIATE_COMPLETE_SKILL_IDS: [i32; 3] = [1_215, 1_238, 1_237];
 const PENDING_SKILL_MAX_AGE_MS: u64 = 10_000;
 
+/// ActorState death held until the rest of the batch (or the victim despawns).
+#[derive(Debug)]
+struct PendingDeath {
+    victim: EntityRef,
+    buff_checkpoint: DeathBuffCheckpoint,
+}
+
 #[derive(Debug)]
 struct PendingSkill {
     meta: EventMeta,
@@ -128,6 +135,8 @@ pub struct EntityContext {
     /// `wall_ms - server_ms`, learned from server time packets. Buff deltas
     /// carry raw server creation timestamps that need it.
     server_clock_offset_ms: Option<i64>,
+    /// ActorState deaths queued for the current `apply_batch` only.
+    pending_deaths: Vec<PendingDeath>,
 }
 
 impl EntityContext {
@@ -167,10 +176,13 @@ impl EntityContext {
         self.active_season_id = 0;
         self.active_season_template_ids.clear();
         self.dungeon_flow_state = None;
+        self.pending_deaths.clear();
     }
 
-    /// Applies one decoded packet atomically and returns canonical events in
-    /// observation order. All envelopes share the packet's `batch_id` and time.
+    /// Applies one decoded packet atomically and returns canonical events.
+    /// Actor-state deaths are held until the rest of the batch (or the
+    /// victim's despawn) so same-packet hits land in the death-replay window.
+    /// All envelopes share the packet's `batch_id` and time.
     pub fn apply_batch(&mut self, batch: ProtocolBatch) -> Vec<DomainEnvelope> {
         if let Some(source_time_ms) = batch.meta.source_time_ms {
             self.server_clock_offset_ms =
@@ -186,6 +198,12 @@ impl EntityContext {
                 event.event_index = event_index;
                 event_index = event_index.saturating_add(1);
             }
+        }
+        let before = events.len();
+        self.flush_pending_deaths(batch.meta, &mut events);
+        for event in &mut events[before..] {
+            event.event_index = event_index;
+            event_index = event_index.saturating_add(1);
         }
         events
     }
@@ -388,10 +406,9 @@ impl EntityContext {
                 if previous.as_ref() == Some(&value) {
                     return;
                 }
-                // ActorState transitions are the authoritative death signal
-                // (covers non-damage deaths that carry no `is_dead` damage
-                // packet). Baseline snapshots only update the flag: an entity
-                // first observed as a corpse is not a fresh death.
+                // ActorState transitions are the only death signal. Baseline
+                // snapshots only update the flag: an entity first observed as
+                // a corpse is not a fresh death.
                 let mut actor_state_death = false;
                 let mut actor_state_revival = false;
                 if attr_id == attr_type::ATTR_ACTOR_STATE
@@ -420,19 +437,15 @@ impl EntityContext {
                     out,
                 );
                 if actor_state_death {
-                    let buff_checkpoint = self.death_buff_checkpoint_for(uuid);
-                    self.emit(
-                        meta,
-                        DomainEvent::DeathOccurred {
-                            victim: entity_ref,
-                            killer: None,
-                            skill_key: None,
-                            buff_checkpoint,
-                        },
-                        out,
-                    );
+                    // Hold until the rest of this batch (or despawn) so the
+                    // same-packet killing blow can enter the replay window.
+                    self.pending_deaths.push(PendingDeath {
+                        victim: entity_ref,
+                        buff_checkpoint: self.death_buff_checkpoint_for(uuid),
+                    });
                 }
                 if actor_state_revival {
+                    self.cancel_pending_death(uuid);
                     self.emit(meta, DomainEvent::Revived { entity: entity_ref }, out);
                 }
             }
@@ -658,35 +671,6 @@ impl EntityContext {
                     effective_amount: hit.effective_amount,
                 };
                 self.emit(meta, DomainEvent::HitResolved(domain_hit), out);
-            }
-            ProtocolObservation::DeathObserved {
-                victim_uuid,
-                killer_uuid,
-                skill_key,
-            } => {
-                let Some(victim_uuid) = self.resolve_observation_uuid(victim_uuid) else {
-                    return;
-                };
-                let victim = self.ensure_ref(victim_uuid);
-                // The killing damage packet and the ActorState transition
-                // usually arrive together; record the death only once.
-                let state = self.entities.get_mut(&victim_uuid).expect("ensured above");
-                if state.is_dead {
-                    return;
-                }
-                state.is_dead = true;
-                let killer = killer_uuid.map(|uuid| self.ensure_ref(uuid));
-                let buff_checkpoint = self.death_buff_checkpoint_for(victim_uuid);
-                self.emit(
-                    meta,
-                    DomainEvent::DeathOccurred {
-                        victim,
-                        killer,
-                        skill_key,
-                        buff_checkpoint,
-                    },
-                    out,
-                );
             }
             ProtocolObservation::FantasyMarkerObserved {
                 summon_uuid,
@@ -1482,6 +1466,7 @@ impl EntityContext {
 
     /// Clears all per-generation state of an entity and reports the departure.
     fn despawn_entity(&mut self, meta: EventMeta, uuid: EntityUuid, out: &mut Vec<DomainEnvelope>) {
+        self.flush_pending_death(uuid, meta, out);
         let Some(entity_ref) = self.entities.get(&uuid).map(|entity| entity.entity) else {
             return;
         };
@@ -1739,6 +1724,54 @@ impl EntityContext {
         }
     }
 
+    fn cancel_pending_death(&mut self, uuid: EntityUuid) {
+        self.pending_deaths
+            .retain(|death| death.victim.uuid != uuid);
+    }
+
+    fn flush_pending_death(
+        &mut self,
+        uuid: EntityUuid,
+        meta: EventMeta,
+        out: &mut Vec<DomainEnvelope>,
+    ) {
+        let pending = std::mem::take(&mut self.pending_deaths);
+        let mut remaining = Vec::with_capacity(pending.len());
+        for death in pending {
+            if death.victim.uuid == uuid {
+                self.emit_pending_death(meta, death, out);
+            } else {
+                remaining.push(death);
+            }
+        }
+        self.pending_deaths = remaining;
+    }
+
+    fn flush_pending_deaths(&mut self, meta: EventMeta, out: &mut Vec<DomainEnvelope>) {
+        let pending = std::mem::take(&mut self.pending_deaths);
+        for death in pending {
+            self.emit_pending_death(meta, death, out);
+        }
+    }
+
+    fn emit_pending_death(
+        &mut self,
+        meta: EventMeta,
+        death: PendingDeath,
+        out: &mut Vec<DomainEnvelope>,
+    ) {
+        self.emit(
+            meta,
+            DomainEvent::DeathOccurred {
+                victim: death.victim,
+                killer: None,
+                skill_key: None,
+                buff_checkpoint: death.buff_checkpoint,
+            },
+            out,
+        );
+    }
+
     fn death_buff_checkpoint(&self) -> DeathBuffCheckpoint {
         let buffs = self
             .entities
@@ -1851,7 +1884,7 @@ fn skill_phase(
 mod tests {
     use std::sync::Arc;
 
-    use super::super::events::{BatchId, HitKind, MonoTimeMs};
+    use super::super::events::{BatchId, HitChannel, HitKind, MonoTimeMs, ObservedHit};
     use super::*;
 
     fn meta(batch: u64) -> EventMeta {
@@ -3413,6 +3446,27 @@ mod tests {
         }
     }
 
+    fn incoming_hit(source: EntityUuid, target: EntityUuid) -> ProtocolObservation {
+        ProtocolObservation::HitResolved(ObservedHit {
+            channel: HitChannel::ToMe,
+            source_uuid: Some(source),
+            source_owner_uuid: None,
+            target_uuid: target,
+            skill_key: 99,
+            skill_id: Some(10),
+            type_flags: 0,
+            kind: HitKind::Damage,
+            amount: 100,
+            has_loss_breakdown: false,
+            hp_loss: 0,
+            shield_loss: 0,
+            is_lucky_bonus_only: false,
+            property: None,
+            damage_mode: None,
+            effective_amount: None,
+        })
+    }
+
     fn death_events(events: &[DomainEnvelope]) -> Vec<DomainEvent> {
         events
             .iter()
@@ -3497,11 +3551,7 @@ mod tests {
 
         let events = context.reduce_batch(batch(
             2,
-            vec![ProtocolObservation::DeathObserved {
-                victim_uuid: monster,
-                killer_uuid: None,
-                skill_key: None,
-            }],
+            vec![actor_state(monster, 9, ObservationOrigin::Delta)],
         ));
         let deaths = death_events(&events);
         assert_eq!(deaths.len(), 1);
@@ -3544,11 +3594,7 @@ mod tests {
 
         let events = context.reduce_batch(batch(
             2,
-            vec![ProtocolObservation::DeathObserved {
-                victim_uuid: dummy,
-                killer_uuid: None,
-                skill_key: None,
-            }],
+            vec![actor_state(dummy, 9, ObservationOrigin::Delta)],
         ));
         let deaths = death_events(&events);
         assert_eq!(deaths.len(), 1);
@@ -3565,39 +3611,67 @@ mod tests {
     }
 
     #[test]
-    fn damage_packet_death_and_actor_state_death_are_deduplicated() {
+    fn actor_state_death_is_emitted_after_same_batch_hits() {
         let mut context = EntityContext::new();
-        let monster = EntityUuid(71);
+        let victim = EntityUuid(70);
+        let attacker = EntityUuid(10);
         context.reduce_batch(batch(
             1,
-            vec![ProtocolObservation::EntityAppeared {
-                uuid: monster,
-                kind: EntityKind::Monster,
-            }],
+            vec![
+                ProtocolObservation::EntityAppeared {
+                    uuid: victim,
+                    kind: EntityKind::Character,
+                },
+                ProtocolObservation::EntityAppeared {
+                    uuid: attacker,
+                    kind: EntityKind::Monster,
+                },
+            ],
         ));
 
-        // Damage packet arrives first, ActorState transition in the same batch.
         let events = context.reduce_batch(batch(
             2,
             vec![
-                ProtocolObservation::DeathObserved {
-                    victim_uuid: monster,
-                    killer_uuid: Some(EntityUuid(10)),
-                    skill_key: Some(1_714),
-                },
-                actor_state(monster, 9, ObservationOrigin::Delta),
+                actor_state(victim, 9, ObservationOrigin::Delta),
+                incoming_hit(attacker, victim),
             ],
         ));
-        let deaths = death_events(&events);
-        assert_eq!(deaths.len(), 1);
-        assert!(matches!(
-            &deaths[0],
-            DomainEvent::DeathOccurred {
-                killer: Some(_),
-                skill_key: Some(1_714),
-                ..
-            }
+
+        let hit_pos = events
+            .iter()
+            .position(|envelope| matches!(envelope.event, DomainEvent::HitResolved(_)));
+        let death_pos = events
+            .iter()
+            .position(|envelope| matches!(envelope.event, DomainEvent::DeathOccurred { .. }));
+        assert!(
+            hit_pos.zip(death_pos).is_some_and(|(hit, death)| hit < death),
+            "same-batch ActorState death must follow the killing blow: {events:?}"
+        );
+        assert_eq!(death_events(&events).len(), 1);
+    }
+
+    #[test]
+    fn same_batch_revival_cancels_pending_death() {
+        let mut context = EntityContext::new();
+        let victim = EntityUuid(71);
+        context.reduce_batch(batch(
+            1,
+            vec![ProtocolObservation::EntityAppeared {
+                uuid: victim,
+                kind: EntityKind::Character,
+            }],
         ));
+
+        let events = context.reduce_batch(batch(
+            2,
+            vec![
+                actor_state(victim, 9, ObservationOrigin::Delta),
+                actor_state(victim, 0, ObservationOrigin::Delta),
+            ],
+        ));
+        assert!(death_events(&events).is_empty());
+        assert_eq!(revived_events(&events).len(), 1);
+        assert!(!context.entities[&victim].is_dead);
     }
 
     #[test]
@@ -3626,27 +3700,39 @@ mod tests {
         let events = context.reduce_batch(batch(
             2,
             vec![
-                ProtocolObservation::DeathObserved {
-                    victim_uuid,
-                    killer_uuid: Some(attacker_uuid),
-                    skill_key: None,
-                },
+                actor_state(victim_uuid, 9, ObservationOrigin::Delta),
                 ProtocolObservation::EntityDisappeared { uuid: victim_uuid },
             ],
         ));
 
+        let death_pos = events
+            .iter()
+            .position(|envelope| matches!(envelope.event, DomainEvent::DeathOccurred { .. }));
+        let disappear_pos = events
+            .iter()
+            .position(|envelope| matches!(envelope.event, DomainEvent::EntityDisappeared { .. }));
+        assert!(
+            death_pos
+                .zip(disappear_pos)
+                .is_some_and(|(death, disappear)| death < disappear),
+            "pending death must flush before despawn: {events:?}"
+        );
+
         let deaths = death_events(&events);
         let DomainEvent::DeathOccurred {
             victim,
-            killer: Some(killer),
+            killer: None,
             buff_checkpoint,
             ..
         } = &deaths[0]
         else {
             panic!("death expected");
         };
+        let attacker = context
+            .entity_ref(attacker_uuid)
+            .expect("attacker still present");
         assert_eq!(buff_checkpoint.buffs(*victim)[0].instance_id, 7);
-        assert_eq!(buff_checkpoint.buffs(*killer)[0].instance_id, 8);
+        assert_eq!(buff_checkpoint.buffs(attacker)[0].instance_id, 8);
         assert_eq!(context.active_buffs(victim_uuid).count(), 0);
     }
 
@@ -3669,11 +3755,7 @@ mod tests {
                     target_uuid: victim_uuid,
                     change: ObservedBuffChange::Remove { instance_id: 7 },
                 },
-                ProtocolObservation::DeathObserved {
-                    victim_uuid,
-                    killer_uuid: None,
-                    skill_key: None,
-                },
+                actor_state(victim_uuid, 9, ObservationOrigin::Delta),
             ],
         ));
 
@@ -3721,11 +3803,7 @@ mod tests {
 
         let events = context.reduce_batch(batch(
             4,
-            vec![ProtocolObservation::DeathObserved {
-                victim_uuid,
-                killer_uuid: None,
-                skill_key: None,
-            }],
+            vec![actor_state(victim_uuid, 9, ObservationOrigin::Delta)],
         ));
 
         let deaths = death_events(&events);

@@ -192,9 +192,7 @@ impl ProtocolDecoder {
             Pkt::SyncDungeonDirtyData => {
                 decoded!(
                     blueprotobuf::SyncDungeonDirtyData,
-                    |message: blueprotobuf::SyncDungeonDirtyData| {
-                        decode_dungeon_delta(message)
-                    }
+                    |message: blueprotobuf::SyncDungeonDirtyData| { decode_dungeon_delta(message) }
                 )
             }
             Pkt::SyncToMeDeltaInfo => decoded!(
@@ -459,13 +457,6 @@ impl ProtocolDecoder {
                     damage_mode: damage.damage_mode,
                     effective_amount: None,
                 }));
-                if damage.is_dead.unwrap_or(false) {
-                    observations.push(ProtocolObservation::DeathObserved {
-                        victim_uuid: uuid,
-                        killer_uuid: source_owner_uuid.or(source_uuid),
-                        skill_key: Some(skill_key),
-                    });
-                }
             }
         }
 
@@ -2270,6 +2261,7 @@ mod tests {
             type_flag: Some(5),
             property: Some(8),
             damage_mode: Some(9),
+            is_dead: Some(true),
             ..Default::default()
         };
         let missing_owner = blueprotobuf::SyncDamageInfo {
@@ -2299,6 +2291,17 @@ mod tests {
             .collect();
 
         assert_eq!(hits.len(), 1);
+        assert!(
+            !batch.observations.iter().any(|observation| {
+                !matches!(
+                    observation,
+                    ProtocolObservation::EntityAppeared { .. }
+                        | ProtocolObservation::HitResolved(_)
+                )
+            }),
+            "is_dead on a damage packet must not emit a death observation: {:?}",
+            batch.observations
+        );
         assert_eq!(hits[0].source_uuid, Some(EntityUuid(10)));
         assert_eq!(hits[0].source_owner_uuid, Some(EntityUuid(11)));
         assert_eq!(hits[0].amount, 123);

@@ -259,10 +259,11 @@ mod tests {
     use std::sync::Arc;
 
     use super::*;
+    use crate::live::protocol::attrs as attr_type;
     use crate::live::runtime::entity_context::EntityContext;
     use crate::live::runtime::events::{
-        BatchId, EntityKind, EntityUuid, EventMeta, HitChannel, HitKind, ObservedBuff,
-        ProtocolBatch, ProtocolObservation,
+        AttributeValue, BatchId, EntityKind, EntityUuid, EventMeta, HitChannel, HitKind,
+        ObservationOrigin, ObservedBuff, ProtocolBatch, ProtocolObservation,
     };
 
     const ATTACKER: EntityRef = EntityRef {
@@ -404,10 +405,11 @@ mod tests {
                         effect_ids: Arc::from([]),
                     }],
                 },
-                ProtocolObservation::DeathObserved {
-                    victim_uuid: VICTIM.uuid,
-                    killer_uuid: None,
-                    skill_key: None,
+                ProtocolObservation::AttributeUpdated {
+                    uuid: VICTIM.uuid,
+                    attr_id: attr_type::ATTR_ACTOR_STATE,
+                    value: AttributeValue::Int(attr_type::ACTOR_STATE_DEAD),
+                    origin: ObservationOrigin::Delta,
                 },
             ],
         });

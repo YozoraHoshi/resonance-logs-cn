@@ -521,11 +521,6 @@ pub enum ProtocolObservation {
         member_uuid: EntityUuid,
     },
     TeamDissolved,
-    DeathObserved {
-        victim_uuid: EntityUuid,
-        killer_uuid: Option<EntityUuid>,
-        skill_key: Option<i64>,
-    },
     /// Resonance fantasy marker buff observed on a summon. Summoner / monster_id
     /// / remodel_level are resolved from entity identity by [`EntityContext`].
     FantasyMarkerObserved {
