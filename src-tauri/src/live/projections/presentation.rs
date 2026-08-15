@@ -4,7 +4,7 @@ use crate::live::counter::engine::CounterSnapshot;
 use crate::live::ipc::models::{
     DeathRecord, LiveBuffsPayload, LiveCombatPayload, LiveDataPayload, LiveDeathsPayload,
     LiveDisplayClock, LiveFantasyPayload, LiveMonsterPayload, LiveScenePayload, LiveStatusPayload,
-    TrainingDummyPhase, TrainingDummyState,
+    TeammateFantasyState, TrainingDummyPhase, TrainingDummyState,
 };
 use crate::live::projections::entity_monitor::EntityMonitorSnapshot;
 use crate::live::runtime::events::SegmentId;
@@ -36,6 +36,8 @@ pub struct PresentationProjection {
     displayed_segment_id: Option<SegmentId>,
     displayed_combat: Option<LiveDataPayload>,
     displayed_clock: Option<LiveDisplayClock>,
+    displayed_deaths: Option<Vec<DeathRecord>>,
+    displayed_fantasies: Option<Vec<TeammateFantasyState>>,
 }
 
 impl PresentationProjection {
@@ -43,6 +45,8 @@ impl PresentationProjection {
         self.displayed_segment_id = Some(segment_id);
         self.displayed_combat = None;
         self.displayed_clock = None;
+        self.displayed_deaths = None;
+        self.displayed_fantasies = None;
     }
 
     /// Freezes only the combat (meter) payload. Counters are not segment
@@ -63,6 +67,26 @@ impl PresentationProjection {
         self.displayed_segment_id = None;
         self.displayed_combat = None;
         self.displayed_clock = None;
+        self.displayed_deaths = None;
+        self.displayed_fantasies = None;
+    }
+
+    /// Snapshots death/fantasy display before a runtime wipe. Only fills empty
+    /// slots so a second container resync cannot overwrite a freeze with `[]`.
+    pub fn hold_runtime_display(
+        &mut self,
+        deaths: Vec<DeathRecord>,
+        fantasies: Vec<TeammateFantasyState>,
+    ) {
+        if self.displayed_segment_id.is_none() {
+            return;
+        }
+        if self.displayed_deaths.is_none() {
+            self.displayed_deaths = Some(deaths);
+        }
+        if self.displayed_fantasies.is_none() {
+            self.displayed_fantasies = Some(fantasies);
+        }
     }
 
     /// Builds a combat payload and advances its revision (publication path).
@@ -120,23 +144,39 @@ impl PresentationProjection {
 
     pub fn take_fantasy_payload(
         &mut self,
+        active: bool,
         monitored: &EntityMonitorSnapshot,
     ) -> LiveFantasyPayload {
         self.fantasy_revision = self.fantasy_revision.saturating_add(1);
-        self.fantasy_payload(monitored)
+        self.fantasy_payload(active, monitored)
+    }
+
+    /// Read-only fantasy payload for command-side bootstrap.
+    #[must_use]
+    #[cfg(test)]
+    pub fn peek_fantasy_payload(
+        &self,
+        active: bool,
+        monitored: &EntityMonitorSnapshot,
+    ) -> LiveFantasyPayload {
+        self.fantasy_payload(active, monitored)
     }
 
     /// Builds a deaths payload and advances its revision (publication path).
-    pub fn take_deaths_payload(&mut self, deaths: Vec<DeathRecord>) -> LiveDeathsPayload {
+    pub fn take_deaths_payload(
+        &mut self,
+        active: bool,
+        deaths: Vec<DeathRecord>,
+    ) -> LiveDeathsPayload {
         self.deaths_revision = self.deaths_revision.saturating_add(1);
-        self.deaths_payload(deaths)
+        self.deaths_payload(active, deaths)
     }
 
     /// Read-only deaths payload for command-side bootstrap.
     #[must_use]
     #[cfg(test)]
-    pub fn peek_deaths_payload(&self, deaths: Vec<DeathRecord>) -> LiveDeathsPayload {
-        self.deaths_payload(deaths)
+    pub fn peek_deaths_payload(&self, active: bool, deaths: Vec<DeathRecord>) -> LiveDeathsPayload {
+        self.deaths_payload(active, deaths)
     }
 
     /// Builds a scene payload and advances its revision (publication path).
@@ -227,14 +267,30 @@ impl PresentationProjection {
         }
     }
 
-    fn fantasy_payload(&self, monitored: &EntityMonitorSnapshot) -> LiveFantasyPayload {
+    fn fantasy_payload(
+        &self,
+        active: bool,
+        monitored: &EntityMonitorSnapshot,
+    ) -> LiveFantasyPayload {
+        let teammate_fantasies = if active {
+            monitored.teammate_fantasies.clone()
+        } else {
+            self.displayed_fantasies
+                .clone()
+                .unwrap_or_else(|| monitored.teammate_fantasies.clone())
+        };
         LiveFantasyPayload {
             revision: self.fantasy_revision,
-            teammate_fantasies: monitored.teammate_fantasies.clone(),
+            teammate_fantasies,
         }
     }
 
-    fn deaths_payload(&self, deaths: Vec<DeathRecord>) -> LiveDeathsPayload {
+    fn deaths_payload(&self, active: bool, live: Vec<DeathRecord>) -> LiveDeathsPayload {
+        let deaths = if active {
+            live
+        } else {
+            self.displayed_deaths.clone().unwrap_or(live)
+        };
         LiveDeathsPayload {
             revision: self.deaths_revision,
             deaths,
@@ -308,11 +364,11 @@ mod tests {
     #[test]
     fn peek_deaths_does_not_advance_revision() {
         let mut presentation = PresentationProjection::default();
-        let first = presentation.take_deaths_payload(Vec::new());
+        let first = presentation.take_deaths_payload(true, Vec::new());
         assert_eq!(first.revision, 1);
-        let peeked = presentation.peek_deaths_payload(Vec::new());
+        let peeked = presentation.peek_deaths_payload(true, Vec::new());
         assert_eq!(peeked.revision, 1);
-        let second = presentation.take_deaths_payload(Vec::new());
+        let second = presentation.take_deaths_payload(true, Vec::new());
         assert_eq!(second.revision, 2);
     }
 
@@ -500,5 +556,111 @@ mod tests {
         let payload = presentation.take_combat_payload(None, &idle_state());
         assert_eq!(payload.displayed_segment_id, None);
         assert_eq!(payload.display_clock, None);
+    }
+
+    fn death_record(uuid: &str) -> DeathRecord {
+        DeathRecord {
+            victim_entity_uuid: uuid.to_string(),
+            death_timestamp_ms: "1000".to_string(),
+            recent_damages: Vec::new(),
+            victim_buffs: Vec::new(),
+            participant_buffs: Vec::new(),
+        }
+    }
+
+    fn fantasy_state(summon: &str) -> TeammateFantasyState {
+        TeammateFantasyState {
+            summon_uuid: summon.to_string(),
+            summoner_uuid: "10".to_string(),
+            summoner_name: Some("Alice".to_string()),
+            monster_id: 900,
+            resonance_skill_id: Some(77),
+            remodel_level: 2,
+            detected_at_ms: 1_000,
+        }
+    }
+
+    fn monitored_with_fantasies(fantasies: Vec<TeammateFantasyState>) -> EntityMonitorSnapshot {
+        EntityMonitorSnapshot {
+            teammate_fantasies: fantasies,
+            ..EntityMonitorSnapshot::default()
+        }
+    }
+
+    #[test]
+    fn held_runtime_display_is_used_when_inactive_and_live_is_empty() {
+        let mut presentation = PresentationProjection::default();
+        presentation.segment_started(SegmentId(1));
+        presentation.hold_runtime_display(vec![death_record("20")], vec![fantasy_state("30")]);
+
+        let deaths = presentation.peek_deaths_payload(false, Vec::new());
+        assert_eq!(deaths.deaths.len(), 1);
+        assert_eq!(deaths.deaths[0].victim_entity_uuid, "20");
+
+        let fantasy = presentation.peek_fantasy_payload(false, &EntityMonitorSnapshot::default());
+        assert_eq!(fantasy.teammate_fantasies.len(), 1);
+        assert_eq!(fantasy.teammate_fantasies[0].summon_uuid, "30");
+    }
+
+    #[test]
+    fn active_segment_shadows_held_runtime_display() {
+        let mut presentation = PresentationProjection::default();
+        presentation.segment_started(SegmentId(1));
+        presentation.hold_runtime_display(vec![death_record("20")], vec![fantasy_state("30")]);
+
+        let deaths = presentation.peek_deaths_payload(true, vec![death_record("21")]);
+        assert_eq!(deaths.deaths[0].victim_entity_uuid, "21");
+
+        let fantasy = presentation.peek_fantasy_payload(
+            true,
+            &monitored_with_fantasies(vec![fantasy_state("31")]),
+        );
+        assert_eq!(fantasy.teammate_fantasies[0].summon_uuid, "31");
+    }
+
+    #[test]
+    fn second_hold_does_not_overwrite_frozen_slots() {
+        let mut presentation = PresentationProjection::default();
+        presentation.segment_started(SegmentId(1));
+        presentation.hold_runtime_display(vec![death_record("20")], vec![fantasy_state("30")]);
+        presentation.hold_runtime_display(Vec::new(), Vec::new());
+
+        let deaths = presentation.peek_deaths_payload(false, Vec::new());
+        assert_eq!(deaths.deaths[0].victim_entity_uuid, "20");
+        let fantasy = presentation.peek_fantasy_payload(false, &EntityMonitorSnapshot::default());
+        assert_eq!(fantasy.teammate_fantasies[0].summon_uuid, "30");
+    }
+
+    #[test]
+    fn hold_is_a_noop_without_a_displayed_segment() {
+        let mut presentation = PresentationProjection::default();
+        presentation.hold_runtime_display(vec![death_record("20")], vec![fantasy_state("30")]);
+
+        let deaths = presentation.peek_deaths_payload(false, Vec::new());
+        assert!(deaths.deaths.is_empty());
+        let fantasy = presentation.peek_fantasy_payload(false, &EntityMonitorSnapshot::default());
+        assert!(fantasy.teammate_fantasies.is_empty());
+    }
+
+    #[test]
+    fn clear_display_and_segment_started_drop_held_runtime_display() {
+        let mut presentation = PresentationProjection::default();
+        presentation.segment_started(SegmentId(1));
+        presentation.hold_runtime_display(vec![death_record("20")], vec![fantasy_state("30")]);
+        presentation.clear_display();
+
+        let deaths = presentation.peek_deaths_payload(false, Vec::new());
+        assert!(deaths.deaths.is_empty());
+        let fantasy = presentation.peek_fantasy_payload(false, &EntityMonitorSnapshot::default());
+        assert!(fantasy.teammate_fantasies.is_empty());
+
+        presentation.segment_started(SegmentId(1));
+        presentation.hold_runtime_display(vec![death_record("20")], vec![fantasy_state("30")]);
+        presentation.segment_started(SegmentId(2));
+
+        let deaths = presentation.peek_deaths_payload(false, Vec::new());
+        assert!(deaths.deaths.is_empty());
+        let fantasy = presentation.peek_fantasy_payload(false, &EntityMonitorSnapshot::default());
+        assert!(fantasy.teammate_fantasies.is_empty());
     }
 }

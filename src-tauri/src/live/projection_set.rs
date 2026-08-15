@@ -418,6 +418,10 @@ impl ProjectionSet {
     }
 
     fn reset_runtime(&mut self, scheduler: &mut DeadlineScheduler) {
+        self.presentation.hold_runtime_display(
+            self.death.snapshot(),
+            self.entity_monitor.displayed_fantasies(),
+        );
         self.combat.clear_segment();
         self.combat.set_local_player(None);
         self.entity_monitor.reset_runtime(scheduler);
@@ -446,6 +450,24 @@ impl ProjectionSet {
     pub fn peek_combat(&self, segment_state: &SegmentState) -> LiveCombatPayload {
         self.presentation
             .peek_combat_payload(self.active_combat(), segment_state)
+    }
+
+    #[must_use]
+    #[cfg(test)]
+    pub fn peek_deaths(&self) -> LiveDeathsPayload {
+        self.presentation
+            .peek_deaths_payload(self.combat.segment_id().is_some(), self.death.snapshot())
+    }
+
+    #[must_use]
+    #[cfg(test)]
+    pub fn peek_fantasy(&self) -> LiveFantasyPayload {
+        let monitored = crate::live::projections::entity_monitor::EntityMonitorSnapshot {
+            teammate_fantasies: self.entity_monitor.displayed_fantasies(),
+            ..crate::live::projections::entity_monitor::EntityMonitorSnapshot::default()
+        };
+        self.presentation
+            .peek_fantasy_payload(self.combat.segment_id().is_some(), &monitored)
     }
 
     /// Builds one payload per topic that is both requested and dirty, clearing
@@ -490,13 +512,15 @@ impl ProjectionSet {
                 Topic::Monster => {
                     TopicPublication::Monster(self.presentation.take_monster_payload(monitored()))
                 }
-                Topic::Fantasy => {
-                    TopicPublication::Fantasy(self.presentation.take_fantasy_payload(monitored()))
-                }
-                Topic::Minimap => TopicPublication::Minimap(self.minimap.take_payload()),
-                Topic::Deaths => TopicPublication::Deaths(
-                    self.presentation.take_deaths_payload(self.death.snapshot()),
+                Topic::Fantasy => TopicPublication::Fantasy(
+                    self.presentation
+                        .take_fantasy_payload(self.combat.segment_id().is_some(), monitored()),
                 ),
+                Topic::Minimap => TopicPublication::Minimap(self.minimap.take_payload()),
+                Topic::Deaths => TopicPublication::Deaths(self.presentation.take_deaths_payload(
+                    self.combat.segment_id().is_some(),
+                    self.death.snapshot(),
+                )),
                 Topic::Scene => TopicPublication::Scene(self.presentation.take_scene_payload(
                     entities.current_scene_id(),
                     entities.current_difficulty(),
@@ -843,7 +867,11 @@ mod tests {
     /// instead of blanking the meter like a manual reset would.
     #[test]
     fn container_reset_clears_runtime_but_keeps_the_frozen_meter() {
-        use crate::live::runtime::events::{BatchId, EventMeta, SegmentId};
+        use crate::live::projections::combat::accumulator::CombatHitFact;
+        use crate::live::runtime::events::{
+            BatchId, DeathBuffCheckpoint, DomainHit, EntityKind, EntityRef, EntityUuid, EventMeta,
+            FantasyState, FantasyTransition, HitChannel, HitKind, SegmentId,
+        };
 
         let (writer, join) = HistoryWriterHandle::start().expect("history writer starts");
         let mut projections = ProjectionSet::new(writer);
@@ -867,23 +895,110 @@ mod tests {
             },
         );
 
-        let batch_id = BatchId(1);
-        let envelope = DomainEnvelope {
+        let attacker = EntityRef {
+            uuid: EntityUuid(10),
+            generation: 1,
+        };
+        let victim = EntityRef {
+            uuid: EntityUuid(20),
+            generation: 1,
+        };
+        let hit = DomainHit {
+            channel: HitChannel::ToMe,
+            source: Some(attacker),
+            packet_owner: None,
+            resolved_owner: None,
+            target: victim,
+            source_kind: Some(EntityKind::Monster),
+            target_kind: EntityKind::Character,
+            source_monster_id: Some(9_001),
+            target_monster_id: None,
+            target_is_boss: false,
+            source_is_player: false,
+            source_is_local_player: false,
+            skill_key: 17_140_101,
+            skill_id: Some(1_714),
+            type_flags: 0,
+            kind: HitKind::Damage,
+            amount: 100,
+            has_loss_breakdown: false,
+            hp_loss: 0,
+            shield_loss: 0,
+            is_lucky_bonus_only: false,
+            property: None,
+            damage_mode: None,
+            effective_amount: None,
+        };
+        let meta = EventMeta {
+            batch_id: BatchId(1),
+            capture_sequence: 1,
+            stream_id: 1,
+            stream_epoch: 1,
+            captured_wall_ms: 1_000,
+            captured_mono_ns: 1_000_000_000,
+            source_time_ms: None,
+        };
+        let hit_envelope = DomainEnvelope {
             sequence: 1,
-            batch_id,
+            batch_id: meta.batch_id,
             occurred_at_ms: 1_000,
-            meta: EventMeta {
-                batch_id,
-                capture_sequence: 1,
-                stream_id: 1,
-                stream_epoch: 1,
-                captured_wall_ms: 1_000,
-                captured_mono_ns: 1_000_000_000,
-                source_time_ms: None,
-            },
+            meta,
             event_index: 0,
             segment_id: None,
+            event: DomainEvent::CombatHitAccepted(hit),
+        };
+        let fact = CombatHitFact::from_domain(&hit);
+        projections
+            .death
+            .apply_hit(&hit_envelope, &hit, fact.as_ref());
+        assert!(
+            projections
+                .death
+                .apply(&DomainEnvelope {
+                    sequence: 2,
+                    occurred_at_ms: 1_500,
+                    event_index: 1,
+                    event: DomainEvent::DeathOccurred {
+                        victim,
+                        killer: None,
+                        skill_key: None,
+                        buff_checkpoint: DeathBuffCheckpoint::default(),
+                    },
+                    ..hit_envelope.clone()
+                })
+                .is_some()
+        );
+        projections.entity_monitor.apply(
+            &DomainEnvelope {
+                sequence: 3,
+                occurred_at_ms: 1_200,
+                event_index: 2,
+                event: DomainEvent::FantasyChanged {
+                    transition: FantasyTransition::Summoned,
+                    fantasy: FantasyState {
+                        summon: EntityRef {
+                            uuid: EntityUuid(30),
+                            generation: 1,
+                        },
+                        summoner: attacker,
+                        monster_id: 900,
+                        remodel_level: 2,
+                        resonance_skill_id: Some(77),
+                    },
+                },
+                ..hit_envelope.clone()
+            },
+            &entities,
+            &mut scheduler,
+        );
+        assert_eq!(projections.death.snapshot().len(), 1);
+        assert_eq!(projections.entity_monitor.displayed_fantasies().len(), 1);
+
+        let envelope = DomainEnvelope {
+            sequence: 4,
+            event_index: 3,
             event: DomainEvent::ContainerReset,
+            ..hit_envelope
         };
 
         projections
@@ -905,6 +1020,29 @@ mod tests {
                 paused_at_wall_ms: None,
                 ended_at_wall_ms: Some(4_000),
             })
+        );
+        assert!(
+            projections.death.snapshot().is_empty(),
+            "the death engine must reset with the container"
+        );
+        assert!(
+            projections.entity_monitor.displayed_fantasies().is_empty(),
+            "the fantasy engine must reset with the container"
+        );
+        let deaths = projections.peek_deaths();
+        assert_eq!(deaths.deaths.len(), 1);
+        assert_eq!(deaths.deaths[0].victim_entity_uuid, "20");
+        let fantasy = projections.peek_fantasy();
+        assert_eq!(fantasy.teammate_fantasies.len(), 1);
+        assert_eq!(fantasy.teammate_fantasies[0].summon_uuid, "30");
+
+        projections
+            .apply(&envelope, &entities, &mut scheduler)
+            .expect("a second container reset stays idempotent");
+        assert_eq!(projections.peek_deaths().deaths[0].victim_entity_uuid, "20");
+        assert_eq!(
+            projections.peek_fantasy().teammate_fantasies[0].summon_uuid,
+            "30"
         );
 
         drop(projections);

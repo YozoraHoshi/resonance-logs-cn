@@ -112,6 +112,14 @@ impl EntityMonitorProjection {
         self.recent_fantasies.clear();
     }
 
+    #[must_use]
+    pub fn displayed_fantasies(&self) -> Vec<TeammateFantasyState> {
+        self.recent_fantasies
+            .iter()
+            .map(|fantasy| fantasy.dto.clone())
+            .collect()
+    }
+
     pub fn apply_config(&mut self, config: Arc<MonitorRuntimeSnapshot>, entities: &EntityContext) {
         self.local_player = entities.local_player();
         self.current_target = entities.current_attack_target();
@@ -465,11 +473,7 @@ impl EntityMonitorProjection {
                     .collect(),
                 received_at: self.fight_resource_received_at,
             }),
-            teammate_fantasies: self
-                .recent_fantasies
-                .iter()
-                .map(|fantasy| fantasy.dto.clone())
-                .collect(),
+            teammate_fantasies: self.displayed_fantasies(),
             boss_mechanics: self.boss_mechanics.values().cloned().collect(),
             hate_lists: self
                 .current_target
