@@ -384,7 +384,7 @@
         class="{isTrainingDummyActive
           ? 'bg-muted text-foreground border-border shadow-sm'
           : 'text-muted-foreground border-transparent'} hover:text-foreground hover:bg-popover/60 rounded-lg border transition-all duration-200 disabled:opacity-60"
-        style="padding: {h.pauseButtonPadding}px"
+        style="padding: {h.headerControlPadding ?? h.pauseButtonPadding}px"
         aria-pressed={isTrainingDummyActive}
         aria-label={isTrainingDummyActive
           ? t("live.header.trainingDummy.disable")
@@ -398,7 +398,7 @@
         )}
       >
         <CrosshairIcon
-          style="width: {h.pauseButtonSize}px; height: {h.pauseButtonSize}px"
+          style="width: {h.headerControlSize ?? h.pauseButtonSize}px; height: {h.headerControlSize ?? h.pauseButtonSize}px"
         />
       </button>
     {/if}
@@ -654,7 +654,7 @@
             class="{isTrainingDummyActive
               ? 'bg-muted text-foreground border-border shadow-sm'
               : 'text-muted-foreground border-transparent'} hover:text-foreground hover:bg-popover/60 rounded-lg border transition-all duration-200 disabled:opacity-60"
-            style="padding: {h.pauseButtonPadding}px"
+            style="padding: {h.headerControlPadding ?? h.pauseButtonPadding}px"
             aria-pressed={isTrainingDummyActive}
             aria-label={isTrainingDummyActive
               ? t("live.header.trainingDummy.disable")
@@ -668,7 +668,7 @@
             )}
           >
             <CrosshairIcon
-              style="width: {h.pauseButtonSize}px; height: {h.pauseButtonSize}px"
+              style="width: {h.headerControlSize ?? h.pauseButtonSize}px; height: {h.headerControlSize ?? h.pauseButtonSize}px"
             />
           </button>
         {/if}

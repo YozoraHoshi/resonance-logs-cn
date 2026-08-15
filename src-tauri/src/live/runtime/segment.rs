@@ -109,17 +109,33 @@ pub struct SegmentBatchDecision {
     pub released_openers: Vec<DomainEnvelope>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct SegmentController {
     state: SegmentState,
     next_segment_id: u64,
     opener_buffer: Vec<DomainEnvelope>,
+    training_window_ms: u64,
+}
+
+impl Default for SegmentController {
+    fn default() -> Self {
+        Self {
+            state: SegmentState::default(),
+            next_segment_id: 0,
+            opener_buffer: Vec::new(),
+            training_window_ms: TRAINING_WINDOW_MS,
+        }
+    }
 }
 
 impl SegmentController {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn set_training_window_ms(&mut self, window_ms: u64) {
+        self.training_window_ms = window_ms;
     }
 
     #[must_use]
@@ -535,7 +551,7 @@ impl SegmentController {
             },
         };
         // Hard lifetime cap for standard segments. Training segments are
-        // already bounded by TRAINING_WINDOW_MS and never schedule this.
+        // already bounded by the configured training window and never schedule this.
         scheduler.schedule(
             TimerKey::SegmentMaxDuration {
                 segment_id: segment.id,
@@ -559,7 +575,7 @@ impl SegmentController {
         out: &mut Vec<DomainEvent>,
     ) {
         let segment = self.next_segment(meta);
-        let deadline = meta.mono_ms().saturating_add(TRAINING_WINDOW_MS);
+        let deadline = meta.mono_ms().saturating_add(self.training_window_ms);
         let monster_id = hit
             .target_monster_id
             .expect("training opener has monster id");
@@ -1088,6 +1104,37 @@ mod tests {
         let ended = controller.on_timer(stale, 2_000_000, &mut scheduler);
         assert!(ended.is_empty());
         assert_eq!(controller.current_segment_id(), Some(SegmentId(2)));
+    }
+
+    #[test]
+    fn start_training_uses_the_configured_window_for_deadline() {
+        let mut controller = SegmentController::new();
+        controller.set_training_window_ms(60_000);
+        let mut scheduler = DeadlineScheduler::new();
+        controller.arm_training(&mut scheduler);
+        let dummy = target(22);
+        let packet = [hit_event(1, 2_000, dummy, Some(115), true)];
+        controller.preflight_batch(&packet, false, &mut scheduler);
+        assert_eq!(scheduler.next_deadline(), Some(MonoTimeMs(62_000)));
+    }
+
+    #[test]
+    fn changing_the_window_does_not_move_an_in_progress_deadline() {
+        let mut controller = SegmentController::new();
+        let mut scheduler = DeadlineScheduler::new();
+        controller.arm_training(&mut scheduler);
+        let dummy = target(22);
+        let packet = [hit_event(1, 2_000, dummy, Some(115), true)];
+        controller.preflight_batch(&packet, false, &mut scheduler);
+        assert_eq!(
+            scheduler.next_deadline(),
+            Some(MonoTimeMs(2_000 + TRAINING_WINDOW_MS))
+        );
+        controller.set_training_window_ms(60_000);
+        assert_eq!(
+            scheduler.next_deadline(),
+            Some(MonoTimeMs(2_000 + TRAINING_WINDOW_MS))
+        );
     }
 
     #[test]

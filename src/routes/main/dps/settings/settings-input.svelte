@@ -5,12 +5,14 @@
     placeholder = "",
     type = "text",
     value = $bindable(""),
+    ...restProps
   }: {
     label: string;
     description?: string | undefined;
     placeholder?: string;
     type?: "text" | "password" | "url" | "number";
     value: string | number;
+    [key: string]: unknown;
   } = $props();
 </script>
 
@@ -29,5 +31,6 @@
            focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
            placeholder:text-muted-foreground/50
            transition-colors"
+    {...restProps}
   />
 </label>

@@ -539,3 +539,44 @@ describe("incremental monitoring migration", () => {
     }
   });
 });
+
+describe("live header customization backfill", () => {
+  it("copies pause button metrics when dummy button size is missing", () => {
+    const state = createDefaultMonitoringSettingsState();
+    const originalWindowPadding =
+      state.liveMeter.profiles[0]!.headerCustomization.windowPadding;
+    const header = {
+      ...state.liveMeter.profiles[0]!.headerCustomization,
+      pauseButtonSize: 14,
+      pauseButtonPadding: 4,
+    } as Partial<(typeof state.liveMeter.profiles)[0]["headerCustomization"]>;
+    delete header.headerControlSize;
+    delete header.headerControlPadding;
+    state.liveMeter.profiles[0]!.headerCustomization =
+      header as (typeof state.liveMeter.profiles)[0]["headerCustomization"];
+
+    const migrated = reconcileMonitoringState(state);
+
+    expect(
+      migrated.liveMeter.profiles[0]!.headerCustomization.headerControlSize,
+    ).toBe(14);
+    expect(
+      migrated.liveMeter.profiles[0]!.headerCustomization.headerControlPadding,
+    ).toBe(4);
+    expect(
+      migrated.liveMeter.profiles[0]!.headerCustomization.windowPadding,
+    ).toBe(originalWindowPadding);
+  });
+
+  it("keeps an explicit dummy button size instead of the pause size", () => {
+    const state = createDefaultMonitoringSettingsState();
+    state.liveMeter.profiles[0]!.headerCustomization.pauseButtonSize = 14;
+    state.liveMeter.profiles[0]!.headerCustomization.headerControlSize = 22;
+
+    const migrated = reconcileMonitoringState(state);
+
+    expect(
+      migrated.liveMeter.profiles[0]!.headerCustomization.headerControlSize,
+    ).toBe(22);
+  });
+});

@@ -24,7 +24,7 @@ use crate::live::runtime::events::{
     AttributeValue, DomainEnvelope, DomainEvent, MonoTimeMs, SegmentReason,
 };
 use crate::live::runtime::scheduler::{DeadlineScheduler, DueTimer};
-use crate::live::runtime::segment::{SegmentState, TRAINING_WINDOW_MS};
+use crate::live::runtime::segment::SegmentState;
 use crate::voice::models::VoiceCueIntent;
 
 /// Topics served by [`EntityMonitorProjection::snapshot`].
@@ -162,9 +162,9 @@ impl ProjectionSet {
                 segment_id,
                 reason,
                 ended_at_wall_ms,
-                ..
+                ended_at_mono_ms,
             } => {
-                self.end_segment(*segment_id, *reason, *ended_at_wall_ms)?;
+                self.end_segment(*segment_id, *reason, *ended_at_wall_ms, *ended_at_mono_ms)?;
                 return Ok(());
             }
             _ => {}
@@ -558,9 +558,15 @@ impl ProjectionSet {
         segment_id: crate::live::runtime::events::SegmentId,
         reason: SegmentReason,
         ended_at_wall_ms: i64,
+        ended_at_mono_ms: MonoTimeMs,
     ) -> Result<(), String> {
         let observed_ms = self.combat.observed_duration_ms();
-        let duration_ms = finalized_duration_ms(reason, observed_ms);
+        let scheduled_window_ms = u128::from(
+            ended_at_mono_ms
+                .0
+                .saturating_sub(self.combat.started_at_mono_ms().0),
+        );
+        let duration_ms = finalized_duration_ms(reason, observed_ms, scheduled_window_ms);
         if reason == SegmentReason::Manual {
             self.presentation.clear_display();
         } else {
@@ -657,9 +663,13 @@ fn clamp_u128_to_i64(value: u128) -> i64 {
     value.min(i64::MAX as u128) as i64
 }
 
-fn finalized_duration_ms(reason: SegmentReason, observed_ms: u128) -> u128 {
+fn finalized_duration_ms(
+    reason: SegmentReason,
+    observed_ms: u128,
+    scheduled_window_ms: u128,
+) -> u128 {
     match reason {
-        SegmentReason::TrainingElapsed => u128::from(TRAINING_WINDOW_MS),
+        SegmentReason::TrainingElapsed => scheduled_window_ms,
         _ => observed_ms,
     }
 }
@@ -679,7 +689,7 @@ fn payload_for_end(
 mod tests {
     use super::*;
     use crate::live::ipc::models::TrainingDummyPhase;
-    use crate::live::runtime::segment::IdleMode;
+    use crate::live::runtime::segment::{IdleMode, TRAINING_WINDOW_MS};
 
     #[test]
     fn command_peek_does_not_consume_pending_publication() {
@@ -743,15 +753,23 @@ mod tests {
     #[test]
     fn training_elapsed_uses_the_window_not_the_last_hit() {
         assert_eq!(
-            finalized_duration_ms(SegmentReason::TrainingElapsed, 182_500),
+            finalized_duration_ms(
+                SegmentReason::TrainingElapsed,
+                182_500,
+                u128::from(TRAINING_WINDOW_MS)
+            ),
             u128::from(TRAINING_WINDOW_MS)
         );
         assert_eq!(
-            finalized_duration_ms(SegmentReason::Manual, 60_000),
+            finalized_duration_ms(SegmentReason::TrainingElapsed, 59_000, 60_000),
             60_000
         );
         assert_eq!(
-            finalized_duration_ms(SegmentReason::Wipe, 12_345),
+            finalized_duration_ms(SegmentReason::Manual, 60_000, u128::from(TRAINING_WINDOW_MS)),
+            60_000
+        );
+        assert_eq!(
+            finalized_duration_ms(SegmentReason::Wipe, 12_345, u128::from(TRAINING_WINDOW_MS)),
             12_345
         );
     }

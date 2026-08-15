@@ -461,6 +461,7 @@ const liveGeneralSchema = v.object({
   abbreviationStyle: v.optional(v.picklist(["western", "cn"]), "western"),
   abbreviatedDecimalPlaces: v.optional(finiteNumberSchema, 1),
   eventUpdateRateMs: v.optional(finiteNumberSchema, 200),
+  trainingWindowMs: v.optional(finiteNumberSchema, 183000),
 });
 
 const liveStatsSchema = v.record(v.string(), v.boolean());

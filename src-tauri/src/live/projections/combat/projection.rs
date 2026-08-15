@@ -414,6 +414,11 @@ impl CombatProjection {
     }
 
     #[must_use]
+    pub const fn started_at_mono_ms(&self) -> MonoTimeMs {
+        self.started_at_mono_ms
+    }
+
+    #[must_use]
     pub const fn total_damage(&self) -> u128 {
         self.accumulator.totals.damage
     }

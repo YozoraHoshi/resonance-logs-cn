@@ -92,6 +92,8 @@
         resetButtonPadding: 4,
         pauseButtonSize: 14,
         pauseButtonPadding: 4,
+        headerControlSize: 14,
+        headerControlPadding: 4,
         bossOnlyButtonSize: 14,
         bossOnlyButtonPadding: 4,
         settingsButtonSize: 14,
@@ -162,6 +164,8 @@
         resetButtonPadding: 6,
         pauseButtonSize: 16,
         pauseButtonPadding: 6,
+        headerControlSize: 16,
+        headerControlPadding: 6,
         bossOnlyButtonSize: 16,
         bossOnlyButtonPadding: 6,
         settingsButtonSize: 16,
@@ -231,6 +235,8 @@
         resetButtonPadding: 8,
         pauseButtonSize: 20,
         pauseButtonPadding: 8,
+        headerControlSize: 20,
+        headerControlPadding: 8,
         bossOnlyButtonSize: 20,
         bossOnlyButtonPadding: 8,
         settingsButtonSize: 20,
@@ -300,6 +306,8 @@
         resetButtonPadding: 10,
         pauseButtonSize: 26,
         pauseButtonPadding: 10,
+        headerControlSize: 26,
+        headerControlPadding: 10,
         bossOnlyButtonSize: 26,
         bossOnlyButtonPadding: 10,
         settingsButtonSize: 26,
@@ -1396,6 +1404,32 @@
                       "themes.header.showHeaderControlDescription",
                     )}
                   />
+                  {#if SETTINGS.live.headerCustomization.state.showHeaderControl}
+                    <div class="grid grid-cols-2 gap-2 pl-4">
+                      <SettingsSlider
+                        bind:value={
+                          SETTINGS.live.headerCustomization.state
+                            .headerControlSize
+                        }
+                        min={12}
+                        max={32}
+                        step={1}
+                        label={t("themes.header.iconSize")}
+                        unit="px"
+                      />
+                      <SettingsSlider
+                        bind:value={
+                          SETTINGS.live.headerCustomization.state
+                            .headerControlPadding
+                        }
+                        min={2}
+                        max={16}
+                        step={1}
+                        label={t("themes.header.padding")}
+                        unit="px"
+                      />
+                    </div>
+                  {/if}
 
                   <!-- Settings Button -->
                   <SettingsSwitch

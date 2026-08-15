@@ -99,6 +99,8 @@ impl LiveCore {
             publish: [PublishSchedule::default(); Topic::COUNT],
             shutdown_complete: false,
         };
+        core.segments
+            .set_training_window_ms(config.live.training_window_ms);
         core.request_publications(now, true);
         Ok(core)
     }
@@ -347,6 +349,8 @@ impl LiveCore {
         let now = self.refresh_clock();
         self.drain_due_through(now)?;
         self.live_publish_interval_ms = config.live.event_update_rate_ms;
+        self.segments
+            .set_training_window_ms(config.live.training_window_ms);
         self.projections.apply_config(
             Arc::clone(&config),
             &self.entities,

@@ -618,6 +618,9 @@ export const enUSMessages = {
   "settings.live.refreshRate": "Refresh Rate",
   "settings.live.refreshRateDescription":
     "Live stats refresh interval (50-2000ms). Lower values feel smoother but use more CPU.",
+  "settings.live.trainingWindow": "Training Duration",
+  "settings.live.trainingWindowDescription":
+    "Starts when you hit a dummy and ends when this duration elapses. Default 3:03 (183 seconds). Changing this does not affect a run already in progress.",
   "settings.network.packetCapture": "Packet Capture",
   "settings.network.method": "Capture Method",
   "settings.network.methodDescription":

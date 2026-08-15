@@ -10,6 +10,7 @@ import {
   createDefaultLiveAppearance,
   createDefaultLiveMeterProfileData,
   createDefaultLiveMeterState,
+  mergeLiveHeaderCustomization,
   createDefaultMonsterMonitorState,
   createDefaultSkillMonitorProfile,
   deepCloneSettings,
@@ -309,6 +310,9 @@ function normalizeLiveProfiles(
         ...profile.general,
         showFantasyCastIcons: profile.general?.showFantasyCastIcons === true,
       },
+      headerCustomization: mergeLiveHeaderCustomization(
+        profile.headerCustomization,
+      ),
       id: nextUniqueId(profile.id, "live", seen),
     };
   });

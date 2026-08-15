@@ -672,7 +672,7 @@ export type LiveFantasyPayload = { revision: number; teammateFantasies: Teammate
  */
 export type LiveMonsterPayload = { revision: number; bossBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; teammateBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; bossMechanics: BossDbmEvent[]; hateLists: Partial<{ [key in string]: HateEntry[] }>; stun: StunEntry[]; playerNames: Partial<{ [key in string]: string }>; monsterIds: Partial<{ [key in string]: number }> }
 export type LivePullWindow = "live" | "hud-overlay"
-export type LiveRuntimeSnapshot = { eventUpdateRateMs: number }
+export type LiveRuntimeSnapshot = { eventUpdateRateMs: number; trainingWindowMs: number }
 export type LiveScenePayload = { revision: number; sceneId: number | null; dungeonDifficulty: number | null }
 /**
  * Skill CD / panel attrs / fight resource / shields / counters

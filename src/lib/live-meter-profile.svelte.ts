@@ -15,6 +15,7 @@ import {
   SETTINGS,
   createDefaultLiveMeterProfileData,
   deepCloneSettings,
+  mergeLiveHeaderCustomization,
   generateProfileId,
   type LiveMeterProfile,
   type LiveMeterProfileData,
@@ -175,7 +176,10 @@ function applyProfileData(data: LiveMeterProfileData): void {
   Object.assign(stores.tankedPlayers.state, cloned.tankedPlayers);
   Object.assign(stores.tankedSkillBreakdown.state, cloned.tankedSkillBreakdown);
   Object.assign(stores.tableCustomization.state, cloned.tableCustomization);
-  Object.assign(stores.headerCustomization.state, cloned.headerCustomization);
+  Object.assign(
+    stores.headerCustomization.state,
+    mergeLiveHeaderCustomization(cloned.headerCustomization),
+  );
   stores.columnOrder.dpsPlayers.state.order =
     cloned.columnOrder.dpsPlayers.order;
   stores.columnOrder.dpsSkills.state.order = cloned.columnOrder.dpsSkills.order;

@@ -1,5 +1,6 @@
 use crate::live::counter::engine::CounterRule;
 use crate::live::counter::season_cultivate::{FactorCounterTemplate, normalize_factor_templates};
+use crate::live::runtime::segment::TRAINING_WINDOW_MS;
 use crate::voice::models::VoiceRuntimeSnapshot;
 use log::{info, warn};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -86,6 +87,7 @@ impl Default for MonitorRuntimeSnapshot {
 impl MonitorRuntimeSnapshot {
     pub fn normalize(mut self) -> Result<Self, String> {
         self.live.event_update_rate_ms = self.live.event_update_rate_ms.clamp(50, 2000);
+        self.live.training_window_ms = self.live.training_window_ms.clamp(30_000, 600_000);
 
         dedup_and_sort_i32(&mut self.skill.monitored_skill_ids);
         if self.skill.monitored_skill_ids.len() > 10 {
@@ -180,12 +182,14 @@ impl Default for I18nRuntimeSnapshot {
 #[serde(rename_all = "camelCase", default)]
 pub struct LiveRuntimeSnapshot {
     pub event_update_rate_ms: u64,
+    pub training_window_ms: u64,
 }
 
 impl Default for LiveRuntimeSnapshot {
     fn default() -> Self {
         Self {
             event_update_rate_ms: 200,
+            training_window_ms: TRAINING_WINDOW_MS,
         }
     }
 }
@@ -385,4 +389,48 @@ fn snapshot_path_candidates(app_handle: &AppHandle) -> Vec<PathBuf> {
 fn dedup_and_sort_i32(values: &mut Vec<i32>) {
     values.sort_unstable();
     values.dedup();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn normalize_defaults_training_window_to_183s() {
+        let snapshot = MonitorRuntimeSnapshot::default()
+            .normalize()
+            .expect("default snapshot is valid");
+        assert_eq!(snapshot.live.training_window_ms, TRAINING_WINDOW_MS);
+        assert_eq!(snapshot.live.training_window_ms, 183_000);
+    }
+
+    #[test]
+    fn normalize_clamps_training_window() {
+        let mut low = MonitorRuntimeSnapshot::default();
+        low.live.training_window_ms = 1_000;
+        assert_eq!(
+            low.normalize()
+                .expect("clamped snapshot is valid")
+                .live
+                .training_window_ms,
+            30_000
+        );
+
+        let mut high = MonitorRuntimeSnapshot::default();
+        high.live.training_window_ms = 999_000;
+        assert_eq!(
+            high.normalize()
+                .expect("clamped snapshot is valid")
+                .live
+                .training_window_ms,
+            600_000
+        );
+    }
+
+    #[test]
+    fn missing_training_window_deserializes_to_default() {
+        let live: LiveRuntimeSnapshot = serde_json::from_str(r#"{"eventUpdateRateMs":200}"#)
+            .expect("legacy live snapshot deserializes");
+        assert_eq!(live.training_window_ms, TRAINING_WINDOW_MS);
+    }
 }

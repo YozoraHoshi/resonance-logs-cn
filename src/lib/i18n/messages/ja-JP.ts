@@ -604,6 +604,9 @@ export const jaJPMessages = {
   "settings.live.refreshRate": "更新レート",
   "settings.live.refreshRateDescription":
     "ライブ統計の更新間隔（50-2000ms）。低いほど滑らかですが CPU 使用量が増えます。",
+  "settings.live.trainingWindow": "訓練時間",
+  "settings.live.trainingWindowDescription":
+    "自分がダミーに命中した時点から計測し、この時間で終了します。デフォルトは 3:03（183 秒）。進行中のラウンドには反映されません。",
   "settings.network.packetCapture": "パケットキャプチャ",
   "settings.network.method": "キャプチャ方式",
   "settings.network.methodDescription":

@@ -557,6 +557,9 @@ export const zhCNMessages = {
   "settings.live.refreshRate": "刷新频率",
   "settings.live.refreshRateDescription":
     "实时统计刷新间隔（50-2000ms）。越低越流畅，但更耗 CPU。",
+  "settings.live.trainingWindow": "打桩时长",
+  "settings.live.trainingWindowDescription":
+    "从本人命中木桩起计时，到点结束本轮。默认 3:03（183 秒）。进行中的一轮不会改时长。",
   "settings.network.packetCapture": "抓包",
   "settings.network.method": "捕获方式",
   "settings.network.methodDescription":

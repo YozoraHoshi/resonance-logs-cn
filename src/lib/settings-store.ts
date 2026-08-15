@@ -1743,6 +1743,8 @@ export function createDefaultLiveMeterProfileData(): LiveMeterProfileData {
       resetButtonPadding: 8,
       pauseButtonSize: 20,
       pauseButtonPadding: 8,
+      headerControlSize: 20,
+      headerControlPadding: 8,
       bossOnlyButtonSize: 20,
       bossOnlyButtonPadding: 8,
       settingsButtonSize: 20,
@@ -1780,6 +1782,27 @@ export function createDefaultLiveMeterProfileData(): LiveMeterProfileData {
     },
     challengeWatch: { forbiddenDamageIds: [] as number[] },
     appearance: createDefaultLiveAppearance(),
+  };
+}
+
+export function mergeLiveHeaderCustomization(
+  header:
+    | Partial<LiveMeterProfileData["headerCustomization"]>
+    | null
+    | undefined,
+): LiveMeterProfileData["headerCustomization"] {
+  const defaults = createDefaultLiveMeterProfileData().headerCustomization;
+  return {
+    ...defaults,
+    ...header,
+    headerControlSize:
+      header?.headerControlSize ??
+      header?.pauseButtonSize ??
+      defaults.headerControlSize,
+    headerControlPadding:
+      header?.headerControlPadding ??
+      header?.pauseButtonPadding ??
+      defaults.headerControlPadding,
   };
 }
 
@@ -1891,6 +1914,7 @@ const DEFAULT_GENERAL_SETTINGS = {
   abbreviationStyle: "western" as "western" | "cn",
   abbreviatedDecimalPlaces: 1,
   eventUpdateRateMs: 200,
+  trainingWindowMs: 183_000,
 };
 
 export const DEFAULT_CLASS_COLORS: Record<string, string> = {
@@ -2291,6 +2315,8 @@ const DEFAULT_SETTINGS = {
       resetButtonPadding: 8,
       pauseButtonSize: 20,
       pauseButtonPadding: 8,
+      headerControlSize: 20,
+      headerControlPadding: 8,
       bossOnlyButtonSize: 20,
       bossOnlyButtonPadding: 8,
       settingsButtonSize: 20,

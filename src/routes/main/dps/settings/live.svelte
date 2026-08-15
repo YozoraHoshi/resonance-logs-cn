@@ -3,6 +3,7 @@
   import SettingsSwitch from "./settings-switch.svelte";
   import SettingsSelect from "./settings-select.svelte";
   import SettingsSlider from "./settings-slider.svelte";
+  import SettingsInput from "./settings-input.svelte";
   import {
     SETTINGS,
     DEFAULT_LIVE_TANKED_PLAYER_STATS,
@@ -10,6 +11,7 @@
     normalizeTankedPlayerColumnOrder,
     normalizeTankedSkillColumnOrder,
   } from "$lib/settings-store";
+  import { untrack } from "svelte";
   import { t } from "$lib/i18n/index.svelte";
   import ChevronDown from "virtual:icons/lucide/chevron-down";
   import {
@@ -35,6 +37,41 @@
 
   function toggleSection(section: keyof typeof expandedSections) {
     expandedSections[section] = !expandedSections[section];
+  }
+
+  const TRAINING_WINDOW_DEFAULT_SECONDS = 183;
+  const TRAINING_WINDOW_MIN_SECONDS = 30;
+  const TRAINING_WINDOW_MAX_SECONDS = 600;
+
+  function trainingWindowSecondsFromStore(): number {
+    return Math.round(SETTINGS.live.general.state.trainingWindowMs / 1000);
+  }
+
+  let trainingWindowDraft = $state(String(trainingWindowSecondsFromStore()));
+
+  $effect(() => {
+    const next = String(trainingWindowSecondsFromStore());
+    if (untrack(() => trainingWindowDraft) !== next) {
+      trainingWindowDraft = next;
+    }
+  });
+
+  function commitTrainingWindow() {
+    const parsed = Number.parseInt(String(trainingWindowDraft).trim(), 10);
+    const seconds = Number.isFinite(parsed)
+      ? Math.min(
+          TRAINING_WINDOW_MAX_SECONDS,
+          Math.max(TRAINING_WINDOW_MIN_SECONDS, parsed),
+        )
+      : TRAINING_WINDOW_DEFAULT_SECONDS;
+    SETTINGS.live.general.state.trainingWindowMs = seconds * 1000;
+    trainingWindowDraft = String(seconds);
+  }
+
+  function onTrainingWindowKeydown(event: KeyboardEvent) {
+    if (event.key === "Enter") {
+      (event.currentTarget as HTMLInputElement).blur();
+    }
   }
 
   const tankedPlayerColumnOrder = $derived(
@@ -239,6 +276,18 @@
             max={2000}
             step={50}
             unit="ms"
+          />
+          <SettingsInput
+            bind:value={trainingWindowDraft}
+            type="number"
+            min={TRAINING_WINDOW_MIN_SECONDS}
+            max={TRAINING_WINDOW_MAX_SECONDS}
+            step={1}
+            placeholder={String(TRAINING_WINDOW_DEFAULT_SECONDS)}
+            label={t("settings.live.trainingWindow")}
+            description={t("settings.live.trainingWindowDescription")}
+            onblur={commitTrainingWindow}
+            onkeydown={onTrainingWindowKeydown}
           />
         </div>
       {/if}
