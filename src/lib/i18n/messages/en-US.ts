@@ -625,6 +625,9 @@ export const enUSMessages = {
     "Damage Taken (Skill Details) Columns",
   "settings.common.columns.orderHint":
     "Use arrows to reorder; use switches to show/hide.",
+  "settings.history.fantasyCastIcons": "Show Fantasy Icons",
+  "settings.history.fantasyCastIconsDescription":
+    "Show the two most recent fantasy types next to history player names. The selection on the timeline does not change them.",
   "settings.live.fantasyCastIcons": "Show Fantasy Icons",
   "settings.live.fantasyCastIconsDescription":
     "Show recently cast fantasy icons next to player names.",
@@ -1805,7 +1808,6 @@ export const enUSMessages = {
   "minimap.s3SeaRingedReef.boss.waterWave": "Sea Wave Safe",
   "minimap.s3SeaRingedReef.boss.crossSafe": "Cross Intersection",
   "minimap.s3SeaRingedReef.boss.singleWaveSafe": "Single Wave Safe",
-  "minimap.s3SeaRingedReef.boss.crossSafeSelf": "(me)",
   "minimap.s3SeaRingedReef.boss.vertical": "Vertical",
   "minimap.s3SeaRingedReef.boss.horizontal": "Horizontal",
   "minimap.s3SeaRingedReef.boss.pizzaGroup": "Pizza Danger Zone",

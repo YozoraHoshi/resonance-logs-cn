@@ -525,13 +525,13 @@ mod tests {
     use super::*;
     use crate::database::commands::{BossSummaryDto, EncounterSummaryDto};
     use crate::database::history_codec::{
-        HistoryCastKind, HistoryChunker, HistoryEntityContext, HistoryEnvelope, HistoryEvent,
-        HistoryHit, HistoryMetric, HistorySkillCast, MAX_EVENTS_PER_CHUNK, decode_history_chunk,
-        encode_history_chunk,
+        decode_history_chunk, encode_history_chunk, HistoryCastKind, HistoryChunker,
+        HistoryEntityContext, HistoryEnvelope, HistoryEvent, HistoryHit, HistoryMetric,
+        HistorySkillCast, MAX_EVENTS_PER_CHUNK,
     };
     use crate::database::history_query::{
-        HistoryProjectionReducer, encode_detail_projection, load_encounter_detail_query,
-        project_encounter_detail,
+        encode_detail_projection, load_encounter_detail_query, project_encounter_detail,
+        HistoryProjectionReducer,
     };
 
     #[derive(Debug, QueryableByName)]
@@ -727,11 +727,9 @@ mod tests {
             load_chunks_for_range(&mut conn, encounter_id, 0, 1).expect("load persisted chunks");
         assert_eq!(stored.len(), written_chunks);
         assert!(stored.len() > 1);
-        assert!(
-            stored
-                .iter()
-                .all(|chunk| chunk.event_count <= MAX_EVENTS_PER_CHUNK as u64)
-        );
+        assert!(stored
+            .iter()
+            .all(|chunk| chunk.event_count <= MAX_EVENTS_PER_CHUNK as u64));
         assert_eq!(
             stored.iter().map(|chunk| chunk.event_count).sum::<u64>(),
             HIT_COUNT
@@ -830,11 +828,9 @@ mod tests {
             ),
             [2]
         );
-        assert!(
-            load_chunks_for_range(&mut conn, encounter_id, 1_000, 1_000)
-                .expect("load empty range")
-                .is_empty()
-        );
+        assert!(load_chunks_for_range(&mut conn, encounter_id, 1_000, 1_000)
+            .expect("load empty range")
+            .is_empty());
     }
 
     #[test]
@@ -854,6 +850,7 @@ mod tests {
                     caster_entity_id: 1,
                     skill_id: 42,
                     kind: HistoryCastKind::KeySkill,
+                    remodel_level: None,
                 }),
             }],
         )

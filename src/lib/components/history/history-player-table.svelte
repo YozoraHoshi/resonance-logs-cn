@@ -13,6 +13,8 @@
     historyHealPlayerColumns,
     historyTankedPlayerColumns,
   } from "$lib/column-data";
+  import FantasyCastIcons from "$lib/components/fantasy-cast-icons.svelte";
+  import type { FantasyCastDisplay } from "$lib/fantasy-icons";
   import type { HistoryPlayerRow } from "$lib/history-derived";
   import { t } from "$lib/i18n/index.svelte";
   import getDisplayName from "$lib/name-display";
@@ -31,6 +33,7 @@
     metric,
     nameHeader = null,
     totalRow = null,
+    fantasyCastsByEntity = undefined,
     onSelect,
   }: {
     rows: HistoryPlayerRow[];
@@ -39,6 +42,7 @@
     nameHeader?: string | null;
     /** Optional pinned aggregate row rendered first with a full-width glow. */
     totalRow?: HistoryPlayerRow | null;
+    fantasyCastsByEntity?: ReadonlyMap<string, FantasyCastDisplay[]>;
     onSelect: (row: HistoryPlayerRow) => void;
   } = $props();
 
@@ -104,6 +108,10 @@
   }
 
   /** Whether a numeric column renders through the abbreviation component. */
+  function fantasyCastsFor(row: HistoryPlayerRow): FantasyCastDisplay[] {
+    return fantasyCastsByEntity?.get(row.entityUuid) ?? [];
+  }
+
   function shouldAbbreviate(key: string): boolean {
     if (metric === "tanked") {
       return (
@@ -122,6 +130,7 @@
 </script>
 
 {#snippet playerRow(row: HistoryPlayerRow, glow: number)}
+  {@const casts = fantasyCastsFor(row)}
   <tr
     class="border-border/40 hover:bg-muted/60 relative cursor-pointer border-t transition-colors"
     onclick={() => onSelect(row)}
@@ -179,6 +188,9 @@
             >
           {/if}
         </span>
+        {#if casts.length > 0}
+          <FantasyCastIcons {casts} size={20} />
+        {/if}
       </div>
     </td>
     {#each visibleColumns as col (col.key)}

@@ -20,6 +20,8 @@ export type EncounterTimelineEvent = {
   casterUuid: string;
   skillId: number;
   kind: HistoryCastKind;
+  /** Fantasy remodel tier when recorded. Absent on older encounters. */
+  remodelLevel: number | null;
 };
 
 const METRIC_DAMAGE = 0;

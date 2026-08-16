@@ -12,18 +12,18 @@ use crate::live::projections::combat::accumulator::{
     CombatantStats,
 };
 use crate::live::projections::combat::stats::class::{
-    ClassSpec, get_class_id_from_spec, get_class_spec,
+    get_class_id_from_spec, get_class_spec, ClassSpec,
 };
 use crate::live::projections::combat::stats::{CombatStats, Skill, SkillTargetStats};
 
 use super::commands::EncounterSummaryDto;
 use super::event_journal::{
-    EncounterHistoryDescriptor, EventJournalError, StoredHistoryChunk, StoredProjection,
     load_all_chunks, load_chunks_for_range, load_encounter_descriptor, load_projection,
+    EncounterHistoryDescriptor, EventJournalError, StoredHistoryChunk, StoredProjection,
 };
 use super::history_codec::{
-    HistoryCastKind, HistoryChunkDocument, HistoryCodecError, HistoryEntityContext,
-    HistoryEnvelope, HistoryEvent, HistoryMetric, decode_history_chunk,
+    decode_history_chunk, HistoryCastKind, HistoryChunkDocument, HistoryCodecError,
+    HistoryEntityContext, HistoryEnvelope, HistoryEvent, HistoryMetric,
 };
 
 const KNOWN_QUALITY_FLAGS: i32 = (1 << 3) - 1;
@@ -171,6 +171,9 @@ pub struct EncounterMarkerData {
     pub caster_entity_id: String,
     pub skill_id: String,
     pub kind: HistoryCastKind,
+    /// Fantasy remodel tier when recorded. Absent on older encounters and non-fantasy casts.
+    #[serde(default)]
+    pub remodel_level: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -376,6 +379,7 @@ impl HistoryProjectionReducer {
                     caster_entity_id: cast.caster_entity_id.to_string(),
                     skill_id: cast.skill_id.to_string(),
                     kind: cast.kind,
+                    remodel_level: cast.remodel_level,
                 })
             }
             HistoryEvent::SkillCast(_) => {}
@@ -1169,7 +1173,7 @@ fn empty_summary(encounter_id: i32) -> EncounterSummaryDto {
 mod tests {
     use super::*;
     use crate::database::history_codec::{
-        HistoryDeath, HistoryHit, HistoryStream, encode_history_chunk,
+        encode_history_chunk, HistoryDeath, HistoryHit, HistorySkillCast, HistoryStream,
     };
     use crate::live::projections::combat::accumulator::CombatHitFlags;
     use crate::live::projections::death::{
@@ -2000,5 +2004,37 @@ mod tests {
         let entity = &range.entities[0];
         assert_eq!(entity.class_spec, Some(15));
         assert_eq!(entity.class_spec_name.as_deref(), Some("Recovery"));
+    }
+
+    #[test]
+    fn skill_cast_markers_preserve_remodel_level() {
+        let mut reducer = HistoryProjectionReducer::new(0..10_000, 1_000).expect("reducer");
+        reducer.apply(&HistoryEnvelope {
+            sequence: 1,
+            offset_ms: 250,
+            event: HistoryEvent::SkillCast(HistorySkillCast {
+                caster_entity_id: 1,
+                skill_id: 77,
+                kind: HistoryCastKind::Fantasy,
+                remodel_level: Some(5),
+            }),
+        });
+        reducer.apply(&HistoryEnvelope {
+            sequence: 2,
+            offset_ms: 400,
+            event: HistoryEvent::SkillCast(HistorySkillCast {
+                caster_entity_id: 1,
+                skill_id: 2316,
+                kind: HistoryCastKind::KeySkill,
+                remodel_level: None,
+            }),
+        });
+
+        let range = reducer.finish_range(1);
+        assert_eq!(range.markers.len(), 2);
+        assert_eq!(range.markers[0].kind, HistoryCastKind::Fantasy);
+        assert_eq!(range.markers[0].remodel_level, Some(5));
+        assert_eq!(range.markers[1].kind, HistoryCastKind::KeySkill);
+        assert_eq!(range.markers[1].remodel_level, None);
     }
 }

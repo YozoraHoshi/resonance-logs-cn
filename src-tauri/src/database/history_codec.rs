@@ -156,6 +156,9 @@ pub struct HistorySkillCast {
     pub caster_entity_id: i64,
     pub skill_id: i64,
     pub kind: HistoryCastKind,
+    /// Fantasy remodel tier when recorded. Absent on older chunks and non-fantasy casts.
+    #[serde(default)]
+    pub remodel_level: Option<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -204,7 +207,7 @@ impl HistoryEvent {
             // Include wide integer values and the sequence/offset columns in
             // the estimate so the encoded document stays near the 1 MiB goal.
             Self::Hit(_) => 384,
-            Self::SkillCast(_) => 56,
+            Self::SkillCast(_) => 72,
             Self::Death(death) => estimated_death_size(death),
             Self::EntityContext(context) => 96 + context.name.as_ref().map_or(0, String::len),
         }
@@ -891,6 +894,7 @@ mod tests {
                 caster_entity_id: 1,
                 skill_id: 100,
                 kind: HistoryCastKind::KeySkill,
+                remodel_level: None,
             }),
         }
     }
@@ -998,12 +1002,10 @@ mod tests {
     fn time_threshold_seals_before_two_second_span() {
         let mut chunker = HistoryChunker::new(1).expect("create chunker");
         assert!(chunker.push(hit(0, 0, 1)).expect("first hit").is_none());
-        assert!(
-            chunker
-                .push(hit(1, MAX_CHUNK_SPAN_MS - 1, 1))
-                .expect("hit inside span")
-                .is_none()
-        );
+        assert!(chunker
+            .push(hit(1, MAX_CHUNK_SPAN_MS - 1, 1))
+            .expect("hit inside span")
+            .is_none());
         let sealed = chunker
             .push(hit(2, MAX_CHUNK_SPAN_MS, 1))
             .expect("hit at span boundary")
@@ -1041,5 +1043,78 @@ mod tests {
         assert_eq!(chunk.first_sequence, 7);
         assert_eq!(chunk.last_sequence, 7);
         assert_eq!(chunk.event_count, 1);
+    }
+
+    #[test]
+    fn legacy_skill_cast_without_remodel_level_decodes_as_none() {
+        #[derive(Serialize)]
+        #[serde(rename_all = "camelCase")]
+        struct LegacySkillCast {
+            caster_entity_id: i64,
+            skill_id: i64,
+            kind: HistoryCastKind,
+        }
+
+        #[derive(Serialize)]
+        #[serde(tag = "type", content = "data", rename_all = "snake_case")]
+        enum LegacyHistoryEvent {
+            SkillCast(LegacySkillCast),
+        }
+
+        #[derive(Serialize)]
+        #[serde(rename_all = "camelCase")]
+        struct LegacyChunkDocument {
+            stream_kind: HistoryStream,
+            sequences: Vec<u64>,
+            offsets_ms: Vec<u64>,
+            events: Vec<LegacyHistoryEvent>,
+        }
+
+        let encoded = rmp_serde::to_vec_named(&LegacyChunkDocument {
+            stream_kind: HistoryStream::Timeline,
+            sequences: vec![1],
+            offsets_ms: vec![10],
+            events: vec![LegacyHistoryEvent::SkillCast(LegacySkillCast {
+                caster_entity_id: 1,
+                skill_id: 77,
+                kind: HistoryCastKind::Fantasy,
+            })],
+        })
+        .expect("encode legacy document");
+        let compressed = zstd::encode_all(&encoded[..], 3).expect("compress legacy document");
+        let document = decode_history_chunk(&compressed, HistoryStream::Timeline)
+            .expect("decode legacy skill cast");
+        let HistoryEvent::SkillCast(cast) = &document.events[0] else {
+            panic!("expected skill cast");
+        };
+        assert_eq!(cast.skill_id, 77);
+        assert_eq!(cast.kind, HistoryCastKind::Fantasy);
+        assert_eq!(cast.remodel_level, None);
+    }
+
+    #[test]
+    fn skill_cast_remodel_level_round_trips() {
+        let chunk = encode_history_chunk(
+            1,
+            HistoryStream::Timeline,
+            0,
+            vec![HistoryEnvelope {
+                sequence: 1,
+                offset_ms: 10,
+                event: HistoryEvent::SkillCast(HistorySkillCast {
+                    caster_entity_id: 1,
+                    skill_id: 77,
+                    kind: HistoryCastKind::Fantasy,
+                    remodel_level: Some(5),
+                }),
+            }],
+        )
+        .expect("encode fantasy cast");
+        let document = decode_history_chunk(&chunk.data, HistoryStream::Timeline)
+            .expect("decode fantasy cast");
+        let HistoryEvent::SkillCast(cast) = &document.events[0] else {
+            panic!("expected skill cast");
+        };
+        assert_eq!(cast.remodel_level, Some(5));
     }
 }

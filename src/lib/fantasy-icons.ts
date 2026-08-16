@@ -10,6 +10,7 @@
  * `FANTASY_PLACEHOLDER_ICON_PATH`, since showing a wrong icon is worse than
  * showing a generic one.
  */
+import type { EncounterTimelineEvent } from "$lib/components/encounter-timeline/timeline-data";
 import { resolveMonsterName } from "$lib/config/game-names";
 import { findResonanceSkill } from "$lib/skill-mappings";
 
@@ -62,4 +63,62 @@ export function resolveFantasyDisplayName(
       ? undefined
       : findResonanceSkill(resonanceSkillId)?.name;
   return skillName ?? stripFantasySuffix(resolveMonsterName(monsterId));
+}
+
+export type FantasyCastDisplay = {
+  id: string;
+  name: string;
+  iconPath: string;
+  remodelLevel: number | null;
+};
+
+const RECENT_FANTASY_CAST_LIMIT = 2;
+
+type FantasyTimelineEvent = Pick<
+  EncounterTimelineEvent,
+  "kind" | "casterUuid" | "skillId" | "tsOffsetMs" | "remodelLevel"
+>;
+
+/** Latest two distinct fantasy types per caster, newest first. */
+export function recentFantasyCastsByEntity(
+  events: readonly FantasyTimelineEvent[],
+): Map<string, FantasyCastDisplay[]> {
+  const latestByCasterAndSkill = new Map<
+    string,
+    Map<number, FantasyTimelineEvent>
+  >();
+
+  for (const event of events) {
+    if (event.kind !== "fantasy") continue;
+    let bySkill = latestByCasterAndSkill.get(event.casterUuid);
+    if (!bySkill) {
+      bySkill = new Map();
+      latestByCasterAndSkill.set(event.casterUuid, bySkill);
+    }
+    const current = bySkill.get(event.skillId);
+    if (!current || event.tsOffsetMs > current.tsOffsetMs) {
+      bySkill.set(event.skillId, event);
+    }
+  }
+
+  const result = new Map<string, FantasyCastDisplay[]>();
+  for (const [casterUuid, bySkill] of latestByCasterAndSkill) {
+    const casts = [...bySkill.values()]
+      .sort((left, right) => right.tsOffsetMs - left.tsOffsetMs)
+      .flatMap((event) => {
+        const icon = resolveFantasyIcon(event.skillId);
+        if (icon.isPlaceholder) return [];
+        return [
+          {
+            id: String(event.skillId),
+            name: resolveFantasyDisplayName(event.skillId, event.skillId),
+            iconPath: icon.iconPath,
+            remodelLevel: event.remodelLevel,
+          },
+        ];
+      })
+      .slice(0, RECENT_FANTASY_CAST_LIMIT);
+    if (casts.length > 0) result.set(casterUuid, casts);
+  }
+  return result;
 }

@@ -554,6 +554,9 @@ export const zhCNMessages = {
   "settings.history.timeline.curveH": "时间轴曲线高度",
   "settings.history.timeline.curveHDescription":
     "历史详情 DPS 曲线区域的高度，与泳道行高相互独立。",
+  "settings.history.fantasyCastIcons": "显示幻想图标",
+  "settings.history.fantasyCastIconsDescription":
+    "在历史玩家名称旁显示整场最近释放的 2 种幻想图标，不随时间轴框选变化。",
   "settings.common.columns.dpsPlayers": "DPS（玩家）列",
   "settings.common.columns.dpsSkills": "DPS（技能明细）列",
   "settings.common.columns.healPlayers": "治疗（玩家）列",
@@ -1675,7 +1678,6 @@ export const zhCNMessages = {
   "minimap.s3SeaRingedReef.boss.waterWave": "海浪安全",
   "minimap.s3SeaRingedReef.boss.crossSafe": "十字交点",
   "minimap.s3SeaRingedReef.boss.singleWaveSafe": "单浪安全",
-  "minimap.s3SeaRingedReef.boss.crossSafeSelf": "(我)",
   "minimap.s3SeaRingedReef.boss.vertical": "竖线",
   "minimap.s3SeaRingedReef.boss.horizontal": "横线",
   "minimap.s3SeaRingedReef.boss.pizzaGroup": "披萨危险区",

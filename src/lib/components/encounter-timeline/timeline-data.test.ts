@@ -194,7 +194,9 @@ describe("teammateAverageCurves", () => {
     );
 
     expect(result.map((row) => row.entityUuid)).toEqual(["b", "a"]);
-    expect(result[0]?.curve).toEqual(toCumulativeDpsCurve([50, 50, 0], 1_000, 3_000));
+    expect(result[0]?.curve).toEqual(
+      toCumulativeDpsCurve([50, 50, 0], 1_000, 3_000),
+    );
     expect(result[1]?.curve).toEqual(
       toCumulativeDpsCurve([100, 0, 200], 1_000, 3_000),
     );
@@ -488,7 +490,10 @@ function hoverPoint(
   sequence: number,
   timeMs: number,
   extras: Partial<
-    Pick<EncounterTimelineEvent, "kind" | "skillId" | "casterUuid">
+    Pick<
+      EncounterTimelineEvent,
+      "kind" | "skillId" | "casterUuid" | "remodelLevel"
+    >
   > = {},
 ) {
   return {
@@ -499,6 +504,7 @@ function hoverPoint(
       casterUuid: extras.casterUuid ?? "1",
       skillId: extras.skillId ?? 3946,
       kind: extras.kind ?? ("fantasy" as const),
+      remodelLevel: extras.remodelLevel ?? null,
     },
   };
 }

@@ -605,7 +605,11 @@ export type EncounterEntityData = { entityId: string; displayUid: number; name: 
  */
 classSpecName?: string | null; abilityScore: number | null; seasonStrength: number | null; monsterId: number | null; totals: EncounterTotalsData; skills: EncounterSkillData[]; damageTargets: EncounterTargetBreakdownData[]; healingTargets: EncounterTargetBreakdownData[]; takenSources: EncounterSourceBreakdownData[]; deaths: EncounterDeathData[] }
 export type EncounterFiltersDto = { bossMonsterIds: number[] | null; sceneIds: number[] | null; playerName: string | null; playerNames: string[] | null; dateFromMs: number | null; dateToMs: number | null; isFavorite: boolean | null }
-export type EncounterMarkerData = { offsetMs: number; sequence: number; casterEntityId: string; skillId: string; kind: HistoryCastKind }
+export type EncounterMarkerData = { offsetMs: number; sequence: number; casterEntityId: string; skillId: string; kind: HistoryCastKind;
+/**
+ * Fantasy remodel tier when recorded. Absent on older encounters and non-fantasy casts.
+ */
+remodelLevel?: number | null }
 export type EncounterRangeData = { encounterId: number; qualityFlags: HistoryQualityFlag[]; startMs: number; endMsExclusive: number; bucketMs: number; totals: EncounterTotalsData; entities: EncounterEntityData[]; chartPoints: EncounterChartPointData[]; series?: EncounterChartSeriesData[]; markers: EncounterMarkerData[] }
 export type EncounterSkillData = { skillId: string; metric: HistoryMetric; property: number | null; damageMode: number | null; stats: EncounterStatsData }
 export type EncounterSourceBreakdownData = { sourceMonsterId: number | null; stats: EncounterStatsData; skills: EncounterSkillData[] }

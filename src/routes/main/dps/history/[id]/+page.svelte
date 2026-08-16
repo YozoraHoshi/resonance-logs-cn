@@ -31,10 +31,12 @@
   import { formatDateTime, t, type MessageKey } from "$lib/i18n/index.svelte";
   import { ipcBigInt, ipcCompare, ipcNumber } from "$lib/ipc-decimal";
   import getDisplayName from "$lib/name-display";
-  import { settings } from "$lib/settings-store";
+  import { SETTINGS, settings } from "$lib/settings-store";
   import {
+    recentFantasyCastsByEntity,
     resolveFantasyDisplayName,
     resolveFantasyIcon,
+    type FantasyCastDisplay,
   } from "$lib/fantasy-icons";
   import { findKeySkillMarker } from "$lib/skill-mappings";
   import { buildSourceEntities } from "$lib/tanked-source-derived";
@@ -366,8 +368,16 @@
       casterUuid: marker.casterEntityId,
       skillId: ipcNumber(marker.skillId),
       kind: marker.kind,
+      remodelLevel: marker.remodelLevel ?? null,
     })),
   );
+
+  const fantasyCastsByEntity = $derived.by(() => {
+    if (SETTINGS.history.general.state.showFantasyCastIcons !== true) {
+      return new Map<string, FantasyCastDisplay[]>();
+    }
+    return recentFantasyCastsByEntity(timelineEvents);
+  });
 
   const timelinePlayers = $derived.by(() =>
     (detail?.entities ?? [])
@@ -869,6 +879,7 @@
         {:else}
           <HistoryPlayerTable
             rows={displayedPlayers}
+            {fantasyCastsByEntity}
             metric={activeTab === "healing"
               ? "heal"
               : activeTab === "tanked"

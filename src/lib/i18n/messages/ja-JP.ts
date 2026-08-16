@@ -611,6 +611,9 @@ export const jaJPMessages = {
   "settings.common.columns.tankedSkills": "被ダメージ（スキル詳細）列",
   "settings.common.columns.orderHint":
     "矢印で並べ替え、スイッチで表示/非表示を切り替えます。",
+  "settings.history.fantasyCastIcons": "幻想アイコンを表示",
+  "settings.history.fantasyCastIconsDescription":
+    "履歴のプレイヤー名の横に、戦闘全体で最近使用した幻想2種のアイコンを表示します。タイムラインの範囲選択では変わりません。",
   "settings.live.fantasyCastIcons": "幻想アイコンを表示",
   "settings.live.fantasyCastIconsDescription":
     "プレイヤー名の横に最近使用した幻想のアイコンを表示します。",
@@ -1793,7 +1796,6 @@ export const jaJPMessages = {
   "minimap.s3SeaRingedReef.boss.waterWave": "海浪安全",
   "minimap.s3SeaRingedReef.boss.crossSafe": "十字交点",
   "minimap.s3SeaRingedReef.boss.singleWaveSafe": "単波安全",
-  "minimap.s3SeaRingedReef.boss.crossSafeSelf": "(私)",
   "minimap.s3SeaRingedReef.boss.vertical": "縦線",
   "minimap.s3SeaRingedReef.boss.horizontal": "横線",
   "minimap.s3SeaRingedReef.boss.pizzaGroup": "ピザ危険区域",
