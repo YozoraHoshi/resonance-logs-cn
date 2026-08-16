@@ -9,6 +9,7 @@ import {
   laneMarkerTier,
   normalizeEncounterBrushRange,
   panViewportWindow,
+  resolveHoverDisplayTimeMs,
   sliceLanePointsByTime,
   timeToX,
   teammateAverageCurves,
@@ -536,5 +537,15 @@ describe("collapseHoverLanePoints", () => {
   it("passes a single point through", () => {
     const only = hoverPoint(1, 50);
     expect(collapseHoverLanePoints([only])).toEqual([only]);
+  });
+});
+
+describe("resolveHoverDisplayTimeMs", () => {
+  it("uses the nearest event time when one is present", () => {
+    expect(resolveHoverDisplayTimeMs(12_345, 10_000)).toBe(10_000);
+  });
+
+  it("keeps the pointer time when no event is hit", () => {
+    expect(resolveHoverDisplayTimeMs(12_345, undefined)).toBe(12_345);
   });
 });

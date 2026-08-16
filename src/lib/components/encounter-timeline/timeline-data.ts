@@ -452,6 +452,14 @@ export function collapseHoverLanePoints<T extends HoverLanePoint>(
   return kept;
 }
 
+/** Tooltip/crosshair time: snap to the nearest hit event, else keep the pointer. */
+export function resolveHoverDisplayTimeMs(
+  pointerTimeMs: number,
+  nearestEventTimeMs: number | undefined,
+): number {
+  return nearestEventTimeMs ?? pointerTimeMs;
+}
+
 // ---------------------------------------------------------------------------
 // Zoom tier: discrete step (rather than continuous scaling) so lane row
 // height / icon size only re-layout when the viewport crosses a threshold,

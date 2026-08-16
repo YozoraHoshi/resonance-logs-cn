@@ -6,6 +6,7 @@
   import {
     collapseHoverLanePoints,
     interpolateCurveValue,
+    resolveHoverDisplayTimeMs,
     type EncounterCurvePoint,
     type EncounterTimelineEvent,
   } from "./timeline-data";
@@ -125,7 +126,21 @@
       (hoverLaneEvents.length > 0 || hoverCurveInfo !== null),
   );
 
-  const tooltipLeftPct = $derived(hoverPoint ? toLeftPct(hoverPoint.timeMs) : 0);
+  const displayTimeMs = $derived(
+    resolveHoverDisplayTimeMs(hoverPoint?.timeMs ?? 0, hoverLaneEvents[0]?.timeMs),
+  );
+
+  const showHeaderTime = $derived(hoverLaneEvents.length <= 1);
+
+  const showPerEventTime = $derived.by(() => {
+    const first = hoverLaneEvents[0]?.timeMs;
+    return (
+      hoverLaneEvents.length > 1 &&
+      hoverLaneEvents.some((point) => point.timeMs !== first)
+    );
+  });
+
+  const tooltipLeftPct = $derived(toLeftPct(displayTimeMs));
   const tooltipFlip = $derived(tooltipLeftPct > 65);
 
   const brushRectStyle = $derived.by(() => {
@@ -161,7 +176,9 @@
       class:tl-tooltip--flip={tooltipFlip}
       style="left: {tooltipLeftPct}%; top: {hoverPoint.y}px"
     >
-      <div class="tl-tooltip-time">{formatTimeMs(hoverPoint.timeMs, true)}</div>
+      {#if showHeaderTime}
+        <div class="tl-tooltip-time">{formatTimeMs(displayTimeMs, true)}</div>
+      {/if}
       {#if hoverLaneIndex !== null}
         {#each hoverLaneEvents as point (point.event.sequence)}
           {@const display = resolveEvent(point.event)}
@@ -170,10 +187,10 @@
               <img src={display.iconPath} alt="" class="tl-tooltip-icon" />
             {/if}
             <span class="tl-tooltip-name">{display.name}</span>
+            {#if showPerEventTime}
+              <span class="tl-tooltip-event-time">{formatTimeMs(point.timeMs, true)}</span>
+            {/if}
           </div>
-          {#if display.casterName}
-            <div class="tl-tooltip-sub">{display.casterName}</div>
-          {/if}
         {/each}
       {:else if hoverCurveInfo}
         {#if hoverCurveInfo.instant !== null}
@@ -264,10 +281,11 @@
     line-height: 1.5;
   }
 
-  .tl-tooltip-sub {
+  .tl-tooltip-event-time {
+    margin-left: auto;
     color: var(--tl-fg-muted);
     font-size: 10px;
-    margin-bottom: 2px;
+    font-variant-numeric: tabular-nums;
   }
 
   .tl-tooltip-icon {
