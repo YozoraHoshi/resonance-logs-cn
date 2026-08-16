@@ -31,6 +31,15 @@ const SIZES = {
   iconSize: 24,
 };
 
+export const DEFAULT_LANE_H = SIZES.laneH;
+export const DEFAULT_CURVE_H = SIZES.curveH;
+export const DEFAULT_ICON_SIZE = SIZES.iconSize;
+
+export const MIN_LANE_H = 28;
+export const MAX_LANE_H = 88;
+export const MIN_CURVE_H = 120;
+export const MAX_CURVE_H = 640;
+
 /** Min horizontal gap (px) before a lane marker may show a labelled pill
  * instead of degrading to a tick or dot. Sized for a short abbreviated name. */
 export const LABEL_MIN_GAP_PX = 50;
@@ -50,6 +59,11 @@ const ZOOM_TIER_SCALE: readonly [number, number, number] = [1, 1.35, 1.7];
 
 export type TimelineSizes = typeof SIZES;
 
+export type TimelineSizeOverrides = {
+  laneH?: number;
+  curveH?: number;
+};
+
 export type ComputedTimelineLayout = TimelineSizes & {
   gutter: number;
   laneTop: number;
@@ -62,20 +76,46 @@ export type ComputedTimelineLayout = TimelineSizes & {
   totalHeight: number;
 };
 
+export function zoomTierScale(zoomTier: ZoomTier): number {
+  return ZOOM_TIER_SCALE[zoomTier] ?? 1;
+}
+
+export function clampLaneH(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_LANE_H;
+  return Math.min(MAX_LANE_H, Math.max(MIN_LANE_H, Math.round(value)));
+}
+
+export function clampCurveH(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_CURVE_H;
+  return Math.min(MAX_CURVE_H, Math.max(MIN_CURVE_H, Math.round(value)));
+}
+
+/** Convert a zoom-scaled displayed row height back to the persisted base. */
+export function displayedLaneHToBase(
+  displayedLaneH: number,
+  zoomTier: ZoomTier,
+): number {
+  return clampLaneH(displayedLaneH / zoomTierScale(zoomTier));
+}
+
 export function computeTimelineLayout(
   laneCount: number,
   zoomTier: ZoomTier = 0,
+  sizes?: TimelineSizeOverrides,
 ): ComputedTimelineLayout {
-  const scale = ZOOM_TIER_SCALE[zoomTier] ?? 1;
-  const laneH = Math.round(SIZES.laneH * scale);
-  const iconSize = Math.round(SIZES.iconSize * scale);
+  const scale = zoomTierScale(zoomTier);
+  const baseLaneH = clampLaneH(sizes?.laneH ?? SIZES.laneH);
+  const curveH = clampCurveH(sizes?.curveH ?? SIZES.curveH);
+  const laneH = Math.round(baseLaneH * scale);
+  const iconSize = Math.round(SIZES.iconSize * (laneH / SIZES.laneH));
   const lanesHeight = laneCount * laneH;
   const curveTop = LANE_TOP + lanesHeight + LANE_GAP;
-  const totalHeight = curveTop + SIZES.curveH;
+  const totalHeight = curveTop + curveH;
   return {
     ...SIZES,
     laneH,
     iconSize,
+    curveH,
     gutter: GUTTER,
     laneTop: LANE_TOP,
     laneGap: LANE_GAP,

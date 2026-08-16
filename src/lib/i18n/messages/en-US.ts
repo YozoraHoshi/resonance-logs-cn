@@ -498,7 +498,11 @@ export const enUSMessages = {
   "history.timeline.zoom.windowLabel": "{start} - {end} / {duration}",
   "history.timeline.zoom.reset": "Reset zoom",
   "history.timeline.hint.gestures":
-    "Drag to select · Shift+drag to pan · Scroll to zoom · Double-click to reset",
+    "Drag to select · Shift+drag to pan · Scroll to zoom · Double-click to reset · Drag edges to resize",
+  "history.timeline.resize.lane":
+    "Drag to resize lane height, double-click to reset",
+  "history.timeline.resize.curve":
+    "Drag to resize curve height, double-click to reset",
   "tanked.monster.unknownSource": "Unknown source",
   "live.tanked.monsters.title": "Damage source",
   "history.detail.table.player": "Player",
@@ -602,6 +606,12 @@ export const enUSMessages = {
   "settings.common.decimalPlaces.2": "2 digits (1.23m)",
   "settings.common.decimalPlaces.3": "3 digits (1.234m)",
   "settings.common.decimalPlaces.4": "4 digits (1.2345m)",
+  "settings.history.timeline.laneH": "Timeline lane height",
+  "settings.history.timeline.laneHDescription":
+    "Base row height for each history timeline lane. Zooming in still grows rows by tier.",
+  "settings.history.timeline.curveH": "Timeline curve height",
+  "settings.history.timeline.curveHDescription":
+    "Height of the DPS curve area on the history timeline, independent of lane height.",
   "settings.common.columns.dpsPlayers": "DPS (Player) Columns",
   "settings.common.columns.dpsSkills": "DPS (Skill Details) Columns",
   "settings.common.columns.healPlayers": "Healing (Player) Columns",

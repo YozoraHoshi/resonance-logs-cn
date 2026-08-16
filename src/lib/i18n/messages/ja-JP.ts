@@ -481,7 +481,11 @@ export const jaJPMessages = {
   "history.timeline.zoom.windowLabel": "{start} - {end} / {duration}",
   "history.timeline.zoom.reset": "ズームをリセット",
   "history.timeline.hint.gestures":
-    "ドラッグで範囲選択 · Shift+ドラッグでパン · スクロールでズーム · ダブルクリックでリセット",
+    "ドラッグで範囲選択 · Shift+ドラッグでパン · スクロールでズーム · ダブルクリックでリセット · 下端をドラッグして高さを調整",
+  "history.timeline.resize.lane":
+    "ドラッグでレーン高さを変更、ダブルクリックでリセット",
+  "history.timeline.resize.curve":
+    "ドラッグで曲線の高さを変更、ダブルクリックでリセット",
   "tanked.monster.unknownSource": "不明なソース",
   "live.tanked.monsters.title": "ダメージソース",
   "history.detail.table.player": "プレイヤー",
@@ -589,6 +593,12 @@ export const jaJPMessages = {
   "settings.common.decimalPlaces.2": "2桁（1.23m）",
   "settings.common.decimalPlaces.3": "3桁（1.234m）",
   "settings.common.decimalPlaces.4": "4桁（1.2345m）",
+  "settings.history.timeline.laneH": "タイムラインのレーン高さ",
+  "settings.history.timeline.laneHDescription":
+    "履歴タイムライン各レーンの基準行高。横方向にズームインすると段階的にさらに高くなります。",
+  "settings.history.timeline.curveH": "タイムラインの曲線高さ",
+  "settings.history.timeline.curveHDescription":
+    "履歴タイムラインの DPS 曲線エリアの高さ。レーン高さとは独立しています。",
   "settings.common.columns.dpsPlayers": "DPS（プレイヤー）列",
   "settings.common.columns.dpsSkills": "DPS（スキル詳細）列",
   "settings.common.columns.healPlayers": "回復（プレイヤー）列",

@@ -446,7 +446,9 @@ export const zhCNMessages = {
   "history.timeline.zoom.windowLabel": "{start} - {end} / {duration}",
   "history.timeline.zoom.reset": "重置缩放",
   "history.timeline.hint.gestures":
-    "拖拽选区 · Shift+拖拽平移 · 滚轮缩放 · 双击重置",
+    "拖拽选区 · Shift+拖拽平移 · 滚轮缩放 · 双击重置 · 拖底边调高度",
+  "history.timeline.resize.lane": "拖拽调整泳道行高，双击恢复默认",
+  "history.timeline.resize.curve": "拖拽调整曲线高度，双击恢复默认",
   "tanked.monster.unknownSource": "未知来源",
   "live.tanked.monsters.title": "伤害来源",
   "history.detail.table.player": "玩家",
@@ -542,6 +544,12 @@ export const zhCNMessages = {
   "settings.common.decimalPlaces.2": "2位 (1.23m)",
   "settings.common.decimalPlaces.3": "3位 (1.234m)",
   "settings.common.decimalPlaces.4": "4位 (1.2345m)",
+  "settings.history.timeline.laneH": "时间轴泳道行高",
+  "settings.history.timeline.laneHDescription":
+    "历史详情时间轴每条泳道的基准行高。横向缩进后仍会按档位变高。",
+  "settings.history.timeline.curveH": "时间轴曲线高度",
+  "settings.history.timeline.curveHDescription":
+    "历史详情 DPS 曲线区域的高度，与泳道行高相互独立。",
   "settings.common.columns.dpsPlayers": "DPS（玩家）列",
   "settings.common.columns.dpsSkills": "DPS（技能明细）列",
   "settings.common.columns.healPlayers": "治疗（玩家）列",

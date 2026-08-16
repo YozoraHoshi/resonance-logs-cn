@@ -28,6 +28,7 @@
   import ZoomInIcon from "@lucide/svelte/icons/zoom-in";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { t } from "$lib/i18n/index.svelte";
+  import { SETTINGS } from "$lib/settings-store";
   import { tooltip } from "$lib/utils.svelte";
   import { laneColor, playerColor } from "./timeline-colors";
   import {
@@ -39,7 +40,14 @@
     type EncounterTimelineEvent,
   } from "./timeline-data";
   import { formatTimeMs } from "./timeline-format";
-  import { RIGHT_PADDING, computeTimelineLayout } from "./timeline-layout";
+  import {
+    DEFAULT_CURVE_H,
+    DEFAULT_LANE_H,
+    RIGHT_PADDING,
+    clampCurveH,
+    computeTimelineLayout,
+    displayedLaneHToBase,
+  } from "./timeline-layout";
   import { timelineGestures } from "./timeline-gestures";
   import { TIMELINE_PALETTE, timelinePaletteCssVars } from "./timeline-palette";
   import TimelineCurve from "./timeline-curve.svelte";
@@ -47,6 +55,7 @@
   import TimelineLanes from "./timeline-lanes.svelte";
   import TimelineMinimap from "./timeline-minimap.svelte";
   import TimelineOverlay from "./timeline-overlay.svelte";
+  import TimelineResizeHandle from "./timeline-resize-handle.svelte";
   import type {
     Lane,
     LanePoint,
@@ -271,8 +280,83 @@
   // only reflows when the viewport crosses a threshold instead of on every
   // wheel tick. Drives `laneH`/`iconSize` growth; see timeline-layout.ts.
   let zoomTier = $derived(zoomTierFor(viewport.durationMs, viewport.spanMs));
-  let layout = $derived(computeTimelineLayout(lanes.length, zoomTier));
-  // `chart` only changes when a different encounter is loaded (range
+  // Draft heights live only while a resize handle is dragged, so pointermove
+  // does not write SETTINGS (and trigger saveOnChange) on every pixel.
+  let draftLaneH = $state<number | null>(null);
+  let draftCurveH = $state<number | null>(null);
+  let laneDrag: { startY: number; startLanesHeight: number } | null = null;
+  let curveDrag: { startY: number; startCurveH: number } | null = null;
+
+  const persistedLaneH = $derived(
+    SETTINGS.history.general.state.timelineLaneH ?? DEFAULT_LANE_H,
+  );
+  const persistedCurveH = $derived(
+    SETTINGS.history.general.state.timelineCurveH ?? DEFAULT_CURVE_H,
+  );
+  const baseLaneH = $derived(draftLaneH ?? persistedLaneH);
+  const baseCurveH = $derived(draftCurveH ?? persistedCurveH);
+  let layout = $derived(
+    computeTimelineLayout(lanes.length, zoomTier, {
+      laneH: baseLaneH,
+      curveH: baseCurveH,
+    }),
+  );
+
+  function beginLaneResize(clientY: number) {
+    laneDrag = { startY: clientY, startLanesHeight: layout.lanesHeight };
+    draftLaneH = persistedLaneH;
+  }
+
+  function moveLaneResize(clientY: number) {
+    if (!laneDrag || lanes.length === 0) return;
+    const nextLanesHeight = Math.max(
+      lanes.length,
+      laneDrag.startLanesHeight + (clientY - laneDrag.startY),
+    );
+    draftLaneH = displayedLaneHToBase(nextLanesHeight / lanes.length, zoomTier);
+  }
+
+  function endLaneResize() {
+    if (draftLaneH !== null) {
+      SETTINGS.history.general.state.timelineLaneH = draftLaneH;
+    }
+    draftLaneH = null;
+    laneDrag = null;
+  }
+
+  function resetLaneHeight() {
+    SETTINGS.history.general.state.timelineLaneH = DEFAULT_LANE_H;
+    draftLaneH = null;
+    laneDrag = null;
+  }
+
+  function beginCurveResize(clientY: number) {
+    curveDrag = { startY: clientY, startCurveH: layout.curveH };
+    draftCurveH = persistedCurveH;
+  }
+
+  function moveCurveResize(clientY: number) {
+    if (!curveDrag) return;
+    draftCurveH = clampCurveH(
+      curveDrag.startCurveH + (clientY - curveDrag.startY),
+    );
+  }
+
+  function endCurveResize() {
+    if (draftCurveH !== null) {
+      SETTINGS.history.general.state.timelineCurveH = draftCurveH;
+    }
+    draftCurveH = null;
+    curveDrag = null;
+  }
+
+  function resetCurveHeight() {
+    SETTINGS.history.general.state.timelineCurveH = DEFAULT_CURVE_H;
+    draftCurveH = null;
+    curveDrag = null;
+  }
+
+  // `chart` only changes when a different encounter is loaded (range)
   // recounts reuse the same full-encounter chart), so this effectively
   // resets zoom/pan on encounter switches without fighting user interaction.
   $effect(() => {
@@ -480,6 +564,34 @@
           {/if}
         </div>
       {/each}
+    </div>
+
+    {#if lanes.length > 0}
+      <div
+        class="absolute right-0 left-0"
+        style="top: {layout.laneTop + layout.lanesHeight}px;
+               height: {layout.laneGap}px"
+      >
+        <TimelineResizeHandle
+          ariaLabel={t("history.timeline.resize.lane")}
+          onDragStart={beginLaneResize}
+          onDrag={moveLaneResize}
+          onDragEnd={endLaneResize}
+          onReset={resetLaneHeight}
+        />
+      </div>
+    {/if}
+    <div
+      class="absolute right-0 left-0"
+      style="top: {layout.totalHeight - 8}px; height: 8px"
+    >
+      <TimelineResizeHandle
+        ariaLabel={t("history.timeline.resize.curve")}
+        onDragStart={beginCurveResize}
+        onDrag={moveCurveResize}
+        onDragEnd={endCurveResize}
+        onReset={resetCurveHeight}
+      />
     </div>
   </div>
 

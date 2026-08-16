@@ -2,6 +2,7 @@
   import * as Tabs from "$lib/components/ui/tabs/index.js";
   import SettingsSwitch from "./settings-switch.svelte";
   import SettingsSelect from "./settings-select.svelte";
+  import SettingsSlider from "./settings-slider.svelte";
   import {
     historyDpsPlayerColumns,
     historyDpsSkillColumns,
@@ -10,6 +11,14 @@
     historyTankedPlayerColumns,
     historyTankedSkillColumns,
   } from "$lib/column-data";
+  import {
+    DEFAULT_CURVE_H,
+    DEFAULT_LANE_H,
+    MAX_CURVE_H,
+    MAX_LANE_H,
+    MIN_CURVE_H,
+    MIN_LANE_H,
+  } from "$lib/components/encounter-timeline/timeline-layout";
   import {
     SETTINGS,
     DEFAULT_HISTORY_TANKED_STATS,
@@ -36,6 +45,8 @@
   }
 
   $effect(() => {
+    SETTINGS.history.general.state.timelineLaneH ??= DEFAULT_LANE_H;
+    SETTINGS.history.general.state.timelineCurveH ??= DEFAULT_CURVE_H;
     for (const key of Object.keys(DEFAULT_HISTORY_TANKED_STATS)) {
       const typedKey = key as keyof typeof DEFAULT_HISTORY_TANKED_STATS;
       SETTINGS.history.tanked.players.state[typedKey] ??=
@@ -221,6 +232,24 @@
               { label: t("settings.common.decimalPlaces.3"), value: 3 },
               { label: t("settings.common.decimalPlaces.4"), value: 4 },
             ]}
+          />
+          <SettingsSlider
+            bind:value={SETTINGS.history.general.state.timelineLaneH}
+            label={t("settings.history.timeline.laneH")}
+            description={t("settings.history.timeline.laneHDescription")}
+            min={MIN_LANE_H}
+            max={MAX_LANE_H}
+            step={2}
+            unit="px"
+          />
+          <SettingsSlider
+            bind:value={SETTINGS.history.general.state.timelineCurveH}
+            label={t("settings.history.timeline.curveH")}
+            description={t("settings.history.timeline.curveHDescription")}
+            min={MIN_CURVE_H}
+            max={MAX_CURVE_H}
+            step={10}
+            unit="px"
           />
         </div>
       {/if}

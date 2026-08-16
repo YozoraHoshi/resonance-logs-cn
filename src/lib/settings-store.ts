@@ -2338,7 +2338,11 @@ const DEFAULT_SETTINGS = {
     },
   },
   history: {
-    general: { ...DEFAULT_GENERAL_SETTINGS },
+    general: {
+      ...DEFAULT_GENERAL_SETTINGS,
+      timelineLaneH: 44,
+      timelineCurveH: 300,
+    },
     dpsPlayers: { ...DEFAULT_HISTORY_STATS },
     dpsSkillBreakdown: { ...DEFAULT_HISTORY_STATS },
     healPlayers: { ...DEFAULT_HISTORY_HEAL_STATS },
