@@ -72,6 +72,13 @@ impl FantasyRegistry {
     }
 }
 
+/// Character-fantasy summons use monster ids in `3000000..=3009999`.
+#[must_use]
+#[inline]
+pub(crate) const fn is_resonance_fantasy_monster_id(monster_id: i32) -> bool {
+    monster_id >= 3_000_000 && monster_id <= 3_009_999
+}
+
 /// Resolves the resonance skill that summoned a fantasy: the marker buff's
 /// source config id when it is a known fantasy skill, otherwise the curated
 /// monster-id table. Returns `None` when neither identifies a known skill.
@@ -150,6 +157,21 @@ mod tests {
             registry.resolve_remodel_level(Some(EntityUuid(1)), Some(3_945)),
             Some(2)
         );
+    }
+
+    #[test]
+    fn is_resonance_fantasy_monster_id_accepts_character_fantasy_range() {
+        assert!(is_resonance_fantasy_monster_id(3_000_000));
+        assert!(is_resonance_fantasy_monster_id(3_000_038));
+        assert!(is_resonance_fantasy_monster_id(3_009_999));
+    }
+
+    #[test]
+    fn is_resonance_fantasy_monster_id_rejects_pets_and_other_ids() {
+        assert!(!is_resonance_fantasy_monster_id(3_100_002));
+        assert!(!is_resonance_fantasy_monster_id(900));
+        assert!(!is_resonance_fantasy_monster_id(3_000));
+        assert!(!is_resonance_fantasy_monster_id(0));
     }
 
     #[test]

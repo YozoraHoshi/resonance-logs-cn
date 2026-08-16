@@ -13,7 +13,9 @@ use super::events::{
     ProtocolObservation, ResolvedShieldDetail, SegmentId, ShieldDetail, SkillCooldownState,
     SkillPhase,
 };
-use super::fantasy_registry::{FantasyRegistry, resolve_fantasy_skill_id};
+use super::fantasy_registry::{
+    FantasyRegistry, is_resonance_fantasy_monster_id, resolve_fantasy_skill_id,
+};
 
 #[derive(Debug, Clone)]
 pub struct EntityState {
@@ -1308,6 +1310,9 @@ impl EntityContext {
         source_config_id: Option<i32>,
         out: &mut Vec<DomainEnvelope>,
     ) {
+        if !is_resonance_fantasy_monster_id(monster_id) {
+            return;
+        }
         let summon = self.ensure_ref(summon_uuid);
         let summoner = self.ensure_ref(summoner_uuid);
         let observed = FantasyState {
@@ -2654,7 +2659,7 @@ mod tests {
         let identity = ProtocolObservation::IdentityUpdated {
             uuid: summon_uuid,
             patch: EntityIdentityPatch {
-                monster_id: FieldPatch::Set(900),
+                monster_id: FieldPatch::Set(3_000_038),
                 owner_uuid: FieldPatch::Set(summoner_uuid),
                 fantasy_tier: FieldPatch::Set(2),
                 ..Default::default()
@@ -2677,7 +2682,7 @@ mod tests {
             DomainEvent::FantasyChanged {
                 transition: FantasyTransition::Summoned,
                 fantasy: FantasyState {
-                    monster_id: 900,
+                    monster_id: 3_000_038,
                     remodel_level: 2,
                     ..
                 },
@@ -2727,6 +2732,45 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    #[test]
+    fn pet_marker_does_not_register_as_character_fantasy() {
+        let mut context = EntityContext::new();
+        let summon_uuid = EntityUuid(70);
+        let summoner_uuid = EntityUuid(71);
+        let events = context.reduce_batch(batch(
+            1,
+            vec![
+                ProtocolObservation::EntityAppeared {
+                    uuid: summon_uuid,
+                    kind: EntityKind::Monster,
+                },
+                ProtocolObservation::IdentityUpdated {
+                    uuid: summon_uuid,
+                    patch: EntityIdentityPatch {
+                        monster_id: FieldPatch::Set(3_100_002),
+                        owner_uuid: FieldPatch::Set(summoner_uuid),
+                        fantasy_tier: FieldPatch::Set(0),
+                        ..Default::default()
+                    },
+                },
+                ProtocolObservation::FantasyMarkerObserved {
+                    summon_uuid,
+                    source_config_id: None,
+                },
+            ],
+        ));
+
+        assert!(
+            !events
+                .iter()
+                .any(|envelope| matches!(envelope.event, DomainEvent::FantasyChanged { .. }))
+        );
+        assert_eq!(
+            context.resolve_fantasy_remodel_level(Some(summon_uuid), None),
+            None
+        );
     }
 
     #[test]
