@@ -1,5 +1,6 @@
 import type { MinimapEntity, MinimapSnapshot } from "$lib/api";
 import { t, type MessageKey } from "$lib/i18n/index.svelte";
+import { mergeMechanicTargets, toMechanicTargets } from "../../../mechanic-row";
 import type {
   MechanicRegion,
   MechanicRow,
@@ -122,7 +123,7 @@ export function buildMatrixMechanicView(
       colorSlot: sourceColorSlot,
       createTimeMs: buff.createTimeMs,
       durationMs: buff.durationMs,
-      targets: [displayName(target)],
+      targets: toMechanicTargets(target, snapshot.localPlayerUuid, displayName),
     });
   }
 
@@ -159,7 +160,5 @@ function upsertRow(rows: Map<string, MechanicRow>, next: MechanicRow) {
       ? next.createTimeMs
       : Math.min(existing.createTimeMs, next.createTimeMs);
   existing.durationMs = Math.max(existing.durationMs, next.durationMs);
-  for (const target of next.targets) {
-    if (!existing.targets.includes(target)) existing.targets.push(target);
-  }
+  mergeMechanicTargets(existing.targets, next.targets);
 }

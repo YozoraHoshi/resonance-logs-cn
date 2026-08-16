@@ -6,6 +6,7 @@ import type {
 } from "$lib/api";
 import { t, type MessageKey } from "$lib/i18n/index.svelte";
 import { overlayNow } from "../../../game-overlay/overlay-clock.svelte.js";
+import { mergeMechanicTargets, toMechanicTargets } from "../../mechanic-row";
 import type {
   MechanicRow,
   MinimapVoiceCueDef,
@@ -134,6 +135,7 @@ export function buildMechanicView(
   addGravityBlastRows(skillCasts, entitiesByUuid, rows);
   addStickyBombRows(
     snapshot.buffs,
+    snapshot.localPlayerUuid,
     entitiesByUuid,
     rows,
     entityColorSlots,
@@ -172,6 +174,7 @@ function addGravityBlastRows(
 
 function addStickyBombRows(
   buffs: MinimapBuffFact[],
+  localPlayerUuid: string,
   entitiesByUuid: Map<string, MinimapEntity>,
   rows: Map<string, MechanicRow>,
   entityColorSlots: Map<string, number>,
@@ -188,7 +191,7 @@ function addStickyBombRows(
       colorSlot: COLOR_SLOT_STICKY,
       createTimeMs: buff.createTimeMs,
       durationMs: buff.durationMs,
-      targets: target ? [displayName(target)] : [],
+      targets: toMechanicTargets(target, localPlayerUuid, displayName),
     });
   }
 }
@@ -207,7 +210,5 @@ function upsertRow(rows: Map<string, MechanicRow>, next: MechanicRow) {
   if (existing.hideTimer || next.hideTimer) {
     existing.hideTimer = Boolean(existing.hideTimer && next.hideTimer);
   }
-  for (const target of next.targets) {
-    if (!existing.targets.includes(target)) existing.targets.push(target);
-  }
+  mergeMechanicTargets(existing.targets, next.targets);
 }

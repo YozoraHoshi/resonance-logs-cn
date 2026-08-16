@@ -10,6 +10,7 @@ import {
   electromagneticRingResetMs,
   entityFirstSeen,
 } from "../../minimap-runtime.svelte.js";
+import { mergeMechanicTargets, toMechanicTargets } from "../../mechanic-row";
 import type {
   MechanicRegion,
   MechanicRow,
@@ -459,6 +460,7 @@ export function buildMechanicView(
       displayName,
     );
     addPresetReturn(
+      snapshot.localPlayerUuid,
       entitiesByUuid,
       buffsByTarget,
       regions,
@@ -600,7 +602,7 @@ function addPhaseBuffs(
       colorSlot: mapping.colorSlot,
       createTimeMs: buff.createTimeMs,
       durationMs: buff.durationMs,
-      targets: target ? [displayName(target)] : [],
+      targets: toMechanicTargets(target, snapshot.localPlayerUuid, displayName),
     });
   }
 }
@@ -630,12 +632,13 @@ function addPhaseMapping(
       colorSlot: mapping.colorSlot,
       createTimeMs: buff.createTimeMs,
       durationMs: buff.durationMs,
-      targets: target ? [displayName(target)] : [],
+      targets: toMechanicTargets(target, snapshot.localPlayerUuid, displayName),
     });
   }
 }
 
 function addPresetReturn(
+  localPlayerUuid: string,
   entitiesByUuid: Map<string, MinimapEntity>,
   buffsByTarget: Map<string, MinimapBuffFact[]>,
   regions: MechanicRegion[],
@@ -678,7 +681,7 @@ function addPresetReturn(
       colorSlot,
       createTimeMs: Math.min(linkBuff.createTimeMs, countBuff.createTimeMs),
       durationMs: Math.max(linkBuff.durationMs, countBuff.durationMs),
-      targets: target ? [displayName(target)] : [],
+      targets: toMechanicTargets(target, localPlayerUuid, displayName),
     });
   }
 }
@@ -705,7 +708,7 @@ function addCalloutRows(
       colorSlot: mapping.colorSlot,
       createTimeMs: buff.createTimeMs,
       durationMs: buff.durationMs,
-      targets: target ? [displayName(target)] : [],
+      targets: toMechanicTargets(target, snapshot.localPlayerUuid, displayName),
     });
   }
 }
@@ -721,9 +724,7 @@ function upsertRow(rows: Map<string, MechanicRow>, next: MechanicRow) {
       ? next.createTimeMs
       : Math.min(existing.createTimeMs, next.createTimeMs);
   existing.durationMs = Math.max(existing.durationMs, next.durationMs);
-  for (const target of next.targets) {
-    if (!existing.targets.includes(target)) existing.targets.push(target);
-  }
+  mergeMechanicTargets(existing.targets, next.targets);
 }
 
 function dedupeRegions(regions: MechanicRegion[]): MechanicRegion[] {

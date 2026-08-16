@@ -1,17 +1,20 @@
 <script lang="ts">
   import type { MinimapEntity, MinimapSnapshot } from "$lib/api";
-  import { t } from "$lib/i18n/index.svelte";
   import { SETTINGS } from "$lib/settings-store";
   import { untrack } from "svelte";
   import { minimapSkillCasts } from "./minimap-runtime.svelte.js";
   import { slotColor } from "./colors";
+  import { sortLocalFirst } from "./mechanic-row";
   import MinimapTimer from "./MinimapTimer.svelte";
   import { resolveScene } from "./scene-registry";
-  import type { MechanicRow } from "./scene-types";
+  import type { MechanicRow, MechanicRowTarget } from "./scene-types";
 
   let { snapshot }: { snapshot: MinimapSnapshot | null } = $props();
 
   const infoPanelStyle = $derived(SETTINGS.minimap.state.infoPanelStyle);
+  const localRingColor = $derived(
+    SETTINGS.minimap.state.localRing?.color ?? "#ffffff",
+  );
   const backgroundVar = $derived.by(() => {
     const opacity = Math.max(
       0,
@@ -21,6 +24,7 @@
   });
 
   type SkillGroup = { group: string; rows: MechanicRow[] };
+  type ChipTarget = MechanicRowTarget & { safe?: boolean };
 
   function displayName(entity: MinimapEntity): string {
     if (entity.name) return entity.name;
@@ -62,10 +66,31 @@
     }));
   });
 
+  function displayTargets(row: MechanicRow): ChipTarget[] {
+    if (row.targetStatus && row.targetStatus.length > 0) {
+      return sortLocalFirst(row.targetStatus);
+    }
+    return sortLocalFirst(row.targets);
+  }
+
   function targetText(row: MechanicRow): string {
-    return row.targets.length > 0 ? row.targets.join(", ") : "";
+    return displayTargets(row)
+      .map((target) => target.name)
+      .join(", ");
   }
 </script>
+
+{#snippet targetChip(target: ChipTarget, showStatus: boolean)}
+  <span
+    class="target-chip"
+    class:is-local={target.isLocal}
+    class:status-chip={showStatus}
+    style:color={showStatus ? (target.safe ? "#22c55e" : "#ef4444") : undefined}
+    style:--self-ring={localRingColor}
+  >
+    {#if showStatus}{target.safe ? "✓" : "✗"}{/if}{target.name}
+  </span>
+{/snippet}
 
 <div class="infobar" style:background={backgroundVar}>
   {#if groups.length === 0}
@@ -77,30 +102,18 @@
         <h3>{group.group}</h3>
         {#each group.rows as row (row.key)}
           {@const color = slotColor(row.colorSlot)}
+          {@const chips = displayTargets(row)}
+          {@const showStatus = Boolean(
+            row.targetStatus && row.targetStatus.length > 0,
+          )}
           <div class="buff-row">
             <span class="dot" style:background={color} style:color></span>
             <span class="text" title={targetText(row)}>
               <span class="label">{row.label}</span>
-              {#if row.targetStatus && row.targetStatus.length > 0}
+              {#if chips.length > 0}
                 <span class="targets">
-                  {#each row.targetStatus as ts (ts.name)}
-                    <span
-                      class="target-chip status-chip"
-                      style:color={ts.safe ? "#22c55e" : "#ef4444"}
-                    >
-                      {ts.safe ? "✓" : "✗"}{ts.isLocal
-                        ? t("minimap.s3SeaRingedReef.boss.crossSafeSelf")
-                        : ""}{ts.name}
-                    </span>
-                  {/each}
-                </span>
-              {:else if row.targets.length > 0}
-                <span class="targets">
-                  {#each row.targets as target, index (target)}
-                    <span class="target-chip">
-                      {target}{#if index < row.targets.length - 1},
-                      {/if}
-                    </span>
+                  {#each chips as chip (chip.uuid)}
+                    {@render targetChip(chip, showStatus)}
                   {/each}
                 </span>
               {/if}
@@ -181,7 +194,7 @@
   .targets {
     display: flex;
     flex-wrap: wrap;
-    gap: 0 4px;
+    gap: 4px;
     width: 100%;
     min-width: 0;
     color: #cbd5e1;
@@ -192,6 +205,14 @@
     min-width: 0;
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+  .target-chip.is-local {
+    padding: 0 5px;
+    border: 1.5px solid var(--self-ring, #fff);
+    border-radius: 4px;
+    font-weight: 700;
+    color: #f8fafc;
+    background: rgba(248, 250, 252, 0.08);
   }
   .status-chip {
     font-weight: 700;

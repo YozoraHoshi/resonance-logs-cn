@@ -63,9 +63,13 @@ export type MechanicRegion =
       label?: string;
     };
 
-export type MechanicRowTargetStatus = {
+export type MechanicRowTarget = {
+  uuid: string;
   name: string;
   isLocal: boolean;
+};
+
+export type MechanicRowTargetStatus = MechanicRowTarget & {
   safe: boolean;
 };
 
@@ -76,7 +80,7 @@ export type MechanicRow = {
   colorSlot: number;
   createTimeMs: number;
   durationMs: number;
-  targets: string[];
+  targets: MechanicRowTarget[];
   hideTimer?: boolean;
   targetStatus?: MechanicRowTargetStatus[];
 };

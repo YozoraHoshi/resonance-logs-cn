@@ -5,6 +5,7 @@ import type {
   MinimapSnapshot,
 } from "$lib/api";
 import { t, type MessageKey } from "$lib/i18n/index.svelte";
+import { mergeMechanicTargets, toMechanicTargets } from "../../../mechanic-row";
 import type {
   MechanicRegion,
   MechanicRow,
@@ -214,7 +215,7 @@ function addDualBuffRows(
       colorSlot: mapping.colorSlot,
       createTimeMs: buff.createTimeMs,
       durationMs: buff.durationMs,
-      targets: [displayName(target)],
+      targets: toMechanicTargets(target, snapshot.localPlayerUuid, displayName),
     });
   }
   rows.push(...dualRows.values());
@@ -367,9 +368,7 @@ function upsertRow(rows: Map<string, MechanicRow>, next: MechanicRow) {
       ? next.createTimeMs
       : Math.min(existing.createTimeMs, next.createTimeMs);
   existing.durationMs = Math.max(existing.durationMs, next.durationMs);
-  for (const target of next.targets) {
-    if (!existing.targets.includes(target)) existing.targets.push(target);
-  }
+  mergeMechanicTargets(existing.targets, next.targets);
 }
 
 function addWaveSafeRegions(
@@ -480,6 +479,7 @@ function addWaveSafeRegions(
         const safe = safePredicate!(entity);
         waveSafeStatus.set(entity.entityUuid, safe);
         return {
+          uuid: entity.entityUuid,
           name: displayName(entity),
           isLocal: entity.entityUuid === snapshot.localPlayerUuid,
           safe,

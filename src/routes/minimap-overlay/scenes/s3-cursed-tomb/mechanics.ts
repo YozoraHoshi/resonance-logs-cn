@@ -7,6 +7,7 @@ import type {
 import { t, type MessageKey } from "$lib/i18n/index.svelte";
 import { overlayNow } from "../../../game-overlay/overlay-clock.svelte.js";
 import { entityFirstSeen } from "../../minimap-runtime.svelte.js";
+import { mergeMechanicTargets, toMechanicTargets } from "../../mechanic-row";
 import type {
   MechanicRegion,
   MechanicRow,
@@ -289,7 +290,7 @@ function addCalloutRows(
       colorSlot: mapping.colorSlot,
       createTimeMs: buff.createTimeMs,
       durationMs: buff.durationMs,
-      targets: target ? [displayName(target)] : [],
+      targets: toMechanicTargets(target, snapshot.localPlayerUuid, displayName),
     });
   }
 }
@@ -522,9 +523,7 @@ function upsertRow(rows: Map<string, MechanicRow>, next: MechanicRow) {
   if (existing.hideTimer || next.hideTimer) {
     existing.hideTimer = Boolean(existing.hideTimer && next.hideTimer);
   }
-  for (const target of next.targets) {
-    if (!existing.targets.includes(target)) existing.targets.push(target);
-  }
+  mergeMechanicTargets(existing.targets, next.targets);
 }
 
 function dedupeRegions(regions: MechanicRegion[]): MechanicRegion[] {
