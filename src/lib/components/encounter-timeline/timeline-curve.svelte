@@ -1,11 +1,12 @@
 <script lang="ts">
   // Dumb ECharts renderer: draws the local player's instant/average DPS
-  // curves and nothing else. It owns no interaction state at all (no
-  // tooltip, no dataZoom, no brush, no toolbox) - the gesture layer above it
-  // handles every pointer/wheel event, and the Y axis rescales to whatever
-  // window [startMs, endMs) the viewport currently shows, so zooming into a
-  // quiet stretch of the fight actually reveals more curve detail instead of
-  // just stretching a flat line horizontally.
+  // curves plus any selected teammate cumulative series. It owns no
+  // interaction state at all (no tooltip, no dataZoom, no brush, no
+  // toolbox) - the gesture layer above it handles every pointer/wheel
+  // event, and the Y axis rescales to whatever window [startMs, endMs) the
+  // viewport currently shows, so zooming into a quiet stretch of the fight
+  // actually reveals more curve detail instead of just stretching a flat
+  // line horizontally.
   import * as echarts from "echarts/core";
   import { LineChart } from "echarts/charts";
   import { GridComponent } from "echarts/components";
@@ -16,6 +17,7 @@
   import { TIMELINE_PALETTE } from "./timeline-palette";
   import { SETTINGS } from "$lib/settings-store";
   import type { EncounterCurvePoint } from "./timeline-data";
+  import type { TimelineTeammateAverageCurve } from "./timeline-types";
 
   echarts.use([LineChart, GridComponent, CanvasRenderer]);
 
@@ -28,6 +30,7 @@
   type Props = {
     mineInstantCurve: EncounterCurvePoint[] | null;
     mineAverageCurve: EncounterCurvePoint[] | null;
+    teammateAverageCurves?: TimelineTeammateAverageCurve[];
     showAverageCurve: boolean;
     startMs: number;
     endMs: number;
@@ -37,6 +40,7 @@
   let {
     mineInstantCurve,
     mineAverageCurve,
+    teammateAverageCurves = [],
     showAverageCurve,
     startMs,
     endMs,
@@ -55,7 +59,14 @@
     const averageMax = showAverageCurve
       ? windowMaxValue(mineAverageCurve, startMs, endMs)
       : 0;
-    const max = Math.max(instantMax, averageMax);
+    let teammateMax = 0;
+    for (const row of teammateAverageCurves) {
+      teammateMax = Math.max(
+        teammateMax,
+        windowMaxValue(row.curve, startMs, endMs),
+      );
+    }
+    const max = Math.max(instantMax, averageMax, teammateMax);
     // Headroom so the peak doesn't touch the top axis line; fall back to
     // `undefined` (ECharts auto-scale) when the visible window has no data.
     return max > 0 ? max * 1.08 : undefined;
@@ -69,6 +80,23 @@
     const valueStyle = abbreviationStyle;
     const valueDecimals = abbreviatedDecimalPlaces;
     const series: Record<string, unknown>[] = [];
+
+    // Teammate cumulatives sit under the local series so a comparison overlay
+    // cannot bury the local player's burst peaks.
+    for (const row of teammateAverageCurves) {
+      series.push({
+        type: "line",
+        data: row.curve,
+        showSymbol: false,
+        smooth: false,
+        silent: true,
+        lineStyle: {
+          width: 1.2,
+          color: row.color,
+        },
+        z: 1,
+      });
+    }
 
     // Two distinct hues, crisp unfilled lines: the instant reading is meant to
     // be read as noise with spikes (no smoothing, no glow, no area fill - all

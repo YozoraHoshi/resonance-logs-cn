@@ -473,6 +473,10 @@ export const jaJPMessages = {
   "history.timeline.lanes.selectAll": "すべて選択",
   "history.timeline.lanes.clearAll": "クリア",
   "history.timeline.lanes.closeSelector": "チームメイト選択を閉じる",
+  "history.timeline.curves.selectTeammates": "曲線",
+  "history.timeline.curves.selectAll": "すべて選択",
+  "history.timeline.curves.clearAll": "クリア",
+  "history.timeline.curves.closeSelector": "曲線選択を閉じる",
   "history.timeline.chartAriaLabel":
     "戦闘タイムライン：ボススキル、プレイヤーの重要スキルと幻想の発動、およびDPS曲線",
   "history.timeline.selection.label": "選択中 {start} - {end}（{duration}）",

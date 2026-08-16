@@ -16,6 +16,7 @@
     Lane,
     TimelineEventDisplay,
     TimelineHoverPoint,
+    TimelineTeammateAverageCurve,
   } from "./timeline-types";
 
   type Props = {
@@ -29,6 +30,7 @@
     selectedRange: [number, number] | null;
     mineInstantCurve: EncounterCurvePoint[] | null;
     mineAverageCurve: EncounterCurvePoint[] | null;
+    teammateAverageCurves?: TimelineTeammateAverageCurve[];
     showAverageCurve: boolean;
     resolveEvent: (event: EncounterTimelineEvent) => TimelineEventDisplay;
   };
@@ -44,6 +46,7 @@
     selectedRange,
     mineInstantCurve,
     mineAverageCurve,
+    teammateAverageCurves = [],
     showAverageCurve,
     resolveEvent,
   }: Props = $props();
@@ -99,8 +102,22 @@
     const average = showAverageCurve
       ? interpolateCurveValue(mineAverageCurve, hoverPoint.timeMs)
       : null;
-    if (instant === null && average === null) return null;
-    return { instant, average };
+    const teammates = teammateAverageCurves.flatMap((row) => {
+      const value = interpolateCurveValue(row.curve, hoverPoint.timeMs);
+      if (value === null) return [];
+      return [
+        {
+          entityUuid: row.entityUuid,
+          name: row.name,
+          color: row.color,
+          value,
+        },
+      ];
+    });
+    if (instant === null && average === null && teammates.length === 0) {
+      return null;
+    }
+    return { instant, average, teammates };
   });
 
   const showTooltip = $derived(
@@ -173,6 +190,16 @@
             <b>{formatCurveValue(hoverCurveInfo.average)}</b>
           </div>
         {/if}
+        {#each hoverCurveInfo.teammates as teammate (teammate.entityUuid)}
+          <div class="tl-tooltip-row">
+            <span
+              class="tl-tooltip-dot"
+              style="background: {teammate.color}"
+            ></span>
+            <span class="tl-tooltip-name">{teammate.name}</span>
+            <b>{formatCurveValue(teammate.value)}</b>
+          </div>
+        {/each}
       {/if}
     </div>
   {/if}

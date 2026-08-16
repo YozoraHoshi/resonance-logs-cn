@@ -116,6 +116,31 @@ export function toCumulativeDpsCurve(
   });
 }
 
+export type TeammateAverageCurve = {
+  entityUuid: string;
+  curve: EncounterCurvePoint[];
+};
+
+/** Cumulative-only curves for the selected teammates. Instant DPS is never
+ * produced here: that series stays local-player-only on the chart. */
+export function teammateAverageCurves(
+  selectedUuids: readonly string[],
+  perEntityBuckets: ReadonlyMap<string, readonly number[]>,
+  bucketMs: number,
+  durationMs: number,
+): TeammateAverageCurve[] {
+  const result: TeammateAverageCurve[] = [];
+  for (const entityUuid of selectedUuids) {
+    const totals = perEntityBuckets.get(entityUuid);
+    if (!totals || !totals.some((total) => total > 0)) continue;
+    result.push({
+      entityUuid,
+      curve: toCumulativeDpsCurve([...totals], bucketMs, durationMs),
+    });
+  }
+  return result;
+}
+
 /** Converts a continuous brush extent into a valid half-open millisecond range. */
 export function normalizeEncounterBrushRange(
   coordRange: readonly [number, number],

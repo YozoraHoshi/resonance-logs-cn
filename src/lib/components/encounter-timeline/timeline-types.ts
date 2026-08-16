@@ -1,4 +1,7 @@
-import type { EncounterTimelineEvent } from "./timeline-data";
+import type {
+  EncounterCurvePoint,
+  EncounterTimelineEvent,
+} from "./timeline-data";
 
 /** Player metadata needed to build cast lanes and DPS curves. */
 export type TimelinePlayerMeta = {
@@ -49,4 +52,12 @@ export type Lane =
 export type TimelineHoverPoint = {
   timeMs: number;
   y: number;
+};
+
+/** One selected teammate's cumulative DPS series, ready to draw / tooltip. */
+export type TimelineTeammateAverageCurve = {
+  entityUuid: string;
+  name: string;
+  color: string;
+  curve: EncounterCurvePoint[];
 };

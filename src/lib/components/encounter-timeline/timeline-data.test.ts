@@ -11,6 +11,7 @@ import {
   panViewportWindow,
   sliceLanePointsByTime,
   timeToX,
+  teammateAverageCurves,
   toCumulativeDpsCurve,
   toRollingDpsCurve,
   windowMaxValue,
@@ -173,6 +174,29 @@ describe("toCumulativeDpsCurve", () => {
     const curve = toCumulativeDpsCurve(totals, 1_000, 4_000);
 
     expect(curve.at(-1)).toEqual([4_000, 25]);
+  });
+});
+
+describe("teammateAverageCurves", () => {
+  it("emits cumulative curves only for selected entities with damage", () => {
+    const buckets = new Map<string, number[]>([
+      ["a", [100, 0, 200]],
+      ["b", [50, 50, 0]],
+      ["empty", [0, 0, 0]],
+    ]);
+
+    const result = teammateAverageCurves(
+      ["b", "missing", "empty", "a"],
+      buckets,
+      1_000,
+      3_000,
+    );
+
+    expect(result.map((row) => row.entityUuid)).toEqual(["b", "a"]);
+    expect(result[0]?.curve).toEqual(toCumulativeDpsCurve([50, 50, 0], 1_000, 3_000));
+    expect(result[1]?.curve).toEqual(
+      toCumulativeDpsCurve([100, 0, 200], 1_000, 3_000),
+    );
   });
 });
 

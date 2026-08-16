@@ -15,8 +15,8 @@
   // unusable once the encounter was zoomed in).
   //
   // Structure, top to bottom:
-  //   - header: curve legend, viewport indicator/reset, teammate lane
-  //     selector;
+  //   - header: curve legend, viewport indicator/reset, independent
+  //     teammate lane / curve selectors;
   //   - chart body: swim-lane markers + DPS curve, sharing one coordinate
   //     system driven by `viewport`;
   //   - minimap: full-encounter overview with a draggable/resizable window;
@@ -33,6 +33,7 @@
   import { laneColor, playerColor } from "./timeline-colors";
   import {
     foldEncounterDamageBuckets,
+    teammateAverageCurves,
     toCumulativeDpsCurve,
     toRollingDpsCurve,
     zoomTierFor,
@@ -63,6 +64,7 @@
     TimelineEventDisplay as TimelineEventDisplaySource,
     TimelineHoverPoint,
     TimelinePlayerMeta as TimelinePlayerMetaSource,
+    TimelineTeammateAverageCurve,
   } from "./timeline-types";
   import { TimelineViewport } from "./timeline-viewport.svelte";
 
@@ -228,6 +230,65 @@
 
   function clearTeammates() {
     manualTeammateSelection = [];
+  }
+
+  /** Teammates with damage (heal/taken-only actors stay off the curve picker). */
+  let curveTeammates = $derived(
+    teammates.filter(
+      (p) =>
+        perEntityBuckets.get(p.entityUuid)?.some((total) => total > 0) ?? false,
+    ),
+  );
+
+  // Independent of lane selection: default is none, so opening a support
+  // lane never also overlays that player's cumulative DPS.
+  let manualCurveTeammateSelection = $state<string[]>([]);
+
+  let selectedCurveTeammateUuids = $derived(
+    manualCurveTeammateSelection.filter((uuid) =>
+      curveTeammates.some((p) => p.entityUuid === uuid),
+    ),
+  );
+
+  let selectedCurveAverageCurves = $derived.by<
+    TimelineTeammateAverageCurve[]
+  >(() => {
+    const byUuid = new Map(
+      curveTeammates.map((player) => [player.entityUuid, player]),
+    );
+    return teammateAverageCurves(
+      selectedCurveTeammateUuids,
+      perEntityBuckets,
+      chartBucketMs,
+      chartDurationMs,
+    ).flatMap((row) => {
+      const player = byUuid.get(row.entityUuid);
+      if (!player) return [];
+      return [
+        {
+          entityUuid: row.entityUuid,
+          name: player.name,
+          color: playerColor(player),
+          curve: row.curve,
+        },
+      ];
+    });
+  });
+
+  function toggleCurveTeammate(entityUuid: string) {
+    manualCurveTeammateSelection = selectedCurveTeammateUuids.includes(
+      entityUuid,
+    )
+      ? selectedCurveTeammateUuids.filter((uuid) => uuid !== entityUuid)
+      : [...selectedCurveTeammateUuids, entityUuid];
+  }
+
+  function selectAllCurveTeammates() {
+    manualCurveTeammateSelection = curveTeammates.map((p) => p.entityUuid);
+  }
+
+  function clearCurveTeammates() {
+    manualCurveTeammateSelection = [];
   }
 
   function toPoints(list: EncounterTimelineEvent[]): LanePoint[] {
@@ -425,6 +486,11 @@
     onToggleTeammate={toggleTeammate}
     onSelectAllTeammates={selectAllTeammates}
     onClearTeammates={clearTeammates}
+    {curveTeammates}
+    {selectedCurveTeammateUuids}
+    onToggleCurveTeammate={toggleCurveTeammate}
+    onSelectAllCurveTeammates={selectAllCurveTeammates}
+    onClearCurveTeammates={clearCurveTeammates}
     {viewport}
   />
 
@@ -462,6 +528,7 @@
       <TimelineCurve
         {mineInstantCurve}
         {mineAverageCurve}
+        teammateAverageCurves={selectedCurveAverageCurves}
         {showAverageCurve}
         startMs={viewport.startMs}
         endMs={viewport.endMs}
@@ -510,6 +577,7 @@
         selectedRange={selectionEnabled ? selectedRange : null}
         {mineInstantCurve}
         {mineAverageCurve}
+        teammateAverageCurves={selectedCurveAverageCurves}
         {showAverageCurve}
         {resolveEvent}
       />

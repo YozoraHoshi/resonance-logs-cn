@@ -1,14 +1,14 @@
 <script lang="ts">
   // Header bar: curve legend toggles, viewport indicator/reset, and the
-  // teammate lane selector popover.
-  import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
+  // independent lane / curve teammate selector popovers.
+  import ChartLineIcon from "@lucide/svelte/icons/chart-line";
   import RotateCcwIcon from "@lucide/svelte/icons/rotate-ccw";
   import UsersIcon from "@lucide/svelte/icons/users";
-  import { getClassIcon } from "$lib/utils.svelte";
   import { t } from "$lib/i18n/index.svelte";
   import { formatTimeMs } from "./timeline-format";
   import { playerColor } from "./timeline-colors";
   import { TIMELINE_PALETTE } from "./timeline-palette";
+  import TimelinePlayerPicker from "./timeline-player-picker.svelte";
   import type { TimelineViewport } from "./timeline-viewport.svelte";
   import type { TimelinePlayerMeta } from "./timeline-types";
 
@@ -20,6 +20,11 @@
     onToggleTeammate: (entityUuid: string) => void;
     onSelectAllTeammates: () => void;
     onClearTeammates: () => void;
+    curveTeammates: TimelinePlayerMeta[];
+    selectedCurveTeammateUuids: string[];
+    onToggleCurveTeammate: (entityUuid: string) => void;
+    onSelectAllCurveTeammates: () => void;
+    onClearCurveTeammates: () => void;
     viewport: TimelineViewport;
   };
 
@@ -31,10 +36,19 @@
     onToggleTeammate,
     onSelectAllTeammates,
     onClearTeammates,
+    curveTeammates,
+    selectedCurveTeammateUuids,
+    onToggleCurveTeammate,
+    onSelectAllCurveTeammates,
+    onClearCurveTeammates,
     viewport,
   }: Props = $props();
 
-  let selectorOpen = $state(false);
+  const selectedCurveTeammates = $derived(
+    curveTeammates.filter((player) =>
+      selectedCurveTeammateUuids.includes(player.entityUuid),
+    ),
+  );
 </script>
 
 <div class="tl-header flex items-center justify-between gap-2 px-3 py-1.5">
@@ -63,6 +77,21 @@
         {t("history.timeline.series.average")}
       </span>
     </button>
+    {#each selectedCurveTeammates as player (player.entityUuid)}
+      <button
+        type="button"
+        class="tl-chip flex cursor-pointer items-center gap-1.5 rounded px-1.5 py-0.5"
+        onclick={() => onToggleCurveTeammate(player.entityUuid)}
+      >
+        <span
+          class="size-1.5 shrink-0 rounded-full"
+          style="background: {playerColor(player)}"
+        ></span>
+        <span class="max-w-20 truncate text-[10px]" style="color: {playerColor(player)}">
+          {player.name}
+        </span>
+      </button>
+    {/each}
     <span class="text-[10px]" style="color: var(--tl-fg-muted)">
       {t("history.timeline.hint.gestures")}
     </span>
@@ -94,94 +123,36 @@
   </div>
 
   <div class="flex shrink-0 items-center gap-1">
-    {#if teammates.length > 0}
-      <div class="relative shrink-0">
-        <button
-          type="button"
-          class="tl-chip flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-[10px] transition-colors duration-150"
-          style="color: var(--tl-fg-muted)"
-          onclick={() => (selectorOpen = !selectorOpen)}
-        >
-          <UsersIcon class="size-3 shrink-0" />
-          <span>{t("history.timeline.lanes.selectTeammates")}</span>
-          <span
-            class="rounded px-1 tabular-nums"
-            style="background: rgba(148,163,184,0.12); color: var(--tl-fg)"
-          >
-            {selectedTeammateUuids.length}/{teammates.length}
-          </span>
-          <ChevronDownIcon
-            class="size-2.5 shrink-0 transition-transform duration-150 {selectorOpen
-              ? 'rotate-180'
-              : ''}"
-            strokeWidth={2.5}
-          />
-        </button>
-
-        {#if selectorOpen}
-          <!-- Click-away backdrop. -->
-          <button
-            type="button"
-            class="fixed inset-0 z-10 cursor-default"
-            aria-label={t("history.timeline.lanes.closeSelector")}
-            onclick={() => (selectorOpen = false)}
-          ></button>
-          <div
-            class="tl-popover absolute right-0 z-20 mt-1 w-52 rounded-md py-1 shadow-xl"
-          >
-            <div
-              class="flex items-center justify-between px-2.5 pt-1 pb-1.5"
-              style="border-bottom: 1px solid var(--tl-row-line)"
-            >
-              <button
-                type="button"
-                class="cursor-pointer text-[10px] transition-colors duration-150 hover:underline"
-                style="color: var(--tl-fg-muted)"
-                onclick={onSelectAllTeammates}
-              >
-                {t("history.timeline.lanes.selectAll")}
-              </button>
-              <button
-                type="button"
-                class="cursor-pointer text-[10px] transition-colors duration-150 hover:underline"
-                style="color: var(--tl-fg-muted)"
-                onclick={onClearTeammates}
-              >
-                {t("history.timeline.lanes.clearAll")}
-              </button>
-            </div>
-            <div class="max-h-56 overflow-y-auto">
-              {#each teammates as player (player.entityUuid)}
-                {@const checked = selectedTeammateUuids.includes(
-                  player.entityUuid,
-                )}
-                <label
-                  class="tl-chip flex cursor-pointer items-center gap-2 px-2.5 py-1.5 transition-colors duration-150"
-                >
-                  <input
-                    type="checkbox"
-                    class="size-3 shrink-0 accent-blue-400"
-                    {checked}
-                    onchange={() => onToggleTeammate(player.entityUuid)}
-                  />
-                  <img
-                    class="size-3.5 shrink-0 object-contain"
-                    src={getClassIcon(player.className)}
-                    alt=""
-                  />
-                  <span
-                    class="truncate text-[11px]"
-                    style="color: {playerColor(player)}"
-                  >
-                    {player.name}
-                  </span>
-                </label>
-              {/each}
-            </div>
-          </div>
-        {/if}
-      </div>
-    {/if}
+    <TimelinePlayerPicker
+      label={t("history.timeline.curves.selectTeammates")}
+      closeAriaLabel={t("history.timeline.curves.closeSelector")}
+      selectAllLabel={t("history.timeline.curves.selectAll")}
+      clearAllLabel={t("history.timeline.curves.clearAll")}
+      players={curveTeammates}
+      selectedUuids={selectedCurveTeammateUuids}
+      onToggle={onToggleCurveTeammate}
+      onSelectAll={onSelectAllCurveTeammates}
+      onClear={onClearCurveTeammates}
+    >
+      {#snippet icon()}
+        <ChartLineIcon class="size-3 shrink-0" />
+      {/snippet}
+    </TimelinePlayerPicker>
+    <TimelinePlayerPicker
+      label={t("history.timeline.lanes.selectTeammates")}
+      closeAriaLabel={t("history.timeline.lanes.closeSelector")}
+      selectAllLabel={t("history.timeline.lanes.selectAll")}
+      clearAllLabel={t("history.timeline.lanes.clearAll")}
+      players={teammates}
+      selectedUuids={selectedTeammateUuids}
+      onToggle={onToggleTeammate}
+      onSelectAll={onSelectAllTeammates}
+      onClear={onClearTeammates}
+    >
+      {#snippet icon()}
+        <UsersIcon class="size-3 shrink-0" />
+      {/snippet}
+    </TimelinePlayerPicker>
   </div>
 </div>
 
@@ -193,10 +164,5 @@
 
   .tl-chip:hover {
     background: rgba(148, 163, 184, 0.1);
-  }
-
-  .tl-popover {
-    background: var(--tl-popover-bg);
-    border: 1px solid rgba(148, 163, 184, 0.18);
   }
 </style>

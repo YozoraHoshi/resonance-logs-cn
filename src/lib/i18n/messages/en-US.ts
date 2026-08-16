@@ -490,6 +490,10 @@ export const enUSMessages = {
   "history.timeline.lanes.selectAll": "Select all",
   "history.timeline.lanes.clearAll": "Clear",
   "history.timeline.lanes.closeSelector": "Close teammate selector",
+  "history.timeline.curves.selectTeammates": "Curves",
+  "history.timeline.curves.selectAll": "Select all",
+  "history.timeline.curves.clearAll": "Clear",
+  "history.timeline.curves.closeSelector": "Close curve selector",
   "history.timeline.chartAriaLabel":
     "Encounter timeline: boss skills, player key skills and fantasy casts, with DPS curves",
   "history.timeline.selection.label": "Selected {start} - {end} ({duration})",
