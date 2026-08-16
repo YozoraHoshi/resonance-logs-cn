@@ -66,7 +66,7 @@ pub fn classify_marker(
             let key_skill = is_key_skill_marker(*skill_id);
             let boss_skill = entities
                 .entity(caster.uuid)
-                .is_some_and(|entity| entity.identity.is_boss);
+                .is_some_and(|entity| entity.identity.is_boss_monster());
             let kind = if boss_skill {
                 HistoryCastKind::BossSkill
             } else if key_skill {

@@ -235,7 +235,7 @@ impl CombatProjection {
             combatant.apply_identity(identity);
             changed |= *combatant != before;
         }
-        if identity.is_boss {
+        if identity.is_boss_monster() {
             changed |= self.refresh_boss(entity, entities);
         } else {
             changed |= self.bosses.remove(&entity.uuid).is_some();
@@ -319,7 +319,11 @@ impl CombatProjection {
             return ProjectionOutcome::default();
         }
 
-        if hit.target_is_boss && !self.bosses.contains_key(&hit.target.uuid) {
+        let target_is_boss = match entities.entity(hit.target.uuid) {
+            Some(state) => state.identity.is_boss_monster(),
+            None => hit.target_is_boss,
+        };
+        if target_is_boss && !self.bosses.contains_key(&hit.target.uuid) {
             self.refresh_boss(hit.target, entities);
             outcome.had_combat = true;
         }
@@ -331,7 +335,9 @@ impl CombatProjection {
             }
             .expect("canonical combat fact always has an actor");
             self.ensure_combatant(actor, entities);
-            self.accumulator.apply(fact);
+            let mut fact = *fact;
+            fact.target_is_boss = target_is_boss;
+            self.accumulator.apply(&fact);
         } else if hit.source_is_player {
             outcome.had_player_damage = false;
         }
@@ -561,7 +567,7 @@ impl CombatProjection {
         let Some(state) = entities.entity(entity.uuid) else {
             return false;
         };
-        if !state.identity.is_boss {
+        if !state.identity.is_boss_monster() {
             return false;
         }
         self.departed_bosses.remove(&entity.uuid);
@@ -868,6 +874,65 @@ mod tests {
         assert_eq!(summaries[0].monster_id, 900);
         assert!(summaries[0].is_defeated);
         assert_eq!(projection.boss_monster_ids(), vec![900]);
+    }
+
+    fn dummy_boss_batch(sequence: u64, monster_id: i32) -> ProtocolBatch {
+        ProtocolBatch {
+            meta: EventMeta {
+                batch_id: BatchId(sequence),
+                capture_sequence: sequence,
+                stream_id: 1,
+                stream_epoch: 1,
+                captured_wall_ms: i64::try_from(sequence).unwrap_or_default(),
+                captured_mono_ns: sequence * 1_000_000,
+                source_time_ms: None,
+            },
+            observations: vec![
+                ProtocolObservation::EntityAppeared {
+                    uuid: EntityUuid(20),
+                    kind: EntityKind::Dummy,
+                },
+                ProtocolObservation::IdentityUpdated {
+                    uuid: EntityUuid(20),
+                    patch: EntityIdentityPatch {
+                        monster_id: FieldPatch::Set(monster_id),
+                        is_boss: FieldPatch::Set(true),
+                        ..Default::default()
+                    },
+                },
+            ],
+        }
+    }
+
+    #[test]
+    fn dummy_boss_template_is_excluded_from_hp_and_boss_damage() {
+        let mut entities = EntityContext::new();
+        entities.apply_batch(dummy_boss_batch(1, 7001));
+        let dummy = entities
+            .entity(EntityUuid(20))
+            .expect("dummy state")
+            .identity
+            .clone();
+        let dummy_ref = entities
+            .entity_ref(EntityUuid(20))
+            .expect("dummy entity ref");
+
+        let mut projection = CombatProjection::default();
+        projection.start_segment(SegmentId(1), MonoTimeMs(0), 0);
+        assert!(!projection.observe_identity(dummy_ref, &dummy, &entities));
+
+        apply_hit(
+            &mut projection,
+            hit(true, HitKind::Damage),
+            1,
+            MonoTimeMs(1),
+            &entities,
+        );
+
+        assert!(projection.bosses.is_empty());
+        assert_eq!(projection.payload().bosses.len(), 0);
+        assert_eq!(projection.accumulator().totals.boss_damage, 0);
+        assert_eq!(projection.total_damage(), 100);
     }
 
     #[test]

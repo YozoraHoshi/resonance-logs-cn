@@ -518,7 +518,9 @@ impl ProtocolDecoder {
                     {
                         identity.monster_id = FieldPatch::Set(monster_id);
                         identity.is_boss = FieldPatch::Set(
-                            monster_registry::monster_type(monster_id) == Some(MonsterType::Boss),
+                            kind == EntityKind::Monster
+                                && monster_registry::monster_type(monster_id)
+                                    == Some(MonsterType::Boss),
                         );
                         observations.push(integer_attribute(
                             uuid,
@@ -2852,5 +2854,45 @@ mod tests {
             Some(777),
         );
         assert_eq!(area.activate_effect_score, Some(42));
+    }
+
+    fn identity_patch_for_monster_id(kind: EntityKind, monster_id: i32) -> EntityIdentityPatch {
+        let mut raw = Vec::new();
+        prost::encoding::encode_varint(u64::try_from(monster_id).expect("id"), &mut raw);
+        let collection = blueprotobuf::AttrCollection {
+            attrs: vec![blueprotobuf::Attr {
+                id: Some(attr_type::ATTR_ID),
+                raw_data: Some(raw),
+            }],
+            ..Default::default()
+        };
+        let mut observations = Vec::new();
+        ProtocolDecoder::decode_attributes(
+            EntityUuid(1),
+            kind,
+            &collection,
+            ObservationOrigin::Snapshot,
+            &mut observations,
+        );
+        observations
+            .into_iter()
+            .find_map(|observation| match observation {
+                ProtocolObservation::IdentityUpdated { patch, .. } => Some(patch),
+                _ => None,
+            })
+            .expect("identity patch")
+    }
+
+    #[test]
+    fn boss_flag_requires_monster_entity_kind() {
+        const BOSS_TEMPLATE: i32 = 7001;
+
+        let dummy = identity_patch_for_monster_id(EntityKind::Dummy, BOSS_TEMPLATE);
+        assert_eq!(dummy.monster_id, FieldPatch::Set(BOSS_TEMPLATE));
+        assert_eq!(dummy.is_boss, FieldPatch::Set(false));
+
+        let monster = identity_patch_for_monster_id(EntityKind::Monster, BOSS_TEMPLATE);
+        assert_eq!(monster.monster_id, FieldPatch::Set(BOSS_TEMPLATE));
+        assert_eq!(monster.is_boss, FieldPatch::Set(true));
     }
 }

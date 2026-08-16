@@ -654,7 +654,7 @@ impl EntityContext {
                     source_monster_id: source_identity
                         .and_then(|entity| entity.identity.monster_id),
                     target_monster_id: target_identity.monster_id,
-                    target_is_boss: target_identity.is_boss,
+                    target_is_boss: target_identity.is_boss_monster(),
                     source_is_player,
                     source_is_local_player,
                     skill_key: hit.skill_key,
@@ -2858,6 +2858,61 @@ mod tests {
         assert!(hit.target_is_boss);
         assert_eq!(hit.target_monster_id, Some(900));
         assert_eq!(hit.shield_loss, 20);
+    }
+
+    #[test]
+    fn dummy_with_boss_template_is_not_target_is_boss() {
+        let mut context = EntityContext::new();
+        context.reduce_batch(batch(
+            1,
+            vec![
+                ProtocolObservation::EntityAppeared {
+                    uuid: EntityUuid(1),
+                    kind: EntityKind::Character,
+                },
+                ProtocolObservation::EntityAppeared {
+                    uuid: EntityUuid(2),
+                    kind: EntityKind::Dummy,
+                },
+                ProtocolObservation::IdentityUpdated {
+                    uuid: EntityUuid(2),
+                    patch: EntityIdentityPatch {
+                        monster_id: FieldPatch::Set(7001),
+                        is_boss: FieldPatch::Set(true),
+                        ..Default::default()
+                    },
+                },
+            ],
+        ));
+        let events = context.reduce_batch(batch(
+            2,
+            vec![ProtocolObservation::HitResolved(
+                super::super::events::ObservedHit {
+                    channel: super::super::events::HitChannel::ToMe,
+                    source_uuid: Some(EntityUuid(1)),
+                    source_owner_uuid: None,
+                    target_uuid: EntityUuid(2),
+                    skill_key: 99,
+                    skill_id: Some(10),
+                    type_flags: 0,
+                    kind: HitKind::Damage,
+                    amount: 100,
+                    has_loss_breakdown: true,
+                    hp_loss: 80,
+                    shield_loss: 20,
+                    is_lucky_bonus_only: false,
+                    property: None,
+                    damage_mode: None,
+                    effective_amount: None,
+                },
+            )],
+        ));
+        let DomainEvent::HitResolved(hit) = &events[0].event else {
+            panic!("expected hit");
+        };
+        assert!(!hit.target_is_boss);
+        assert_eq!(hit.target_kind, EntityKind::Dummy);
+        assert_eq!(hit.target_monster_id, Some(7001));
     }
 
     #[test]

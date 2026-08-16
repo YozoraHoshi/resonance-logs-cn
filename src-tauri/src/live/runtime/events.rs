@@ -204,6 +204,13 @@ pub struct EntityIdentity {
     pub is_boss: bool,
 }
 
+impl EntityIdentity {
+    #[must_use]
+    pub const fn is_boss_monster(&self) -> bool {
+        self.is_boss && matches!(self.kind, EntityKind::Monster)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObservedBuff {
     pub instance_id: i64,
