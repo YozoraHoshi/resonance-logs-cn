@@ -941,6 +941,7 @@ export const zhCNMessages = {
   "components.deathReplay.relativeSeconds.zero": "0 秒",
   "components.deathReplay.relativeSeconds.value": "{seconds} 秒",
   "components.deathReplay.monsterSkillFallback": "{monsterName} · #{skillKey}",
+  "components.deathReplay.buff.toggle": "死亡瞬间 Buff 快照（{count}）",
   "components.deathReplay.buff.victim": "自身 Buff 快照",
   "components.deathReplay.buff.none": "无 Buff",
   "components.deathReplay.buff.id": "Buff ID：{id}",

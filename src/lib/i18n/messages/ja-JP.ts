@@ -1019,6 +1019,8 @@ export const jaJPMessages = {
   "components.deathReplay.relativeSeconds.zero": "0秒",
   "components.deathReplay.relativeSeconds.value": "{seconds}秒",
   "components.deathReplay.monsterSkillFallback": "{monsterName} · #{skillKey}",
+  "components.deathReplay.buff.toggle":
+    "死亡瞬間の Buff スナップショット（{count}）",
   "components.deathReplay.buff.victim": "自身 Buff スナップショット",
   "components.deathReplay.buff.none": "Buff なし",
   "components.deathReplay.buff.id": "Buff ID: {id}",

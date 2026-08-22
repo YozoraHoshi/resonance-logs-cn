@@ -1036,6 +1036,7 @@ export const enUSMessages = {
   "components.deathReplay.relativeSeconds.zero": "0s",
   "components.deathReplay.relativeSeconds.value": "{seconds}s",
   "components.deathReplay.monsterSkillFallback": "{monsterName} · #{skillKey}",
+  "components.deathReplay.buff.toggle": "Death-moment buff snapshot ({count})",
   "components.deathReplay.buff.victim": "Victim Buff Snapshot",
   "components.deathReplay.buff.none": "No buffs",
   "components.deathReplay.buff.id": "Buff ID: {id}",

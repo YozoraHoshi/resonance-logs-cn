@@ -25,6 +25,7 @@
   import { formatDateTime, formatNumber, t } from "$lib/i18n/index.svelte";
   import { uidFromEntityUuid } from "$lib/entity-id";
   import { ipcBigInt, ipcNumber, ipcRatio } from "$lib/ipc-decimal";
+  import ChevronDown from "virtual:icons/lucide/chevron-down";
 
   let {
     playerName,
@@ -124,6 +125,16 @@
     buffSnapshotCards.length > 1 ||
       (buffSnapshotCards[0]?.buffs.length ?? 0) > 0,
   );
+  const buffSnapshotCount = $derived(buffSnapshotCards.length);
+  const deathIdentity = $derived(
+    `${record.victimEntityUuid}:${record.deathTimestampMs}`,
+  );
+  let buffSnapshotsOpen = $state(false);
+
+  $effect(() => {
+    void deathIdentity;
+    buffSnapshotsOpen = false;
+  });
 
   const maxValue = $derived.by(() => {
     let maxV = 0n;
@@ -315,12 +326,31 @@
 
 {#snippet buffSnapshotsPanel()}
   {#if hasBuffSnapshots}
-    <div
-      class="mb-2 grid grid-cols-1 gap-2 rounded border border-border/50 bg-card/20 p-2"
-    >
-      {#each buffSnapshotCards as card (card.key)}
-        {@render buffSnapshotCard(card.title, card.buffs)}
-      {/each}
+    <div class="mt-2 rounded border border-border/50 bg-card/20">
+      <button
+        type="button"
+        class="flex w-full items-center justify-between px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
+        aria-expanded={buffSnapshotsOpen}
+        onclick={() => (buffSnapshotsOpen = !buffSnapshotsOpen)}
+      >
+        <span>
+          {t("components.deathReplay.buff.toggle", {
+            count: formatNumber(buffSnapshotCount),
+          })}
+        </span>
+        <ChevronDown
+          class="size-4 shrink-0 transition-transform duration-200 {buffSnapshotsOpen
+            ? 'rotate-180'
+            : ''}"
+        />
+      </button>
+      {#if buffSnapshotsOpen}
+        <div class="grid grid-cols-1 gap-2 border-t border-border/40 p-2">
+          {#each buffSnapshotCards as card (card.key)}
+            {@render buffSnapshotCard(card.title, card.buffs)}
+          {/each}
+        </div>
+      {/if}
     </div>
   {/if}
 {/snippet}
@@ -371,8 +401,6 @@
       </span>
     </div>
   </div>
-
-  {@render buffSnapshotsPanel()}
 
   <div class="overflow-x-auto rounded border border-border/60 bg-card/30">
     <table class="w-full border-collapse">
@@ -465,7 +493,6 @@
 {:else}
   <!-- Live: compact skill-row rendering aligned with DPS/HEAL (no sticky header; right-click to go back). -->
   <div class="relative flex flex-col">
-    {@render buffSnapshotsPanel()}
     <table class="w-full border-collapse">
       <tbody>
         {#if rows.length === 0}
@@ -539,3 +566,5 @@
     </table>
   </div>
 {/if}
+
+{@render buffSnapshotsPanel()}
