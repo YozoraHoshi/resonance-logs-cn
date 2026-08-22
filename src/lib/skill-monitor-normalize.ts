@@ -214,15 +214,20 @@ export function ensureTextBuffPanelStyle(
   profile: SkillMonitorProfile | null,
 ): TextBuffPanelStyle {
   const current = profile?.textBuffPanelStyle;
+  const base = createDefaultCustomPanelStyle();
   return {
     displayMode: current?.displayMode === "classic" ? "classic" : "modern",
-    gap: clampRounded(current?.gap ?? 6, 0, 24),
-    columnGap: clampRounded(current?.columnGap ?? 8, 0, 240),
-    fontSize: clampRounded(current?.fontSize ?? 12, 10, 28),
-    nameColor: current?.nameColor ?? "#ffffff",
-    valueColor: current?.valueColor ?? "#ffffff",
-    progressColor: current?.progressColor ?? "#ffffff",
-    progressOpacity: clampDecimal(current?.progressOpacity ?? 0.4, 0, 1),
+    gap: clampRounded(current?.gap ?? base.gap, 0, 24),
+    columnGap: clampRounded(current?.columnGap ?? base.columnGap, 0, 240),
+    fontSize: clampRounded(current?.fontSize ?? base.fontSize, 10, 28),
+    nameColor: current?.nameColor ?? base.nameColor,
+    valueColor: current?.valueColor ?? base.valueColor,
+    progressColor: current?.progressColor ?? base.progressColor,
+    progressOpacity: clampDecimal(
+      current?.progressOpacity ?? base.progressOpacity,
+      0,
+      1,
+    ),
     ...ensureOverlayTextStyle(current),
   };
 }

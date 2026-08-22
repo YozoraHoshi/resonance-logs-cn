@@ -37,7 +37,7 @@
     progressColor,
     progressOpacity = 0.4,
     fontSize,
-    columnGap = 8,
+    columnGap = 12,
     placeholder = false,
     alert = undefined,
     temporal = undefined,

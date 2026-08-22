@@ -1391,14 +1391,7 @@ export function ensureTeammatePanelStyle(
 function createDefaultTextBuffPanelStyle(): TextBuffPanelStyle {
   return {
     displayMode: "modern",
-    gap: 6,
-    columnGap: 8,
-    fontSize: 12,
-    nameColor: "#ffffff",
-    valueColor: "#ffffff",
-    progressColor: "#ffffff",
-    progressOpacity: 0.4,
-    ...createDefaultOverlayTextStyle(),
+    ...createDefaultCustomPanelStyle(),
   };
 }
 

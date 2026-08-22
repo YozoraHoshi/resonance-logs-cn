@@ -120,8 +120,8 @@
 
 <style>
   .text-buff-panel {
-    min-width: 220px;
-    max-width: 320px;
+    min-width: 260px;
+    max-width: 360px;
     padding: 0;
     border-radius: 0;
     background: transparent;
