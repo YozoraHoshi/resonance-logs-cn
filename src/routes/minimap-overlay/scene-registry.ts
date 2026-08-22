@@ -3,9 +3,11 @@ import { s3GiantTowerScene } from "./scenes/s3-giant-tower";
 import { s3RaidScene } from "./scenes/s3-raid";
 import { s3SeaRingedReefScene } from "./scenes/s3-sea-ringed-reef";
 import { s3TinaMindrealmScene } from "./scenes/s3-tina-mindrealm";
+import { s4WastelandCourtScene } from "./scenes/s4-wasteland-court";
 import type { MinimapVoiceCueDef, SceneDefinition } from "./scene-types";
 
 const SCENES: readonly SceneDefinition[] = [
+  s4WastelandCourtScene,
   s3RaidScene,
   s3SeaRingedReefScene,
   s3CursedTombScene,

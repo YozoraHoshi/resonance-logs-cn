@@ -784,6 +784,22 @@ impl ProtocolDecoder {
                 }
             }
 
+            if effect.r#type == Some(blueprotobuf::EBuffEventType::BuffEventCustomize as i32) {
+                let customize_ids = decode_customize_values(&effect.logic_effect);
+                if !customize_ids.is_empty() {
+                    observations.push(ProtocolObservation::BuffChanged {
+                        target_uuid,
+                        change: ObservedBuffChange::Delta {
+                            instance_id,
+                            layer: None,
+                            duration_ms: None,
+                            create_time: None,
+                            effect_ids: Some(Arc::from(customize_ids.into_boxed_slice())),
+                        },
+                    });
+                }
+            }
+
             if effect.r#type == Some(blueprotobuf::EBuffEventType::BuffEventRemove as i32) {
                 observations.push(ProtocolObservation::BuffChanged {
                     target_uuid,
@@ -1751,6 +1767,37 @@ fn decode_play_effect_ids(logic_effects: &[blueprotobuf::BuffEffectLogicInfo]) -
         .collect()
 }
 
+/// Slot/lock values from `BuffEventCustomize` (`logicIdx` 1-4).
+///
+/// Skips `BuffEffectStopAll` (init/refresh/settle wipe, not "already matched").
+/// Each remaining payload is a PlayEffect `effect_id` or a 1-/2-byte integer;
+/// parsers that treat the 2-byte blob as `BuffUuid` misread these.
+fn decode_customize_values(logic_effects: &[blueprotobuf::BuffEffectLogicInfo]) -> Vec<i32> {
+    logic_effects
+        .iter()
+        .filter(|logic| {
+            logic
+                .effect_type
+                .unwrap_or(blueprotobuf::EBuffEffectLogicPbType::PlayEffect as i32)
+                != blueprotobuf::EBuffEffectLogicPbType::BuffEffectStopAll as i32
+        })
+        .filter_map(|logic| logic.raw_data.as_deref().and_then(decode_customize_value))
+        .collect()
+}
+
+fn decode_customize_value(raw: &[u8]) -> Option<i32> {
+    if let Ok(effect) = decode_message::<blueprotobuf::BuffEffectLogicPlayEffect>(raw)
+        && let Some(effect_id) = effect.effect_id.filter(|id| *id != 0)
+    {
+        return Some(effect_id);
+    }
+    match raw {
+        [byte] => Some(i32::from(*byte)),
+        [low, high] => Some(i32::from(i16::from_le_bytes([*low, *high]))),
+        _ => None,
+    }
+}
+
 fn update_buff_times(
     buff: &mut ObservedBuff,
     source_create_time: Option<i64>,
@@ -2516,6 +2563,143 @@ mod tests {
                 change: ObservedBuffChange::Remove { instance_id: 71 },
             }]
         ));
+    }
+
+    fn play_effect_logic(effect_id: i32) -> blueprotobuf::BuffEffectLogicInfo {
+        blueprotobuf::BuffEffectLogicInfo {
+            effect_type: Some(blueprotobuf::EBuffEffectLogicPbType::PlayEffect as i32),
+            raw_data: Some(
+                blueprotobuf::BuffEffectLogicPlayEffect {
+                    effect_id: Some(effect_id),
+                }
+                .encode_to_vec(),
+            ),
+            ..Default::default()
+        }
+    }
+
+    fn customize_sync(
+        host_uuid: i64,
+        instance_id: i32,
+        logic_effect: Vec<blueprotobuf::BuffEffectLogicInfo>,
+    ) -> blueprotobuf::BuffEffectSync {
+        blueprotobuf::BuffEffectSync {
+            uuid: Some(host_uuid),
+            buff_effects: vec![blueprotobuf::BuffEffect {
+                r#type: Some(blueprotobuf::EBuffEventType::BuffEventCustomize as i32),
+                buff_uuid: Some(instance_id),
+                host_uuid: Some(host_uuid),
+                logic_effect,
+                ..Default::default()
+            }],
+        }
+    }
+
+    fn decode_customize_delta(
+        sync: &blueprotobuf::BuffEffectSync,
+    ) -> (EntityUuid, i64, Option<Arc<[i32]>>) {
+        let envelope = notify(
+            1,
+            Pkt::SyncNearDeltaInfo,
+            &blueprotobuf::SyncNearDeltaInfo::default(),
+        );
+        let mut decoder = ProtocolDecoder::new();
+        let mut observations = Vec::new();
+        decoder.decode_buff_effect_sync(EntityUuid(10), sync, &envelope, &mut observations);
+        match observations.as_slice() {
+            [
+                ProtocolObservation::BuffChanged {
+                    target_uuid,
+                    change:
+                        ObservedBuffChange::Delta {
+                            instance_id,
+                            effect_ids,
+                            layer: None,
+                            duration_ms: None,
+                            create_time: None,
+                        },
+                },
+            ] => (*target_uuid, *instance_id, effect_ids.clone()),
+            other => panic!("customize delta expected, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn buff_event_customize_decodes_pair_mark_play_effects() {
+        let cases: [(&str, [i32; 4]); 2] = [
+            ("black-white-black lock 2", [1, 5, 3, 8]),
+            ("white-black-white lock 2", [4, 2, 6, 8]),
+        ];
+        for (name, values) in cases {
+            let sync = customize_sync(
+                30,
+                77,
+                values.iter().copied().map(play_effect_logic).collect(),
+            );
+            let (target, instance_id, effect_ids) = decode_customize_delta(&sync);
+            assert_eq!(target, EntityUuid(30), "{name}");
+            assert_eq!(instance_id, 77, "{name}");
+            assert_eq!(effect_ids.as_deref(), Some(values.as_slice()), "{name}");
+        }
+    }
+
+    #[test]
+    fn buff_event_customize_decodes_raw_little_endian_values() {
+        let sync = customize_sync(
+            30,
+            77,
+            [1_i16, 5, 3, 8]
+                .into_iter()
+                .map(|value| blueprotobuf::BuffEffectLogicInfo {
+                    effect_type: Some(blueprotobuf::EBuffEffectLogicPbType::PlayEffect as i32),
+                    raw_data: Some(value.to_le_bytes().to_vec()),
+                    ..Default::default()
+                })
+                .collect(),
+        );
+        let (_, _, effect_ids) = decode_customize_delta(&sync);
+        assert_eq!(effect_ids.as_deref(), Some([1, 5, 3, 8].as_slice()));
+    }
+
+    #[test]
+    fn buff_event_customize_stop_all_only_does_not_emit_delta() {
+        let sync = customize_sync(
+            30,
+            77,
+            vec![blueprotobuf::BuffEffectLogicInfo {
+                effect_type: Some(blueprotobuf::EBuffEffectLogicPbType::BuffEffectStopAll as i32),
+                raw_data: None,
+                ..Default::default()
+            }],
+        );
+        let envelope = notify(
+            1,
+            Pkt::SyncNearDeltaInfo,
+            &blueprotobuf::SyncNearDeltaInfo::default(),
+        );
+        let mut decoder = ProtocolDecoder::new();
+        let mut observations = Vec::new();
+        decoder.decode_buff_effect_sync(EntityUuid(10), &sync, &envelope, &mut observations);
+        assert!(observations.is_empty());
+    }
+
+    #[test]
+    fn buff_event_customize_skips_stop_all_and_keeps_slot_values() {
+        let mut logic_effect = vec![blueprotobuf::BuffEffectLogicInfo {
+            effect_type: Some(blueprotobuf::EBuffEffectLogicPbType::BuffEffectStopAll as i32),
+            raw_data: None,
+            ..Default::default()
+        }];
+        logic_effect.extend([1_i16, 5, 6, 9].into_iter().map(|value| {
+            blueprotobuf::BuffEffectLogicInfo {
+                effect_type: Some(blueprotobuf::EBuffEffectLogicPbType::PlayEffect as i32),
+                raw_data: Some(value.to_le_bytes().to_vec()),
+                ..Default::default()
+            }
+        }));
+        let sync = customize_sync(30, 77, logic_effect);
+        let (_, _, effect_ids) = decode_customize_delta(&sync);
+        assert_eq!(effect_ids.as_deref(), Some([1, 5, 6, 9].as_slice()));
     }
 
     #[test]
