@@ -12,6 +12,7 @@
   const defaultMinimapConfig = createDefaultMinimapConfig();
 
   type LegacyMinimapConfig = typeof defaultMinimapConfig & {
+    enabled?: boolean;
     autoHideInDailyScenes?: boolean;
     hideAllTeammates?: boolean;
     showBoss?: boolean;
@@ -27,6 +28,7 @@
 
   function ensureMinimapSettingsDefaults() {
     const state = SETTINGS.minimap.state as LegacyMinimapConfig;
+    state.enabled ??= defaultMinimapConfig.enabled;
     state.autoHideInDailyScenes ??= defaultMinimapConfig.autoHideInDailyScenes;
     state.hideAllTeammates ??= defaultMinimapConfig.hideAllTeammates;
     state.showBoss ??= defaultMinimapConfig.showBoss;
@@ -129,6 +131,12 @@
         {t("minimap.settings.display.description")}
       </p>
     </div>
+
+    <SettingsSwitch
+      bind:checked={minimapSettings.enabled}
+      label={t("minimap.settings.enabled.label")}
+      description={t("minimap.settings.enabled.description")}
+    />
 
     <SettingsSwitch
       bind:checked={minimapSettings.autoHideInDailyScenes}

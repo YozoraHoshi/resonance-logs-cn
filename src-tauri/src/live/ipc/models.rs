@@ -69,6 +69,19 @@ pub enum LivePullWindow {
     HudOverlay,
 }
 
+/// Payload for the `live-pull-gate` lifecycle event.
+///
+/// The target window is named explicitly because JS `listen()` registers with
+/// an `Any` event target, which Tauri matches regardless of how the emit is
+/// addressed. Receivers compare `window` against their own label and ignore
+/// gates meant for the other window.
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Clone, Copy)]
+#[serde(rename_all = "camelCase")]
+pub struct LivePullGatePayload {
+    pub window: LivePullWindow,
+    pub active: bool,
+}
+
 impl LivePullWindow {
     #[must_use]
     pub const fn label(self) -> &'static str {

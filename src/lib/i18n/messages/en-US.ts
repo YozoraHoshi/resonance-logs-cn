@@ -664,7 +664,7 @@ export const enUSMessages = {
   "settings.shortcuts.togglePauseEncounter": "Toggle Encounter Pause",
   "settings.shortcuts.toggleBossHp": "Toggle Boss Health",
   "settings.shortcuts.toggleOverlayEdit": "Toggle Overlay Edit Mode",
-  "settings.shortcuts.toggleOverlayWindow": "Toggle Overlay Window",
+  "settings.shortcuts.toggleOverlayWindow": "Toggle Live Monitor",
   "settings.debug.title": "Debug",
   "settings.debug.logFiles": "Log Files",
   "settings.debug.logFilesDescription": "Open the app log folder",
@@ -1047,7 +1047,7 @@ export const enUSMessages = {
   "skillMonitor.layout.title": "Live Monitor",
   "skillMonitor.layout.description":
     "Customize skill cooldowns, combat resources, and more",
-  "skillMonitor.layout.toggleOverlayWindow": "Toggle Overlay Window",
+  "skillMonitor.layout.toggleOverlayWindow": "Toggle Live Monitor",
   "skillMonitor.layout.editOverlayLayout": "Edit Overlay Layout",
   "skillMonitor.main.enabled.label": "Enable Live Monitor",
   "skillMonitor.main.enabled.description":
@@ -1341,7 +1341,7 @@ export const enUSMessages = {
   "monsterMonitor.title": "Monster Monitor",
   "monsterMonitor.description":
     "Monitor current target monster buffs and related data",
-  "monsterMonitor.actions.toggleOverlay": "Toggle Monster Overlay",
+  "monsterMonitor.actions.toggleOverlay": "Toggle Monster Monitor",
   "monsterMonitor.actions.editLayout": "Edit Monster Layout",
   "monsterMonitor.defaults.profileName": "Profile {index}",
   "monsterMonitor.defaults.defaultProfileName": "Default Profile",
@@ -1658,7 +1658,7 @@ export const enUSMessages = {
   "minimap.title": "Dungeon Mechanics",
   "minimap.description":
     "Show dungeon mechanics live in a standalone overlay window.",
-  "minimap.actions.toggleOverlay": "Toggle Dungeon Mechanics Window",
+  "minimap.actions.toggleOverlay": "Toggle Dungeon Mechanics",
   "minimap.actions.editLayout": "Edit Layout",
   "minimap.hint": "",
   "minimap.edit.title": "Minimap Layout Edit",
@@ -1672,6 +1672,9 @@ export const enUSMessages = {
   "minimap.settings.display.title": "Display Options",
   "minimap.settings.display.description":
     "Control the minimap information density during combat and reduce noise.",
+  "minimap.settings.enabled.label": "Enable Dungeon Mechanics",
+  "minimap.settings.enabled.description":
+    "Turn off to stop showing the dungeon-mechanic overlay. Controls the same setting as the toggle button at the top of this page.",
   "minimap.settings.autoHideInDailyScenes.label": "Auto Hide in Daily Scenes",
   "minimap.settings.autoHideInDailyScenes.description":
     "Automatically hide the minimap overlay in daily scene blacklist entries and restore its previous visibility after leaving.",

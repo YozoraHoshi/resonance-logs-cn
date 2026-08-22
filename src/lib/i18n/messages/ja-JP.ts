@@ -650,7 +650,7 @@ export const jaJPMessages = {
   "settings.shortcuts.togglePauseEncounter": "エンカウント一時停止の切替",
   "settings.shortcuts.toggleBossHp": "ボス HP 表示の切替",
   "settings.shortcuts.toggleOverlayEdit": "オーバーレイ編集モードの切替",
-  "settings.shortcuts.toggleOverlayWindow": "オーバーレイウィンドウの切替",
+  "settings.shortcuts.toggleOverlayWindow": "ライブモニターの切替",
   "settings.debug.title": "デバッグ",
   "settings.debug.logFiles": "ログファイル",
   "settings.debug.logFilesDescription": "アプリのログフォルダを開く",
@@ -1030,7 +1030,7 @@ export const jaJPMessages = {
   "skillMonitor.layout.title": "ライブモニター",
   "skillMonitor.layout.description":
     "スキル CD、戦闘リソースなどをカスタマイズ",
-  "skillMonitor.layout.toggleOverlayWindow": "オーバーレイウィンドウの切替",
+  "skillMonitor.layout.toggleOverlayWindow": "ライブモニターの切替",
   "skillMonitor.layout.editOverlayLayout": "オーバーレイレイアウトを編集",
   "skillMonitor.main.enabled.label": "ライブモニターを有効化",
   "skillMonitor.main.enabled.description":
@@ -1328,7 +1328,7 @@ export const jaJPMessages = {
   "monsterMonitor.title": "モンスターモニター",
   "monsterMonitor.description":
     "現在のターゲットモンスターの Buff と関連データをモニター",
-  "monsterMonitor.actions.toggleOverlay": "モンスターオーバーレイの切替",
+  "monsterMonitor.actions.toggleOverlay": "モンスターモニターの切替",
   "monsterMonitor.actions.editLayout": "モンスターレイアウトを編集",
   "monsterMonitor.defaults.profileName": "プロファイル {index}",
   "monsterMonitor.defaults.defaultProfileName": "デフォルトプロファイル",
@@ -1647,7 +1647,7 @@ export const jaJPMessages = {
   "minimap.title": "ダンジョンギミック",
   "minimap.description":
     "ダンジョンギミックを独立したオーバーレイでリアルタイム表示します。",
-  "minimap.actions.toggleOverlay": "ダンジョンギミック窓の表示切替",
+  "minimap.actions.toggleOverlay": "ダンジョンギミックの切替",
   "minimap.actions.editLayout": "レイアウト編集",
   "minimap.hint": "",
   "minimap.edit.title": "ミニマップレイアウト編集",
@@ -1661,6 +1661,9 @@ export const jaJPMessages = {
   "minimap.settings.display.title": "表示オプション",
   "minimap.settings.display.description":
     "戦闘中のミニマップ情報量を調整し、不要なノイズを減らします。",
+  "minimap.settings.enabled.label": "ダンジョンギミックを有効化",
+  "minimap.settings.enabled.description":
+    "オフにするとダンジョンギミックのオーバーレイを表示しません。ページ上部の切替ボタンと同じ設定を操作します。",
   "minimap.settings.autoHideInDailyScenes.label": "日常シーンで自動的に非表示",
   "minimap.settings.autoHideInDailyScenes.description":
     "日常シーンのブラックリストに入るとミニマップオーバーレイを自動的に非表示にし、離れると以前の表示状態を復元します。",

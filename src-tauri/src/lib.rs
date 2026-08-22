@@ -1139,6 +1139,8 @@ fn is_live_pull_window(label: &str) -> bool {
 }
 
 fn set_live_pull_window_active(app: &tauri::AppHandle, label: &str, active: bool) {
+    use crate::live::ipc::models::LivePullGatePayload;
+
     let Some(surface) = crate::live::ipc::models::LivePullWindow::from_label(label) else {
         return;
     };
@@ -1152,7 +1154,15 @@ fn set_live_pull_window_active(app: &tauri::AppHandle, label: &str, active: bool
     let Some(window) = app.get_webview_window(label) else {
         return;
     };
-    if let Err(error) = window.emit(LIVE_PULL_GATE_EVENT, active) {
+
+    if let Err(error) = window.emit_to(
+        label,
+        LIVE_PULL_GATE_EVENT,
+        LivePullGatePayload {
+            window: surface,
+            active,
+        },
+    ) {
         warn!(
             "failed to set live pull gate for window {} active={}: {}",
             label, active, error

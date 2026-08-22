@@ -516,6 +516,12 @@ export type MinimapDeadStyle = {
 };
 
 export type MinimapConfig = {
+  /**
+   * Whether the user wants the dungeon-mechanic overlay at all. Matches the
+   * `enabled` switch the skill/monster monitors already have, so all three HUD
+   * domains are controlled the same way.
+   */
+  enabled: boolean;
   autoHideInDailyScenes: boolean;
   hideNormalTeammates: boolean;
   hideAllTeammates: boolean;
@@ -1846,6 +1852,7 @@ export function createDefaultMonitoringSettingsState(): MonitoringSettingsState 
 
 export function createDefaultMinimapConfig(): MinimapConfig {
   return {
+    enabled: true,
     autoHideInDailyScenes: false,
     hideNormalTeammates: true,
     hideAllTeammates: false,
