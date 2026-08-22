@@ -462,6 +462,10 @@ const liveGeneralSchema = v.object({
   abbreviatedDecimalPlaces: v.optional(finiteNumberSchema, 1),
   eventUpdateRateMs: v.optional(finiteNumberSchema, 200),
   trainingWindowMs: v.optional(finiteNumberSchema, 183000),
+  trainingLockPolicy: v.optional(
+    v.picklist(["eliteDummies", "firstMonster"]),
+    "eliteDummies",
+  ),
 });
 
 const liveStatsSchema = v.record(v.string(), v.boolean());

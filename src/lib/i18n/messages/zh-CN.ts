@@ -574,6 +574,11 @@ export const zhCNMessages = {
   "settings.live.trainingWindow": "打桩时长",
   "settings.live.trainingWindowDescription":
     "从本人命中木桩起计时，到点结束本轮。默认 3:03（183 秒）。进行中的一轮不会改时长。",
+  "settings.live.trainingLockPolicy": "打桩锁定",
+  "settings.live.trainingLockPolicyDescription":
+    "精英木桩只认训练场 115 / 122；首次命中怪物会锁定本人（含召唤物）打中的下一只怪物。",
+  "settings.live.trainingLockPolicy.eliteDummies": "精英木桩",
+  "settings.live.trainingLockPolicy.firstMonster": "首次命中怪物",
   "settings.network.packetCapture": "抓包",
   "settings.network.method": "捕获方式",
   "settings.network.methodDescription":

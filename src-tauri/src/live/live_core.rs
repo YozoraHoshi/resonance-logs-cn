@@ -101,6 +101,8 @@ impl LiveCore {
         };
         core.segments
             .set_training_window_ms(config.live.training_window_ms);
+        core.segments
+            .set_training_lock_policy(config.live.training_lock_policy);
         core.request_publications(now, true);
         Ok(core)
     }
@@ -351,6 +353,8 @@ impl LiveCore {
         self.live_publish_interval_ms = config.live.event_update_rate_ms;
         self.segments
             .set_training_window_ms(config.live.training_window_ms);
+        self.segments
+            .set_training_lock_policy(config.live.training_lock_policy);
         self.projections.apply_config(
             Arc::clone(&config),
             &self.entities,

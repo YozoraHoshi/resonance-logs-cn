@@ -623,6 +623,11 @@ export const jaJPMessages = {
   "settings.live.trainingWindow": "訓練時間",
   "settings.live.trainingWindowDescription":
     "自分がダミーに命中した時点から計測し、この時間で終了します。デフォルトは 3:03（183 秒）。進行中のラウンドには反映されません。",
+  "settings.live.trainingLockPolicy": "訓練ロック",
+  "settings.live.trainingLockPolicyDescription":
+    "エリートダミーは訓練用 115 / 122 のみ。最初のモンスター命中は、自分または召喚物が次にダメージを与えたモンスターをロックします。",
+  "settings.live.trainingLockPolicy.eliteDummies": "エリートダミー",
+  "settings.live.trainingLockPolicy.firstMonster": "最初のモンスター命中",
   "settings.network.packetCapture": "パケットキャプチャ",
   "settings.network.method": "キャプチャ方式",
   "settings.network.methodDescription":

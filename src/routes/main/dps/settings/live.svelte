@@ -289,6 +289,21 @@
             onblur={commitTrainingWindow}
             onkeydown={onTrainingWindowKeydown}
           />
+          <SettingsSelect
+            bind:selected={SETTINGS.live.general.state.trainingLockPolicy}
+            label={t("settings.live.trainingLockPolicy")}
+            description={t("settings.live.trainingLockPolicyDescription")}
+            values={[
+              {
+                label: t("settings.live.trainingLockPolicy.eliteDummies"),
+                value: "eliteDummies",
+              },
+              {
+                label: t("settings.live.trainingLockPolicy.firstMonster"),
+                value: "firstMonster",
+              },
+            ]}
+          />
         </div>
       {/if}
     </div>

@@ -1915,6 +1915,7 @@ const DEFAULT_GENERAL_SETTINGS = {
   abbreviatedDecimalPlaces: 1,
   eventUpdateRateMs: 200,
   trainingWindowMs: 183_000,
+  trainingLockPolicy: "eliteDummies" as "eliteDummies" | "firstMonster",
 };
 
 export const DEFAULT_CLASS_COLORS: Record<string, string> = {

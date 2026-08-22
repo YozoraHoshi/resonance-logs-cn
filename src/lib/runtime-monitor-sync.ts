@@ -295,6 +295,7 @@ export function buildMonitorRuntimeSnapshot(): MonitorRuntimeSnapshot {
     live: {
       eventUpdateRateMs: SETTINGS.live.general.state.eventUpdateRateMs,
       trainingWindowMs: SETTINGS.live.general.state.trainingWindowMs,
+      trainingLockPolicy: SETTINGS.live.general.state.trainingLockPolicy,
     },
     skill: buildSkillRuntimeSnapshot(),
     monster: buildMonsterRuntimeSnapshot(),

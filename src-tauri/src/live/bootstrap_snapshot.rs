@@ -1,6 +1,6 @@
 use crate::live::counter::engine::CounterRule;
 use crate::live::counter::season_cultivate::{FactorCounterTemplate, normalize_factor_templates};
-use crate::live::runtime::segment::TRAINING_WINDOW_MS;
+use crate::live::runtime::segment::{TRAINING_WINDOW_MS, TrainingLockPolicy};
 use crate::voice::models::VoiceRuntimeSnapshot;
 use log::{info, warn};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -183,6 +183,7 @@ impl Default for I18nRuntimeSnapshot {
 pub struct LiveRuntimeSnapshot {
     pub event_update_rate_ms: u64,
     pub training_window_ms: u64,
+    pub training_lock_policy: TrainingLockPolicy,
 }
 
 impl Default for LiveRuntimeSnapshot {
@@ -190,6 +191,7 @@ impl Default for LiveRuntimeSnapshot {
         Self {
             event_update_rate_ms: 200,
             training_window_ms: TRAINING_WINDOW_MS,
+            training_lock_policy: TrainingLockPolicy::EliteDummies,
         }
     }
 }
@@ -432,5 +434,14 @@ mod tests {
         let live: LiveRuntimeSnapshot = serde_json::from_str(r#"{"eventUpdateRateMs":200}"#)
             .expect("legacy live snapshot deserializes");
         assert_eq!(live.training_window_ms, TRAINING_WINDOW_MS);
+        assert_eq!(live.training_lock_policy, TrainingLockPolicy::EliteDummies);
+    }
+
+    #[test]
+    fn missing_training_lock_policy_deserializes_to_elite_dummies() {
+        let live: LiveRuntimeSnapshot =
+            serde_json::from_str(r#"{"eventUpdateRateMs":200,"trainingWindowMs":183000}"#)
+                .expect("legacy live snapshot deserializes");
+        assert_eq!(live.training_lock_policy, TrainingLockPolicy::EliteDummies);
     }
 }

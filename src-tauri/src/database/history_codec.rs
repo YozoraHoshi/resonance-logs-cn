@@ -1002,10 +1002,12 @@ mod tests {
     fn time_threshold_seals_before_two_second_span() {
         let mut chunker = HistoryChunker::new(1).expect("create chunker");
         assert!(chunker.push(hit(0, 0, 1)).expect("first hit").is_none());
-        assert!(chunker
-            .push(hit(1, MAX_CHUNK_SPAN_MS - 1, 1))
-            .expect("hit inside span")
-            .is_none());
+        assert!(
+            chunker
+                .push(hit(1, MAX_CHUNK_SPAN_MS - 1, 1))
+                .expect("hit inside span")
+                .is_none()
+        );
         let sealed = chunker
             .push(hit(2, MAX_CHUNK_SPAN_MS, 1))
             .expect("hit at span boundary")

@@ -12,18 +12,18 @@ use crate::live::projections::combat::accumulator::{
     CombatantStats,
 };
 use crate::live::projections::combat::stats::class::{
-    get_class_id_from_spec, get_class_spec, ClassSpec,
+    ClassSpec, get_class_id_from_spec, get_class_spec,
 };
 use crate::live::projections::combat::stats::{CombatStats, Skill, SkillTargetStats};
 
 use super::commands::EncounterSummaryDto;
 use super::event_journal::{
-    load_all_chunks, load_chunks_for_range, load_encounter_descriptor, load_projection,
     EncounterHistoryDescriptor, EventJournalError, StoredHistoryChunk, StoredProjection,
+    load_all_chunks, load_chunks_for_range, load_encounter_descriptor, load_projection,
 };
 use super::history_codec::{
-    decode_history_chunk, HistoryCastKind, HistoryChunkDocument, HistoryCodecError,
-    HistoryEntityContext, HistoryEnvelope, HistoryEvent, HistoryMetric,
+    HistoryCastKind, HistoryChunkDocument, HistoryCodecError, HistoryEntityContext,
+    HistoryEnvelope, HistoryEvent, HistoryMetric, decode_history_chunk,
 };
 
 const KNOWN_QUALITY_FLAGS: i32 = (1 << 3) - 1;
@@ -1173,7 +1173,7 @@ fn empty_summary(encounter_id: i32) -> EncounterSummaryDto {
 mod tests {
     use super::*;
     use crate::database::history_codec::{
-        encode_history_chunk, HistoryDeath, HistoryHit, HistorySkillCast, HistoryStream,
+        HistoryDeath, HistoryHit, HistorySkillCast, HistoryStream, encode_history_chunk,
     };
     use crate::live::projections::combat::accumulator::CombatHitFlags;
     use crate::live::projections::death::{

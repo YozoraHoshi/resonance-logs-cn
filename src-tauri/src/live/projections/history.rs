@@ -6,7 +6,7 @@ use crate::database::event_journal::RecordingEncounter;
 use crate::database::history_codec::{
     HistoryDeath, HistoryEntityContext, HistoryEnvelope, HistoryEvent, HistoryHit, HistorySkillCast,
 };
-use crate::database::history_query::{quality_flags_to_bits, HistoryQualityFlag};
+use crate::database::history_query::{HistoryQualityFlag, quality_flags_to_bits};
 use crate::live::history_writer::{HistoryFinalization, HistoryWriterHandle};
 use crate::live::projections::combat::accumulator::{CombatAccumulator, CombatHitFact};
 use crate::live::projections::death::DeathReplaySnapshot;

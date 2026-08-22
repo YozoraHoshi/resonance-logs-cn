@@ -637,6 +637,11 @@ export const enUSMessages = {
   "settings.live.trainingWindow": "Training Duration",
   "settings.live.trainingWindowDescription":
     "Starts when you hit a dummy and ends when this duration elapses. Default 3:03 (183 seconds). Changing this does not affect a run already in progress.",
+  "settings.live.trainingLockPolicy": "Training Lock",
+  "settings.live.trainingLockPolicyDescription":
+    "Elite dummies only lock training dummies 115 / 122. First monster hit locks the next monster you or your summons damage.",
+  "settings.live.trainingLockPolicy.eliteDummies": "Elite Dummies",
+  "settings.live.trainingLockPolicy.firstMonster": "First Monster Hit",
   "settings.network.packetCapture": "Packet Capture",
   "settings.network.method": "Capture Method",
   "settings.network.methodDescription":
