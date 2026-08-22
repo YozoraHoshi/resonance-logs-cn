@@ -8,7 +8,7 @@ use tokio::sync::oneshot;
 
 use crate::live::bootstrap_snapshot::MonitorRuntimeSnapshot;
 use crate::live::counter::engine::CounterSource;
-use crate::live::dungeon_objectives::classify_objective;
+use crate::live::dungeon_objectives::{classify_objective, classify_progress_state};
 use crate::live::history_writer::HistoryWriterHandle;
 use crate::live::ipc::topic::{Topic, TopicMask};
 use crate::live::marker_skills::KEY_SKILL_IDS;
@@ -139,11 +139,9 @@ impl LiveCore {
             self.segments
                 .preflight_batch(&events, paused_at_batch_start, &mut self.scheduler);
         transitions.extend(decision.transitions);
-        // Arm automatic boundaries after preflight so segments opened by this
-        // batch (e.g. first combat right after a scene change) are covered too.
-        if is_recording(self.segments.state()) {
-            self.arm_automatic_boundaries(&events);
-        }
+        // Always classify dungeon objectives so pre-combat snapshots remember
+        // the active target. Arm only while a standard segment is recording.
+        self.arm_automatic_boundaries(&events);
         let force_publication = !transitions.is_empty();
         let segment_id = decision.segment_id;
         let combat_gate = decision.combat_gate;
@@ -313,9 +311,15 @@ impl LiveCore {
                     &mut self.active_dungeon_objective,
                 )
                 .then_some(SegmentReason::AutomaticObjective),
+                DomainEvent::DungeonProgressStateChanged { previous, current } => {
+                    classify_progress_state(*previous, *current)
+                        .then_some(SegmentReason::AutomaticObjective)
+                }
                 _ => None,
             };
-            if let Some(reason) = reason {
+            if let Some(reason) = reason
+                && is_recording(self.segments.state())
+            {
                 self.segments
                     .arm_automatic_boundary(envelope.meta, reason, &mut self.scheduler);
             }

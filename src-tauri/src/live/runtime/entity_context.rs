@@ -133,6 +133,7 @@ pub struct EntityContext {
     current_scene_id: Option<i32>,
     current_difficulty: Option<i32>,
     dungeon_flow_state: Option<i32>,
+    progress_state: Option<i32>,
     is_paused: bool,
     /// `wall_ms - server_ms`, learned from server time packets. Buff deltas
     /// carry raw server creation timestamps that need it.
@@ -178,6 +179,7 @@ impl EntityContext {
         self.active_season_id = 0;
         self.active_season_template_ids.clear();
         self.dungeon_flow_state = None;
+        self.progress_state = None;
         self.pending_deaths.clear();
     }
 
@@ -938,6 +940,19 @@ impl EntityContext {
                 },
                 out,
             ),
+            ProtocolObservation::DungeonProgressStateChanged { value } => {
+                let previous = self.progress_state.replace(value);
+                if previous != Some(value) {
+                    self.emit(
+                        meta,
+                        DomainEvent::DungeonProgressStateChanged {
+                            previous,
+                            current: value,
+                        },
+                        out,
+                    );
+                }
+            }
             ProtocolObservation::SeasonCultivateSnapshot {
                 season_id,
                 active_template_ids,
@@ -2467,6 +2482,7 @@ mod tests {
                     active_item_ids: vec![1, 2],
                 },
                 ProtocolObservation::DungeonFlowChanged { state: 2 },
+                ProtocolObservation::DungeonProgressStateChanged { value: 1 },
                 ProtocolObservation::GameTimerUpserted {
                     timer: GameTimerState {
                         key: timer_key,
@@ -2483,6 +2499,7 @@ mod tests {
                 },
             ],
         ));
+        assert_eq!(context.progress_state, Some(1));
 
         let events = context.reduce_batch(batch(2, vec![ProtocolObservation::ContainerReset]));
 
@@ -2501,6 +2518,7 @@ mod tests {
         assert_eq!(context.active_season_id, 0);
         assert!(context.active_season_template_ids.is_empty());
         assert!(context.dungeon_flow_state.is_none());
+        assert!(context.progress_state.is_none());
         assert_eq!(context.team_id, 99);
         assert_eq!(context.team_leader, Some(local));
         assert!(context.team_members.contains(&teammate));
@@ -2508,6 +2526,37 @@ mod tests {
         assert_eq!(context.current_difficulty(), Some(3));
         assert!(context.is_paused());
         assert!(context.watched_skill_ids.contains(&77));
+    }
+
+    #[test]
+    fn progress_state_emits_only_when_value_changes() {
+        let mut context = EntityContext::new();
+
+        let first = context.reduce_batch(batch(
+            1,
+            vec![ProtocolObservation::DungeonProgressStateChanged { value: 1 }],
+        ));
+        assert_eq!(context.progress_state, Some(1));
+        assert!(matches!(
+            first.as_slice(),
+            [DomainEnvelope {
+                event: DomainEvent::DungeonProgressStateChanged {
+                    previous: None,
+                    current: 1,
+                },
+                ..
+            }]
+        ));
+
+        let repeat = context.reduce_batch(batch(
+            2,
+            vec![ProtocolObservation::DungeonProgressStateChanged { value: 1 }],
+        ));
+        assert!(repeat.is_empty());
+        assert_eq!(context.progress_state, Some(1));
+
+        context.reduce_batch(batch(3, vec![ProtocolObservation::ContainerReset]));
+        assert!(context.progress_state.is_none());
     }
 
     #[test]

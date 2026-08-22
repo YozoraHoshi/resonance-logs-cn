@@ -582,6 +582,9 @@ pub enum ProtocolObservation {
         count: i32,
         complete: bool,
     },
+    DungeonProgressStateChanged {
+        value: i32,
+    },
     SeasonCultivateSnapshot {
         season_id: i32,
         active_template_ids: Vec<i32>,
@@ -835,6 +838,10 @@ pub enum DomainEvent {
         target_id: i32,
         count: i32,
         complete: bool,
+    },
+    DungeonProgressStateChanged {
+        previous: Option<i32>,
+        current: i32,
     },
     SeasonCultivateChanged {
         season_id: i32,

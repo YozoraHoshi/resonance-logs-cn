@@ -1879,6 +1879,18 @@ fn decode_scene_events(
         .collect()
 }
 
+const PROGRESS_STATE_VAR: &str = "ProgressState";
+
+fn progress_state_from_dungeon_var(var: &blueprotobuf::DungeonVar) -> Option<i32> {
+    var.dungeon_var_data.iter().find_map(|entry| {
+        if entry.name.as_deref() == Some(PROGRESS_STATE_VAR) {
+            entry.value
+        } else {
+            None
+        }
+    })
+}
+
 fn decode_dungeon_snapshot(message: blueprotobuf::SyncDungeonData) -> Vec<ProtocolObservation> {
     let mut observations = Vec::new();
     let Some(data) = message.v_data else {
@@ -1896,6 +1908,13 @@ fn decode_dungeon_snapshot(message: blueprotobuf::SyncDungeonData) -> Vec<Protoc
             }
         }));
     }
+    if let Some(value) = data
+        .dungeon_var
+        .as_ref()
+        .and_then(progress_state_from_dungeon_var)
+    {
+        observations.push(ProtocolObservation::DungeonProgressStateChanged { value });
+    }
     observations
 }
 
@@ -1907,7 +1926,7 @@ fn decode_dungeon_delta(message: blueprotobuf::SyncDungeonDirtyData) -> Vec<Prot
         Ok(decoded) => decoded,
         Err(_) => return Vec::new(),
     };
-    let mut observations = Vec::with_capacity(decoded.targets.len() + 1);
+    let mut observations = Vec::with_capacity(decoded.targets.len() + 2);
     if let Some(state) = decoded.flow_state {
         observations.push(ProtocolObservation::DungeonFlowChanged { state });
     }
@@ -1918,6 +1937,9 @@ fn decode_dungeon_delta(message: blueprotobuf::SyncDungeonDirtyData) -> Vec<Prot
             complete: target.complete != 0,
         }
     }));
+    if let Some(value) = decoded.progress_state {
+        observations.push(ProtocolObservation::DungeonProgressStateChanged { value });
+    }
     observations
 }
 
@@ -3078,5 +3100,49 @@ mod tests {
         let monster = identity_patch_for_monster_id(EntityKind::Monster, BOSS_TEMPLATE);
         assert_eq!(monster.monster_id, FieldPatch::Set(BOSS_TEMPLATE));
         assert_eq!(monster.is_boss, FieldPatch::Set(true));
+    }
+
+    #[test]
+    fn dungeon_snapshot_emits_progress_state_when_present() {
+        let message = blueprotobuf::SyncDungeonData {
+            v_data: Some(blueprotobuf::DungeonSyncData {
+                dungeon_var: Some(blueprotobuf::DungeonVar {
+                    dungeon_var_data: vec![
+                        blueprotobuf::DungeonVarData {
+                            name: Some("eatball".into()),
+                            value: Some(22),
+                        },
+                        blueprotobuf::DungeonVarData {
+                            name: Some("ProgressState".into()),
+                            value: Some(1),
+                        },
+                    ],
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let observations = decode_dungeon_snapshot(message);
+        assert_eq!(
+            observations,
+            vec![ProtocolObservation::DungeonProgressStateChanged { value: 1 }]
+        );
+    }
+
+    #[test]
+    fn dungeon_snapshot_skips_progress_state_without_value() {
+        let message = blueprotobuf::SyncDungeonData {
+            v_data: Some(blueprotobuf::DungeonSyncData {
+                dungeon_var: Some(blueprotobuf::DungeonVar {
+                    dungeon_var_data: vec![blueprotobuf::DungeonVarData {
+                        name: Some("eatball".into()),
+                        value: Some(22),
+                    }],
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        assert!(decode_dungeon_snapshot(message).is_empty());
     }
 }

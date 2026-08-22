@@ -37,7 +37,14 @@ pub fn classify_objective(
     }
     if complete && count > 0 {
         let effective_target_id = if target_id == 0 {
-            active_target_id.unwrap_or(target_id)
+            let Some(id) = *active_target_id else {
+                log::info!(
+                    target: "app::live",
+                    "Reset suppressed: target_completed raw_target_id=0 with no active target"
+                );
+                return false;
+            };
+            id
         } else {
             target_id
         };
@@ -55,6 +62,10 @@ pub fn classify_objective(
         return true;
     }
     false
+}
+
+pub fn classify_progress_state(previous: Option<i32>, current: i32) -> bool {
+    previous == Some(0) && current == 1
 }
 
 #[cfg(test)]
@@ -97,6 +108,13 @@ mod tests {
     }
 
     #[test]
+    fn completion_with_zero_target_and_no_active_does_not_trigger() {
+        let mut active = None;
+        assert!(!classify_objective(0, 1, true, &mut active));
+        assert_eq!(active, None);
+    }
+
+    #[test]
     fn completion_with_zero_target_falls_back_to_active_target() {
         let mut active = None;
         let ignored = ignored_target();
@@ -115,5 +133,14 @@ mod tests {
         let mut active = None;
         assert!(!classify_objective(42, 1, false, &mut active));
         assert!(!classify_objective(42, 5, false, &mut active));
+    }
+
+    #[test]
+    fn progress_state_triggers_only_on_zero_to_one_edge() {
+        assert!(!classify_progress_state(None, 0));
+        assert!(!classify_progress_state(None, 1));
+        assert!(!classify_progress_state(Some(0), 0));
+        assert!(classify_progress_state(Some(0), 1));
+        assert!(!classify_progress_state(Some(1), 1));
     }
 }

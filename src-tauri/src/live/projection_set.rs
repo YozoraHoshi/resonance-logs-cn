@@ -339,6 +339,7 @@ impl ProjectionSet {
             | DomainEvent::WipeDetected { .. }
             | DomainEvent::DungeonFlowChanged { .. }
             | DomainEvent::DungeonObjectiveChanged { .. }
+            | DomainEvent::DungeonProgressStateChanged { .. }
             | DomainEvent::SeasonCultivateChanged { .. } => {}
             DomainEvent::SegmentStarted { .. } | DomainEvent::SegmentEnded { .. } => {
                 unreachable!("segment events returned above")
