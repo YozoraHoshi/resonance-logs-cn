@@ -1613,6 +1613,77 @@ mod tests {
     }
 
     #[test]
+    fn reappeared_current_target_buffs_return_without_retarget() {
+        let mut projection = EntityMonitorProjection::default();
+        let mut entities = EntityContext::new();
+        let mut scheduler = DeadlineScheduler::new();
+        let local = EntityUuid(10);
+        let target = EntityUuid(20);
+        apply_observations(
+            &mut projection,
+            &mut entities,
+            &mut scheduler,
+            1,
+            vec![
+                ProtocolObservation::EntityAppeared {
+                    uuid: local,
+                    kind: crate::live::runtime::events::EntityKind::Character,
+                },
+                ProtocolObservation::EntityAppeared {
+                    uuid: target,
+                    kind: crate::live::runtime::events::EntityKind::Monster,
+                },
+                ProtocolObservation::LocalPlayerChanged { uuid: Some(local) },
+                ProtocolObservation::AttackTargetChanged {
+                    actor_uuid: local,
+                    target_uuid: Some(target),
+                },
+                ProtocolObservation::BuffChanged {
+                    target_uuid: target,
+                    change: ObservedBuffChange::Applied {
+                        buff: observed_buff(1, target),
+                    },
+                },
+            ],
+        );
+        let mut config = MonitorRuntimeSnapshot::default();
+        config.monster.global_ids.push(77);
+        projection.apply_config(Arc::new(config), &entities);
+        assert_eq!(projection.snapshot(&entities).boss_buffs.len(), 1);
+
+        apply_observations(
+            &mut projection,
+            &mut entities,
+            &mut scheduler,
+            2,
+            vec![ProtocolObservation::EntityDisappeared { uuid: target }],
+        );
+        assert!(projection.snapshot(&entities).boss_buffs.is_empty());
+
+        apply_observations(
+            &mut projection,
+            &mut entities,
+            &mut scheduler,
+            3,
+            vec![
+                ProtocolObservation::EntityAppeared {
+                    uuid: target,
+                    kind: crate::live::runtime::events::EntityKind::Monster,
+                },
+                ProtocolObservation::BuffChanged {
+                    target_uuid: target,
+                    change: ObservedBuffChange::Applied {
+                        buff: observed_buff(2, target),
+                    },
+                },
+            ],
+        );
+        let snapshot = projection.snapshot(&entities);
+        assert_eq!(snapshot.boss_buffs.len(), 1);
+        assert!(snapshot.boss_buffs.contains_key(&target.0.to_string()));
+    }
+
+    #[test]
     fn local_entity_disappearance_clears_all_local_runtime_state() {
         let mut projection = EntityMonitorProjection::default();
         let mut entities = EntityContext::new();

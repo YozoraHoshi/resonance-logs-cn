@@ -1489,15 +1489,6 @@ impl EntityContext {
             entity.attributes.clear();
         }
         self.remove_attack_target(uuid);
-        if let Some(attackers) = self.attackers_by_target.remove(&uuid) {
-            for attacker in attackers {
-                if self.attack_targets.get(&attacker) == Some(&uuid) {
-                    self.attack_targets.remove(&attacker);
-                    let epoch = self.target_epochs.entry(attacker).or_default();
-                    *epoch = epoch.wrapping_add(1);
-                }
-            }
-        }
         self.target_epochs.remove(&uuid);
         self.pending_skills_by_caster.remove(&uuid);
         self.skill_lifecycles.remove(&uuid);
@@ -3362,7 +3353,7 @@ mod tests {
     }
 
     #[test]
-    fn disappearing_target_clears_reverse_target_index_before_uuid_reuse() {
+    fn disappearing_target_keeps_attacker_target_mapping() {
         let mut context = EntityContext::new();
         let local = EntityUuid(70);
         let target = EntityUuid(71);
@@ -3390,6 +3381,9 @@ mod tests {
             2,
             vec![ProtocolObservation::EntityDisappeared { uuid: target }],
         ));
+        assert!(context.roles(target).is_current_target);
+        assert!(context.attackers_by_target.contains_key(&target));
+
         context.reduce_batch(batch(
             3,
             vec![ProtocolObservation::EntityAppeared {
@@ -3398,8 +3392,8 @@ mod tests {
             }],
         ));
 
-        assert!(!context.roles(target).is_current_target);
-        assert!(!context.attackers_by_target.contains_key(&target));
+        assert!(context.roles(target).is_current_target);
+        assert!(context.attackers_by_target.contains_key(&target));
     }
 
     #[test]
