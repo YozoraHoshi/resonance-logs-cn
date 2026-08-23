@@ -14,6 +14,8 @@ import {
   updateActiveProfile,
 } from "$lib/skill-monitor-profile.svelte.js";
 import {
+  ensureBuffCoverageEntries,
+  ensureBuffCoverageStyle,
   ensureFactorSlotLabels,
   ensurePanelAttrs,
 } from "$lib/skill-monitor-normalize";
@@ -94,6 +96,12 @@ const _textBuffPanelStyle = $derived.by<TextBuffPanelStyle>(() =>
 );
 const _shieldDetailStyle = $derived.by<ShieldDetailStyle>(() =>
   ensureShieldDetailStyle(_activeProfile),
+);
+const _buffCoverageEntries = $derived.by(() =>
+  ensureBuffCoverageEntries(_activeProfile),
+);
+const _buffCoverageStyle = $derived.by(() =>
+  ensureBuffCoverageStyle(_activeProfile),
 );
 const _overlayTextStyle = $derived.by<OverlayTextStyle>(() =>
   ensureOverlayTextStyle(_activeProfile?.overlayTextStyle),
@@ -188,6 +196,14 @@ export function textBuffPanelStyle() {
 
 export function shieldDetailStyle() {
   return _shieldDetailStyle;
+}
+
+export function buffCoverageEntries() {
+  return _buffCoverageEntries;
+}
+
+export function buffCoverageStyle() {
+  return _buffCoverageStyle;
 }
 
 export function overlayTextStyle() {

@@ -51,6 +51,7 @@
   } from "./timeline-layout";
   import { timelineGestures } from "./timeline-gestures";
   import { TIMELINE_PALETTE, timelinePaletteCssVars } from "./timeline-palette";
+  import TimelineBuffLanes from "./timeline-buff-lanes.svelte";
   import TimelineCurve from "./timeline-curve.svelte";
   import TimelineHeader from "./timeline-header.svelte";
   import TimelineLanes from "./timeline-lanes.svelte";
@@ -60,6 +61,7 @@
   import type {
     Lane,
     LanePoint,
+    TimelineBuffLane,
     TimelineBossMeta as TimelineBossMetaSource,
     TimelineEventDisplay as TimelineEventDisplaySource,
     TimelineHoverPoint,
@@ -96,6 +98,10 @@
     selectedRange?: [number, number] | null;
     /** Resolve the display strings/icon for one marker event. */
     resolveEvent: (event: EncounterTimelineEvent) => TimelineEventDisplay;
+    /** Buff coverage lanes; null hides the section (old encounters). */
+    buffLanes?: TimelineBuffLane[] | null;
+    /** Range-recount coverage percent by lane key while a range is active. */
+    buffRangeCoverage?: Map<string, number> | null;
   };
 
   let {
@@ -107,6 +113,8 @@
     selectionPending = false,
     selectedRange = $bindable(null),
     resolveEvent,
+    buffLanes = null,
+    buffRangeCoverage = null,
   }: Props = $props();
 
   // ---- Damage buckets / DPS curves -----------------------------------------
@@ -662,6 +670,19 @@
       />
     </div>
   </div>
+
+  <!-- Buff coverage lanes: same fight-offset axis as the plot above. -->
+  {#if buffLanes && buffLanes.length > 0}
+    <TimelineBuffLanes
+      lanes={buffLanes}
+      {players}
+      startMs={viewport.startMs}
+      endMs={viewport.endMs}
+      gutter={layout.gutter}
+      rangeCoverage={buffRangeCoverage}
+      rangePending={selectionPending}
+    />
+  {/if}
 
   <!-- Minimap: full-encounter overview + draggable/resizable viewport. -->
   <div

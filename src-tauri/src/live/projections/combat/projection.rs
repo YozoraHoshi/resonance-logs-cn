@@ -2,6 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+use crate::live::active_window::{ActiveWindowAdvance, active_window_advance};
 use crate::live::ipc::models::{
     BossHealth, LiveDataPayload, LiveDisplayClock, RawEntityData, build_taken_per_source,
     to_raw_combat_stats, to_raw_skill_stats,
@@ -18,13 +19,11 @@ use crate::live::runtime::events::{
     DomainHit, EntityIdentity, EntityRef, EntityUuid, HitKind, MonoTimeMs, SegmentId,
 };
 
-const INACTIVITY_CUTOFF_MS: u128 = 3_000;
-const HIT_GRACE_MS: u128 = 500;
-
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ProjectionOutcome {
     pub had_combat: bool,
     pub had_player_damage: bool,
+    pub active_window: Option<ActiveWindowAdvance>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -112,7 +111,6 @@ pub struct CombatProjection {
     last_combat_offset_ms: Option<u64>,
     last_player_damage_offset_ms: Option<u64>,
     active_combat_time_ms: u128,
-    last_player_damage_wall_ms: Option<i64>,
     accumulator: CombatAccumulator,
     local_player: Option<EntityUuid>,
     scene_id: Option<i32>,
@@ -315,6 +313,7 @@ impl CombatProjection {
                 || hit.resolved_owner.is_some()
                 || hit.kind == HitKind::Damage,
             had_player_damage: hit.source_is_player && hit.kind == HitKind::Damage,
+            active_window: None,
         };
         if self.segment_id.is_none() {
             return ProjectionOutcome::default();
@@ -347,11 +346,12 @@ impl CombatProjection {
             let offset = self.segment_offset_ms(occurred_at_mono_ms);
             if outcome.had_player_damage {
                 let timestamp = u128::try_from(occurred_at_ms).unwrap_or_default();
-                self.active_combat_time_ms = self.active_combat_time_ms.saturating_add(
-                    active_increment(self.last_player_damage_wall_ms, occurred_at_ms),
-                );
-                self.last_player_damage_wall_ms = Some(occurred_at_ms);
+                let advance = active_window_advance(self.last_player_damage_offset_ms, offset);
+                self.active_combat_time_ms = self
+                    .active_combat_time_ms
+                    .saturating_add(u128::from(advance.credited_ms()));
                 self.last_player_damage_offset_ms = Some(offset);
+                outcome.active_window = Some(advance);
                 debug_assert!(
                     timestamp >= u128::try_from(self.started_at_wall_ms).unwrap_or_default()
                 );
@@ -615,21 +615,10 @@ fn exclusive_span_ms(offset: Option<u64>) -> u128 {
     offset.map_or(0, |ms| u128::from(ms).saturating_add(1))
 }
 
-fn active_increment(previous: Option<i64>, current: i64) -> u128 {
-    let Some(previous) = previous else {
-        return HIT_GRACE_MS;
-    };
-    let delta = u128::try_from(current.saturating_sub(previous)).unwrap_or_default();
-    if delta <= INACTIVITY_CUTOFF_MS {
-        delta
-    } else {
-        HIT_GRACE_MS
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::live::active_window::HIT_GRACE_MS;
     use crate::live::projections::combat::stats::damage_type_flag;
     use crate::live::runtime::events::{
         BatchId, EntityIdentityPatch, EntityKind, EventMeta, FieldPatch, HitChannel, ProtocolBatch,
@@ -770,7 +759,7 @@ mod tests {
             MonoTimeMs(1_000),
             &entities,
         );
-        assert_eq!(projection.active_combat_time_ms(), HIT_GRACE_MS);
+        assert_eq!(projection.active_combat_time_ms(), u128::from(HIT_GRACE_MS));
     }
 
     #[test]
@@ -789,7 +778,7 @@ mod tests {
         // The first hit grants active time the 500ms grace while the observed
         // duration is only 1ms; the payload must cap active at elapsed so the
         // header's active timer never reads ahead of the elapsed timer.
-        assert_eq!(projection.active_combat_time_ms(), HIT_GRACE_MS);
+        assert_eq!(projection.active_combat_time_ms(), u128::from(HIT_GRACE_MS));
         let payload = projection.payload();
         assert_eq!(payload.elapsed_ms, "1");
         assert_eq!(payload.damage_elapsed_ms, "1");
@@ -818,7 +807,7 @@ mod tests {
 
         assert_eq!(projection.observed_duration_ms(), 21_001);
         assert_eq!(projection.damage_elapsed_ms(), 1_001);
-        assert_eq!(projection.active_combat_time_ms(), HIT_GRACE_MS);
+        assert_eq!(projection.active_combat_time_ms(), u128::from(HIT_GRACE_MS));
     }
 
     #[test]
@@ -867,7 +856,10 @@ mod tests {
         );
 
         assert_eq!(projection.damage_elapsed_ms(), 16_001);
-        assert_eq!(projection.active_combat_time_ms(), HIT_GRACE_MS * 2);
+        assert_eq!(
+            projection.active_combat_time_ms(),
+            u128::from(HIT_GRACE_MS) * 2
+        );
     }
 
     #[test]
@@ -895,6 +887,7 @@ mod tests {
 
         assert_eq!(projection.segment_offset_ms(MonoTimeMs(7_000)), 2_000);
         assert_eq!(projection.observed_duration_ms(), 2_001);
+        assert_eq!(projection.active_combat_time_ms(), 1_500);
     }
 
     #[test]

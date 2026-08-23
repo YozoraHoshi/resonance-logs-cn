@@ -507,6 +507,22 @@ export const enUSMessages = {
     "Drag to resize lane height, double-click to reset",
   "history.timeline.resize.curve":
     "Drag to resize curve height, double-click to reset",
+  "history.timeline.buff.title": "Buff coverage",
+  "history.timeline.buff.toggle": "Expand or collapse buff coverage timeline",
+  "history.timeline.buff.playerPicker": "Select players",
+  "history.timeline.buff.empty":
+    "No players selected, or none have watched buffs",
+  "history.timeline.buff.spanTooltip":
+    "{player} · {name}: {start} - {end} ({duration})",
+  "history.timeline.buff.pillTooltip": "Triggered {count} times",
+  "history.buffCoverage.title": "Buff coverage summary",
+  "history.buffCoverage.caption": "Based on active combat time ({seconds}s)",
+  "history.buffCoverage.rangeCaption":
+    "Based on the selection's active combat time",
+  "history.buffCoverage.player": "Player",
+  "history.buffCoverage.count": "×{value}",
+  "history.buffCoverage.unavailable":
+    "This encounter predates buff coverage tracking; no data available",
   "tanked.monster.unknownSource": "Unknown source",
   "live.tanked.monsters.title": "Damage source",
   "history.detail.table.player": "Player",
@@ -1066,6 +1082,31 @@ export const enUSMessages = {
   "skillMonitor.tabs.panelAttr": "Character Panel",
   "skillMonitor.tabs.customPanel": "Custom Monitor",
   "skillMonitor.tabs.shieldDetail": "HP/Shield Area",
+  "skillMonitor.tabs.buffCoverage": "Buff Coverage",
+  "skillMonitor.buffCoverage.title": "Buff Coverage Monitor",
+  "skillMonitor.buffCoverage.description":
+    "Watched buffs are measured against the active combat time. The live overlay only shows your own coverage; all watched buffs are recorded to history for every party member.",
+  "skillMonitor.buffCoverage.list.title": "Watch List",
+  "skillMonitor.buffCoverage.list.description":
+    'Search and add buffs to track. Entries with "Show live" off are history-only (useful for buffs that only appear on teammates).',
+  "skillMonitor.buffCoverage.list.empty": "No coverage buffs added yet",
+  "skillMonitor.buffCoverage.list.count": "{count}/{max}",
+  "skillMonitor.buffCoverage.list.limit": "You can watch up to {max} buffs",
+  "skillMonitor.buffCoverage.status.added": "Added",
+  "skillMonitor.buffCoverage.searchPlaceholder": "Search buff name or id…",
+  "skillMonitor.buffCoverage.entry.showInLive": "Show live",
+  "skillMonitor.buffCoverage.entry.remove": "Remove",
+  "skillMonitor.buffCoverage.style.title": "Display Style",
+  "skillMonitor.buffCoverage.style.description":
+    "Coverage rows: state dot + name + remaining time + coverage % + trigger count, with a countdown bar below.",
+  "skillMonitor.buffCoverage.style.showName": "Show name",
+  "skillMonitor.buffCoverage.style.showRemaining": "Show remaining time",
+  "skillMonitor.buffCoverage.style.showCount": "Show trigger count",
+  "skillMonitor.buffCoverage.style.showStateDot": "Show state dot",
+  "skillMonitor.buffCoverage.style.showProgress": "Show countdown bar",
+  "skillMonitor.buffCoverage.style.nameColor": "Name color",
+  "skillMonitor.buffCoverage.style.valueColor": "Value color",
+  "skillMonitor.buffCoverage.style.progressColor": "Progress color",
   "skillMonitor.tabs.overlay": "Enable Window",
   "skillMonitor.common.clear": "Clear",
   "skillMonitor.common.remove": "Remove",
@@ -1342,6 +1383,7 @@ export const enUSMessages = {
   "skillMonitor.panelAttr.textStyle": "Text style",
   "skillMonitor.overlay.customPanel": "Custom Monitor Area: {state}",
   "skillMonitor.overlay.shieldDetail": "HP/Shield Area: {state}",
+  "skillMonitor.overlay.buffCoverage": "Buff Coverage Area: {state}",
   "skillMonitor.overlay.help":
     "Click a button to toggle visibility. Saved per profile",
   "monsterMonitor.title": "Monster Monitor",
@@ -1559,6 +1601,10 @@ export const enUSMessages = {
   "gameOverlay.group.skillCd": "Skill CD Area",
   "gameOverlay.group.textBuff": "Text Buff Area",
   "gameOverlay.group.shieldDetail": "HP/Shield Area",
+  "gameOverlay.group.buffCoverage": "Buff Coverage Area",
+  "gameOverlay.coverage.count": "{value}x",
+  "gameOverlay.coverage.empty":
+    "Add coverage buffs in the skill monitor page first",
   "gameOverlay.groupedBuff.empty":
     "Create buff groups on the Skill Monitor page first",
   "gameOverlay.timer.infinite": "∞",

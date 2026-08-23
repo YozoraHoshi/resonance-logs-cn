@@ -15,6 +15,7 @@ import {
   teammateAverageCurves,
   toCumulativeDpsCurve,
   toRollingDpsCurve,
+  visibleSpanRects,
   windowMaxValue,
   xToTime,
   zoomTierFor,
@@ -543,6 +544,53 @@ describe("collapseHoverLanePoints", () => {
   it("passes a single point through", () => {
     const only = hoverPoint(1, 50);
     expect(collapseHoverLanePoints([only])).toEqual([only]);
+  });
+});
+
+describe("visibleSpanRects", () => {
+  it("converts a fully-visible span to left/width percentages", () => {
+    expect(visibleSpanRects([{ startMs: 1_000, endMs: 3_000 }], 0, 10_000)).toEqual([
+      { startMs: 1_000, endMs: 3_000, leftPct: 10, widthPct: 20 },
+    ]);
+  });
+
+  it("clamps a span straddling the window edges without changing its reported times", () => {
+    const [rect] = visibleSpanRects(
+      [{ startMs: -1_000, endMs: 2_000 }],
+      0,
+      10_000,
+    );
+    expect(rect).toEqual({
+      startMs: -1_000,
+      endMs: 2_000,
+      leftPct: 0,
+      widthPct: 20,
+    });
+  });
+
+  it("drops spans entirely outside the window", () => {
+    expect(
+      visibleSpanRects(
+        [
+          { startMs: -2_000, endMs: -1_000 },
+          { startMs: 11_000, endMs: 12_000 },
+        ],
+        0,
+        10_000,
+      ),
+    ).toEqual([]);
+  });
+
+  it("keeps a span that exactly touches the window boundary excluded (half-open)", () => {
+    expect(
+      visibleSpanRects([{ startMs: -1_000, endMs: 0 }], 0, 10_000),
+    ).toEqual([]);
+  });
+
+  it("returns an empty array for a degenerate window", () => {
+    expect(visibleSpanRects([{ startMs: 0, endMs: 100 }], 500, 500)).toEqual(
+      [],
+    );
   });
 });
 

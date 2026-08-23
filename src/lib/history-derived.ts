@@ -7,6 +7,7 @@
  * instead of duplicating formatting logic.
  */
 import type {
+  EncounterBuffTimelineData,
   EncounterChartSeriesData,
   EncounterEntityData,
   EncounterSkillData,
@@ -388,4 +389,160 @@ export function buildHistoryPlayerRows(
     .filter(
       (row) => row.totalDmg > 0 || row.healDealt > 0 || row.damageTaken > 0,
     );
+}
+
+/** One (player, buff) coverage lane view derived from `buffTimeline`. */
+export type HistoryBuffLaneView = {
+  /** `${entityUuid}:${baseId}` — stable across detail/range recounts. */
+  key: string;
+  entityUuid: string;
+  baseId: number;
+  coveredActiveMs: number;
+  /** Active-window coverage percent, 0..100. */
+  coveragePct: number;
+  triggerCount: number;
+  spans: { startMs: number; endMs: number }[];
+  gracePoints: { offsetMs: number; creditedMs: number }[];
+};
+
+export type HistoryBuffTimelineView = {
+  activeWindowMs: number;
+  activeSpans: { startMs: number; endMs: number }[];
+  gracePoints: { offsetMs: number; creditedMs: number }[];
+  lanes: HistoryBuffLaneView[];
+};
+
+export function historyBuffLaneKey(entityUuid: string, baseId: number): string {
+  return `${entityUuid}:${baseId}`;
+}
+
+/** Adapts the DTO to lane views; `null` marks encounters recorded before
+ * buff timeline persistence existed (frontend degradation signal). */
+export function historyBuffTimeline(
+  data: EncounterBuffTimelineData | null | undefined,
+): HistoryBuffTimelineView | null {
+  if (!data) return null;
+  const activeWindowMs = Math.max(0, data.activeWindowMs);
+  return {
+    activeWindowMs,
+    activeSpans: (data.activeSpans ?? []).map((span) => ({
+      startMs: span.startMs,
+      endMs: span.endMsExclusive,
+    })),
+    gracePoints: data.gracePoints ?? [],
+    lanes: data.lanes.map((lane) => {
+      const spans = lane.spans.map((span) => ({
+        startMs: span.startMs,
+        endMs: span.endMsExclusive,
+      }));
+      return {
+        key: historyBuffLaneKey(lane.entityId, lane.baseId),
+        entityUuid: lane.entityId,
+        baseId: lane.baseId,
+        coveredActiveMs: lane.coveredActiveMs,
+        coveragePct:
+          activeWindowMs > 0
+            ? Math.min(100, (lane.coveredActiveMs / activeWindowMs) * 100)
+            : 0,
+        triggerCount: spans.length,
+        spans,
+        gracePoints: lane.gracePoints ?? [],
+      };
+    }),
+  };
+}
+
+function intersectDuration(
+  leftStart: number,
+  leftEnd: number,
+  rightStart: number,
+  rightEnd: number,
+): number {
+  return Math.max(
+    0,
+    Math.min(leftEnd, rightEnd) - Math.max(leftStart, rightStart),
+  );
+}
+
+function intersectSortedSpans(
+  left: readonly { startMs: number; endMs: number }[],
+  right: readonly { startMs: number; endMs: number }[],
+): number {
+  let leftIndex = 0;
+  let rightIndex = 0;
+  let total = 0;
+  while (leftIndex < left.length && rightIndex < right.length) {
+    const leftSpan = left[leftIndex]!;
+    const rightSpan = right[rightIndex]!;
+    total += intersectDuration(
+      leftSpan.startMs,
+      leftSpan.endMs,
+      rightSpan.startMs,
+      rightSpan.endMs,
+    );
+    if (leftSpan.endMs <= rightSpan.endMs) leftIndex += 1;
+    else rightIndex += 1;
+  }
+  return total;
+}
+
+/** Clips the encounter-global active windows and buff presence to a selected
+ * range. The range never creates a new first-hit grace credit. */
+export function historyBuffTimelineRange(
+  view: HistoryBuffTimelineView | null,
+  startMs: number,
+  endMs: number,
+): HistoryBuffTimelineView | null {
+  if (!view || endMs <= startMs) return null;
+  const activeSpans = view.activeSpans
+    .map((span) => ({
+      startMs: Math.max(span.startMs, startMs),
+      endMs: Math.min(span.endMs, endMs),
+    }))
+    .filter((span) => span.endMs > span.startMs);
+  const gracePoints = view.gracePoints.filter(
+    (point) => point.offsetMs >= startMs && point.offsetMs < endMs,
+  );
+  const rawActiveMs =
+    activeSpans.reduce((total, span) => total + span.endMs - span.startMs, 0) +
+    gracePoints.reduce((total, point) => total + point.creditedMs, 0);
+  const activeWindowMs = Math.min(endMs - startMs, rawActiveMs);
+
+  const lanes = view.lanes.map((lane) => {
+    const spans = lane.spans
+      .map((span) => ({
+        startMs: Math.max(span.startMs, startMs),
+        endMs: Math.min(span.endMs, endMs),
+      }))
+      .filter((span) => span.endMs > span.startMs);
+    let coveredActiveMs = intersectSortedSpans(spans, activeSpans);
+    const laneGrace = lane.gracePoints.filter(
+      (point) => point.offsetMs >= startMs && point.offsetMs < endMs,
+    );
+    coveredActiveMs += laneGrace.reduce(
+      (total, point) => total + point.creditedMs,
+      0,
+    );
+    coveredActiveMs = Math.min(activeWindowMs, coveredActiveMs);
+    return {
+      ...lane,
+      coveredActiveMs,
+      coveragePct:
+        activeWindowMs > 0
+          ? Math.min(100, (coveredActiveMs / activeWindowMs) * 100)
+          : 0,
+      triggerCount: spans.length,
+      spans,
+      gracePoints: laneGrace,
+    };
+  });
+  return { activeWindowMs, activeSpans, gracePoints, lanes };
+}
+
+/** Coverage percent per lane key, for range-recount overrides. */
+export function historyBuffCoverageByKey(
+  view: HistoryBuffTimelineView | null,
+): Map<string, number> | null {
+  if (!view) return null;
+  return new Map(view.lanes.map((lane) => [lane.key, lane.coveragePct]));
 }

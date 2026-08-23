@@ -54,6 +54,25 @@ export type TimelineHoverPoint = {
   y: number;
 };
 
+/** One wall-clock presence interval of a watched buff, in fight offsets. */
+export type TimelineBuffSpan = {
+  startMs: number;
+  endMs: number;
+};
+
+/** One (player, buff) coverage lane, kept separate from the marker `Lane`
+ * union so the point-based marker pipeline stays untouched. */
+export type TimelineBuffLane = {
+  key: string;
+  entityUuid: string;
+  baseId: number;
+  buffName: string;
+  /** Full-fight coverage percent (active-window caliber), 0..100. */
+  coveragePct: number;
+  triggerCount: number;
+  spans: TimelineBuffSpan[];
+};
+
 /** One selected teammate's cumulative DPS series, ready to draw / tooltip. */
 export type TimelineTeammateAverageCurve = {
   entityUuid: string;

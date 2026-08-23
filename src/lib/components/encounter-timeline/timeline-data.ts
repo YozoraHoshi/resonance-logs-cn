@@ -390,6 +390,31 @@ export function sliceLanePointsByTime<T extends TimeStamped>(
   return points.slice(first, last);
 }
 
+/** Keeps only spans overlapping the visible half-open window, clamped to it.
+ * Buff lanes carry few spans, so a linear pass beats maintaining a second
+ * binary-search index. Returns [leftPct, widthPct] pairs ready for CSS. */
+export function visibleSpanRects(
+  spans: readonly { startMs: number; endMs: number }[],
+  startMs: number,
+  endMs: number,
+): { startMs: number; endMs: number; leftPct: number; widthPct: number }[] {
+  const windowMs = endMs - startMs;
+  if (windowMs <= 0) return [];
+  const result = [];
+  for (const span of spans) {
+    if (span.endMs <= startMs || span.startMs >= endMs) continue;
+    const clampedStart = Math.max(span.startMs, startMs);
+    const clampedEnd = Math.min(span.endMs, endMs);
+    result.push({
+      startMs: span.startMs,
+      endMs: span.endMs,
+      leftPct: ((clampedStart - startMs) / windowMs) * 100,
+      widthPct: ((clampedEnd - clampedStart) / windowMs) * 100,
+    });
+  }
+  return result;
+}
+
 /** Drops markers that land on a pixel column already claimed by a later one.
  *
  * Lane markers are painted in DOM order, so the later marker of an overlapping

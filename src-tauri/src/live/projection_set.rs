@@ -10,6 +10,7 @@ use crate::live::ipc::models::{
     LiveMonsterPayload, LiveScenePayload, LiveStatusPayload, MinimapUpdatePayload,
 };
 use crate::live::ipc::topic::{Topic, TopicMask};
+use crate::live::projections::buff_timeline::BuffTimelineProjection;
 use crate::live::projections::combat::accumulator::CombatHitFact;
 use crate::live::projections::combat::projection::CombatProjection;
 use crate::live::projections::death::DeathProjection;
@@ -21,7 +22,7 @@ use crate::live::projections::timeline::TimelineProjection;
 use crate::live::projections::voice::VoiceProjection;
 use crate::live::runtime::entity_context::EntityContext;
 use crate::live::runtime::events::{
-    AttributeValue, DomainEnvelope, DomainEvent, MonoTimeMs, SegmentReason,
+    AttributeValue, DomainEnvelope, DomainEvent, EntityKind, MonoTimeMs, SegmentReason,
 };
 use crate::live::runtime::scheduler::{DeadlineScheduler, DueTimer};
 use crate::live::runtime::segment::SegmentState;
@@ -73,6 +74,7 @@ impl TopicPublication {
 
 #[derive(Debug)]
 pub struct ProjectionSet {
+    buff_timeline: BuffTimelineProjection,
     combat: CombatProjection,
     counter: CounterEngine,
     entity_monitor: EntityMonitorProjection,
@@ -89,6 +91,7 @@ pub struct ProjectionSet {
 impl ProjectionSet {
     pub fn new(history_writer: HistoryWriterHandle) -> Self {
         Self {
+            buff_timeline: BuffTimelineProjection::default(),
             combat: CombatProjection::default(),
             counter: CounterEngine::new(),
             entity_monitor: EntityMonitorProjection::default(),
@@ -127,6 +130,23 @@ impl ProjectionSet {
             .apply_config(std::sync::Arc::clone(&config), entities);
         self.voice
             .apply_config(&config, entities, now_mono, scheduler);
+        {
+            let combat = &self.combat;
+            let current_offset = combat
+                .segment_id()
+                .map(|_| combat.segment_offset_ms(now_mono));
+            let edges = self.buff_timeline.apply_config(
+                &config.skill.buff_timeline_ids,
+                entities,
+                current_offset,
+                |mono| combat.segment_offset_ms(mono),
+            );
+            if let Some(offset) = current_offset {
+                for edge in edges {
+                    self.history.persist_buff(edge, entities, offset)?;
+                }
+            }
+        }
         self.counter_side_effect_dirty = true;
         self.dirty |= SEGMENT_TOPICS;
         Ok(())
@@ -200,9 +220,21 @@ impl ProjectionSet {
                 self.death.apply(envelope);
                 self.voice.apply(envelope, entities, scheduler);
                 minimap_changed |= self.minimap.apply(envelope);
+                let offset = self.combat.segment_offset_ms(envelope.meta.mono_ms());
+                let edges = self
+                    .buff_timeline
+                    .on_entity_disappeared(entity.uuid.0, offset);
+                if !edges.is_empty() {
+                    reported |= TopicMask::BUFFS;
+                    for edge in edges {
+                        self.history.persist_buff(edge, entities, offset)?;
+                    }
+                }
             }
             DomainEvent::IdentityChanged {
-                entity, current, ..
+                entity,
+                previous,
+                current,
             } => {
                 combat_changed |= self.combat.observe_identity(*entity, current, entities);
                 reported |= self.entity_monitor.apply(envelope, entities, scheduler);
@@ -214,6 +246,21 @@ impl ProjectionSet {
                     self.combat.segment_offset_ms(envelope.meta.mono_ms()),
                     None,
                 )?;
+                if previous.kind != current.kind {
+                    let offset = self.combat.segment_offset_ms(envelope.meta.mono_ms());
+                    let combat = &self.combat;
+                    let edges =
+                        self.buff_timeline
+                            .reconcile_from_entities(entities, offset, &mut |mono| {
+                                combat.segment_offset_ms(mono)
+                            });
+                    if !edges.is_empty() {
+                        reported |= TopicMask::BUFFS;
+                        for edge in edges {
+                            self.history.persist_buff(edge, entities, offset)?;
+                        }
+                    }
+                }
             }
             DomainEvent::AttributeChanged {
                 entity,
@@ -250,8 +297,33 @@ impl ProjectionSet {
                 ) {
                     self.voice.apply(envelope, entities, scheduler);
                 }
+                if let DomainEvent::BuffChanged(event) = &envelope.event {
+                    let offset = self.combat.segment_offset_ms(envelope.meta.mono_ms());
+                    let target_is_character = entities
+                        .entity(event.state.target.uuid)
+                        .is_some_and(|state| state.identity.kind == EntityKind::Character);
+                    let expires_offset = event
+                        .state
+                        .expires_mono_ms
+                        .map(|mono| self.combat.segment_offset_ms(mono));
+                    let edges = self.buff_timeline.apply_buff(
+                        event,
+                        target_is_character,
+                        offset,
+                        expires_offset,
+                    );
+                    if !edges.is_empty() {
+                        reported |= TopicMask::BUFFS;
+                        for edge in edges {
+                            self.history.apply_buff(envelope, edge, entities, offset)?;
+                        }
+                    }
+                }
                 if let DomainEvent::LocalPlayerChanged { current, .. } = &envelope.event {
                     combat_changed |= self.combat.set_local_player(*current);
+                    let offset = self.combat.segment_offset_ms(envelope.meta.mono_ms());
+                    self.buff_timeline.rebind_local_player(entities, offset);
+                    reported |= TopicMask::BUFFS;
                 }
             }
             DomainEvent::HateListUpdated { .. }
@@ -302,12 +374,12 @@ impl ProjectionSet {
                 );
                 combat_changed |= outcome.had_combat;
                 self.death.apply_hit(envelope, hit, fact.as_ref());
-                self.history.apply_hit(
-                    envelope,
-                    fact.as_ref(),
-                    entities,
-                    self.combat.segment_offset_ms(envelope.meta.mono_ms()),
-                )?;
+                let offset = self.combat.segment_offset_ms(envelope.meta.mono_ms());
+                self.history
+                    .apply_hit(envelope, fact.as_ref(), entities, offset)?;
+                if self.buff_timeline.observe_hit(outcome.active_window) {
+                    reported |= TopicMask::BUFFS;
+                }
             }
             DomainEvent::SceneChanged {
                 scene_id,
@@ -326,6 +398,21 @@ impl ProjectionSet {
                     envelope.meta.mono_ms(),
                     envelope.occurred_at_ms,
                 );
+                if !*is_paused {
+                    let offset = self.combat.segment_offset_ms(envelope.meta.mono_ms());
+                    let combat = &self.combat;
+                    let edges =
+                        self.buff_timeline
+                            .reconcile_from_entities(entities, offset, &mut |mono| {
+                                combat.segment_offset_ms(mono)
+                            });
+                    if !edges.is_empty() {
+                        reported |= TopicMask::BUFFS;
+                        for edge in edges {
+                            self.history.persist_buff(edge, entities, offset)?;
+                        }
+                    }
+                }
             }
             DomainEvent::DeadlineReached { .. } => {
                 reported |= self.entity_monitor.apply(envelope, entities, scheduler);
@@ -405,6 +492,7 @@ impl ProjectionSet {
     pub fn clear_display(&mut self) {
         self.presentation.clear_display();
         self.entity_monitor.clear_segment_display();
+        self.buff_timeline.clear();
         self.combat.clear_segment();
         self.death.start_segment();
         self.counter_side_effect_dirty = false;
@@ -423,6 +511,7 @@ impl ProjectionSet {
             self.death.snapshot(),
             self.entity_monitor.displayed_fantasies(),
         );
+        self.buff_timeline.clear();
         self.combat.clear_segment();
         self.combat.set_local_player(None);
         self.entity_monitor.reset_runtime(scheduler);
@@ -507,9 +596,20 @@ impl ProjectionSet {
                     self.presentation
                         .take_status_payload(monitored(), self.counter.snapshot()),
                 ),
-                Topic::Buffs => {
-                    TopicPublication::Buffs(self.presentation.take_buffs_payload(monitored()))
-                }
+                Topic::Buffs => TopicPublication::Buffs(
+                    self.presentation.take_buffs_payload(
+                        monitored(),
+                        self.buff_timeline.coverage_payload(
+                            entities,
+                            u64::try_from(
+                                self.combat
+                                    .active_combat_time_ms()
+                                    .min(self.combat.observed_duration_ms()),
+                            )
+                            .unwrap_or(u64::MAX),
+                        ),
+                    ),
+                ),
                 Topic::Monster => {
                     TopicPublication::Monster(self.presentation.take_monster_payload(monitored()))
                 }
@@ -570,6 +670,15 @@ impl ProjectionSet {
             },
         )?;
         self.presentation.segment_started(segment_id);
+        {
+            let combat = &self.combat;
+            let edges = self
+                .buff_timeline
+                .start_segment(entities, |mono| combat.segment_offset_ms(mono));
+            for edge in edges {
+                self.history.persist_buff(edge, entities, 0)?;
+            }
+        }
         self.counter_side_effect_dirty = true;
         self.dirty |= SEGMENT_TOPICS;
         Ok(())
@@ -601,6 +710,7 @@ impl ProjectionSet {
             );
         }
 
+        self.buff_timeline.end_segment();
         let active_ms = self.combat.active_combat_time_ms().min(duration_ms);
         let total_damage_exact = self.combat.total_damage();
         let total_healing_exact = self.combat.total_healing();

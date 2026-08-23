@@ -182,12 +182,31 @@ pub struct LiveStatusPayload {
     pub fight_resource: Option<FightResourceState>,
 }
 
+/// Live coverage of one watched buff on the local player. `covered_ms` and
+/// `active_ms` follow the shared active-window rule; the frontend only
+/// divides and formats.
+#[derive(
+    specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone, PartialEq, Eq,
+)]
+#[serde(rename_all = "camelCase")]
+pub struct BuffCoverageEntry {
+    pub base_id: i32,
+    pub covered_ms: u64,
+    pub active_ms: u64,
+    pub active_now: bool,
+    pub layer: i32,
+    pub count: u32,
+}
+
 /// Local player buff list (`live-buffs`), 50ms throttle.
 #[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct LiveBuffsPayload {
     pub revision: u64,
     pub local_buffs: Vec<BuffUpdateState>,
+    /// Coverage rows for the configured watch list, in configured order.
+    #[serde(default)]
+    pub coverage: Vec<BuffCoverageEntry>,
 }
 
 /// Monster overlay topic (`live-monster`), 50ms throttle.

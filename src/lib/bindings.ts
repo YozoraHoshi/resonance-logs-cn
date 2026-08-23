@@ -528,6 +528,12 @@ isDead: boolean }
 export type BossMonsterIdsResult = { ids: number[] }
 export type BossSummaryDto = { monsterId: number; maxHp: number | null; isDefeated: boolean }
 /**
+ * Live coverage of one watched buff on the local player. `covered_ms` and
+ * `active_ms` follow the shared active-window rule; the frontend only
+ * divides and formats.
+ */
+export type BuffCoverageEntry = { baseId: number; coveredMs: number; activeMs: number; activeNow: boolean; layer: number; count: number }
+/**
  * Represents a buff update state.
  */
 export type BuffUpdateState = { baseId: number; layer: number; durationMs: number; createTimeMs: number; sourceRemodelLevel: number | null }
@@ -585,6 +591,32 @@ export type DeathRecord = { victimEntityUuid: string; deathTimestampMs: string;
 recentDamages?: DamageSnapshot[]; victimBuffs?: DeathBuffSnapshot[]; participantBuffs?: DeathParticipantBuffSnapshot[] }
 export type Device = { name: string; description: string | null }
 export type EffectSlotConfig = { slotId: number; threshold: number | null; resetBuffId: number; resetSourceConfigId?: number | null; resetBuffTarget?: ResetBuffTarget; onBuffAdd?: CounterAction; onBuffChange?: CounterAction; onBuffRemove?: CounterAction; freezeDurationMs?: number | null; onFreezeExpire?: CounterAction; altFreeze?: AltFreezeConfig | null; thresholdModifier?: AttrModifier | null; freezeDurationModifier?: AttrModifier | null; resetSkillKeys?: number[] | null; onResetSkill?: CounterAction; dungeonStartFreezeMs?: number | null }
+export type EncounterBuffGraceData = { offsetMs: number; creditedMs: number }
+export type EncounterBuffLaneData = { entityId: string; baseId: number;
+/**
+ * Buff-on time intersected with the active-combat windows (the
+ * "true dps" denominator rule). Compare against `active_window_ms`.
+ */
+coveredActiveMs: number; spans: EncounterBuffSpanData[];
+/**
+ * Grace credits sampled while this buff was present. Sequence ordering
+ * is resolved by the backend before exposing these compact points.
+ */
+gracePoints?: EncounterBuffGraceData[] }
+/**
+ * One contiguous wall-clock presence interval of a buff on an entity,
+ * as segment offsets clamped to the queried range.
+ */
+export type EncounterBuffSpanData = { startMs: number; endMsExclusive: number }
+export type EncounterBuffTimelineData = { activeWindowMs: number;
+/**
+ * Non-grace active intervals on the encounter offset axis.
+ */
+activeSpans?: EncounterBuffSpanData[];
+/**
+ * First-hit / post-inactivity credits for the denominator.
+ */
+gracePoints?: EncounterBuffGraceData[]; lanes: EncounterBuffLaneData[] }
 export type EncounterChartPointData = { offsetMs: number; damage: string; healing: string; damageTaken: string }
 /**
  * Sparse per-entity bucket series: one row per (entity, metric), holding only
@@ -596,7 +628,12 @@ export type EncounterDetailData = { encounterId: number; summary: EncounterSumma
 /**
  * Always recomputed from chunks on load; stored snapshots leave it empty.
  */
-series?: EncounterChartSeriesData[]; markers: EncounterMarkerData[] }
+series?: EncounterChartSeriesData[]; markers: EncounterMarkerData[];
+/**
+ * Always recomputed from chunks on load; `None` for encounters recorded
+ * before buff timeline persistence existed.
+ */
+buffTimeline?: EncounterBuffTimelineData | null }
 export type EncounterEntityData = { entityId: string; displayUid: number; name: string | null; classId: number | null; classSpec: number | null;
 /**
  * Resolved spec display name; `None` for monsters / unknown specs.
@@ -649,7 +686,11 @@ export type I18nRuntimeSnapshot = { locale: AppLocale }
 /**
  * Local player buff list (`live-buffs`), 50ms throttle.
  */
-export type LiveBuffsPayload = { revision: number; localBuffs: BuffUpdateState[] }
+export type LiveBuffsPayload = { revision: number; localBuffs: BuffUpdateState[];
+/**
+ * Coverage rows for the configured watch list, in configured order.
+ */
+coverage?: BuffCoverageEntry[] }
 /**
  * Combat / segment topic for the live meter window (`live-combat`).
  * `scene_id`/`dungeon_difficulty` live only on the nested `combat` payload;
@@ -967,7 +1008,12 @@ calculatedDuration: number;
  * Cooldown accelerate rate for this skill
  */
 cdAccelerateRate: number }
-export type SkillRuntimeSnapshot = { enabled: boolean; monitoredSkillIds: number[]; monitoredBuffIds: number[]; monitorAllBuff: boolean; monitoredPanelAttrIds: number[]; buffCounterRules: CounterRule[]; seasonCultivateFactorTemplates: FactorCounterTemplate[] }
+export type SkillRuntimeSnapshot = { enabled: boolean; monitoredSkillIds: number[]; monitoredBuffIds: number[]; monitorAllBuff: boolean; monitoredPanelAttrIds: number[]; buffCounterRules: CounterRule[]; seasonCultivateFactorTemplates: FactorCounterTemplate[];
+/**
+ * Coverage watch list: these buff ids are tracked for live coverage on
+ * the local player and persisted as timeline edges for all players.
+ */
+buffTimelineIds: number[] }
 export type SlotUpdateState = { slotId: number; currentCount: number; threshold: number | null; effectiveThreshold: number | null; isCounting: boolean; resetBuffActive: boolean; freezeUntilMs: number | null; freezeDurationMs: number | null; effectiveFreezeDurationMs: number | null }
 /**
  * Stamina/resilience snapshot for a single monster target.

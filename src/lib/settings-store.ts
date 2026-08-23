@@ -844,6 +844,7 @@ export type OverlayPositions = {
   panelAttrGroup: Point;
   customPanelGroup: Point;
   shieldDetailGroup: Point;
+  buffCoverageGroup: Point;
   iconBuffPositions: Record<number, Point>;
   skillDurationPositions: Record<number, Point>;
   categoryIconPositions?: Partial<Record<BuffCategoryKey, Point>>;
@@ -856,6 +857,7 @@ export type OverlaySizes = {
   panelAttrGroupScale: number;
   customPanelGroupScale: number;
   shieldDetailGroupScale: number;
+  buffCoverageGroupScale: number;
   panelAttrGap: number;
   panelAttrFontSize: number;
   panelAttrColumnGap: number;
@@ -872,6 +874,7 @@ export type OverlayVisibility = {
   showPanelAttrGroup: boolean;
   showCustomPanelGroup: boolean;
   showShieldDetailGroup: boolean;
+  showBuffCoverageGroup: boolean;
 };
 
 export type OverlayTextStyle = {
@@ -1017,6 +1020,32 @@ export type InlineBuffEntry = {
   format: InlineBuffFormat;
 };
 
+/** One watched buff in the coverage monitor. `showInLive: false` entries are
+ * still recorded to history but hidden from the live HUD (buffs that only
+ * ever appear on teammates would otherwise sit at a permanent 0%). */
+export type BuffCoverageEntry = {
+  id: string;
+  buffId: number;
+  label: string;
+  showInLive: boolean;
+};
+
+export const MAX_BUFF_COVERAGE_ENTRIES = 32;
+
+export type BuffCoverageStyle = {
+  fontSize: number;
+  gap: number;
+  nameColor: string;
+  valueColor: string;
+  progressColor: string;
+  progressOpacity: number;
+  showName: boolean;
+  showRemaining: boolean;
+  showCount: boolean;
+  showStateDot: boolean;
+  showProgress: boolean;
+} & OverlayTextStyle;
+
 export type UserCounterRule = {
   ruleId: number;
   name: string;
@@ -1081,6 +1110,8 @@ export type SkillMonitorProfile = {
   customPanelGroups?: CustomPanelGroup[];
   factorSlotLabels?: Record<string, string>;
   inlineBuffEntries?: InlineBuffEntry[];
+  buffCoverageEntries?: BuffCoverageEntry[];
+  buffCoverageStyle?: BuffCoverageStyle;
   panelAreaRowOrder?: PanelAreaRowRef[];
   /** @deprecated Legacy shared style, kept only for migrating old custom panel groups. */
   customPanelStyle?: CustomPanelStyle;
@@ -1198,6 +1229,7 @@ function createDefaultOverlayPositions(): OverlayPositions {
     panelAttrGroup: { x: 700, y: 40 },
     customPanelGroup: { x: 700, y: 280 },
     shieldDetailGroup: { x: 40, y: 550 },
+    buffCoverageGroup: { x: 360, y: 550 },
     iconBuffPositions: {},
     skillDurationPositions: {},
     categoryIconPositions: {},
@@ -1212,6 +1244,7 @@ function createDefaultOverlaySizes(): OverlaySizes {
     panelAttrGroupScale: 1,
     customPanelGroupScale: 1,
     shieldDetailGroupScale: 1,
+    buffCoverageGroupScale: 1,
     panelAttrGap: 4,
     panelAttrFontSize: 14,
     panelAttrColumnGap: 12,
@@ -1230,6 +1263,24 @@ function createDefaultOverlayVisibility(): OverlayVisibility {
     showPanelAttrGroup: true,
     showCustomPanelGroup: true,
     showShieldDetailGroup: false,
+    showBuffCoverageGroup: false,
+  };
+}
+
+export function createDefaultBuffCoverageStyle(): BuffCoverageStyle {
+  return {
+    fontSize: 13,
+    gap: 4,
+    nameColor: "#e5e7eb",
+    valueColor: "#6ee7b7",
+    progressColor: "#34d399",
+    progressOpacity: 0.4,
+    showName: true,
+    showRemaining: true,
+    showCount: true,
+    showStateDot: true,
+    showProgress: true,
+    ...createDefaultOverlayTextStyle(),
   };
 }
 
@@ -1459,6 +1510,8 @@ export function createDefaultSkillMonitorProfile(
     customPanelGroups: [],
     factorSlotLabels: {},
     inlineBuffEntries: [],
+    buffCoverageEntries: [],
+    buffCoverageStyle: createDefaultBuffCoverageStyle(),
     panelAreaRowOrder: [],
     textBuffPanelStyle: createDefaultTextBuffPanelStyle(),
     overlayTextStyle: createDefaultOverlayTextStyle(),

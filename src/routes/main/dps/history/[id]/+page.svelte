@@ -20,8 +20,15 @@
     resolveMonsterSkillName,
     resolveSceneName,
   } from "$lib/config/game-names";
+  import BuffCoverageTable from "$lib/components/history/buff-coverage-table.svelte";
+  import type { TimelineBuffLane } from "$lib/components/encounter-timeline/timeline-types";
+  import { resolveBuffDisplayName } from "$lib/config/buff-name-table";
+  import { getGlobalBuffAliases } from "$lib/settings-store";
   import {
     buildHistoryPlayerRows,
+    historyBuffCoverageByKey,
+    historyBuffTimeline,
+    historyBuffTimelineRange,
     historyChartSeries,
     historyDeathEntries,
     historyEntityToRaw,
@@ -409,6 +416,48 @@
       }
     }
     return [...seen].map(([entityUuid, name]) => ({ entityUuid, name }));
+  });
+
+  // ---- Buff coverage timeline ----------------------------------------------
+  const buffAliases = $derived(getGlobalBuffAliases());
+
+  function coverageBuffName(baseId: number): string {
+    return resolveBuffDisplayName(baseId, buffAliases);
+  }
+
+  /** Full-fight view; null = recorded before buff persistence existed. */
+  const buffTimelineView = $derived(historyBuffTimeline(detail?.buffTimeline));
+
+  /** Range view clipped from the encounter-global active windows. */
+  const rangeBuffTimelineView = $derived(
+    selectedRange
+      ? historyBuffTimelineRange(
+          buffTimelineView,
+          selectedRange[0],
+          selectedRange[1],
+        )
+      : null,
+  );
+
+  const buffRangeCoverage = $derived.by(() => {
+    if (!selectedRange) return null;
+    return (
+      historyBuffCoverageByKey(rangeBuffTimelineView) ??
+      new Map<string, number>()
+    );
+  });
+
+  const buffLanes = $derived.by<TimelineBuffLane[] | null>(() => {
+    if (!buffTimelineView) return null;
+    return buffTimelineView.lanes.map((lane) => ({
+      key: lane.key,
+      entityUuid: lane.entityUuid,
+      baseId: lane.baseId,
+      buffName: coverageBuffName(lane.baseId),
+      coveragePct: lane.coveragePct,
+      triggerCount: lane.triggerCount,
+      spans: lane.spans,
+    }));
   });
 
   // ---- Data loading --------------------------------------------------------
@@ -820,6 +869,8 @@
             selectionPending={rangePending}
             bind:selectedRange
             resolveEvent={resolveTimelineEvent}
+            {buffLanes}
+            {buffRangeCoverage}
           />
         </section>
       {/if}
@@ -896,6 +947,21 @@
                 activeTab === "damage" ? overviewTargetUuid : null,
               )}
           />
+        {/if}
+
+        {#if buffTimelineView && buffTimelineView.lanes.length > 0}
+          <section class="mt-5">
+            <BuffCoverageTable
+              view={buffTimelineView}
+              rangeView={rangeBuffTimelineView}
+              players={timelinePlayers}
+              resolveBuffName={coverageBuffName}
+            />
+          </section>
+        {:else if chart && !buffTimelineView}
+          <p class="text-muted-foreground mt-5 text-[11px]">
+            {t("history.buffCoverage.unavailable")}
+          </p>
         {/if}
       {:else if entityUuid && selectedPlayer && selectedEntity && skillType === "death"}
         <!-- Death replay: per-player list or detail -->

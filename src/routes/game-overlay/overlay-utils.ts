@@ -71,6 +71,8 @@ export function ensureOverlayPositions(
       current?.customPanelGroup ?? DEFAULT_OVERLAY_POSITIONS.customPanelGroup,
     shieldDetailGroup:
       current?.shieldDetailGroup ?? DEFAULT_OVERLAY_POSITIONS.shieldDetailGroup,
+    buffCoverageGroup:
+      current?.buffCoverageGroup ?? DEFAULT_OVERLAY_POSITIONS.buffCoverageGroup,
     iconBuffPositions: current?.iconBuffPositions ?? {},
     skillDurationPositions: current?.skillDurationPositions ?? {},
     categoryIconPositions: current?.categoryIconPositions ?? {},
@@ -99,6 +101,9 @@ export function ensureOverlayVisibility(
     showShieldDetailGroup:
       current?.showShieldDetailGroup ??
       DEFAULT_OVERLAY_VISIBILITY.showShieldDetailGroup,
+    showBuffCoverageGroup:
+      current?.showBuffCoverageGroup ??
+      DEFAULT_OVERLAY_VISIBILITY.showBuffCoverageGroup,
   };
 }
 

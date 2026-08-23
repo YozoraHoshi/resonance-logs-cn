@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   SETTINGS,
+  MAX_BUFF_COVERAGE_ENTRIES,
   createDefaultMonitoringSettingsState,
   createDefaultSkillMonitorProfile,
   type Loadout,
@@ -143,5 +144,26 @@ describe("normalizeSkillProfile", () => {
     expect(normalized.shieldDetailStyle).toBeUndefined();
     expect("customPanelStyle" in normalized).toBe(false);
     expect("shieldDetailStyle" in normalized).toBe(false);
+  });
+
+  it("keeps the first 32 unique positive coverage ids", () => {
+    const profile = createDefaultSkillMonitorProfile("Coverage");
+    profile.buffCoverageEntries = [
+      { id: "invalid", buffId: 0, label: "", showInLive: true },
+      ...Array.from({ length: 40 }, (_, index) => ({
+        id: `entry_${index}`,
+        buffId: index + 1,
+        label: "",
+        showInLive: true,
+      })),
+      { id: "duplicate", buffId: 1, label: "", showInLive: true },
+    ];
+    const normalized = normalizeSkillProfile(profile);
+    expect(normalized.buffCoverageEntries).toHaveLength(
+      MAX_BUFF_COVERAGE_ENTRIES,
+    );
+    expect(
+      normalized.buffCoverageEntries?.map((entry) => entry.buffId),
+    ).toEqual(Array.from({ length: 32 }, (_, index) => index + 1));
   });
 });

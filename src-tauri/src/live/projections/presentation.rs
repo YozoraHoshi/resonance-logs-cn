@@ -129,9 +129,15 @@ impl PresentationProjection {
         self.status_payload(monitored, counters)
     }
 
-    pub fn take_buffs_payload(&mut self, monitored: &EntityMonitorSnapshot) -> LiveBuffsPayload {
+    pub fn take_buffs_payload(
+        &mut self,
+        monitored: &EntityMonitorSnapshot,
+        coverage: Vec<crate::live::ipc::models::BuffCoverageEntry>,
+    ) -> LiveBuffsPayload {
         self.buffs_revision = self.buffs_revision.saturating_add(1);
-        self.buffs_payload(monitored)
+        let mut payload = self.buffs_payload(monitored);
+        payload.coverage = coverage;
+        payload
     }
 
     pub fn take_monster_payload(
@@ -251,6 +257,7 @@ impl PresentationProjection {
         LiveBuffsPayload {
             revision: self.buffs_revision,
             local_buffs: monitored.local_buffs.clone(),
+            coverage: Vec::new(),
         }
     }
 

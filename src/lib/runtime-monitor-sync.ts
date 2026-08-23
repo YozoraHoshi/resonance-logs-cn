@@ -5,7 +5,7 @@ import {
 } from "$lib/bindings";
 import { expandBuffSelection } from "$lib/config/buff-name-table";
 import { activeProfile as getActiveProfile } from "$lib/skill-monitor-profile.svelte.js";
-import { SETTINGS } from "$lib/settings-store";
+import { MAX_BUFF_COVERAGE_ENTRIES, SETTINGS } from "$lib/settings-store";
 import {
   getCounterRules,
   getDefaultMonitoredBuffIds,
@@ -177,6 +177,18 @@ function buildSkillRuntimeSnapshot(): MonitorRuntimeSnapshot["skill"] {
     ? getSeasonNodeBuffIds()
     : [];
   const defaultLinkedBuffIds = getDefaultMonitoredBuffIds(selectedClass);
+  // Coverage watch list: recorded to history for all players and merged into
+  // the publication ids so the live rows can join remaining time from
+  // `localBuffs`.
+  const buffTimelineIds = skillMonitorEnabled
+    ? uniqueSortedNumbers(
+        (profile?.buffCoverageEntries ?? [])
+          .map((entry) => entry.buffId)
+          .filter(
+            (id) => Number.isSafeInteger(id) && id > 0 && id <= 2_147_483_647,
+          ),
+      ).slice(0, MAX_BUFF_COVERAGE_ENTRIES)
+    : [];
   const mergedBuffIds = uniqueSortedNumbers([
     ...(skillMonitorEnabled ? monitoredBuffIds : []),
     ...(skillMonitorEnabled ? groupBuffIds : []),
@@ -186,6 +198,7 @@ function buildSkillRuntimeSnapshot(): MonitorRuntimeSnapshot["skill"] {
     ...factorEffectBuffIds,
     ...seasonNodeBuffIds,
     ...(skillMonitorEnabled ? defaultLinkedBuffIds : []),
+    ...buffTimelineIds,
   ]);
   const monitoredPanelAttrIds = uniqueSortedNumbers(
     monitoredPanelAttrs
@@ -203,6 +216,7 @@ function buildSkillRuntimeSnapshot(): MonitorRuntimeSnapshot["skill"] {
       monitoredPanelAttrIds: [],
       buffCounterRules: [],
       seasonCultivateFactorTemplates: [],
+      buffTimelineIds: [],
     };
   }
 
@@ -214,6 +228,7 @@ function buildSkillRuntimeSnapshot(): MonitorRuntimeSnapshot["skill"] {
     monitoredPanelAttrIds: skillMonitorEnabled ? monitoredPanelAttrIds : [],
     buffCounterRules: enabledCounterRules,
     seasonCultivateFactorTemplates,
+    buffTimelineIds,
   };
 }
 

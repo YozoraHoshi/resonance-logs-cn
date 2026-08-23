@@ -6,6 +6,7 @@ import {
   createDefaultOverlayTextStyle,
   createDefaultSkillMonitorProfile,
   deepCloneSettings,
+  MAX_BUFF_COVERAGE_ENTRIES,
   omitProfileId,
   type LiveMeterProfile,
   type MonsterMonitorProfile,
@@ -27,6 +28,14 @@ export type LoadoutParseResult =
   | { success: false; issues: string[] };
 
 const finiteNumberSchema = v.pipe(v.number(), v.finite());
+const positiveI32Schema = v.pipe(
+  finiteNumberSchema,
+  v.check(
+    (value) =>
+      Number.isSafeInteger(value) && value > 0 && value <= 2_147_483_647,
+    "buff id must be a positive 32-bit integer",
+  ),
+);
 const numericKeySchema = v.pipe(v.string(), v.regex(/^\d+$/));
 const numberArraySchema = v.array(finiteNumberSchema);
 const stringArraySchema = v.array(v.string());
@@ -211,6 +220,30 @@ const inlineBuffEntrySchema = v.object({
   format: v.picklist(["active", "stacks_timer", "timer"]),
 });
 
+const buffCoverageEntrySchema = v.object({
+  id: v.string(),
+  buffId: positiveI32Schema,
+  label: v.string(),
+  showInLive: v.optional(v.boolean(), true),
+});
+
+const buffCoverageStyleSchema = v.object({
+  fontSize: finiteNumberSchema,
+  gap: finiteNumberSchema,
+  nameColor: v.string(),
+  valueColor: v.string(),
+  progressColor: v.optional(v.string(), "#34d399"),
+  progressOpacity: v.optional(finiteNumberSchema, 0.4),
+  showName: v.boolean(),
+  showRemaining: v.boolean(),
+  showCount: v.boolean(),
+  showStateDot: v.boolean(),
+  showProgress: v.optional(v.boolean(), true),
+  textShadowEnabled: v.boolean(),
+  backgroundEnabled: v.boolean(),
+  backgroundOpacity: finiteNumberSchema,
+});
+
 const customPanelGroupSchema = v.object({
   id: v.string(),
   name: v.string(),
@@ -247,6 +280,7 @@ const overlayPositionsSchema = v.object({
   panelAttrGroup: pointSchema,
   customPanelGroup: pointSchema,
   shieldDetailGroup: pointSchema,
+  buffCoverageGroup: v.optional(pointSchema, { x: 360, y: 550 }),
   iconBuffPositions: v.record(numericKeySchema, pointSchema),
   skillDurationPositions: v.record(numericKeySchema, pointSchema),
   categoryIconPositions: v.optional(categoryPointRecordSchema, {}),
@@ -259,6 +293,7 @@ const overlaySizesSchema = v.object({
   panelAttrGroupScale: finiteNumberSchema,
   customPanelGroupScale: finiteNumberSchema,
   shieldDetailGroupScale: finiteNumberSchema,
+  buffCoverageGroupScale: v.optional(finiteNumberSchema, 1),
   panelAttrGap: finiteNumberSchema,
   panelAttrFontSize: finiteNumberSchema,
   panelAttrColumnGap: finiteNumberSchema,
@@ -280,6 +315,7 @@ const overlayVisibilitySchema = v.object({
   showPanelAttrGroup: v.boolean(),
   showCustomPanelGroup: v.boolean(),
   showShieldDetailGroup: v.boolean(),
+  showBuffCoverageGroup: v.optional(v.boolean(), false),
 });
 
 const monsterOverlayPositionsSchema = v.object({
@@ -363,6 +399,20 @@ const skillProfileSchema = v.object({
   panelAreaRowOrder: v.optional(
     v.array(panelAreaRowSchema),
     defaultClone(defaultSkill.panelAreaRowOrder ?? []),
+  ),
+  buffCoverageEntries: v.optional(
+    v.pipe(
+      v.array(buffCoverageEntrySchema),
+      v.check(
+        (entries) => entries.length <= MAX_BUFF_COVERAGE_ENTRIES,
+        `buff coverage supports at most ${MAX_BUFF_COVERAGE_ENTRIES} entries`,
+      ),
+    ),
+    defaultClone(defaultSkill.buffCoverageEntries ?? []),
+  ),
+  buffCoverageStyle: v.optional(
+    buffCoverageStyleSchema,
+    defaultClone(defaultSkill.buffCoverageStyle!),
   ),
   customPanelStyle: v.optional(
     customPanelStyleSchema,

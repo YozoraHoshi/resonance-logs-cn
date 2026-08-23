@@ -490,6 +490,21 @@ export const jaJPMessages = {
     "ドラッグでレーン高さを変更、ダブルクリックでリセット",
   "history.timeline.resize.curve":
     "ドラッグで曲線の高さを変更、ダブルクリックでリセット",
+  "history.timeline.buff.title": "Buffカバー率",
+  "history.timeline.buff.toggle": "Buffカバー率タイムラインを開閉",
+  "history.timeline.buff.playerPicker": "プレイヤーを選択",
+  "history.timeline.buff.empty":
+    "プレイヤーが未選択、または監視中のbuffがありません",
+  "history.timeline.buff.spanTooltip":
+    "{player} · {name}：{start} - {end}（{duration}）",
+  "history.timeline.buff.pillTooltip": "{count} 回発動",
+  "history.buffCoverage.title": "Buffカバー率サマリー",
+  "history.buffCoverage.caption": "アクティブ戦闘時間（{seconds}秒）に基づく",
+  "history.buffCoverage.rangeCaption": "選択範囲のアクティブ戦闘時間に基づく",
+  "history.buffCoverage.player": "プレイヤー",
+  "history.buffCoverage.count": "×{value}",
+  "history.buffCoverage.unavailable":
+    "この戦闘はbuffカバー率機能の実装前に記録されたため、データがありません",
   "tanked.monster.unknownSource": "不明なソース",
   "live.tanked.monsters.title": "ダメージソース",
   "history.detail.table.player": "プレイヤー",
@@ -1050,6 +1065,31 @@ export const jaJPMessages = {
   "skillMonitor.tabs.panelAttr": "キャラクターパネル",
   "skillMonitor.tabs.customPanel": "カスタムモニター",
   "skillMonitor.tabs.shieldDetail": "HP/シールドエリア",
+  "skillMonitor.tabs.buffCoverage": "バフ稼働率",
+  "skillMonitor.buffCoverage.title": "バフ稼働率モニター",
+  "skillMonitor.buffCoverage.description":
+    "監視リストのバフはアクティブ戦闘時間を分母として稼働率を集計します。リアルタイム表示は自分のみ。リスト内のバフは全パーティメンバー分が履歴に記録されます。",
+  "skillMonitor.buffCoverage.list.title": "監視リスト",
+  "skillMonitor.buffCoverage.list.description":
+    "稼働率を計測するバフを検索して追加します。「リアルタイム表示」をオフにすると履歴のみ記録されます(味方にしか付かないバフ向け)。",
+  "skillMonitor.buffCoverage.list.empty": "稼働率バフはまだ追加されていません",
+  "skillMonitor.buffCoverage.list.count": "{count}/{max}",
+  "skillMonitor.buffCoverage.list.limit": "監視できる Buff は最大 {max} 個です",
+  "skillMonitor.buffCoverage.status.added": "追加済み",
+  "skillMonitor.buffCoverage.searchPlaceholder": "バフ名またはIDを検索…",
+  "skillMonitor.buffCoverage.entry.showInLive": "リアルタイム表示",
+  "skillMonitor.buffCoverage.entry.remove": "削除",
+  "skillMonitor.buffCoverage.style.title": "表示スタイル",
+  "skillMonitor.buffCoverage.style.description":
+    "稼働率行:状態ドット + 名前 + 残り時間 + 稼働率% + 発動回数。下にカウントダウンバーを表示します。",
+  "skillMonitor.buffCoverage.style.showName": "名前を表示",
+  "skillMonitor.buffCoverage.style.showRemaining": "残り時間を表示",
+  "skillMonitor.buffCoverage.style.showCount": "発動回数を表示",
+  "skillMonitor.buffCoverage.style.showStateDot": "状態ドットを表示",
+  "skillMonitor.buffCoverage.style.showProgress": "カウントダウンバーを表示",
+  "skillMonitor.buffCoverage.style.nameColor": "名前の色",
+  "skillMonitor.buffCoverage.style.valueColor": "数値の色",
+  "skillMonitor.buffCoverage.style.progressColor": "プログレス色",
   "skillMonitor.tabs.overlay": "ウィンドウを有効化",
   "skillMonitor.common.clear": "クリア",
   "skillMonitor.common.remove": "削除",
@@ -1330,6 +1370,7 @@ export const jaJPMessages = {
   "skillMonitor.panelAttr.textStyle": "テキストスタイル",
   "skillMonitor.overlay.customPanel": "カスタムモニターエリア: {state}",
   "skillMonitor.overlay.shieldDetail": "HP/シールドエリア: {state}",
+  "skillMonitor.overlay.buffCoverage": "バフ稼働率エリア: {state}",
   "skillMonitor.overlay.help":
     "ボタンをクリックして表示を切替。プロファイルごとに保存",
   "monsterMonitor.title": "モンスターモニター",
@@ -1549,6 +1590,10 @@ export const jaJPMessages = {
   "gameOverlay.group.skillCd": "スキル CD エリア",
   "gameOverlay.group.textBuff": "テキスト Buff エリア",
   "gameOverlay.group.shieldDetail": "HP/シールドエリア",
+  "gameOverlay.group.buffCoverage": "バフ稼働率エリア",
+  "gameOverlay.coverage.count": "{value}回",
+  "gameOverlay.coverage.empty":
+    "スキルモニターページで稼働率バフを追加してください",
   "gameOverlay.groupedBuff.empty":
     "先にスキルモニターページで Buff グループを作成してください",
   "gameOverlay.timer.infinite": "∞",
