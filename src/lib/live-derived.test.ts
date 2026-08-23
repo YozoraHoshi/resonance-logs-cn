@@ -43,6 +43,7 @@ function entity(damage: RawCombatStats): RawEntityData {
 function payload(damage: RawCombatStats): LiveDataPayload {
   return {
     elapsedMs: "1000",
+    damageElapsedMs: "1000",
     activeCombatTimeMs: "1000",
     fightStartTimestampMs: "1",
     totalDmg: damage.total,
@@ -76,5 +77,31 @@ describe("computePlayerRows", () => {
     expect(rows[0]?.luckyRate).toBe(50);
     expect(rows[0]?.dmgPct).toBe(100);
     expect(Number.isFinite(rows[0]?.dps ?? Number.NaN)).toBe(true);
+  });
+
+  it("uses damage elapsed for dps when trailing heals stretch elapsed", () => {
+    const data = payload(stats({ total: "20000", hits: "2" }));
+    data.elapsedMs = "20000";
+    data.damageElapsedMs = "1000";
+
+    const rows = computePlayerRows(data, "dps");
+    expect(rows[0]?.dps).toBe(20_000);
+    expect(rows[0]?.bossDps).toBe(20_000);
+    expect(rows[0]?.hitsPerMinute).toBe(120);
+  });
+
+  it("keeps heal rates on elapsed when damage elapsed is shorter", () => {
+    const data = payload(stats());
+    data.entities[0] = {
+      ...entity(stats()),
+      healing: stats({ total: "4000", effectiveTotal: "2000", hits: "4" }),
+    };
+    data.elapsedMs = "20000";
+    data.damageElapsedMs = "1000";
+    data.totalHeal = "4000";
+
+    const rows = computePlayerRows(data, "heal");
+    expect(rows[0]?.dps).toBe(200);
+    expect(rows[0]?.effectiveDps).toBe(100);
   });
 });

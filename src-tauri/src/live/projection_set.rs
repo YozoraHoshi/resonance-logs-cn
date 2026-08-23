@@ -582,13 +582,13 @@ impl ProjectionSet {
         ended_at_wall_ms: i64,
         ended_at_mono_ms: MonoTimeMs,
     ) -> Result<(), String> {
-        let observed_ms = self.combat.observed_duration_ms();
+        let damage_ms = self.combat.damage_elapsed_ms();
         let scheduled_window_ms = u128::from(
             ended_at_mono_ms
                 .0
                 .saturating_sub(self.combat.started_at_mono_ms().0),
         );
-        let duration_ms = finalized_duration_ms(reason, observed_ms, scheduled_window_ms);
+        let duration_ms = finalized_duration_ms(reason, damage_ms, scheduled_window_ms);
         if reason == SegmentReason::Manual {
             self.presentation.clear_display();
         } else {
@@ -691,12 +691,12 @@ fn clamp_u128_to_i64(value: u128) -> i64 {
 
 fn finalized_duration_ms(
     reason: SegmentReason,
-    observed_ms: u128,
+    damage_ms: u128,
     scheduled_window_ms: u128,
 ) -> u128 {
     match reason {
         SegmentReason::TrainingElapsed => scheduled_window_ms,
-        _ => observed_ms,
+        _ => damage_ms,
     }
 }
 
@@ -707,6 +707,7 @@ fn payload_for_end(
 ) -> LiveDataPayload {
     if reason == SegmentReason::TrainingElapsed {
         payload.elapsed_ms = duration_ms.to_string();
+        payload.damage_elapsed_ms = duration_ms.to_string();
     }
     payload
 }
@@ -816,6 +817,7 @@ mod tests {
             u128::from(TRAINING_WINDOW_MS),
         );
         assert_eq!(frozen.elapsed_ms, TRAINING_WINDOW_MS.to_string());
+        assert_eq!(frozen.damage_elapsed_ms, TRAINING_WINDOW_MS.to_string());
         assert_eq!(frozen.active_combat_time_ms, "182000");
 
         let early = payload_for_end(

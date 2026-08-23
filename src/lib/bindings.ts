@@ -660,7 +660,7 @@ export type LiveCombatPayload = { revision: number; activeSegmentId: number | nu
 /**
  * Represents a raw
  */
-export type LiveDataPayload = { elapsedMs: string; activeCombatTimeMs: string; fightStartTimestampMs: string; totalDmg: string; totalDmgBossOnly: string; totalHeal: string; totalEffectiveHeal: string; localPlayerUuid: string; sceneId: number | null; dungeonDifficulty: number | null; isPaused: boolean; bosses: BossHealth[]; entities: RawEntityData[] }
+export type LiveDataPayload = { elapsedMs: string; damageElapsedMs: string; activeCombatTimeMs: string; fightStartTimestampMs: string; totalDmg: string; totalDmgBossOnly: string; totalHeal: string; totalEffectiveHeal: string; localPlayerUuid: string; sceneId: number | null; dungeonDifficulty: number | null; isPaused: boolean; bosses: BossHealth[]; entities: RawEntityData[] }
 /**
  * Player death replays (`live-deaths`), 50ms throttle. Dirty only when a
  * record is appended or the segment resets, so it never rides the combat

@@ -356,25 +356,6 @@ pub fn load_chunks_for_range(
     rows.into_iter().map(convert_chunk_row).collect()
 }
 
-/// Load every stream chunk for a finalized encounter in domain sequence order.
-/// Full-detail queries need the complete timeline, which can extend beyond the
-/// combat-duration summary because boundary-delay markers are still recorded.
-pub fn load_all_chunks(
-    conn: &mut SqliteConnection,
-    encounter_id: i32,
-) -> Result<Vec<StoredHistoryChunk>, EventJournalError> {
-    let rows = diesel::sql_query(
-        "SELECT encounter_id, stream_kind, chunk_index, first_sequence, last_sequence,
-                start_offset_ms, end_offset_ms_exclusive, event_count, data
-         FROM encounter_event_chunks
-         WHERE encounter_id = ?
-         ORDER BY first_sequence ASC, stream_kind ASC, chunk_index ASC",
-    )
-    .bind::<Integer, _>(encounter_id)
-    .load::<StoredChunkRow>(conn)?;
-    rows.into_iter().map(convert_chunk_row).collect()
-}
-
 pub fn load_projection(
     conn: &mut SqliteConnection,
     encounter_id: i32,
@@ -928,12 +909,17 @@ mod tests {
             .expect("load detail query");
         let detail = project_encounter_detail(query, 4).expect("project detail");
         assert!(detail.detail_available);
-        assert_eq!(detail.end_ms_exclusive, 3_000);
-        assert_eq!(detail.bucket_ms, 750);
+        assert_eq!(detail.end_ms_exclusive, 100);
+        assert_eq!(detail.bucket_ms, 25);
         assert_eq!(detail.chart_points[0].offset_ms, 0);
         assert_eq!(detail.chart_points[0].damage, "10");
-        assert_eq!(detail.markers.len(), 1);
-        assert_eq!(detail.markers[0].offset_ms, 2_999);
+        assert!(detail.markers.is_empty());
+        assert_eq!(
+            load_chunks_for_range(&mut conn, encounter_id, 0, i64::MAX as u64)
+                .expect("full recording")
+                .len(),
+            2
+        );
         // Per-entity series are rebuilt from the raw chunks on load, even
         // though the stored projection snapshot itself carries none.
         let actor_series = detail

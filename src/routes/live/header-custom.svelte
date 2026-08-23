@@ -105,7 +105,7 @@
     }
 
     return {
-      totalDps: ipcRatio(data.totalDmg, data.elapsedMs, 1_000),
+      totalDps: ipcRatio(data.totalDmg, data.damageElapsedMs, 1_000),
       totalDmg: ipcNumber(data.totalDmg),
       elapsedMs: ipcNumber(data.elapsedMs),
       activeCombatTimeMs: ipcNumber(data.activeCombatTimeMs),

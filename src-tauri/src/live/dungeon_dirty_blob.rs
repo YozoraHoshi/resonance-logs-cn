@@ -134,7 +134,9 @@ fn parse_target_map(cur: &mut BlobCursor<'_>) -> Result<Vec<DirtyDungeonTarget>,
 
 const PROGRESS_STATE_NAME: &str = "ProgressState";
 
-fn parse_dungeon_var_data(cur: &mut BlobCursor<'_>) -> Result<(Option<String>, Option<i32>), String> {
+fn parse_dungeon_var_data(
+    cur: &mut BlobCursor<'_>,
+) -> Result<(Option<String>, Option<i32>), String> {
     let mut name = None;
     let mut value = None;
     parse_container(cur, |field, inner, _body_end| match field {
@@ -300,7 +302,10 @@ mod tests {
 
     fn dungeon_var_field(vars: &[(&str, i32)]) -> Vec<u8> {
         let mut list = Vec::new();
-        write_i32(&mut list, i32::try_from(vars.len()).expect("count fits i32"));
+        write_i32(
+            &mut list,
+            i32::try_from(vars.len()).expect("count fits i32"),
+        );
         for (name, value) in vars {
             list.extend(var_data(name, *value));
         }

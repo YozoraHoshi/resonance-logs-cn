@@ -320,6 +320,7 @@ export function buildHistoryPlayerRows(
   const source = {
     entities,
     elapsedMs,
+    damageElapsedMs: elapsedMs,
     activeCombatTimeMs: activeCombatMs ?? elapsedMs,
     totalDmg: sumTotals(entities, "damage"),
     totalHeal: sumTotals(entities, "healing"),

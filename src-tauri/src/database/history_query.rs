@@ -19,7 +19,7 @@ use crate::live::projections::combat::stats::{CombatStats, Skill, SkillTargetSta
 use super::commands::EncounterSummaryDto;
 use super::event_journal::{
     EncounterHistoryDescriptor, EventJournalError, StoredHistoryChunk, StoredProjection,
-    load_all_chunks, load_chunks_for_range, load_encounter_descriptor, load_projection,
+    load_chunks_for_range, load_encounter_descriptor, load_projection,
 };
 use super::history_codec::{
     HistoryCastKind, HistoryChunkDocument, HistoryCodecError, HistoryEntityContext,
@@ -802,17 +802,12 @@ pub fn load_encounter_detail_query(
 ) -> Result<EncounterDetailQuery, HistoryQueryError> {
     let descriptor = load_encounter_descriptor(conn, summary.id)?;
     let projection = load_projection(conn, summary.id)?;
+    let timeline_end_ms_exclusive = encounter_duration_ms(&summary);
     let chunks = if projection.is_some() {
-        load_all_chunks(conn, summary.id)?
+        load_chunks_for_range(conn, summary.id, 0, timeline_end_ms_exclusive)?
     } else {
         Vec::new()
     };
-    let timeline_end_ms_exclusive = chunks
-        .iter()
-        .map(|chunk| chunk.end_offset_ms_exclusive)
-        .max()
-        .unwrap_or_default()
-        .max(encounter_duration_ms(&summary));
     Ok(EncounterDetailQuery {
         summary,
         descriptor,
@@ -837,45 +832,19 @@ pub fn project_encounter_detail(
     let Some(stored) = projection else {
         return Ok(unavailable_detail(summary, descriptor.quality_flags));
     };
-    let mut snapshot = decode_detail_projection(&stored.data)?;
+    let snapshot = decode_detail_projection(&stored.data)?;
     let quality_flags = validate_projection_metadata(&descriptor, &stored, &snapshot)?;
-    let start_ms = 0;
-    let end_ms_exclusive = timeline_end_ms_exclusive;
-    let bucket_ms = bucket_width_for_points(start_ms, end_ms_exclusive, target_points)?;
-    let chart = replay_chunks(
+    let bucket_ms = bucket_width_for_points(0, timeline_end_ms_exclusive, target_points)?;
+    let range = replay_chunks(
         summary.id,
         quality_flags,
         &snapshot,
         &chunks,
-        start_ms,
-        end_ms_exclusive,
+        0,
+        timeline_end_ms_exclusive,
         bucket_ms,
     )?;
-    snapshot.detail.summary = summary;
-    snapshot.detail.detail_available = true;
-    snapshot.detail.start_ms = start_ms;
-    snapshot.detail.end_ms_exclusive = end_ms_exclusive;
-    snapshot.detail.bucket_ms = bucket_ms;
-    snapshot.detail.chart_points = chart.chart_points;
-    snapshot.detail.series = chart.series;
-    snapshot.detail.markers = chart.markers;
-    for entity in &mut snapshot.detail.entities {
-        // Projections stored before `class_spec_name` existed decode it as
-        // `None`; resolve it from the persisted spec discriminant instead.
-        if entity.class_spec_name.is_none() {
-            entity.class_spec_name = entity
-                .class_spec
-                .map(ClassSpec::from_i32)
-                .filter(|spec| *spec != ClassSpec::Unknown)
-                .map(get_class_spec);
-        }
-    }
-    merge_quality_flags(
-        &mut snapshot.detail.quality_flags,
-        quality_flags_from_bits(quality_flags),
-    );
-    merge_quality_flags(&mut snapshot.detail.quality_flags, chart.quality_flags);
-    Ok(snapshot.detail)
+    Ok(detail_from_range(summary, range))
 }
 
 /// Replay only chunks intersecting the requested half-open range.
@@ -1082,13 +1051,24 @@ fn unavailable_detail(summary: EncounterSummaryDto, quality_flags: i32) -> Encou
     }
 }
 
-fn merge_quality_flags(
-    destination: &mut Vec<HistoryQualityFlag>,
-    additional: impl IntoIterator<Item = HistoryQualityFlag>,
-) {
-    let mut flags = destination.iter().copied().collect::<BTreeSet<_>>();
-    flags.extend(additional);
-    *destination = flags.into_iter().collect();
+fn detail_from_range(
+    summary: EncounterSummaryDto,
+    range: EncounterRangeData,
+) -> EncounterDetailData {
+    EncounterDetailData {
+        encounter_id: range.encounter_id,
+        summary,
+        detail_available: true,
+        quality_flags: range.quality_flags,
+        start_ms: range.start_ms,
+        end_ms_exclusive: range.end_ms_exclusive,
+        bucket_ms: range.bucket_ms,
+        totals: range.totals,
+        entities: range.entities,
+        chart_points: range.chart_points,
+        series: range.series,
+        markers: range.markers,
+    }
 }
 
 fn add_chart_amount(
@@ -1299,33 +1279,14 @@ mod tests {
         }
     }
 
-    fn stored_combat_chunk(
+    fn stored_chunk(
         encounter_id: i32,
+        stream_kind: HistoryStream,
         chunk_index: u64,
         events: Vec<HistoryEnvelope>,
     ) -> StoredHistoryChunk {
-        let chunk = encode_history_chunk(encounter_id, HistoryStream::Combat, chunk_index, events)
-            .expect("encode combat chunk");
-        StoredHistoryChunk {
-            encounter_id: chunk.encounter_id,
-            stream_kind: chunk.stream_kind,
-            chunk_index: chunk.chunk_index,
-            first_sequence: chunk.first_sequence,
-            last_sequence: chunk.last_sequence,
-            start_offset_ms: chunk.start_offset_ms,
-            end_offset_ms_exclusive: chunk.end_offset_ms_exclusive,
-            event_count: chunk.event_count,
-            data: chunk.data,
-        }
-    }
-
-    fn stored_context_chunk(
-        encounter_id: i32,
-        chunk_index: u64,
-        events: Vec<HistoryEnvelope>,
-    ) -> StoredHistoryChunk {
-        let chunk = encode_history_chunk(encounter_id, HistoryStream::Context, chunk_index, events)
-            .expect("encode context chunk");
+        let chunk = encode_history_chunk(encounter_id, stream_kind, chunk_index, events)
+            .expect("encode history chunk");
         StoredHistoryChunk {
             encounter_id: chunk.encounter_id,
             stream_kind: chunk.stream_kind,
@@ -1396,13 +1357,15 @@ mod tests {
 
     #[test]
     fn range_replay_keeps_final_context_when_intersecting_chunk_contains_old_context() {
-        let context_chunk = stored_context_chunk(
+        let context_chunk = stored_chunk(
             1,
+            HistoryStream::Context,
             0,
             vec![context_at(1, 0, "initial"), context_at(2, 1_000, "stale")],
         );
-        let combat_chunk = stored_combat_chunk(
+        let combat_chunk = stored_chunk(
             1,
+            HistoryStream::Combat,
             0,
             vec![metric_hit_at(3, 100, HistoryMetric::Damage, 5, 0)],
         );
@@ -1430,8 +1393,9 @@ mod tests {
     fn adjacent_ranges_include_death_replays_by_death_offset_only() {
         let first_replay = death_replay(10_999);
         let second_replay = death_replay(11_000);
-        let chunk = stored_combat_chunk(
+        let chunk = stored_chunk(
             1,
+            HistoryStream::Combat,
             0,
             vec![
                 death(1, 999, Some(first_replay.clone())),
@@ -1565,8 +1529,8 @@ mod tests {
             metric_hit_at(5, 2_000, HistoryMetric::Damage, 19, 0),
         ];
         let chunks = vec![
-            stored_combat_chunk(1, 0, events[..2].to_vec()),
-            stored_combat_chunk(1, 1, events[2..].to_vec()),
+            stored_chunk(1, HistoryStream::Combat, 0, events[..2].to_vec()),
+            stored_chunk(1, HistoryStream::Combat, 1, events[2..].to_vec()),
         ];
 
         let whole = replay_range(0..2_000, &chunks);
@@ -1637,8 +1601,9 @@ mod tests {
     fn frozen_clock_offsets_have_no_pause_gap_and_remain_additive() {
         // These two events were captured six wall-clock seconds apart, but the
         // segment clock supplied to history froze for five paused seconds.
-        let chunk = stored_combat_chunk(
+        let chunk = stored_chunk(
             1,
+            HistoryStream::Combat,
             0,
             vec![
                 metric_hit_at(0, 1_000, HistoryMetric::Damage, 10, 0),
@@ -2004,6 +1969,88 @@ mod tests {
         let entity = &range.entities[0];
         assert_eq!(entity.class_spec, Some(15));
         assert_eq!(entity.class_spec_name.as_deref(), Some("Recovery"));
+    }
+
+    #[test]
+    fn default_detail_clips_trailing_heal_and_markers_to_duration() {
+        let mut seed = HistoryProjectionReducer::new(0..0, 1).expect("seed reducer");
+        seed.seed_contexts([HistoryEntityContext {
+            entity_id: 1,
+            display_uid: 1,
+            name: Some("player".to_string()),
+            class_id: None,
+            class_spec: None,
+            ability_score: None,
+            season_strength: None,
+            monster_id: None,
+        }]);
+        let mut snapshot = seed.finish_detail(1, empty_summary(1));
+        snapshot.last_sequence = 2;
+
+        let combat_chunk = stored_chunk(
+            1,
+            HistoryStream::Combat,
+            0,
+            vec![
+                metric_hit_at(0, 0, HistoryMetric::Damage, 100, 0),
+                metric_hit_at(1, 2_000, HistoryMetric::Healing, 40, 0),
+            ],
+        );
+        let timeline_chunk = stored_chunk(
+            1,
+            HistoryStream::Timeline,
+            0,
+            vec![HistoryEnvelope {
+                sequence: 2,
+                offset_ms: 2_500,
+                event: HistoryEvent::SkillCast(HistorySkillCast {
+                    caster_entity_id: 1,
+                    skill_id: 42,
+                    kind: HistoryCastKind::KeySkill,
+                    remodel_level: None,
+                }),
+            }],
+        );
+
+        let encoded = encode_detail_projection(&snapshot).expect("encode snapshot");
+        let stored = StoredProjection {
+            encounter_id: 1,
+            last_sequence: encoded.last_sequence,
+            quality_flags: encoded.quality_flags,
+            data: encoded.data,
+        };
+        let mut summary = empty_summary(1);
+        summary.duration = 1.0;
+        summary.detail_available = true;
+        let descriptor = EncounterHistoryDescriptor {
+            encounter_id: 1,
+            quality_flags: stored.quality_flags,
+            started_at_ms: 0,
+            ended_at_ms: Some(3_000),
+        };
+        let chunks = vec![combat_chunk, timeline_chunk];
+        let detail = project_encounter_detail(
+            EncounterDetailQuery {
+                summary: summary.clone(),
+                descriptor: descriptor.clone(),
+                projection: Some(stored.clone()),
+                chunks: chunks.clone(),
+                timeline_end_ms_exclusive: 1_000,
+            },
+            4,
+        )
+        .expect("project clipped detail");
+
+        assert_eq!(detail.end_ms_exclusive, 1_000);
+        assert_eq!(detail.totals.damage, "100");
+        assert_eq!(detail.totals.healing, "0");
+        assert!(detail.markers.is_empty());
+
+        let decoded = decode_detail_projection(&stored.data).expect("decode snapshot");
+        let full = replay_chunks(1, 0, &decoded, &chunks, 0, 3_000, 3_000).expect("full range");
+        assert_eq!(full.totals.healing, "40");
+        assert_eq!(full.markers.len(), 1);
+        assert_eq!(full.markers[0].offset_ms, 2_500);
     }
 
     #[test]

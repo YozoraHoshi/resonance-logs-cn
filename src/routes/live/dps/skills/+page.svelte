@@ -29,7 +29,7 @@
     liveData?.entities.find((entity) => entity.entityUuid === entityUuid) ??
       null,
   );
-  let elapsedSecs = $derived(ipcNumber(liveData?.elapsedMs) / 1000);
+  let elapsedSecs = $derived(ipcNumber(liveData?.damageElapsedMs) / 1000);
 
   let groupedSkills = $derived(
     currEntity

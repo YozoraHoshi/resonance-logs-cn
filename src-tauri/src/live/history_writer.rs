@@ -278,7 +278,7 @@ mod tests {
 
     use super::*;
     use crate::database::commands::{EncounterSummaryDto, load_encounter_summary};
-    use crate::database::event_journal::{load_all_chunks, load_projection};
+    use crate::database::event_journal::{load_chunks_for_range, load_projection};
     use crate::database::history_codec::{
         HistoryEvent, HistoryStream, MAX_EVENTS_PER_CHUNK, decode_history_chunk,
     };
@@ -552,7 +552,8 @@ mod tests {
                 .order(e::id.desc())
                 .first::<i32>(conn)
                 .map_err(|error| error.to_string())?;
-            let chunks = load_all_chunks(conn, encounter_id).map_err(|error| error.to_string())?;
+            let chunks = load_chunks_for_range(conn, encounter_id, 0, i64::MAX as u64)
+                .map_err(|error| error.to_string())?;
             let summary = load_encounter_summary(conn, encounter_id)?;
             let projection = load_projection(conn, encounter_id)
                 .map_err(|error| error.to_string())?

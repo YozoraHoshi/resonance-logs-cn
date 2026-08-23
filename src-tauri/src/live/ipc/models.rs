@@ -233,6 +233,7 @@ pub struct BossHealth {
 #[serde(rename_all = "camelCase")]
 pub struct LiveDataPayload {
     pub elapsed_ms: String,
+    pub damage_elapsed_ms: String,
     pub active_combat_time_ms: String,
     pub fight_start_timestamp_ms: String,
     pub total_dmg: String,
@@ -251,6 +252,7 @@ impl Default for LiveDataPayload {
     fn default() -> Self {
         Self {
             elapsed_ms: zero_decimal(),
+            damage_elapsed_ms: zero_decimal(),
             active_combat_time_ms: zero_decimal(),
             fight_start_timestamp_ms: zero_decimal(),
             total_dmg: zero_decimal(),
@@ -840,6 +842,7 @@ mod tests {
     fn decimal_dto_defaults_are_zero_not_empty() {
         let live = LiveDataPayload::default();
         assert_eq!(live.elapsed_ms, "0");
+        assert_eq!(live.damage_elapsed_ms, "0");
         assert_eq!(live.total_dmg, "0");
         assert_eq!(live.total_effective_heal, "0");
 
