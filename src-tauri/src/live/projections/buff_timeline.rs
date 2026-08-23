@@ -69,10 +69,6 @@ impl BuffTimelineProjection {
         self.reconcile_from_entities(entities, 0, &mut expires_offset)
     }
 
-    pub fn end_segment(&mut self) {
-        self.segment_active = false;
-    }
-
     /// Clears runtime coverage state, keeping the configured watch list.
     pub fn clear(&mut self) {
         self.tracker.reset();

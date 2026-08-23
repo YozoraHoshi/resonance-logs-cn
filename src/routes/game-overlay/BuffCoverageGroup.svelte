@@ -44,7 +44,9 @@
       .filter((entry) => entry.showInLive)
       .map((entry) => {
         const coverage = coverageByBaseId.get(entry.buffId);
-        const buff = buffMap().get(entry.buffId);
+        const buff = coverage?.activeNow
+          ? buffMap().get(entry.buffId)
+          : undefined;
         return {
           key: entry.id,
           name: resolveBuffDisplayName(entry.buffId, aliases),
