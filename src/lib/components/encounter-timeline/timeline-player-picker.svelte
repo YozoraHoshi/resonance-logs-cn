@@ -19,6 +19,7 @@
     onSelectAll: () => void;
     onClear: () => void;
     icon: Snippet;
+    placement?: "top" | "bottom";
   };
 
   let {
@@ -32,9 +33,23 @@
     onSelectAll,
     onClear,
     icon,
+    placement = "bottom",
   }: Props = $props();
 
   let selectorOpen = $state(false);
+  const popoverPlacement = $derived(
+    placement === "top" ? "bottom-full mb-1" : "top-full mt-1",
+  );
+  const listMaxHeight = $derived(placement === "top" ? "max-h-32" : "max-h-56");
+  const chevronRotation = $derived(
+    placement === "top"
+      ? selectorOpen
+        ? ""
+        : "rotate-180"
+      : selectorOpen
+        ? "rotate-180"
+        : "",
+  );
 </script>
 
 {#if players.length > 0}
@@ -54,9 +69,7 @@
         {selectedUuids.length}/{players.length}
       </span>
       <ChevronDownIcon
-        class="size-2.5 shrink-0 transition-transform duration-150 {selectorOpen
-          ? 'rotate-180'
-          : ''}"
+        class="size-2.5 shrink-0 transition-transform duration-150 {chevronRotation}"
         strokeWidth={2.5}
       />
     </button>
@@ -69,7 +82,7 @@
         onclick={() => (selectorOpen = false)}
       ></button>
       <div
-        class="tl-popover absolute right-0 z-20 mt-1 w-52 rounded-md py-1 shadow-xl"
+        class="tl-popover absolute right-0 z-20 w-52 rounded-md py-1 shadow-xl {popoverPlacement}"
       >
         <div
           class="flex items-center justify-between px-2.5 pt-1 pb-1.5"
@@ -92,7 +105,7 @@
             {clearAllLabel}
           </button>
         </div>
-        <div class="max-h-56 overflow-y-auto">
+        <div class="overflow-y-auto {listMaxHeight}">
           {#each players as player (player.entityUuid)}
             {@const checked = selectedUuids.includes(player.entityUuid)}
             <label

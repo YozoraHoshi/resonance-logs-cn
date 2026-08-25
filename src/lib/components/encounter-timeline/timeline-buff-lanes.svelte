@@ -129,6 +129,7 @@
         onSelectAll={() =>
           (manualSelection = laneOwners.map((p) => p.entityUuid))}
         onClear={() => (manualSelection = [])}
+        placement="top"
       >
         {#snippet icon()}
           <SparklesIcon class="size-3" />
