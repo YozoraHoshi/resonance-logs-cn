@@ -630,6 +630,8 @@ mod tests {
                 attacker_monster_type_id: Some(9_001),
                 skill_key: 17_140_101,
                 value: u128::MAX,
+                property: Some(3),
+                damage_mode: Some(2),
             }],
             victim_buffs: vec![DeathReplayBuff {
                 base_id: 77,

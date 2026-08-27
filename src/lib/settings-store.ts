@@ -205,6 +205,24 @@ export const DEFAULT_TANKED_SKILL_COLUMN_ORDER = [
   "property",
   "damageMode",
 ];
+export const DEFAULT_DEATH_REPLAY_COLUMNS = {
+  time: true,
+  skill: true,
+  source: true,
+  damage: true,
+  share: false,
+  property: false,
+  damageMode: false,
+};
+export const DEFAULT_DEATH_REPLAY_COLUMN_ORDER = [
+  "time",
+  "skill",
+  "source",
+  "damage",
+  "share",
+  "property",
+  "damageMode",
+];
 
 function normalizeColumnOrder(
   order: readonly string[] | undefined,
@@ -235,6 +253,12 @@ export function normalizeTankedSkillColumnOrder(
   order: readonly string[] | undefined,
 ) {
   return normalizeColumnOrder(order, DEFAULT_TANKED_SKILL_COLUMN_ORDER);
+}
+
+export function normalizeDeathReplayColumnOrder(
+  order: readonly string[] | undefined,
+) {
+  return normalizeColumnOrder(order, DEFAULT_DEATH_REPLAY_COLUMN_ORDER);
 }
 
 // Default sort settings for live tables
@@ -1711,6 +1735,7 @@ export type LiveMeterColumnOrderState = {
   healSkills: { order: string[] };
   tankedPlayers: { order: string[] };
   tankedSkills: { order: string[] };
+  deathReplay: { order: string[] };
 };
 
 export type LiveMeterSortingState = {
@@ -1737,6 +1762,7 @@ export type LiveMeterProfileData = {
   healSkillBreakdown: typeof DEFAULT_SETTINGS.live.healSkillBreakdown;
   tankedPlayers: typeof DEFAULT_SETTINGS.live.tankedPlayers;
   tankedSkillBreakdown: typeof DEFAULT_SETTINGS.live.tankedSkillBreakdown;
+  deathReplay: typeof DEFAULT_SETTINGS.live.deathReplay;
   tableCustomization: typeof DEFAULT_SETTINGS.live.tableCustomization;
   headerCustomization: typeof DEFAULT_SETTINGS.live.headerCustomization;
   columnOrder: LiveMeterColumnOrderState;
@@ -1767,6 +1793,7 @@ export function createDefaultLiveMeterProfileData(): LiveMeterProfileData {
     healSkillBreakdown: { ...DEFAULT_STATS },
     tankedPlayers: { ...DEFAULT_LIVE_TANKED_PLAYER_STATS },
     tankedSkillBreakdown: { ...DEFAULT_LIVE_TANKED_SKILL_STATS },
+    deathReplay: { ...DEFAULT_DEATH_REPLAY_COLUMNS },
     tableCustomization: { ...DEFAULT_LIVE_TABLE_SETTINGS },
     headerCustomization: {
       windowPadding: 12,
@@ -1823,6 +1850,7 @@ export function createDefaultLiveMeterProfileData(): LiveMeterProfileData {
       healSkills: { order: [...DEFAULT_HEAL_SKILL_COLUMN_ORDER] },
       tankedPlayers: { order: [...DEFAULT_TANKED_PLAYER_COLUMN_ORDER] },
       tankedSkills: { order: [...DEFAULT_TANKED_SKILL_COLUMN_ORDER] },
+      deathReplay: { order: [...DEFAULT_DEATH_REPLAY_COLUMN_ORDER] },
     },
     sorting: {
       dpsPlayers: { ...DEFAULT_LIVE_SORT_SETTINGS.dpsPlayers },
@@ -2341,6 +2369,7 @@ const DEFAULT_SETTINGS = {
     healSkillBreakdown: { ...DEFAULT_STATS },
     tankedPlayers: { ...DEFAULT_LIVE_TANKED_PLAYER_STATS },
     tankedSkillBreakdown: { ...DEFAULT_LIVE_TANKED_SKILL_STATS },
+    deathReplay: { ...DEFAULT_DEATH_REPLAY_COLUMNS },
     tableCustomization: { ...DEFAULT_LIVE_TABLE_SETTINGS },
     headerCustomization: {
       windowPadding: 12,
@@ -2526,6 +2555,11 @@ export const SETTINGS = {
         LIVE_RUNE_STORE_OPTIONS,
       ),
     },
+    deathReplay: new RuneStore(
+      "liveDeathReplay",
+      DEFAULT_SETTINGS.live.deathReplay,
+      LIVE_RUNE_STORE_OPTIONS,
+    ),
     tableCustomization: new RuneStore(
       "liveTableCustomization",
       DEFAULT_SETTINGS.live.tableCustomization,
@@ -2566,6 +2600,11 @@ export const SETTINGS = {
       tankedSkills: new RuneStore(
         "liveTankedSkillsColumnOrder",
         { order: DEFAULT_TANKED_SKILL_COLUMN_ORDER },
+        LIVE_RUNE_STORE_OPTIONS,
+      ),
+      deathReplay: new RuneStore(
+        "liveDeathReplayColumnOrder",
+        { order: DEFAULT_DEATH_REPLAY_COLUMN_ORDER },
         LIVE_RUNE_STORE_OPTIONS,
       ),
     },
@@ -2665,6 +2704,7 @@ const LIVE_METER_STORES = [
   SETTINGS.live.heal.skillBreakdown,
   SETTINGS.live.tanked.players,
   SETTINGS.live.tanked.skills,
+  SETTINGS.live.deathReplay,
   SETTINGS.live.tableCustomization,
   SETTINGS.live.headerCustomization,
   SETTINGS.live.columnOrder.dpsPlayers,
@@ -2673,6 +2713,7 @@ const LIVE_METER_STORES = [
   SETTINGS.live.columnOrder.healSkills,
   SETTINGS.live.columnOrder.tankedPlayers,
   SETTINGS.live.columnOrder.tankedSkills,
+  SETTINGS.live.columnOrder.deathReplay,
   SETTINGS.live.sorting.dpsPlayers,
   SETTINGS.live.sorting.dpsSkills,
   SETTINGS.live.sorting.healPlayers,
@@ -2718,6 +2759,7 @@ export const settings = {
         players: SETTINGS.live.tanked.players.state,
         skills: SETTINGS.live.tanked.skills.state,
       },
+      deathReplay: SETTINGS.live.deathReplay.state,
       tableCustomization: SETTINGS.live.tableCustomization.state,
       headerCustomization: SETTINGS.live.headerCustomization.state,
       columnOrder: {
@@ -2727,6 +2769,7 @@ export const settings = {
         healSkills: SETTINGS.live.columnOrder.healSkills.state,
         tankedPlayers: SETTINGS.live.columnOrder.tankedPlayers.state,
         tankedSkills: SETTINGS.live.columnOrder.tankedSkills.state,
+        deathReplay: SETTINGS.live.columnOrder.deathReplay.state,
       },
       sorting: {
         dpsPlayers: SETTINGS.live.sorting.dpsPlayers.state,

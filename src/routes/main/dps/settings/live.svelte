@@ -8,8 +8,10 @@
     SETTINGS,
     DEFAULT_LIVE_TANKED_PLAYER_STATS,
     DEFAULT_LIVE_TANKED_SKILL_STATS,
+    DEFAULT_DEATH_REPLAY_COLUMNS,
     normalizeTankedPlayerColumnOrder,
     normalizeTankedSkillColumnOrder,
+    normalizeDeathReplayColumnOrder,
   } from "$lib/settings-store";
   import { untrack } from "svelte";
   import { t } from "$lib/i18n/index.svelte";
@@ -21,6 +23,7 @@
     liveHealSkillColumns,
     liveTankedPlayerColumns,
     liveTankedSkillColumns,
+    deathReplayColumns,
   } from "$lib/column-data";
 
   const SETTINGS_CATEGORY = "live";
@@ -33,6 +36,7 @@
     healSkills: false,
     tankedPlayers: false,
     tankedSkills: false,
+    deathReplay: false,
   });
 
   function toggleSection(section: keyof typeof expandedSections) {
@@ -84,6 +88,11 @@
       SETTINGS.live.columnOrder.tankedSkills.state.order,
     ),
   );
+  const deathReplayColumnOrder = $derived(
+    normalizeDeathReplayColumnOrder(
+      SETTINGS.live.columnOrder.deathReplay.state.order,
+    ),
+  );
 
   $effect(() => {
     for (const key of tankedPlayerColumnOrder) {
@@ -95,6 +104,11 @@
       const typedKey = key as keyof typeof DEFAULT_LIVE_TANKED_SKILL_STATS;
       SETTINGS.live.tanked.skills.state[typedKey] ??=
         DEFAULT_LIVE_TANKED_SKILL_STATS[typedKey];
+    }
+    for (const key of deathReplayColumnOrder) {
+      const typedKey = key as keyof typeof DEFAULT_DEATH_REPLAY_COLUMNS;
+      SETTINGS.live.deathReplay.state[typedKey] ??=
+        DEFAULT_DEATH_REPLAY_COLUMNS[typedKey];
     }
   });
   // Drag state for column reordering (unused - keeping for potential future use)
@@ -784,6 +798,81 @@
                   bind:checked={
                     SETTINGS.live.tanked.skills.state[key]
                   }
+                  label={col.label}
+                  description={col.description}
+                />
+              </div>
+            {/if}
+          {/each}
+        </div>
+      {/if}
+    </div>
+
+    <!-- Death Replay Columns -->
+    <div
+      class="rounded-lg border bg-card/40 border-border/60 overflow-hidden shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
+    >
+      <button
+        type="button"
+        class="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors"
+        onclick={() => toggleSection("deathReplay")}
+      >
+        <h2 class="text-base font-semibold text-foreground">
+          {t("settings.common.columns.deathReplay")}
+        </h2>
+        <ChevronDown
+          class="w-5 h-5 text-muted-foreground transition-transform duration-200 {expandedSections.deathReplay
+            ? 'rotate-180'
+            : ''}"
+        />
+      </button>
+      {#if expandedSections.deathReplay}
+        <div class="px-4 pb-3 space-y-1">
+          <p class="text-xs text-muted-foreground mb-2">
+            {t("settings.common.columns.orderHint")}
+          </p>
+          <p class="text-xs text-muted-foreground mb-2">
+            {t("settings.common.columns.deathReplaySharedHint")}
+          </p>
+          {#each deathReplayColumnOrder as colKey, idx (colKey)}
+            {@const col = deathReplayColumns.find((c) => c.key === colKey)}
+            {#if col}
+              {@const key = col.key as keyof typeof DEFAULT_DEATH_REPLAY_COLUMNS}
+              <div
+                class="flex items-center gap-2 px-2 py-1 rounded bg-muted/20 border border-border/30"
+              >
+                <div class="flex flex-col">
+                  <button
+                    type="button"
+                    class="text-xs px-1 hover:bg-muted/50 rounded disabled:opacity-30"
+                    disabled={idx === 0}
+                    onclick={() => {
+                      const arr = [...deathReplayColumnOrder];
+                      const prev = arr[idx - 1];
+                      const curr = arr[idx];
+                      if (prev !== undefined && curr !== undefined) {
+                        arr.splice(idx - 1, 2, curr, prev);
+                        SETTINGS.live.columnOrder.deathReplay.state.order = arr;
+                      }
+                    }}>▲</button
+                  >
+                  <button
+                    type="button"
+                    class="text-xs px-1 hover:bg-muted/50 rounded disabled:opacity-30"
+                    disabled={idx === deathReplayColumnOrder.length - 1}
+                    onclick={() => {
+                      const arr = [...deathReplayColumnOrder];
+                      const curr = arr[idx];
+                      const next = arr[idx + 1];
+                      if (curr !== undefined && next !== undefined) {
+                        arr.splice(idx, 2, next, curr);
+                        SETTINGS.live.columnOrder.deathReplay.state.order = arr;
+                      }
+                    }}>▼</button
+                  >
+                </div>
+                <SettingsSwitch
+                  bind:checked={SETTINGS.live.deathReplay.state[key]}
                   label={col.label}
                   description={col.description}
                 />

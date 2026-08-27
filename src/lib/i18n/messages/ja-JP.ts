@@ -624,8 +624,17 @@ export const jaJPMessages = {
   "settings.common.columns.healSkills": "回復（スキル詳細）列",
   "settings.common.columns.tankedPlayers": "被ダメージ（プレイヤー）列",
   "settings.common.columns.tankedSkills": "被ダメージ（スキル詳細）列",
+  "settings.common.columns.deathReplay": "死亡リプレイ列",
+  "settings.common.columns.deathReplaySharedHint":
+    "リアルタイムと履歴の死亡リプレイで同じ列設定を使います。",
   "settings.common.columns.orderHint":
     "矢印で並べ替え、スイッチで表示/非表示を切り替えます。",
+  "columns.description.deathReplay.time": "死亡直前の被弾タイミングを表示",
+  "columns.description.deathReplay.skill": "被弾を与えたスキルを表示",
+  "columns.description.deathReplay.source": "被弾のソースを表示",
+  "columns.description.deathReplay.damage": "被弾ダメージを表示",
+  "columns.description.deathReplay.share":
+    "リプレイ窓内の被ダメージに占める割合を表示",
   "settings.history.fantasyCastIcons": "幻想アイコンを表示",
   "settings.history.fantasyCastIconsDescription":
     "履歴のプレイヤー名の横に、戦闘全体で最近使用した幻想2種のアイコンを表示します。タイムラインの範囲選択では変わりません。",

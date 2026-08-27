@@ -11,6 +11,7 @@ import {
   createDefaultLiveMeterProfileData,
   createDefaultLiveMeterState,
   mergeLiveHeaderCustomization,
+  normalizeDeathReplayColumnOrder,
   createDefaultMonsterMonitorState,
   createDefaultSkillMonitorProfile,
   deepCloneSettings,
@@ -309,6 +310,19 @@ function normalizeLiveProfiles(
         ...defaults.general,
         ...profile.general,
         showFantasyCastIcons: profile.general?.showFantasyCastIcons === true,
+      },
+      deathReplay: {
+        ...defaults.deathReplay,
+        ...profile.deathReplay,
+      },
+      columnOrder: {
+        ...defaults.columnOrder,
+        ...profile.columnOrder,
+        deathReplay: {
+          order: normalizeDeathReplayColumnOrder(
+            profile.columnOrder?.deathReplay?.order,
+          ),
+        },
       },
       headerCustomization: mergeLiveHeaderCustomization(
         profile.headerCustomization,

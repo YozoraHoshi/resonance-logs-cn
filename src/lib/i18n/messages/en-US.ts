@@ -639,8 +639,18 @@ export const enUSMessages = {
   "settings.common.columns.tankedPlayers": "Damage Taken (Player) Columns",
   "settings.common.columns.tankedSkills":
     "Damage Taken (Skill Details) Columns",
+  "settings.common.columns.deathReplay": "Death Replay Columns",
+  "settings.common.columns.deathReplaySharedHint":
+    "Live and history death replay share this column setup.",
   "settings.common.columns.orderHint":
     "Use arrows to reorder; use switches to show/hide.",
+  "columns.description.deathReplay.time":
+    "Shows how long before death the hit landed",
+  "columns.description.deathReplay.skill": "Shows the skill that dealt the hit",
+  "columns.description.deathReplay.source": "Shows the source of the hit",
+  "columns.description.deathReplay.damage": "Shows the damage of the hit",
+  "columns.description.deathReplay.share":
+    "Shows the hit's share of damage in the replay window",
   "settings.history.fantasyCastIcons": "Show Fantasy Icons",
   "settings.history.fantasyCastIconsDescription":
     "Show the two most recent fantasy types next to history player names. The selection on the timeline does not change them.",

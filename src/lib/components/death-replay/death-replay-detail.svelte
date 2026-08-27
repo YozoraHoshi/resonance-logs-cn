@@ -1,10 +1,14 @@
 <script lang="ts">
   import { getClassIcon, tooltip } from "$lib/utils.svelte";
   import {
+    DEFAULT_DEATH_REPLAY_COLUMNS,
     getGlobalBuffAliases,
+    normalizeDeathReplayColumnOrder,
     SETTINGS,
     type BuffAliasMap,
   } from "$lib/settings-store";
+  import { deathReplayColumns } from "$lib/column-data";
+  import { damageModeLabel, propertyLabel } from "$lib/damage-type";
   import { ensureBuffIconOverrides, resolveBuffIconSrc } from "$lib/buff-icons";
   import { buffIconDirUrlPrefix } from "$lib/buff-icon-dir.svelte";
   import type {
@@ -62,6 +66,41 @@
       ? SETTINGS.history.general.state.abbreviationStyle
       : SETTINGS.live.general.state.abbreviationStyle,
   );
+  const visibleColumns = $derived.by(() => {
+    const visibility = SETTINGS.live.deathReplay.state;
+    const order = normalizeDeathReplayColumnOrder(
+      SETTINGS.live.columnOrder.deathReplay.state.order,
+    );
+    return deathReplayColumns
+      .filter(
+        (col) =>
+          visibility[col.key] ?? DEFAULT_DEATH_REPLAY_COLUMNS[col.key],
+      )
+      .sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+  });
+  const liveRenderItems = $derived.by(() => {
+    const items: Array<
+      | { kind: "identity" }
+      | { kind: "column"; key: (typeof deathReplayColumns)[number]["key"] }
+    > = [];
+    const cols = visibleColumns;
+    for (let index = 0; index < cols.length; index += 1) {
+      const col = cols[index];
+      const next = cols[index + 1];
+      if (
+        col &&
+        next &&
+        ((col.key === "skill" && next.key === "source") ||
+          (col.key === "source" && next.key === "skill"))
+      ) {
+        items.push({ kind: "identity" });
+        index += 1;
+        continue;
+      }
+      if (col) items.push({ kind: "column", key: col.key });
+    }
+    return items;
+  });
   const buffAliases = $derived.by<BuffAliasMap>(() => getGlobalBuffAliases());
   const buffIconOverrides = $derived.by(() =>
     ensureBuffIconOverrides(SETTINGS.skillMonitor.state.buffIconOverrides),
@@ -287,6 +326,14 @@
     monsterNameIndexes.set(title, nextIndex);
     return `${title} #${nextIndex}`;
   }
+
+  function isLabelColumn(key: string): boolean {
+    return key === "skill" || key === "source";
+  }
+
+  function isNumericColumn(key: string): boolean {
+    return key === "damage" || key === "share";
+  }
 </script>
 
 {#snippet buffSnapshotCard(title: string, buffs: DeathBuffSnapshot[])}
@@ -355,6 +402,43 @@
   {/if}
 {/snippet}
 
+{#snippet columnValue(
+  key: (typeof deathReplayColumns)[number]["key"],
+  dmg: DamageSnapshot,
+  pct: number,
+  compact: boolean,
+)}
+  {#if key === "time"}
+    {formatRelativeSeconds(dmg)}
+  {:else if key === "skill"}
+    {resolveSkillName(dmg)}
+  {:else if key === "source"}
+    {resolveAttackerName(dmg) || "-"}
+  {:else if key === "damage"}
+    {#if shortenTps}
+      <AbbreviatedNumber
+        num={ipcNumber(dmg.value)}
+        decimalPlaces={abbreviatedDecimalPlaces}
+        {abbreviationStyle}
+        suffixFontSize={compact
+          ? tableSettings.skillAbbreviatedFontSize
+          : undefined}
+        suffixColor={compact
+          ? customThemeColors.tableAbbreviatedColor
+          : undefined}
+      />
+    {:else}
+      {formatNumber(ipcNumber(dmg.value))}
+    {/if}
+  {:else if key === "share"}
+    {formatNumber(pct, { maximumFractionDigits: 0 })}%
+  {:else if key === "property"}
+    {propertyLabel(dmg.property)}
+  {:else if key === "damageMode"}
+    {damageModeLabel(dmg.damageMode)}
+  {/if}
+{/snippet}
+
 {#if variant === "history"}
   <div class="mb-2 flex items-center gap-3">
     <button
@@ -406,33 +490,23 @@
     <table class="w-full border-collapse">
       <thead>
         <tr class="bg-popover/60">
-          <th
-            class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground"
-            >{t("components.deathReplay.table.time")}</th
-          >
-          <th
-            class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground"
-            >{t("components.deathReplay.table.skill")}</th
-          >
-          <th
-            class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground"
-            >{t("components.deathReplay.table.source")}</th
-          >
-          <th
-            class="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground"
-            >{t("components.deathReplay.table.damage")}</th
-          >
-          <th
-            class="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground"
-            >{t("components.deathReplay.table.share")}</th
-          >
+          {#each visibleColumns as col (col.key)}
+            <th
+              class="text-muted-foreground px-3 py-3 text-xs font-medium tracking-wider uppercase {isLabelColumn(
+                col.key,
+              )
+                ? 'text-left'
+                : 'text-right'}"
+              >{col.header}</th
+            >
+          {/each}
         </tr>
       </thead>
       <tbody>
         {#if rows.length === 0}
           <tr>
             <td
-              colspan="5"
+              colspan={Math.max(visibleColumns.length, 1)}
               class="px-3 py-8 text-center text-xs text-muted-foreground"
             >
               {t("components.deathReplay.noDamageSnapshots")}
@@ -444,40 +518,24 @@
             <tr
               class="relative border-t border-border/40 hover:bg-muted/60 transition-colors"
             >
-              <td
-                class="px-3 py-3 text-sm text-muted-foreground relative z-10 tabular-nums w-20"
-                >{formatRelativeSeconds(dmg)}</td
-              >
-              <td
-                class="px-3 py-3 text-sm text-muted-foreground relative z-10 truncate"
-                {@attach tooltip(() => resolveDamageTooltip(dmg))}
-                >{resolveSkillName(dmg)}</td
-              >
-              <td
-                class="px-3 py-3 text-sm text-muted-foreground relative z-10 truncate"
-                {@attach tooltip(() => resolveAttackerName(dmg))}
-                >{resolveAttackerName(dmg) || "-"}</td
-              >
-              <td
-                class="px-3 py-3 text-right text-sm text-muted-foreground relative z-10 tabular-nums"
-                {@attach tooltip(() => formatNumber(ipcNumber(dmg.value)))}
-              >
-                {#if shortenTps}
-                  <AbbreviatedNumber
-                    num={ipcNumber(dmg.value)}
-                    decimalPlaces={abbreviatedDecimalPlaces}
-                    {abbreviationStyle}
-                  />
-                {:else}
-                  {formatNumber(ipcNumber(dmg.value))}
-                {/if}
-              </td>
-              <td
-                class="px-3 py-3 text-right text-sm text-muted-foreground relative z-10 tabular-nums"
-                >{formatNumber(pct, {
-                  maximumFractionDigits: 0,
-                })}%</td
-              >
+              {#each visibleColumns as col (col.key)}
+                <td
+                  class="text-muted-foreground relative z-10 px-3 py-3 text-sm {isLabelColumn(
+                    col.key,
+                  )
+                    ? 'truncate'
+                    : 'text-right tabular-nums'}"
+                  {@attach col.key === "skill"
+                    ? tooltip(() => resolveDamageTooltip(dmg))
+                    : col.key === "source"
+                      ? tooltip(() => resolveAttackerName(dmg))
+                      : col.key === "damage"
+                        ? tooltip(() => formatNumber(ipcNumber(dmg.value)))
+                        : () => {}}
+                >
+                  {@render columnValue(col.key, dmg, pct, false)}
+                </td>
+              {/each}
               <TableRowGlow
                 isSkill={true}
                 {className}
@@ -516,41 +574,64 @@
                 style="color: {customThemeColors.tableTextColor};"
               >
                 <div class="flex items-center h-full gap-2">
-                  <span
-                    class="tabular-nums font-semibold text-muted-foreground shrink-0 w-14"
-                    >{formatRelativeSeconds(dmg)}</span
-                  >
-                  <span
-                    class="flex-1 min-w-0"
-                    {@attach tooltip(() => resolveDamageTooltip(dmg))}
-                  >
-                    <span class="block truncate">{resolveSkillName(dmg)}</span>
-                    {#if resolveAttackerName(dmg)}
+                  {#each liveRenderItems as item (item.kind === "identity" ? "identity" : item.key)}
+                    {#if item.kind === "identity"}
                       <span
-                        class="block truncate text-[0.85em] text-muted-foreground/80"
+                        class="flex-1 min-w-0"
+                        {@attach tooltip(() => resolveDamageTooltip(dmg))}
                       >
-                        {t("components.deathReplay.sourceLabel", {
-                          source: resolveAttackerName(dmg),
-                        })}
+                        <span class="block truncate"
+                          >{resolveSkillName(dmg)}</span
+                        >
+                        {#if resolveAttackerName(dmg)}
+                          <span
+                            class="block truncate text-[0.85em] text-muted-foreground/80"
+                          >
+                            {t("components.deathReplay.sourceLabel", {
+                              source: resolveAttackerName(dmg),
+                            })}
+                          </span>
+                        {/if}
+                      </span>
+                    {:else if item.key === "time"}
+                      <span
+                        class="tabular-nums font-semibold text-muted-foreground shrink-0 w-14"
+                      >
+                        {@render columnValue(item.key, dmg, pct, true)}
+                      </span>
+                    {:else if item.key === "skill"}
+                      <span
+                        class="flex-1 min-w-0 truncate"
+                        {@attach tooltip(() => resolveDamageTooltip(dmg))}
+                      >
+                        {@render columnValue(item.key, dmg, pct, true)}
+                      </span>
+                    {:else if item.key === "source"}
+                      <span
+                        class="min-w-0 max-w-28 truncate text-[0.85em] text-muted-foreground/80"
+                        {@attach tooltip(() => resolveAttackerName(dmg))}
+                      >
+                        {@render columnValue(item.key, dmg, pct, true)}
+                      </span>
+                    {:else if item.key === "damage"}
+                      <span
+                        class="tabular-nums font-medium shrink-0"
+                        {@attach tooltip(() =>
+                          formatNumber(ipcNumber(dmg.value)),
+                        )}
+                      >
+                        {@render columnValue(item.key, dmg, pct, true)}
+                      </span>
+                    {:else}
+                      <span
+                        class="shrink-0 {isNumericColumn(item.key)
+                          ? 'tabular-nums'
+                          : ''}"
+                      >
+                        {@render columnValue(item.key, dmg, pct, true)}
                       </span>
                     {/if}
-                  </span>
-                  <span
-                    class="tabular-nums font-medium shrink-0"
-                    {@attach tooltip(() => formatNumber(ipcNumber(dmg.value)))}
-                  >
-                    {#if shortenTps}
-                      <AbbreviatedNumber
-                        num={ipcNumber(dmg.value)}
-                        decimalPlaces={abbreviatedDecimalPlaces}
-                        {abbreviationStyle}
-                        suffixFontSize={tableSettings.skillAbbreviatedFontSize}
-                        suffixColor={customThemeColors.tableAbbreviatedColor}
-                      />
-                    {:else}
-                      {formatNumber(ipcNumber(dmg.value))}
-                    {/if}
-                  </span>
+                  {/each}
                 </div>
               </td>
               <TableRowGlow

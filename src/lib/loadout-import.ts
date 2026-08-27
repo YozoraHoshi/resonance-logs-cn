@@ -591,6 +591,10 @@ const liveProfileSchema = v.object({
     liveStatsSchema,
     defaultClone(defaultLive.tankedSkillBreakdown),
   ),
+  deathReplay: v.optional(
+    liveStatsSchema,
+    defaultClone(defaultLive.deathReplay),
+  ),
   tableCustomization: v.optional(
     v.record(v.string(), v.any()),
     defaultClone(defaultLive.tableCustomization),
@@ -624,6 +628,10 @@ const liveProfileSchema = v.object({
       tankedSkills: v.optional(
         liveColumnOrderEntrySchema,
         defaultClone(defaultLive.columnOrder.tankedSkills),
+      ),
+      deathReplay: v.optional(
+        liveColumnOrderEntrySchema,
+        defaultClone(defaultLive.columnOrder.deathReplay),
       ),
     }),
     defaultClone(defaultLive.columnOrder),

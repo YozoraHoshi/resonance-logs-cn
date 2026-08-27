@@ -577,8 +577,16 @@ export const zhCNMessages = {
   "settings.common.columns.healSkills": "治疗（技能明细）列",
   "settings.common.columns.tankedPlayers": "承伤（玩家）列",
   "settings.common.columns.tankedSkills": "承伤（技能明细）列",
+  "settings.common.columns.deathReplay": "死亡回放列",
+  "settings.common.columns.deathReplaySharedHint":
+    "实时与历史死亡回放共用此列配置。",
   "settings.common.columns.orderHint":
     "使用箭头调整顺序；用开关控制显示/隐藏。",
+  "columns.description.deathReplay.time": "显示受击相对死亡的时间",
+  "columns.description.deathReplay.skill": "显示造成该次受击的技能",
+  "columns.description.deathReplay.source": "显示该次受击的来源",
+  "columns.description.deathReplay.damage": "显示该次受击的伤害",
+  "columns.description.deathReplay.share": "显示该次受击占窗口内总伤害的比例",
   "settings.live.fantasyCastIcons": "显示幻想图标",
   "settings.live.fantasyCastIconsDescription":
     "在玩家名称旁显示最近释放的幻想图标。",

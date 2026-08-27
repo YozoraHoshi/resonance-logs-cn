@@ -778,6 +778,12 @@ pub struct DamageSnapshot {
     pub skill_key: i64,
     /// Raw damage value.
     pub value: String,
+    /// Element/property id from the hit packet. None when the packet omitted it.
+    #[serde(default)]
+    pub property: Option<i32>,
+    /// Physical/magical mode from the hit packet. None when the packet omitted it.
+    #[serde(default)]
+    pub damage_mode: Option<i32>,
 }
 
 /// A single active buff copied at the moment a death replay record is created.
@@ -881,6 +887,8 @@ mod tests {
             attacker_monster_type_id: None,
             skill_key: 7,
             value: u128::MAX.to_string(),
+            property: Some(3),
+            damage_mode: Some(2),
         };
         assert_eq!(dto.timestamp_ms, u128::MAX.to_string());
         assert_eq!(dto.value, u128::MAX.to_string());

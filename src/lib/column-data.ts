@@ -692,6 +692,51 @@ export const historyHealSkillColumns = [
   }),
 ] as const;
 
+export const deathReplayColumns = [
+  createColumn({
+    key: "time",
+    labelKey: "components.deathReplay.table.time",
+    descriptionKey: "columns.description.deathReplay.time",
+    format: formatDecimal,
+  }),
+  createColumn({
+    key: "skill",
+    labelKey: "components.deathReplay.table.skill",
+    descriptionKey: "columns.description.deathReplay.skill",
+    format: formatInteger,
+  }),
+  createColumn({
+    key: "source",
+    labelKey: "components.deathReplay.table.source",
+    descriptionKey: "columns.description.deathReplay.source",
+    format: formatInteger,
+  }),
+  createColumn({
+    key: "damage",
+    labelKey: "components.deathReplay.table.damage",
+    descriptionKey: "columns.description.deathReplay.damage",
+    format: formatInteger,
+  }),
+  createColumn({
+    key: "share",
+    labelKey: "components.deathReplay.table.share",
+    descriptionKey: "columns.description.deathReplay.share",
+    format: formatPercent,
+  }),
+  createColumn({
+    key: "property",
+    labelKey: "columns.skill.property",
+    descriptionKey: "columns.description.skill.property",
+    format: propertyLabel,
+  }),
+  createColumn({
+    key: "damageMode",
+    labelKey: "columns.skill.damageMode",
+    descriptionKey: "columns.description.skill.damageMode",
+    format: damageModeLabel,
+  }),
+] as const;
+
 // Aliases for live views: reuse history DPS/Heal skill definitions where appropriate
 export const liveDpsPlayerColumns = historyDpsPlayerColumns;
 export const liveDpsSkillColumns = historyDpsSkillColumns;

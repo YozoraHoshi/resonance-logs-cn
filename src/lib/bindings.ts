@@ -564,7 +564,15 @@ skillKey: number;
 /**
  * Raw damage value.
  */
-value: string }
+value: string;
+/**
+ * Element/property id from the hit packet. None when the packet omitted it.
+ */
+property?: number | null;
+/**
+ * Physical/magical mode from the hit packet. None when the packet omitted it.
+ */
+damageMode?: number | null }
 /**
  * A single active buff copied at the moment a death replay record is created.
  */
