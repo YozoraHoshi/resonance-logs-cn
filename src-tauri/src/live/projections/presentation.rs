@@ -262,6 +262,7 @@ impl PresentationProjection {
             boss_mechanics: monitored.boss_mechanics.clone(),
             hate_lists: monitored.hate_lists.clone(),
             stun: monitored.stun.clone(),
+            hp: monitored.hp.clone(),
             player_names: monitored.player_names.clone(),
             monster_ids: monitored.monster_ids.clone(),
         }

@@ -15,10 +15,7 @@
     type BuffDefinition,
     type BuffNameInfo,
   } from "$lib/config/buff-name-table";
-  import {
-    ensureBuffIconOverrides,
-    resolveBuffIconSrc,
-  } from "$lib/buff-icons";
+  import { ensureBuffIconOverrides, resolveBuffIconSrc } from "$lib/buff-icons";
   import { buffIconDirUrlPrefix } from "$lib/buff-icon-dir.svelte";
   import { resolveMonsterName } from "$lib/config/game-names";
   import {
@@ -51,6 +48,7 @@
     | "teammate"
     | "hate"
     | "stun"
+    | "hp"
     | "fantasy"
     | "bossDbm"
     | "overlay";
@@ -129,6 +127,11 @@
       monsterMonitor.stunPanelStyle ?? monsterMonitor.panelStyle,
     ),
   );
+  const hpPanelStyle = $derived.by(() =>
+    normalizeCustomPanelStyle(
+      monsterMonitor.hpPanelStyle ?? monsterMonitor.panelStyle,
+    ),
+  );
   const fantasyPanelStyle = $derived.by(() =>
     normalizeCustomPanelStyle(
       monsterMonitor.fantasyPanelStyle ?? monsterMonitor.panelStyle,
@@ -151,6 +154,7 @@
       monsterMonitor.overlayVisibility?.showTeammateBuffPanel ?? true,
     showHatePanel: monsterMonitor.overlayVisibility?.showHatePanel ?? true,
     showStunPanel: monsterMonitor.overlayVisibility?.showStunPanel ?? false,
+    showHpPanel: monsterMonitor.overlayVisibility?.showHpPanel ?? false,
     showFantasyPanel:
       monsterMonitor.overlayVisibility?.showFantasyPanel ?? false,
     showBossDbmPanel:
@@ -740,6 +744,19 @@
     }));
   }
 
+  function updateHpPanelStyle<K extends keyof typeof hpPanelStyle>(
+    key: K,
+    value: (typeof hpPanelStyle)[K],
+  ) {
+    updateMonsterMonitor((state) => ({
+      ...state,
+      hpPanelStyle: {
+        ...(state.hpPanelStyle ?? state.panelStyle),
+        [key]: value,
+      },
+    }));
+  }
+
   function updateFantasyPanelStyle<K extends keyof CustomPanelStyle>(
     key: K,
     value: CustomPanelStyle[K],
@@ -836,6 +853,7 @@
           state.overlayVisibility?.showTeammateBuffPanel ?? true,
         showHatePanel: state.overlayVisibility?.showHatePanel ?? true,
         showStunPanel: state.overlayVisibility?.showStunPanel ?? false,
+        showHpPanel: state.overlayVisibility?.showHpPanel ?? false,
         showFantasyPanel: state.overlayVisibility?.showFantasyPanel ?? false,
         showBossDbmPanel: state.overlayVisibility?.showBossDbmPanel ?? false,
       };
@@ -1042,6 +1060,18 @@
         }}
       >
         {t("monsterMonitor.tabs.stun")}
+      </button>
+      <button
+        type="button"
+        class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors {activeTab ===
+        'hp'
+          ? 'bg-primary text-primary-foreground border-primary'
+          : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
+        onclick={() => {
+          activeTab = "hp";
+        }}
+      >
+        {t("monsterMonitor.tabs.hp")}
       </button>
       <button
         type="button"
@@ -2371,6 +2401,163 @@
           updateStunPanelStyle("backgroundOpacity", v)}
       />
     </section>
+  {:else if activeTab === "hp"}
+    <section
+      class="border-border/60 bg-card/60 space-y-5 rounded-xl border p-5"
+    >
+      <div class="space-y-1">
+        <h2 class="text-foreground text-base font-semibold">
+          {t("monsterMonitor.hp.displayTitle")}
+        </h2>
+        <p class="text-muted-foreground text-sm">
+          {t("monsterMonitor.hp.displayDescription")}
+        </p>
+      </div>
+
+      <div class="flex justify-start">
+        <div class="min-w-[220px]">
+          <SettingsSwitch
+            label={t("monsterMonitor.hp.enabled")}
+            bind:checked={SETTINGS.monsterMonitor.state.hpListEnabled}
+          />
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="border-border/60 bg-card/60 space-y-5 rounded-xl border p-5"
+    >
+      <div class="space-y-1">
+        <h2 class="text-foreground text-base font-semibold">
+          {t("monsterMonitor.hp.styleTitle")}
+        </h2>
+      </div>
+
+      <div class="grid gap-4 lg:grid-cols-3">
+        <label class="style-field">
+          <span>{t("monsterMonitor.style.gap")}</span>
+          <input
+            type="range"
+            min="0"
+            max="24"
+            value={hpPanelStyle.gap}
+            oninput={(event) =>
+              updateHpPanelStyle(
+                "gap",
+                Number.parseInt(
+                  (event.currentTarget as HTMLInputElement).value,
+                  10,
+                ),
+              )}
+          />
+          <strong>{hpPanelStyle.gap}px</strong>
+        </label>
+
+        <label class="style-field">
+          <span>{t("monsterMonitor.style.columnGap")}</span>
+          <input
+            type="range"
+            min="0"
+            max="40"
+            value={hpPanelStyle.columnGap}
+            oninput={(event) =>
+              updateHpPanelStyle(
+                "columnGap",
+                Number.parseInt(
+                  (event.currentTarget as HTMLInputElement).value,
+                  10,
+                ),
+              )}
+          />
+          <strong>{hpPanelStyle.columnGap}px</strong>
+        </label>
+
+        <label class="style-field">
+          <span>{t("monsterMonitor.style.fontSize")}</span>
+          <input
+            type="range"
+            min="10"
+            max="28"
+            value={hpPanelStyle.fontSize}
+            oninput={(event) =>
+              updateHpPanelStyle(
+                "fontSize",
+                Number.parseInt(
+                  (event.currentTarget as HTMLInputElement).value,
+                  10,
+                ),
+              )}
+          />
+          <strong>{hpPanelStyle.fontSize}px</strong>
+        </label>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <label class="color-field">
+          <span>{t("monsterMonitor.style.nameColor")}</span>
+          <input
+            type="color"
+            value={hpPanelStyle.nameColor}
+            oninput={(event) =>
+              updateHpPanelStyle(
+                "nameColor",
+                (event.currentTarget as HTMLInputElement).value,
+              )}
+          />
+        </label>
+
+        <label class="color-field">
+          <span>{t("monsterMonitor.style.valueColor")}</span>
+          <input
+            type="color"
+            value={hpPanelStyle.valueColor}
+            oninput={(event) =>
+              updateHpPanelStyle(
+                "valueColor",
+                (event.currentTarget as HTMLInputElement).value,
+              )}
+          />
+        </label>
+
+        <label class="color-field">
+          <span>{t("monsterMonitor.style.progressColor")}</span>
+          <input
+            type="color"
+            value={hpPanelStyle.progressColor}
+            oninput={(event) =>
+              updateHpPanelStyle(
+                "progressColor",
+                (event.currentTarget as HTMLInputElement).value,
+              )}
+          />
+        </label>
+
+        <label class="color-field">
+          <span>{t("monsterMonitor.style.progressOpacity")}</span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={hpPanelStyle.progressOpacity}
+            oninput={(event) =>
+              updateHpPanelStyle(
+                "progressOpacity",
+                Number((event.currentTarget as HTMLInputElement).value),
+              )}
+          />
+          <strong>{Math.round(hpPanelStyle.progressOpacity * 100)}%</strong>
+        </label>
+      </div>
+      <OverlayTextStyleFields
+        textShadowEnabled={hpPanelStyle.textShadowEnabled}
+        backgroundEnabled={hpPanelStyle.backgroundEnabled}
+        backgroundOpacity={hpPanelStyle.backgroundOpacity}
+        onTextShadowEnabled={(v) => updateHpPanelStyle("textShadowEnabled", v)}
+        onBackgroundEnabled={(v) => updateHpPanelStyle("backgroundEnabled", v)}
+        onBackgroundOpacity={(v) => updateHpPanelStyle("backgroundOpacity", v)}
+      />
+    </section>
   {:else if activeTab === "fantasy"}
     <section
       class="border-border/60 bg-card/60 space-y-5 rounded-xl border p-5"
@@ -2886,6 +3073,20 @@
           {t("monsterMonitor.overlay.stun", {
             state: visibilityState(
               monsterMonitor.stunListEnabled && overlayVisibility.showStunPanel,
+            ),
+          })}
+        </button>
+        <button
+          type="button"
+          class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 {overlayVisibility.showHpPanel
+            ? 'bg-primary text-primary-foreground border-primary'
+            : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
+          disabled={!monsterMonitor.hpListEnabled}
+          onclick={() => toggleOverlayVisibility("showHpPanel")}
+        >
+          {t("monsterMonitor.overlay.hp", {
+            state: visibilityState(
+              monsterMonitor.hpListEnabled && overlayVisibility.showHpPanel,
             ),
           })}
         </button>

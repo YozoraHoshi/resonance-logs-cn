@@ -26,6 +26,8 @@ export type MonsterStunSection = {
   isPlaceholder?: boolean;
 };
 
+export type MonsterHpSection = MonsterStunSection;
+
 export type MonsterTeammateBuffCell = {
   key: string;
   buffId: number;
@@ -73,6 +75,7 @@ export type MonsterDragTarget =
   | { kind: "teammatePanel" }
   | { kind: "hatePanel" }
   | { kind: "stunPanel" }
+  | { kind: "hpPanel" }
   | { kind: "fantasyPanel" }
   | { kind: "dbmPanel" };
 
@@ -81,6 +84,7 @@ export type MonsterResizeTarget =
   | { kind: "teammatePanel" }
   | { kind: "hatePanel" }
   | { kind: "stunPanel" }
+  | { kind: "hpPanel" }
   | { kind: "fantasyPanel" }
   | { kind: "dbmPanel" };
 

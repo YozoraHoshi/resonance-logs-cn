@@ -373,6 +373,7 @@ function clearMonsterDisplay(): void {
   monsterRuntime.teammateRows = [];
   monsterRuntime.hateSections = [];
   monsterRuntime.stunSections = [];
+  monsterRuntime.hpSections = [];
   monsterRuntime.fantasyRows = [];
   monsterRuntime.dbmRows = [];
 }

@@ -4,6 +4,7 @@
   import MonsterBuffPanel from "../monster-overlay/MonsterBuffPanel.svelte";
   import MonsterFantasyPanel from "../monster-overlay/MonsterFantasyPanel.svelte";
   import MonsterHatePanel from "../monster-overlay/MonsterHatePanel.svelte";
+  import MonsterHpPanel from "../monster-overlay/MonsterHpPanel.svelte";
   import MonsterStunPanel from "../monster-overlay/MonsterStunPanel.svelte";
   import MonsterTeammateBuffPanel from "../monster-overlay/MonsterTeammateBuffPanel.svelte";
   import { getMonsterOverlayVisibility } from "../monster-overlay/monster-state.svelte.js";
@@ -14,6 +15,9 @@
   );
   const stunEnabled = $derived(
     SETTINGS.monsterMonitor.state.stunListEnabled && visibility.showStunPanel,
+  );
+  const hpEnabled = $derived(
+    SETTINGS.monsterMonitor.state.hpListEnabled && visibility.showHpPanel,
   );
 </script>
 
@@ -29,6 +33,9 @@
   {/if}
   {#if stunEnabled}
     <MonsterStunPanel />
+  {/if}
+  {#if hpEnabled}
+    <MonsterHpPanel />
   {/if}
   {#if visibility.showFantasyPanel}
     <MonsterFantasyPanel />

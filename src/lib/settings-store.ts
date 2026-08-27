@@ -913,6 +913,7 @@ export type MonsterOverlayPositions = {
   fantasyPanel: Point;
   bossDbmPanel: Point;
   stunPanel: Point;
+  hpPanel: Point;
 };
 
 export type MonsterOverlaySizes = {
@@ -922,6 +923,7 @@ export type MonsterOverlaySizes = {
   fantasyPanelScale: number;
   bossDbmPanelScale: number;
   stunPanelScale: number;
+  hpPanelScale: number;
 };
 
 export type MonsterOverlayVisibility = {
@@ -931,6 +933,7 @@ export type MonsterOverlayVisibility = {
   showFantasyPanel: boolean;
   showBossDbmPanel: boolean;
   showStunPanel: boolean;
+  showHpPanel: boolean;
 };
 
 export type BuffAlertRule = {
@@ -949,6 +952,7 @@ export type MonsterMonitorConfig = {
   hateListEnabled: boolean;
   hateListMaxDisplay: number;
   stunListEnabled: boolean;
+  hpListEnabled: boolean;
   monitoredBuffIds: number[];
   selfAppliedBuffIds: number[];
   selfAppliedMonitorAll: boolean;
@@ -980,6 +984,7 @@ export type MonsterMonitorConfig = {
   fantasyPanelStyle: CustomPanelStyle;
   bossDbmPanelStyle: CustomPanelStyle;
   stunPanelStyle: CustomPanelStyle;
+  hpPanelStyle: CustomPanelStyle;
 };
 
 export type TextBuffPanelDisplayMode = "modern" | "classic";
@@ -1282,6 +1287,16 @@ export function createDefaultStunPanelStyle(): CustomPanelStyle {
   };
 }
 
+export function createDefaultHpPanelStyle(): CustomPanelStyle {
+  return {
+    ...createDefaultCustomPanelStyle(),
+    columnGap: 8,
+    fontSize: 13,
+    progressColor: "#ef4444",
+    progressOpacity: 0.45,
+  };
+}
+
 function createDefaultMonsterOverlayPositions(): MonsterOverlayPositions {
   return {
     monsterBuffPanel: { x: 40, y: 40 },
@@ -1290,6 +1305,7 @@ function createDefaultMonsterOverlayPositions(): MonsterOverlayPositions {
     fantasyPanel: { x: 420, y: 300 },
     bossDbmPanel: { x: 800, y: 40 },
     stunPanel: { x: 40, y: 460 },
+    hpPanel: { x: 40, y: 560 },
   };
 }
 
@@ -1301,6 +1317,7 @@ function createDefaultMonsterOverlaySizes(): MonsterOverlaySizes {
     fantasyPanelScale: 1,
     bossDbmPanelScale: 1,
     stunPanelScale: 1,
+    hpPanelScale: 1,
   };
 }
 
@@ -1312,6 +1329,7 @@ function createDefaultMonsterOverlayVisibility(): MonsterOverlayVisibility {
     showFantasyPanel: false,
     showBossDbmPanel: false,
     showStunPanel: false,
+    showHpPanel: false,
   };
 }
 
@@ -1477,6 +1495,7 @@ export function createDefaultMonsterMonitorConfig(): MonsterMonitorConfig {
     hateListEnabled: false,
     hateListMaxDisplay: 5,
     stunListEnabled: false,
+    hpListEnabled: false,
     monitoredBuffIds: [],
     selfAppliedBuffIds: [],
     selfAppliedMonitorAll: false,
@@ -1501,6 +1520,7 @@ export function createDefaultMonsterMonitorConfig(): MonsterMonitorConfig {
     fantasyPanelStyle: createDefaultCustomPanelStyle(),
     bossDbmPanelStyle: createDefaultBossDbmStyle(),
     stunPanelStyle: createDefaultStunPanelStyle(),
+    hpPanelStyle: createDefaultHpPanelStyle(),
   };
 }
 
@@ -1550,6 +1570,7 @@ export const MONSTER_PROFILE_FIELD_KEYS = [
   "hateListEnabled",
   "hateListMaxDisplay",
   "stunListEnabled",
+  "hpListEnabled",
   "monitoredBuffIds",
   "selfAppliedBuffIds",
   "selfAppliedMonitorAll",
@@ -1573,6 +1594,7 @@ export const MONSTER_PROFILE_FIELD_KEYS = [
   "fantasyPanelStyle",
   "bossDbmPanelStyle",
   "stunPanelStyle",
+  "hpPanelStyle",
 ] as const satisfies readonly (keyof MonsterMonitorProfileData)[];
 
 // Compile-time exhaustiveness guard: if a field is added to

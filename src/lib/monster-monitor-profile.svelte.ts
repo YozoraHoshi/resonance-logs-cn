@@ -185,13 +185,27 @@ export function currentMirroredProfileData(): MonsterMonitorProfileData {
 export function normalizeMonsterProfileStyles<
   T extends MonsterMonitorProfileData,
 >(profile: T): T {
+  const defaults = createDefaultMonsterMonitorProfile();
   return {
     ...profile,
+    hpListEnabled: profile.hpListEnabled ?? defaults.hpListEnabled,
+    overlayPositions: {
+      ...defaults.overlayPositions,
+      ...profile.overlayPositions,
+    },
+    overlaySizes: { ...defaults.overlaySizes, ...profile.overlaySizes },
+    overlayVisibility: {
+      ...defaults.overlayVisibility,
+      ...profile.overlayVisibility,
+    },
     panelStyle: normalizeCustomPanelStyle(profile.panelStyle),
     teammatePanelStyle: ensureTeammatePanelStyle(profile.teammatePanelStyle),
     hatePanelStyle: normalizeCustomPanelStyle(profile.hatePanelStyle),
     fantasyPanelStyle: normalizeCustomPanelStyle(profile.fantasyPanelStyle),
     bossDbmPanelStyle: normalizeCustomPanelStyle(profile.bossDbmPanelStyle),
     stunPanelStyle: normalizeCustomPanelStyle(profile.stunPanelStyle),
+    hpPanelStyle: normalizeCustomPanelStyle(
+      profile.hpPanelStyle ?? defaults.hpPanelStyle,
+    ),
   };
 }

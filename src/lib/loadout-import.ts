@@ -282,6 +282,9 @@ const overlayVisibilitySchema = v.object({
   showShieldDetailGroup: v.boolean(),
 });
 
+const defaultSkill = omitProfileId(createDefaultSkillMonitorProfile());
+const defaultMonster = omitProfileId(createDefaultMonsterMonitorProfile());
+
 const monsterOverlayPositionsSchema = v.object({
   monsterBuffPanel: pointSchema,
   teammateBuffPanel: pointSchema,
@@ -289,6 +292,10 @@ const monsterOverlayPositionsSchema = v.object({
   fantasyPanel: pointSchema,
   bossDbmPanel: pointSchema,
   stunPanel: pointSchema,
+  hpPanel: v.optional(
+    pointSchema,
+    defaultClone(defaultMonster.overlayPositions.hpPanel),
+  ),
 });
 
 const monsterOverlaySizesSchema = v.object({
@@ -298,6 +305,10 @@ const monsterOverlaySizesSchema = v.object({
   fantasyPanelScale: finiteNumberSchema,
   bossDbmPanelScale: finiteNumberSchema,
   stunPanelScale: finiteNumberSchema,
+  hpPanelScale: v.optional(
+    finiteNumberSchema,
+    defaultMonster.overlaySizes.hpPanelScale,
+  ),
 });
 
 const monsterOverlayVisibilitySchema = v.object({
@@ -307,10 +318,8 @@ const monsterOverlayVisibilitySchema = v.object({
   showFantasyPanel: v.boolean(),
   showBossDbmPanel: v.boolean(),
   showStunPanel: v.boolean(),
+  showHpPanel: v.optional(v.boolean(), false),
 });
-
-const defaultSkill = omitProfileId(createDefaultSkillMonitorProfile());
-const defaultMonster = omitProfileId(createDefaultMonsterMonitorProfile());
 
 const skillProfileSchema = v.object({
   name: v.string(),
@@ -398,6 +407,7 @@ const monsterProfileSchema = v.object({
   hateListEnabled: v.boolean(),
   hateListMaxDisplay: finiteNumberSchema,
   stunListEnabled: v.boolean(),
+  hpListEnabled: v.optional(v.boolean(), false),
   monitoredBuffIds: numberArraySchema,
   selfAppliedBuffIds: numberArraySchema,
   selfAppliedMonitorAll: v.boolean(),
@@ -433,6 +443,10 @@ const monsterProfileSchema = v.object({
   fantasyPanelStyle: customPanelStyleSchema,
   bossDbmPanelStyle: customPanelStyleSchema,
   stunPanelStyle: customPanelStyleSchema,
+  hpPanelStyle: v.optional(
+    customPanelStyleSchema,
+    defaultClone(defaultMonster.hpPanelStyle),
+  ),
 });
 
 const liveGeneralSchema = v.object({

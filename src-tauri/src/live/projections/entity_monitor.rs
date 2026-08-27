@@ -6,7 +6,7 @@ use std::sync::Arc;
 use crate::live::bootstrap_snapshot::MonitorRuntimeSnapshot;
 use crate::live::ipc::models::{
     BossDbmEvent, BuffUpdateState, FightResourceEntry, FightResourceState,
-    HateEntry as HateEntryDto, PanelAttrState, ShieldDetailEntry, SkillCdState, StunEntry,
+    HateEntry as HateEntryDto, HpEntry, PanelAttrState, ShieldDetailEntry, SkillCdState, StunEntry,
     TeammateFantasyState,
 };
 use crate::live::ipc::topic::TopicMask;
@@ -40,6 +40,7 @@ pub struct EntityMonitorSnapshot {
     pub boss_mechanics: Vec<BossDbmEvent>,
     pub hate_lists: HashMap<String, Vec<HateEntryDto>>,
     pub stun: Vec<StunEntry>,
+    pub hp: Vec<HpEntry>,
     pub player_names: HashMap<String, String>,
     pub monster_ids: HashMap<String, i32>,
 }
@@ -83,6 +84,7 @@ pub struct EntityMonitorProjection {
     boss_mechanics: HashMap<i32, BossDbmEvent>,
     hate_lists: HashMap<EntityUuid, Vec<HateEntryDto>>,
     stun_values: HashMap<EntityUuid, (i64, i64)>,
+    hp_values: HashMap<EntityUuid, (i64, i64)>,
     player_names: HashMap<EntityUuid, String>,
     monster_ids: HashMap<EntityUuid, i32>,
 }
@@ -97,6 +99,7 @@ impl EntityMonitorProjection {
         self.clear_boss_mechanics(scheduler);
         self.hate_lists.clear();
         self.stun_values.clear();
+        self.hp_values.clear();
         self.player_names.clear();
         self.monster_ids.clear();
     }
@@ -409,6 +412,7 @@ impl EntityMonitorProjection {
                 self.clear_boss_mechanics(scheduler);
                 self.hate_lists.clear();
                 self.stun_values.clear();
+                self.hp_values.clear();
                 TopicMask::MONSTER
             }
             _ => TopicMask::EMPTY,
@@ -443,6 +447,21 @@ impl EntityMonitorProjection {
             .into_iter()
             .collect::<Vec<_>>();
         stun.sort_unstable_by(|left, right| left.boss_entity_uuid.cmp(&right.boss_entity_uuid));
+
+        let hp = self
+            .current_target
+            .and_then(|target| {
+                let (current, max) = self.hp_values.get(&target.uuid)?;
+                let monster_id = self.monster_ids.get(&target.uuid)?;
+                (*max > 0).then(|| HpEntry {
+                    boss_entity_uuid: target.uuid.0.to_string(),
+                    monster_id: *monster_id,
+                    current: *current,
+                    max: *max,
+                })
+            })
+            .into_iter()
+            .collect::<Vec<_>>();
 
         let mut skill_cds = self.skill_cds.values().cloned().collect::<Vec<_>>();
         // Ascending received_at so frontend last-wins map keeps the newest entry
@@ -486,6 +505,7 @@ impl EntityMonitorProjection {
                 .into_iter()
                 .collect(),
             stun,
+            hp,
             player_names: self
                 .player_names
                 .iter()
@@ -514,6 +534,7 @@ impl EntityMonitorProjection {
         self.active_fantasies.remove(&entity);
         self.hate_lists.remove(&entity);
         self.stun_values.remove(&entity);
+        self.hp_values.remove(&entity);
         self.player_names.remove(&entity);
         self.monster_ids.remove(&entity);
     }
@@ -540,6 +561,7 @@ impl EntityMonitorProjection {
     fn rebuild_current_target_details(&mut self, entities: &EntityContext) {
         self.hate_lists.clear();
         self.stun_values.clear();
+        self.hp_values.clear();
         let Some(target) = self.current_target else {
             return;
         };
@@ -551,6 +573,11 @@ impl EntityMonitorProjection {
         let max = integer_attr(&state.attributes, attr_type::ATTR_MAX_STUNNED);
         if current != 0 || max != 0 {
             self.stun_values.insert(target.uuid, (current, max));
+        }
+        let current_hp = integer_attr(&state.attributes, attr_type::ATTR_CURRENT_HP);
+        let max_hp = integer_attr(&state.attributes, attr_type::ATTR_MAX_HP);
+        if current_hp != 0 || max_hp != 0 {
+            self.hp_values.insert(target.uuid, (current_hp, max_hp));
         }
     }
 
@@ -604,19 +631,27 @@ impl EntityMonitorProjection {
                 mask |= TopicMask::STATUS;
             }
         }
-        if self.current_target == Some(entity)
-            && matches!(
+        if self.current_target == Some(entity) {
+            if matches!(
                 attr_id,
                 attr_type::ATTR_CURRENT_STUNNED | attr_type::ATTR_MAX_STUNNED
-            )
-        {
-            let stun = self.stun_values.entry(entity.uuid).or_default();
-            match attr_id {
-                attr_type::ATTR_CURRENT_STUNNED => stun.0 = value,
-                attr_type::ATTR_MAX_STUNNED => stun.1 = value,
-                _ => unreachable!("filtered above"),
+            ) {
+                let stun = self.stun_values.entry(entity.uuid).or_default();
+                match attr_id {
+                    attr_type::ATTR_CURRENT_STUNNED => stun.0 = value,
+                    attr_type::ATTR_MAX_STUNNED => stun.1 = value,
+                    _ => unreachable!("filtered above"),
+                }
+                mask |= TopicMask::MONSTER;
+            } else if matches!(attr_id, attr_type::ATTR_CURRENT_HP | attr_type::ATTR_MAX_HP) {
+                let hp = self.hp_values.entry(entity.uuid).or_default();
+                match attr_id {
+                    attr_type::ATTR_CURRENT_HP => hp.0 = value,
+                    attr_type::ATTR_MAX_HP => hp.1 = value,
+                    _ => unreachable!("filtered above"),
+                }
+                mask |= TopicMask::MONSTER;
             }
-            mask |= TopicMask::MONSTER;
         }
         mask
     }
