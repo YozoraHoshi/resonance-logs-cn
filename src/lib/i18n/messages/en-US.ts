@@ -494,6 +494,8 @@ export const enUSMessages = {
   "history.timeline.curves.selectAll": "Select all",
   "history.timeline.curves.clearAll": "Clear",
   "history.timeline.curves.closeSelector": "Close curve selector",
+  "history.timeline.curves.modeAverage": "Average",
+  "history.timeline.curves.modeInstant": "Instant",
   "history.timeline.chartAriaLabel":
     "Encounter timeline: boss skills, player key skills and fantasy casts, with DPS curves",
   "history.timeline.selection.label": "Selected {start} - {end} ({duration})",

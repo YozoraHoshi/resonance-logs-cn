@@ -1,6 +1,6 @@
 <script lang="ts">
   // Dumb ECharts renderer: draws the local player's instant/average DPS
-  // curves plus any selected teammate cumulative series. It owns no
+  // curves plus each selected teammate's chosen DPS series. It owns no
   // interaction state at all (no tooltip, no dataZoom, no brush, no
   // toolbox) - the gesture layer above it handles every pointer/wheel
   // event, and the Y axis rescales to whatever window [startMs, endMs) the
@@ -17,7 +17,7 @@
   import { TIMELINE_PALETTE } from "./timeline-palette";
   import { SETTINGS } from "$lib/settings-store";
   import type { EncounterCurvePoint } from "./timeline-data";
-  import type { TimelineTeammateAverageCurve } from "./timeline-types";
+  import type { TimelineTeammateCurve } from "./timeline-types";
 
   echarts.use([LineChart, GridComponent, CanvasRenderer]);
 
@@ -30,7 +30,7 @@
   type Props = {
     mineInstantCurve: EncounterCurvePoint[] | null;
     mineAverageCurve: EncounterCurvePoint[] | null;
-    teammateAverageCurves?: TimelineTeammateAverageCurve[];
+    teammateCurves?: TimelineTeammateCurve[];
     showAverageCurve: boolean;
     startMs: number;
     endMs: number;
@@ -40,7 +40,7 @@
   let {
     mineInstantCurve,
     mineAverageCurve,
-    teammateAverageCurves = [],
+    teammateCurves = [],
     showAverageCurve,
     startMs,
     endMs,
@@ -60,7 +60,7 @@
       ? windowMaxValue(mineAverageCurve, startMs, endMs)
       : 0;
     let teammateMax = 0;
-    for (const row of teammateAverageCurves) {
+    for (const row of teammateCurves) {
       teammateMax = Math.max(
         teammateMax,
         windowMaxValue(row.curve, startMs, endMs),
@@ -81,9 +81,9 @@
     const valueDecimals = abbreviatedDecimalPlaces;
     const series: Record<string, unknown>[] = [];
 
-    // Teammate cumulatives sit under the local series so a comparison overlay
+    // Teammate curves sit under the local series so a comparison overlay
     // cannot bury the local player's burst peaks.
-    for (const row of teammateAverageCurves) {
+    for (const row of teammateCurves) {
       series.push({
         type: "line",
         data: row.curve,
@@ -93,6 +93,7 @@
         lineStyle: {
           width: 1.2,
           color: row.color,
+          type: row.mode === "instant" ? "dashed" : "solid",
         },
         z: 1,
       });

@@ -12,7 +12,7 @@ import {
   resolveHoverDisplayTimeMs,
   sliceLanePointsByTime,
   timeToX,
-  teammateAverageCurves,
+  teammateDpsCurves,
   toCumulativeDpsCurve,
   toRollingDpsCurve,
   visibleSpanRects,
@@ -23,6 +23,7 @@ import {
   type EncounterChart,
   type EncounterChartSeries,
   type EncounterTimelineEvent,
+  type TeammateCurveMode,
 } from "./timeline-data";
 
 function series(
@@ -179,24 +180,26 @@ describe("toCumulativeDpsCurve", () => {
   });
 });
 
-describe("teammateAverageCurves", () => {
-  it("emits cumulative curves only for selected entities with damage", () => {
+describe("teammateDpsCurves", () => {
+  it("emits the selected mode only for entities with damage", () => {
     const buckets = new Map<string, number[]>([
       ["a", [100, 0, 200]],
       ["b", [50, 50, 0]],
       ["empty", [0, 0, 0]],
     ]);
+    const modes = new Map<string, TeammateCurveMode>([
+      ["b", "instant"],
+      ["missing", "average"],
+      ["empty", "instant"],
+      ["a", "average"],
+    ]);
 
-    const result = teammateAverageCurves(
-      ["b", "missing", "empty", "a"],
-      buckets,
-      1_000,
-      3_000,
-    );
+    const result = teammateDpsCurves(modes, buckets, 1_000, 3_000);
 
     expect(result.map((row) => row.entityUuid)).toEqual(["b", "a"]);
+    expect(result.map((row) => row.mode)).toEqual(["instant", "average"]);
     expect(result[0]?.curve).toEqual(
-      toCumulativeDpsCurve([50, 50, 0], 1_000, 3_000),
+      toRollingDpsCurve([50, 50, 0], 1_000, 3_000),
     );
     expect(result[1]?.curve).toEqual(
       toCumulativeDpsCurve([100, 0, 200], 1_000, 3_000),
@@ -549,9 +552,9 @@ describe("collapseHoverLanePoints", () => {
 
 describe("visibleSpanRects", () => {
   it("converts a fully-visible span to left/width percentages", () => {
-    expect(visibleSpanRects([{ startMs: 1_000, endMs: 3_000 }], 0, 10_000)).toEqual([
-      { startMs: 1_000, endMs: 3_000, leftPct: 10, widthPct: 20 },
-    ]);
+    expect(
+      visibleSpanRects([{ startMs: 1_000, endMs: 3_000 }], 0, 10_000),
+    ).toEqual([{ startMs: 1_000, endMs: 3_000, leftPct: 10, widthPct: 20 }]);
   });
 
   it("clamps a span straddling the window edges without changing its reported times", () => {

@@ -33,12 +33,13 @@
   import { laneColor, playerColor } from "./timeline-colors";
   import {
     foldEncounterDamageBuckets,
-    teammateAverageCurves,
+    teammateDpsCurves,
     toCumulativeDpsCurve,
     toRollingDpsCurve,
     zoomTierFor,
     type EncounterChart,
     type EncounterTimelineEvent,
+    type TeammateCurveMode,
   } from "./timeline-data";
   import { formatTimeMs } from "./timeline-format";
   import {
@@ -66,7 +67,7 @@
     TimelineEventDisplay as TimelineEventDisplaySource,
     TimelineHoverPoint,
     TimelinePlayerMeta as TimelinePlayerMetaSource,
-    TimelineTeammateAverageCurve,
+    TimelineTeammateCurve,
   } from "./timeline-types";
   import { TimelineViewport } from "./timeline-viewport.svelte";
 
@@ -249,23 +250,27 @@
   );
 
   // Independent of lane selection: default is none, so opening a support
-  // lane never also overlays that player's cumulative DPS.
-  let manualCurveTeammateSelection = $state<string[]>([]);
+  // lane never also overlays that player's DPS. Each selected teammate owns
+  // exactly one mode: average or instant.
+  const manualCurveTeammateModes = new SvelteMap<string, TeammateCurveMode>();
 
-  let selectedCurveTeammateUuids = $derived(
-    manualCurveTeammateSelection.filter((uuid) =>
-      curveTeammates.some((p) => p.entityUuid === uuid),
-    ),
-  );
+  let selectedCurveTeammateModes = $derived.by(() => {
+    const availableUuids = new Set(
+      curveTeammates.map((player) => player.entityUuid),
+    );
+    return new Map(
+      [...manualCurveTeammateModes].filter(([uuid]) =>
+        availableUuids.has(uuid),
+      ),
+    );
+  });
 
-  let selectedCurveAverageCurves = $derived.by<
-    TimelineTeammateAverageCurve[]
-  >(() => {
+  let selectedTeammateCurves = $derived.by<TimelineTeammateCurve[]>(() => {
     const byUuid = new Map(
       curveTeammates.map((player) => [player.entityUuid, player]),
     );
-    return teammateAverageCurves(
-      selectedCurveTeammateUuids,
+    return teammateDpsCurves(
+      selectedCurveTeammateModes,
       perEntityBuckets,
       chartBucketMs,
       chartDurationMs,
@@ -277,6 +282,7 @@
           entityUuid: row.entityUuid,
           name: player.name,
           color: playerColor(player),
+          mode: row.mode,
           curve: row.curve,
         },
       ];
@@ -284,19 +290,25 @@
   });
 
   function toggleCurveTeammate(entityUuid: string) {
-    manualCurveTeammateSelection = selectedCurveTeammateUuids.includes(
-      entityUuid,
-    )
-      ? selectedCurveTeammateUuids.filter((uuid) => uuid !== entityUuid)
-      : [...selectedCurveTeammateUuids, entityUuid];
+    const current = manualCurveTeammateModes.get(entityUuid);
+    if (current === "average") {
+      manualCurveTeammateModes.set(entityUuid, "instant");
+    } else if (current === "instant") {
+      manualCurveTeammateModes.delete(entityUuid);
+    } else {
+      manualCurveTeammateModes.set(entityUuid, "average");
+    }
   }
 
   function selectAllCurveTeammates() {
-    manualCurveTeammateSelection = curveTeammates.map((p) => p.entityUuid);
+    manualCurveTeammateModes.clear();
+    for (const player of curveTeammates) {
+      manualCurveTeammateModes.set(player.entityUuid, "average");
+    }
   }
 
   function clearCurveTeammates() {
-    manualCurveTeammateSelection = [];
+    manualCurveTeammateModes.clear();
   }
 
   function toPoints(list: EncounterTimelineEvent[]): LanePoint[] {
@@ -324,7 +336,9 @@
         key: "mine",
         type: "mine",
         player: localPlayer,
-        points: toPoints(playerEventsByCaster.get(localPlayer.entityUuid) ?? []),
+        points: toPoints(
+          playerEventsByCaster.get(localPlayer.entityUuid) ?? [],
+        ),
       });
     }
     for (const player of selectedTeammates) {
@@ -495,7 +509,7 @@
     onSelectAllTeammates={selectAllTeammates}
     onClearTeammates={clearTeammates}
     {curveTeammates}
-    {selectedCurveTeammateUuids}
+    curveTeammateModes={selectedCurveTeammateModes}
     onToggleCurveTeammate={toggleCurveTeammate}
     onSelectAllCurveTeammates={selectAllCurveTeammates}
     onClearCurveTeammates={clearCurveTeammates}
@@ -519,8 +533,7 @@
       {#each lanes as lane, i (lane.key)}
         <div
           class="absolute right-0 left-0"
-          style="top: {layout.laneTop +
-            (i + 1) * layout.laneH}px; height: 1px;
+          style="top: {layout.laneTop + (i + 1) * layout.laneH}px; height: 1px;
                  background: var(--tl-row-line)"
         ></div>
       {/each}
@@ -536,7 +549,7 @@
       <TimelineCurve
         {mineInstantCurve}
         {mineAverageCurve}
-        teammateAverageCurves={selectedCurveAverageCurves}
+        teammateCurves={selectedTeammateCurves}
         {showAverageCurve}
         startMs={viewport.startMs}
         endMs={viewport.endMs}
@@ -585,7 +598,7 @@
         selectedRange={selectionEnabled ? selectedRange : null}
         {mineInstantCurve}
         {mineAverageCurve}
-        teammateAverageCurves={selectedCurveAverageCurves}
+        teammateCurves={selectedTeammateCurves}
         {showAverageCurve}
         {resolveEvent}
       />
@@ -604,7 +617,8 @@
         {@const laneName = lane.type === "boss" ? lane.name : lane.player.name}
         <div
           class="pointer-events-auto absolute right-2 left-2.5 flex items-center gap-1.5 overflow-hidden"
-          style="top: {layout.laneTop + i * layout.laneH}px; height: {layout.laneH}px"
+          style="top: {layout.laneTop +
+            i * layout.laneH}px; height: {layout.laneH}px"
           {@attach tooltip(() => laneName)}
         >
           {#if lane.type === "boss"}
@@ -612,10 +626,7 @@
               class="size-3.5 shrink-0"
               style="color: {TIMELINE_PALETTE.boss}"
             />
-            <span
-              class="truncate text-[11px]"
-              style="color: {laneColor(lane)}"
-            >
+            <span class="truncate text-[11px]" style="color: {laneColor(lane)}">
               {lane.name}
             </span>
           {:else if lane.type === "mine"}
@@ -623,7 +634,10 @@
               class="size-1.5 shrink-0 rounded-full"
               style="background: {TIMELINE_PALETTE.mine}; box-shadow: 0 0 6px {TIMELINE_PALETTE.mine}"
             ></span>
-            <span class="truncate text-[11px] font-medium" style="color: #dbeafe">
+            <span
+              class="truncate text-[11px] font-medium"
+              style="color: #dbeafe"
+            >
               {lane.player.name}
             </span>
           {:else}
@@ -708,7 +722,10 @@
       style="border-top: 1px solid var(--tl-row-line); background: rgba(96,165,250,0.05)"
     >
       <div class="flex min-w-0 items-center gap-1.5">
-        <Clock3Icon class="size-3.5 shrink-0" style="color: {TIMELINE_PALETTE.mine}" />
+        <Clock3Icon
+          class="size-3.5 shrink-0"
+          style="color: {TIMELINE_PALETTE.mine}"
+        />
         <span class="truncate text-[11px] tabular-nums" style="color: #bfdbfe">
           {t("history.timeline.selection.label", {
             start: formatTimeMs(selectedRange[0], true),

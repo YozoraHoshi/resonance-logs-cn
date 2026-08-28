@@ -118,26 +118,32 @@ export function toCumulativeDpsCurve(
   });
 }
 
-export type TeammateAverageCurve = {
+export type TeammateCurveMode = "average" | "instant";
+
+export type TeammateDpsCurve = {
   entityUuid: string;
+  mode: TeammateCurveMode;
   curve: EncounterCurvePoint[];
 };
 
-/** Cumulative-only curves for the selected teammates. Instant DPS is never
- * produced here: that series stays local-player-only on the chart. */
-export function teammateAverageCurves(
-  selectedUuids: readonly string[],
+/** Builds one DPS curve per selected teammate using that player's chosen mode. */
+export function teammateDpsCurves(
+  modes: ReadonlyMap<string, TeammateCurveMode>,
   perEntityBuckets: ReadonlyMap<string, readonly number[]>,
   bucketMs: number,
   durationMs: number,
-): TeammateAverageCurve[] {
-  const result: TeammateAverageCurve[] = [];
-  for (const entityUuid of selectedUuids) {
+): TeammateDpsCurve[] {
+  const result: TeammateDpsCurve[] = [];
+  for (const [entityUuid, mode] of modes) {
     const totals = perEntityBuckets.get(entityUuid);
     if (!totals || !totals.some((total) => total > 0)) continue;
     result.push({
       entityUuid,
-      curve: toCumulativeDpsCurve([...totals], bucketMs, durationMs),
+      mode,
+      curve:
+        mode === "instant"
+          ? toRollingDpsCurve([...totals], bucketMs, durationMs)
+          : toCumulativeDpsCurve([...totals], bucketMs, durationMs),
     });
   }
   return result;

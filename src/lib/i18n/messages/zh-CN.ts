@@ -443,6 +443,8 @@ export const zhCNMessages = {
   "history.timeline.curves.selectAll": "全选",
   "history.timeline.curves.clearAll": "清空",
   "history.timeline.curves.closeSelector": "关闭曲线选择",
+  "history.timeline.curves.modeAverage": "平均",
+  "history.timeline.curves.modeInstant": "瞬时",
   "history.timeline.chartAriaLabel":
     "战斗时间线：Boss 技能、玩家关键技能与幻想施放标记，以及秒伤曲线",
   "history.timeline.selection.label": "已选 {start} - {end}（{duration}）",

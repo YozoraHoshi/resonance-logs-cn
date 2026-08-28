@@ -17,7 +17,7 @@
     Lane,
     TimelineEventDisplay,
     TimelineHoverPoint,
-    TimelineTeammateAverageCurve,
+    TimelineTeammateCurve,
   } from "./timeline-types";
 
   type Props = {
@@ -31,7 +31,7 @@
     selectedRange: [number, number] | null;
     mineInstantCurve: EncounterCurvePoint[] | null;
     mineAverageCurve: EncounterCurvePoint[] | null;
-    teammateAverageCurves?: TimelineTeammateAverageCurve[];
+    teammateCurves?: TimelineTeammateCurve[];
     showAverageCurve: boolean;
     resolveEvent: (event: EncounterTimelineEvent) => TimelineEventDisplay;
   };
@@ -47,7 +47,7 @@
     selectedRange,
     mineInstantCurve,
     mineAverageCurve,
-    teammateAverageCurves = [],
+    teammateCurves = [],
     showAverageCurve,
     resolveEvent,
   }: Props = $props();
@@ -103,7 +103,7 @@
     const average = showAverageCurve
       ? interpolateCurveValue(mineAverageCurve, hoverPoint.timeMs)
       : null;
-    const teammates = teammateAverageCurves.flatMap((row) => {
+    const teammates = teammateCurves.flatMap((row) => {
       const value = interpolateCurveValue(row.curve, hoverPoint.timeMs);
       if (value === null) return [];
       return [
@@ -111,6 +111,7 @@
           entityUuid: row.entityUuid,
           name: row.name,
           color: row.color,
+          mode: row.mode,
           value,
         },
       ];
@@ -127,7 +128,10 @@
   );
 
   const displayTimeMs = $derived(
-    resolveHoverDisplayTimeMs(hoverPoint?.timeMs ?? 0, hoverLaneEvents[0]?.timeMs),
+    resolveHoverDisplayTimeMs(
+      hoverPoint?.timeMs ?? 0,
+      hoverLaneEvents[0]?.timeMs,
+    ),
   );
 
   const showHeaderTime = $derived(hoverLaneEvents.length <= 1);
@@ -188,7 +192,9 @@
             {/if}
             <span class="tl-tooltip-name">{display.name}</span>
             {#if showPerEventTime}
-              <span class="tl-tooltip-event-time">{formatTimeMs(point.timeMs, true)}</span>
+              <span class="tl-tooltip-event-time"
+                >{formatTimeMs(point.timeMs, true)}</span
+              >
             {/if}
           </div>
         {/each}
@@ -209,11 +215,14 @@
         {/if}
         {#each hoverCurveInfo.teammates as teammate (teammate.entityUuid)}
           <div class="tl-tooltip-row">
-            <span
-              class="tl-tooltip-dot"
-              style="background: {teammate.color}"
+            <span class="tl-tooltip-dot" style="background: {teammate.color}"
             ></span>
             <span class="tl-tooltip-name">{teammate.name}</span>
+            <span class="tl-tooltip-mode">
+              {teammate.mode === "instant"
+                ? t("history.timeline.curves.modeInstant")
+                : t("history.timeline.curves.modeAverage")}
+            </span>
             <b>{formatCurveValue(teammate.value)}</b>
           </div>
         {/each}
@@ -286,6 +295,11 @@
     color: var(--tl-fg-muted);
     font-size: 10px;
     font-variant-numeric: tabular-nums;
+  }
+
+  .tl-tooltip-mode {
+    color: var(--tl-fg-muted);
+    font-size: 10px;
   }
 
   .tl-tooltip-icon {
