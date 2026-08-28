@@ -12,7 +12,7 @@ export const enUSMessages = {
   "loadout.defaults.copyName": "{name} Copy",
   "loadout.page.title": "Loadout Manager",
   "loadout.page.description":
-    "A loadout bundles one skill-monitor profile and one monster-monitor profile. Switching loadouts swaps your entire live monitoring, monster monitoring, and voice announcement setup in one action",
+    "A loadout bundles skill-monitor, monster-monitor, and DPS settings profiles. Switching loadouts swaps live monitoring, history display, and voice announcement settings in one action",
   "loadout.page.loadoutsTitle": "Loadouts",
   "loadout.page.new": "New Loadout",
   "loadout.page.namePrompt": "Enter a loadout name",
@@ -24,10 +24,10 @@ export const enUSMessages = {
   "loadout.page.deleteConfirm": "Delete this loadout?",
   "loadout.page.skillProfileLabel": "Skill monitor profile",
   "loadout.page.monsterProfileLabel": "Monster monitor profile",
-  "loadout.page.liveProfileLabel": "Live meter profile",
+  "loadout.page.liveProfileLabel": "DPS settings profile",
   "loadout.page.presetsTitle": "Presets",
   "loadout.page.presetsDescription":
-    "Apply a curated loadout with skill, monster, and live meter settings",
+    "Apply a curated loadout with skill, monster, and DPS settings",
   "loadout.page.presetApplied": 'Created loadout "{name}"',
   "loadout.page.importButton": "Import",
   "loadout.page.exportButton": "Export",
@@ -124,9 +124,9 @@ export const enUSMessages = {
   "settings.tabs.debug": "Debug",
   "settings.tabs.language": "Language",
   "settings.scope.live":
-    "Live meter settings are saved with the active live meter profile and travel with the loadout when exported.",
+    "Live stats settings are saved with the active DPS settings profile and travel with the loadout when exported.",
   "settings.scope.history":
-    "History stats are a per-machine preference and are not included in exports.",
+    "History stats settings are saved with the active DPS settings profile and travel with the loadout when exported.",
   "appSettings.title": "App Settings",
   "appSettings.description":
     "Application-level configuration: packet capture, global shortcuts, language and diagnostics. These do not travel with exported loadouts.",
@@ -644,6 +644,13 @@ export const enUSMessages = {
     "Live and history death replay share this column setup.",
   "settings.common.columns.orderHint":
     "Use arrows to reorder; use switches to show/hide.",
+  "settings.common.columns.first.player": "Player first column",
+  "settings.common.columns.first.skill": "Skill first column",
+  "settings.common.columns.customNameHint":
+    "Optional: enter a custom header, or leave blank to use the current language default.",
+  "settings.common.columns.customNameAriaLabel":
+    'Custom name for the "{column}" column',
+  "settings.common.columns.resetName": "Restore default column name",
   "columns.description.deathReplay.time":
     "Shows how long before death the hit landed",
   "columns.description.deathReplay.skill": "Shows the skill that dealt the hit",
@@ -1414,15 +1421,15 @@ export const enUSMessages = {
     "Delete this monster-monitor profile? Loadouts referencing it will fall back to the first profile.",
   "live.defaults.defaultProfileName": "Default profile",
   "live.defaults.profileName": "Profile {index}",
-  "live.profile.title": "Live Meter Profile",
+  "live.profile.title": "DPS Settings Profile",
   "live.profile.pickerDescription":
-    "The live-meter sub-profile referenced by the active loadout. Switch or manage it here; for more loadout combinations visit the Loadouts page.",
+    "The DPS settings profile referenced by the active loadout, including live and history stats settings. Switch or manage it here.",
   "live.profile.new": "New profile",
   "live.profile.rename": "Rename",
   "live.profile.delete": "Delete",
   "live.profile.renamePrompt": "Enter a new profile name",
   "live.profile.deleteConfirm":
-    "Delete this live-meter profile? Loadouts referencing it will fall back to the first profile.",
+    "Delete this DPS settings profile? Loadouts referencing it will fall back to the first profile.",
   "monsterMonitor.enabled": "Enable Monster Monitor",
   "monsterMonitor.autoHideInDailyScenes.label": "Auto Hide in Daily Scenes",
   "monsterMonitor.autoHideInDailyScenes.description":

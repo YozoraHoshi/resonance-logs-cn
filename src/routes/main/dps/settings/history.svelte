@@ -3,6 +3,7 @@
   import SettingsSwitch from "./settings-switch.svelte";
   import SettingsSelect from "./settings-select.svelte";
   import SettingsSlider from "./settings-slider.svelte";
+  import SettingsColumnLabel from "./settings-column-label.svelte";
   import {
     historyDpsPlayerColumns,
     historyDpsSkillColumns,
@@ -78,24 +79,24 @@
 <Tabs.Content value={SETTINGS_CATEGORY}>
   <div class="space-y-3">
     <div
-      class="rounded-lg border bg-card/40 border-border/60 overflow-hidden shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
+      class="bg-card/40 border-border/60 overflow-hidden rounded-lg border shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
     >
       <button
         type="button"
-        class="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors"
+        class="hover:bg-muted/30 flex w-full items-center justify-between px-4 py-3 transition-colors"
         onclick={() => toggleSection("general")}
       >
-        <h2 class="text-base font-semibold text-foreground">
+        <h2 class="text-foreground text-base font-semibold">
           {t("settings.common.general")}
         </h2>
         <ChevronDown
-          class="w-5 h-5 text-muted-foreground transition-transform duration-200 {expandedSections.general
+          class="text-muted-foreground h-5 w-5 transition-transform duration-200 {expandedSections.general
             ? 'rotate-180'
             : ''}"
         />
       </button>
       {#if expandedSections.general}
-        <div class="px-4 pb-3 space-y-1">
+        <div class="space-y-1 px-4 pb-3">
           <SettingsSelect
             bind:selected={SETTINGS.history.general.state.showYourName}
             values={[
@@ -277,30 +278,70 @@
 
     <!-- DPS - Player Settings -->
     <div
-      class="bg-popover/40 rounded-lg border border-border/50 overflow-hidden"
+      class="bg-popover/40 border-border/50 overflow-hidden rounded-lg border"
     >
       <button
         type="button"
-        class="w-full flex items-center justify-between px-4 py-3 hover:bg-popover/50 transition-colors"
+        class="hover:bg-popover/50 flex w-full items-center justify-between px-4 py-3 transition-colors"
         onclick={() => toggleSection("dpsPlayers")}
       >
-        <h2 class="text-base font-semibold text-foreground">
+        <h2 class="text-foreground text-base font-semibold">
           {t("settings.common.columns.dpsPlayers")}
         </h2>
         <ChevronDown
-          class="w-5 h-5 text-muted-foreground transition-transform duration-200 {expandedSections.dpsPlayers
+          class="text-muted-foreground h-5 w-5 transition-transform duration-200 {expandedSections.dpsPlayers
             ? 'rotate-180'
             : ''}"
         />
       </button>
       {#if expandedSections.dpsPlayers}
-        <div class="px-4 pb-3 space-y-1">
-          {#each historyDpsPlayerColumns as col (col.key)}
-            <SettingsSwitch
-              bind:checked={SETTINGS.history.dps.players.state[col.key]}
-              label={col.label}
-              description={col.description}
+        <div class="space-y-1 px-4 pb-3">
+          <div
+            class="border-border/30 bg-muted/20 flex items-center gap-3 rounded border px-3 py-2"
+          >
+            <div class="min-w-0 flex-1">
+              <div class="text-foreground text-sm font-medium">
+                {t("settings.common.columns.first.player")}
+              </div>
+              <div class="text-muted-foreground mt-0.5 text-xs">
+                {t("settings.common.columns.customNameHint")}
+              </div>
+            </div>
+            <SettingsColumnLabel
+              bind:value={
+                SETTINGS.live.columnLabels.state.history.players.first
+              }
+              placeholder={t("history.detail.table.player")}
+              ariaLabel={t("settings.common.columns.customNameAriaLabel", {
+                column: t("history.detail.table.player"),
+              })}
+              resetLabel={t("settings.common.columns.resetName")}
             />
+          </div>
+          {#each historyDpsPlayerColumns as col (col.key)}
+            <div
+              class="border-border/30 bg-muted/20 flex items-center gap-3 rounded border px-2 py-1"
+            >
+              <div class="min-w-0 flex-1">
+                <SettingsSwitch
+                  bind:checked={SETTINGS.history.dps.players.state[col.key]}
+                  label={col.label}
+                  description={col.description}
+                />
+              </div>
+              <SettingsColumnLabel
+                bind:value={
+                  SETTINGS.live.columnLabels.state.history.players.columns[
+                    col.key
+                  ]
+                }
+                placeholder={col.header}
+                ariaLabel={t("settings.common.columns.customNameAriaLabel", {
+                  column: col.label,
+                })}
+                resetLabel={t("settings.common.columns.resetName")}
+              />
+            </div>
           {/each}
         </div>
       {/if}
@@ -308,30 +349,70 @@
 
     <!-- DPS - Skill Breakdown Settings -->
     <div
-      class="bg-popover/40 rounded-lg border border-border/50 overflow-hidden"
+      class="bg-popover/40 border-border/50 overflow-hidden rounded-lg border"
     >
       <button
         type="button"
-        class="w-full flex items-center justify-between px-4 py-3 hover:bg-popover/50 transition-colors"
+        class="hover:bg-popover/50 flex w-full items-center justify-between px-4 py-3 transition-colors"
         onclick={() => toggleSection("dpsSkills")}
       >
-        <h2 class="text-base font-semibold text-foreground">
+        <h2 class="text-foreground text-base font-semibold">
           {t("settings.common.columns.dpsSkills")}
         </h2>
         <ChevronDown
-          class="w-5 h-5 text-muted-foreground transition-transform duration-200 {expandedSections.dpsSkills
+          class="text-muted-foreground h-5 w-5 transition-transform duration-200 {expandedSections.dpsSkills
             ? 'rotate-180'
             : ''}"
         />
       </button>
       {#if expandedSections.dpsSkills}
-        <div class="px-4 pb-3 space-y-1">
-          {#each historyDpsSkillColumns as col (col.key)}
-            <SettingsSwitch
-              bind:checked={SETTINGS.history.dps.skillBreakdown.state[col.key]}
-              label={col.label}
-              description={col.description}
+        <div class="space-y-1 px-4 pb-3">
+          <div
+            class="border-border/30 bg-muted/20 flex items-center gap-3 rounded border px-3 py-2"
+          >
+            <div class="min-w-0 flex-1">
+              <div class="text-foreground text-sm font-medium">
+                {t("settings.common.columns.first.skill")}
+              </div>
+              <div class="text-muted-foreground mt-0.5 text-xs">
+                {t("settings.common.columns.customNameHint")}
+              </div>
+            </div>
+            <SettingsColumnLabel
+              bind:value={SETTINGS.live.columnLabels.state.history.skills.first}
+              placeholder={t("history.detail.table.skill")}
+              ariaLabel={t("settings.common.columns.customNameAriaLabel", {
+                column: t("history.detail.table.skill"),
+              })}
+              resetLabel={t("settings.common.columns.resetName")}
             />
+          </div>
+          {#each historyDpsSkillColumns as col (col.key)}
+            <div
+              class="border-border/30 bg-muted/20 flex items-center gap-3 rounded border px-2 py-1"
+            >
+              <div class="min-w-0 flex-1">
+                <SettingsSwitch
+                  bind:checked={
+                    SETTINGS.history.dps.skillBreakdown.state[col.key]
+                  }
+                  label={col.label}
+                  description={col.description}
+                />
+              </div>
+              <SettingsColumnLabel
+                bind:value={
+                  SETTINGS.live.columnLabels.state.history.skills.columns[
+                    col.key
+                  ]
+                }
+                placeholder={col.header}
+                ariaLabel={t("settings.common.columns.customNameAriaLabel", {
+                  column: col.label,
+                })}
+                resetLabel={t("settings.common.columns.resetName")}
+              />
+            </div>
           {/each}
         </div>
       {/if}
@@ -339,24 +420,24 @@
 
     <!-- Heal - Player Settings -->
     <div
-      class="bg-popover/40 rounded-lg border border-border/50 overflow-hidden"
+      class="bg-popover/40 border-border/50 overflow-hidden rounded-lg border"
     >
       <button
         type="button"
-        class="w-full flex items-center justify-between px-4 py-3 hover:bg-popover/50 transition-colors"
+        class="hover:bg-popover/50 flex w-full items-center justify-between px-4 py-3 transition-colors"
         onclick={() => toggleSection("healPlayers")}
       >
-        <h2 class="text-base font-semibold text-foreground">
+        <h2 class="text-foreground text-base font-semibold">
           {t("settings.common.columns.healPlayers")}
         </h2>
         <ChevronDown
-          class="w-5 h-5 text-muted-foreground transition-transform duration-200 {expandedSections.healPlayers
+          class="text-muted-foreground h-5 w-5 transition-transform duration-200 {expandedSections.healPlayers
             ? 'rotate-180'
             : ''}"
         />
       </button>
       {#if expandedSections.healPlayers}
-        <div class="px-4 pb-3 space-y-1">
+        <div class="space-y-1 px-4 pb-3">
           {#each historyHealPlayerColumns as col (col.key)}
             <SettingsSwitch
               bind:checked={SETTINGS.history.heal.players.state[col.key]}
@@ -370,24 +451,24 @@
 
     <!-- Heal - Skill Breakdown Settings -->
     <div
-      class="bg-popover/40 rounded-lg border border-border/50 overflow-hidden"
+      class="bg-popover/40 border-border/50 overflow-hidden rounded-lg border"
     >
       <button
         type="button"
-        class="w-full flex items-center justify-between px-4 py-3 hover:bg-popover/50 transition-colors"
+        class="hover:bg-popover/50 flex w-full items-center justify-between px-4 py-3 transition-colors"
         onclick={() => toggleSection("healSkills")}
       >
-        <h2 class="text-base font-semibold text-foreground">
+        <h2 class="text-foreground text-base font-semibold">
           {t("settings.common.columns.healSkills")}
         </h2>
         <ChevronDown
-          class="w-5 h-5 text-muted-foreground transition-transform duration-200 {expandedSections.healSkills
+          class="text-muted-foreground h-5 w-5 transition-transform duration-200 {expandedSections.healSkills
             ? 'rotate-180'
             : ''}"
         />
       </button>
       {#if expandedSections.healSkills}
-        <div class="px-4 pb-3 space-y-1">
+        <div class="space-y-1 px-4 pb-3">
           {#each historyHealSkillColumns as col (col.key)}
             <SettingsSwitch
               bind:checked={SETTINGS.history.heal.skillBreakdown.state[col.key]}
@@ -401,24 +482,24 @@
 
     <!-- Tanked - Player Settings -->
     <div
-      class="bg-popover/40 rounded-lg border border-border/50 overflow-hidden"
+      class="bg-popover/40 border-border/50 overflow-hidden rounded-lg border"
     >
       <button
         type="button"
-        class="w-full flex items-center justify-between px-4 py-3 hover:bg-popover/50 transition-colors"
+        class="hover:bg-popover/50 flex w-full items-center justify-between px-4 py-3 transition-colors"
         onclick={() => toggleSection("tankedPlayers")}
       >
-        <h2 class="text-base font-semibold text-foreground">
+        <h2 class="text-foreground text-base font-semibold">
           {t("settings.common.columns.tankedPlayers")}
         </h2>
         <ChevronDown
-          class="w-5 h-5 text-muted-foreground transition-transform duration-200 {expandedSections.tankedPlayers
+          class="text-muted-foreground h-5 w-5 transition-transform duration-200 {expandedSections.tankedPlayers
             ? 'rotate-180'
             : ''}"
         />
       </button>
       {#if expandedSections.tankedPlayers}
-        <div class="px-4 pb-3 space-y-1">
+        <div class="space-y-1 px-4 pb-3">
           {#each historyTankedPlayerColumns as col (col.key)}
             {@const key = col.key as keyof typeof DEFAULT_HISTORY_TANKED_STATS}
             <SettingsSwitch
@@ -433,30 +514,29 @@
 
     <!-- Tanked - Skill Breakdown Settings -->
     <div
-      class="bg-popover/40 rounded-lg border border-border/50 overflow-hidden"
+      class="bg-popover/40 border-border/50 overflow-hidden rounded-lg border"
     >
       <button
         type="button"
-        class="w-full flex items-center justify-between px-4 py-3 hover:bg-popover/50 transition-colors"
+        class="hover:bg-popover/50 flex w-full items-center justify-between px-4 py-3 transition-colors"
         onclick={() => toggleSection("tankedSkills")}
       >
-        <h2 class="text-base font-semibold text-foreground">
+        <h2 class="text-foreground text-base font-semibold">
           {t("settings.common.columns.tankedSkills")}
         </h2>
         <ChevronDown
-          class="w-5 h-5 text-muted-foreground transition-transform duration-200 {expandedSections.tankedSkills
+          class="text-muted-foreground h-5 w-5 transition-transform duration-200 {expandedSections.tankedSkills
             ? 'rotate-180'
             : ''}"
         />
       </button>
       {#if expandedSections.tankedSkills}
-        <div class="px-4 pb-3 space-y-1">
+        <div class="space-y-1 px-4 pb-3">
           {#each historyTankedSkillColumns as col (col.key)}
-            {@const key = col.key as keyof typeof DEFAULT_HISTORY_TANKED_SKILL_STATS}
+            {@const key =
+              col.key as keyof typeof DEFAULT_HISTORY_TANKED_SKILL_STATS}
             <SettingsSwitch
-              bind:checked={
-                SETTINGS.history.tanked.skillBreakdown.state[key]
-              }
+              bind:checked={SETTINGS.history.tanked.skillBreakdown.state[key]}
               label={col.label}
               description={col.description}
             />
@@ -467,41 +547,42 @@
 
     <!-- Death Replay Columns (shared with live) -->
     <div
-      class="bg-popover/40 rounded-lg border border-border/50 overflow-hidden"
+      class="bg-popover/40 border-border/50 overflow-hidden rounded-lg border"
     >
       <button
         type="button"
-        class="w-full flex items-center justify-between px-4 py-3 hover:bg-popover/50 transition-colors"
+        class="hover:bg-popover/50 flex w-full items-center justify-between px-4 py-3 transition-colors"
         onclick={() => toggleSection("deathReplay")}
       >
-        <h2 class="text-base font-semibold text-foreground">
+        <h2 class="text-foreground text-base font-semibold">
           {t("settings.common.columns.deathReplay")}
         </h2>
         <ChevronDown
-          class="w-5 h-5 text-muted-foreground transition-transform duration-200 {expandedSections.deathReplay
+          class="text-muted-foreground h-5 w-5 transition-transform duration-200 {expandedSections.deathReplay
             ? 'rotate-180'
             : ''}"
         />
       </button>
       {#if expandedSections.deathReplay}
-        <div class="px-4 pb-3 space-y-1">
-          <p class="text-xs text-muted-foreground mb-2">
+        <div class="space-y-1 px-4 pb-3">
+          <p class="text-muted-foreground mb-2 text-xs">
             {t("settings.common.columns.orderHint")}
           </p>
-          <p class="text-xs text-muted-foreground mb-2">
+          <p class="text-muted-foreground mb-2 text-xs">
             {t("settings.common.columns.deathReplaySharedHint")}
           </p>
           {#each deathReplayColumnOrder as colKey, idx (colKey)}
             {@const col = deathReplayColumns.find((c) => c.key === colKey)}
             {#if col}
-              {@const key = col.key as keyof typeof DEFAULT_DEATH_REPLAY_COLUMNS}
+              {@const key =
+                col.key as keyof typeof DEFAULT_DEATH_REPLAY_COLUMNS}
               <div
-                class="flex items-center gap-2 px-2 py-1 rounded bg-muted/20 border border-border/30"
+                class="bg-muted/20 border-border/30 flex items-center gap-2 rounded border px-2 py-1"
               >
                 <div class="flex flex-col">
                   <button
                     type="button"
-                    class="text-xs px-1 hover:bg-muted/50 rounded disabled:opacity-30"
+                    class="hover:bg-muted/50 rounded px-1 text-xs disabled:opacity-30"
                     disabled={idx === 0}
                     onclick={() => {
                       const arr = [...deathReplayColumnOrder];
@@ -515,7 +596,7 @@
                   >
                   <button
                     type="button"
-                    class="text-xs px-1 hover:bg-muted/50 rounded disabled:opacity-30"
+                    class="hover:bg-muted/50 rounded px-1 text-xs disabled:opacity-30"
                     disabled={idx === deathReplayColumnOrder.length - 1}
                     onclick={() => {
                       const arr = [...deathReplayColumnOrder];

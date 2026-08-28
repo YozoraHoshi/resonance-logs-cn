@@ -10,8 +10,9 @@
   } from "$lib/config/recount-table";
   import LiveGroupedSkillTable from "$lib/components/live-grouped-skill-table.svelte";
   import { liveDpsSkillColumns } from "$lib/column-data";
+  import { resolveColumnLabel } from "$lib/column-labels";
   import { normalizeNameDisplaySetting } from "$lib/name-display";
-  import { formatNumber } from "$lib/i18n/index.svelte";
+  import { formatNumber, t } from "$lib/i18n/index.svelte";
   import { ipcNumber } from "$lib/ipc-decimal";
 
   const entityUuid = page.url.searchParams.get("entityUuid") ?? "";
@@ -70,15 +71,27 @@
   }
 
   let visibleSkillColumns = $derived.by(() => {
+    const labels = SETTINGS.live.columnLabels.state.live.skills.columns;
     const visible = liveDpsSkillColumns.filter(
       (col) => settings.state.live.dps.skillBreakdown[col.key],
     );
-    return visible.sort((a, b) => {
-      const aIdx = columnOrder.indexOf(a.key);
-      const bIdx = columnOrder.indexOf(b.key);
-      return aIdx - bIdx;
-    });
+    return visible
+      .sort((a, b) => {
+        const aIdx = columnOrder.indexOf(a.key);
+        const bIdx = columnOrder.indexOf(b.key);
+        return aIdx - bIdx;
+      })
+      .map((col) => ({
+        ...col,
+        header: resolveColumnLabel(labels[col.key], col.header),
+      }));
   });
+  const skillColumnHeader = $derived(
+    resolveColumnLabel(
+      SETTINGS.live.columnLabels.state.live.skills.first,
+      t("live.table.skill"),
+    ),
+  );
 
   const glowClassName = $derived.by(() => {
     if (!currPlayer) return "";
@@ -105,6 +118,7 @@
 <LiveGroupedSkillTable
   {groupedSkills}
   visibleColumns={visibleSkillColumns}
+  firstColumnHeader={skillColumnHeader}
   {sortKey}
   {sortDesc}
   onSort={handleSort}

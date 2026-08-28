@@ -4,6 +4,7 @@ import {
   SETTINGS,
   createDefaultLiveMeterProfileData,
   deepCloneSettings,
+  type LiveMeterProfileData,
   type MonitoringSettingsState,
 } from "./settings-store";
 import {
@@ -23,6 +24,8 @@ let originalForbiddenDamageIds: number[];
 let originalClassColors: Record<string, string>;
 let originalUseClassSpecColors: boolean;
 let originalClassSpecColors: Record<string, string>;
+let originalHistory: LiveMeterProfileData["history"];
+let originalColumnLabels: LiveMeterProfileData["columnLabels"];
 
 function replaceMonitoringState(state: MonitoringSettingsState): void {
   const target = SETTINGS.monitoring.state;
@@ -40,6 +43,8 @@ function configureTwoLiveProfiles(): void {
     name: "A",
   };
   first.general.eventUpdateRateMs = 100;
+  first.history.general.timelineLaneH = 51;
+  first.columnLabels.live.players.first = "A Players";
   first.tableCustomization.playerRowHeight = 31;
   first.challengeWatch = { forbiddenDamageIds: [111] };
   first.appearance = {
@@ -55,6 +60,8 @@ function configureTwoLiveProfiles(): void {
   };
   second.general.eventUpdateRateMs = 200;
   second.general.showFantasyCastIcons = true;
+  second.history.general.timelineLaneH = 62;
+  second.columnLabels.live.players.first = "B Players";
   second.tableCustomization.playerRowHeight = 42;
   second.challengeWatch = { forbiddenDamageIds: [222] };
   second.appearance = {
@@ -104,6 +111,16 @@ beforeEach(() => {
   originalClassSpecColors = {
     ...SETTINGS.live.appearance.state.classSpecColors,
   };
+  originalHistory = deepCloneSettings({
+    general: SETTINGS.history.general.state,
+    dpsPlayers: SETTINGS.history.dps.players.state,
+    dpsSkillBreakdown: SETTINGS.history.dps.skillBreakdown.state,
+    healPlayers: SETTINGS.history.heal.players.state,
+    healSkillBreakdown: SETTINGS.history.heal.skillBreakdown.state,
+    tankedPlayers: SETTINGS.history.tanked.players.state,
+    tankedSkillBreakdown: SETTINGS.history.tanked.skillBreakdown.state,
+  });
+  originalColumnLabels = deepCloneSettings(SETTINGS.live.columnLabels.state);
   configureTwoLiveProfiles();
 });
 
@@ -119,6 +136,29 @@ afterEach(() => {
   SETTINGS.live.appearance.state.useClassSpecColors =
     originalUseClassSpecColors;
   SETTINGS.live.appearance.state.classSpecColors = originalClassSpecColors;
+  Object.assign(SETTINGS.history.general.state, originalHistory.general);
+  Object.assign(SETTINGS.history.dps.players.state, originalHistory.dpsPlayers);
+  Object.assign(
+    SETTINGS.history.dps.skillBreakdown.state,
+    originalHistory.dpsSkillBreakdown,
+  );
+  Object.assign(
+    SETTINGS.history.heal.players.state,
+    originalHistory.healPlayers,
+  );
+  Object.assign(
+    SETTINGS.history.heal.skillBreakdown.state,
+    originalHistory.healSkillBreakdown,
+  );
+  Object.assign(
+    SETTINGS.history.tanked.players.state,
+    originalHistory.tankedPlayers,
+  );
+  Object.assign(
+    SETTINGS.history.tanked.skillBreakdown.state,
+    originalHistory.tankedSkillBreakdown,
+  );
+  Object.assign(SETTINGS.live.columnLabels.state, originalColumnLabels);
   replaceMonitoringState(originalMonitoring);
 });
 
@@ -127,6 +167,8 @@ describe("live meter profile persistence", () => {
     startLiveProfilePersistence();
 
     SETTINGS.live.general.state.eventUpdateRateMs = 733;
+    SETTINGS.history.general.state.timelineLaneH = 73;
+    SETTINGS.live.columnLabels.state.live.players.first = "Party";
     SETTINGS.live.tableCustomization.state.playerRowHeight = 55;
     SETTINGS.challengeWatch.state.forbiddenDamageIds = [999];
     SETTINGS.live.appearance.state.classColors = {
@@ -137,10 +179,14 @@ describe("live meter profile persistence", () => {
 
     const [first, second] = SETTINGS.monitoring.state.liveMeter.profiles;
     expect(first!.general.eventUpdateRateMs).toBe(733);
+    expect(first!.history.general.timelineLaneH).toBe(73);
+    expect(first!.columnLabels.live.players.first).toBe("Party");
     expect(first!.tableCustomization.playerRowHeight).toBe(55);
     expect(first!.challengeWatch.forbiddenDamageIds).toEqual([999]);
     expect(first!.appearance.classColors["Warrior"]).toBe("#999999");
     expect(second!.general.eventUpdateRateMs).toBe(200);
+    expect(second!.history.general.timelineLaneH).toBe(62);
+    expect(second!.columnLabels.live.players.first).toBe("B Players");
     expect(second!.tableCustomization.playerRowHeight).toBe(42);
     expect(second!.challengeWatch.forbiddenDamageIds).toEqual([222]);
     expect(second!.appearance.classColors["Warrior"]).toBe("#222222");
@@ -182,6 +228,8 @@ describe("live meter profile persistence", () => {
     await tick();
 
     SETTINGS.live.general.state.eventUpdateRateMs = 955;
+    SETTINGS.history.general.state.timelineLaneH = 95;
+    SETTINGS.live.columnLabels.state.live.players.first = "Switched A";
     SETTINGS.challengeWatch.state.forbiddenDamageIds = [777];
     switchLiveProfile("live-b");
 
@@ -189,8 +237,14 @@ describe("live meter profile persistence", () => {
       (profile) => profile.id === "live-a",
     )!;
     expect(flushedFirst.general.eventUpdateRateMs).toBe(955);
+    expect(flushedFirst.history.general.timelineLaneH).toBe(95);
+    expect(flushedFirst.columnLabels.live.players.first).toBe("Switched A");
     expect(flushedFirst.challengeWatch.forbiddenDamageIds).toEqual([777]);
     expect(SETTINGS.live.general.state.eventUpdateRateMs).toBe(200);
+    expect(SETTINGS.history.general.state.timelineLaneH).toBe(62);
+    expect(SETTINGS.live.columnLabels.state.live.players.first).toBe(
+      "B Players",
+    );
     expect(SETTINGS.challengeWatch.state.forbiddenDamageIds).toEqual([222]);
     await tick();
     expect(

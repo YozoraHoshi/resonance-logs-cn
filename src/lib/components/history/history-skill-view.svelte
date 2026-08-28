@@ -12,6 +12,7 @@
     historyHealSkillColumns,
     historyTankedSkillColumns,
   } from "$lib/column-data";
+  import { resolveColumnLabel } from "$lib/column-labels";
   import {
     groupSkillsByRecount,
     type RecountGroup,
@@ -229,10 +230,22 @@
         );
       });
     }
-    return historyDpsSkillColumns.filter(
-      (col) => settings.state.history.dps.skillBreakdown[col.key],
-    );
+    const labels = SETTINGS.live.columnLabels.state.history.skills.columns;
+    return historyDpsSkillColumns
+      .filter((col) => settings.state.history.dps.skillBreakdown[col.key])
+      .map((col) => ({
+        ...col,
+        header: resolveColumnLabel(labels[col.key], col.header),
+      }));
   });
+  const skillColumnHeader = $derived(
+    skillType === "dps"
+      ? resolveColumnLabel(
+          SETTINGS.live.columnLabels.state.history.skills.first,
+          t("history.detail.table.skill"),
+        )
+      : t("history.detail.table.skill"),
+  );
 
   const maxSkillTotal = $derived(
     flatSkillRows.reduce((max, row) => Math.max(max, row.row.totalDmg ?? 0), 0),
@@ -363,12 +376,14 @@
       <tr class="bg-popover/60">
         <th
           class="text-muted-foreground px-3 py-3 text-left text-xs font-medium tracking-wider uppercase"
-          >{t("history.detail.table.skill")}</th
+          title={skillColumnHeader}
+          ><span class="block max-w-48 truncate">{skillColumnHeader}</span></th
         >
         {#each visibleSkillColumns as col (col.key)}
           <th
             class="text-muted-foreground px-3 py-3 text-right text-xs font-medium tracking-wider uppercase"
-            >{col.header}</th
+            title={col.header}
+            ><span class="block max-w-48 truncate">{col.header}</span></th
           >
         {/each}
       </tr>

@@ -14,6 +14,10 @@ import {
   type HeaderCustomLayout,
   type HeaderLayoutMode,
 } from "./live-header-layout";
+import {
+  createDefaultDpsColumnLabels,
+  type DpsColumnLabels,
+} from "./column-labels";
 
 export const DEFAULT_STATS = {
   totalDmg: true,
@@ -1756,6 +1760,10 @@ export type LiveMeterSortingState = {
  */
 export type LiveMeterProfileData = {
   general: typeof DEFAULT_SETTINGS.live.general;
+  /** History display settings mirrored with the active DPS profile. */
+  history: HistorySettings;
+  /** Per-table user overrides for live/history DPS column headers. */
+  columnLabels: DpsColumnLabels;
   dpsPlayers: typeof DEFAULT_SETTINGS.live.dpsPlayers;
   dpsSkillBreakdown: typeof DEFAULT_SETTINGS.live.dpsSkillBreakdown;
   healPlayers: typeof DEFAULT_SETTINGS.live.healPlayers;
@@ -1787,6 +1795,8 @@ export type LiveMeterState = {
 export function createDefaultLiveMeterProfileData(): LiveMeterProfileData {
   return {
     general: { ...DEFAULT_GENERAL_SETTINGS },
+    history: createDefaultHistorySettings(),
+    columnLabels: createDefaultDpsColumnLabels(),
     dpsPlayers: { ...DEFAULT_STATS },
     dpsSkillBreakdown: { ...DEFAULT_STATS },
     healPlayers: { ...DEFAULT_STATS },
@@ -1998,6 +2008,69 @@ const DEFAULT_GENERAL_SETTINGS = {
   trainingWindowMs: 183_000,
   trainingLockPolicy: "eliteDummies" as "eliteDummies" | "firstMonster",
 };
+
+export function createDefaultHistorySettings() {
+  return {
+    general: {
+      ...DEFAULT_GENERAL_SETTINGS,
+      timelineLaneH: 44,
+      timelineCurveH: 300,
+    },
+    dpsPlayers: { ...DEFAULT_HISTORY_STATS },
+    dpsSkillBreakdown: { ...DEFAULT_HISTORY_STATS },
+    healPlayers: { ...DEFAULT_HISTORY_HEAL_STATS },
+    healSkillBreakdown: { ...DEFAULT_HISTORY_STATS },
+    tankedPlayers: { ...DEFAULT_HISTORY_TANKED_STATS },
+    tankedSkillBreakdown: { ...DEFAULT_HISTORY_TANKED_SKILL_STATS },
+  };
+}
+
+export type HistorySettings = ReturnType<typeof createDefaultHistorySettings>;
+
+function mergeSettingsSection<T extends object>(
+  defaults: T,
+  value: unknown,
+): T {
+  return {
+    ...defaults,
+    ...(typeof value === "object" && value !== null && !Array.isArray(value)
+      ? value
+      : {}),
+  };
+}
+
+export function normalizeHistorySettings(value: unknown): HistorySettings {
+  const defaults = createDefaultHistorySettings();
+  const source =
+    typeof value === "object" && value !== null && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+
+  return {
+    general: mergeSettingsSection(defaults.general, source["general"]),
+    dpsPlayers: mergeSettingsSection(defaults.dpsPlayers, source["dpsPlayers"]),
+    dpsSkillBreakdown: mergeSettingsSection(
+      defaults.dpsSkillBreakdown,
+      source["dpsSkillBreakdown"],
+    ),
+    healPlayers: mergeSettingsSection(
+      defaults.healPlayers,
+      source["healPlayers"],
+    ),
+    healSkillBreakdown: mergeSettingsSection(
+      defaults.healSkillBreakdown,
+      source["healSkillBreakdown"],
+    ),
+    tankedPlayers: mergeSettingsSection(
+      defaults.tankedPlayers,
+      source["tankedPlayers"],
+    ),
+    tankedSkillBreakdown: mergeSettingsSection(
+      defaults.tankedSkillBreakdown,
+      source["tankedSkillBreakdown"],
+    ),
+  };
+}
 
 export const DEFAULT_CLASS_COLORS: Record<string, string> = {
   Stormblade: "#674598",
@@ -2363,6 +2436,7 @@ const DEFAULT_SETTINGS = {
   },
   live: {
     general: { ...DEFAULT_GENERAL_SETTINGS },
+    columnLabels: createDefaultDpsColumnLabels(),
     dpsPlayers: { ...DEFAULT_STATS },
     dpsSkillBreakdown: { ...DEFAULT_STATS },
     healPlayers: { ...DEFAULT_STATS },
@@ -2420,19 +2494,7 @@ const DEFAULT_SETTINGS = {
       navTabPaddingY: 6,
     },
   },
-  history: {
-    general: {
-      ...DEFAULT_GENERAL_SETTINGS,
-      timelineLaneH: 44,
-      timelineCurveH: 300,
-    },
-    dpsPlayers: { ...DEFAULT_HISTORY_STATS },
-    dpsSkillBreakdown: { ...DEFAULT_HISTORY_STATS },
-    healPlayers: { ...DEFAULT_HISTORY_HEAL_STATS },
-    healSkillBreakdown: { ...DEFAULT_HISTORY_STATS },
-    tankedPlayers: { ...DEFAULT_HISTORY_TANKED_STATS },
-    tankedSkillBreakdown: { ...DEFAULT_HISTORY_TANKED_SKILL_STATS },
-  },
+  history: createDefaultHistorySettings(),
 };
 
 // We need flattened settings for every update to be able to auto-detect new changes
@@ -2570,6 +2632,11 @@ export const SETTINGS = {
       DEFAULT_SETTINGS.live.headerCustomization,
       LIVE_RUNE_STORE_OPTIONS,
     ),
+    columnLabels: new RuneStore(
+      "liveDpsColumnLabels",
+      DEFAULT_SETTINGS.live.columnLabels,
+      LIVE_RUNE_STORE_OPTIONS,
+    ),
     // Column order settings
     columnOrder: {
       dpsPlayers: new RuneStore(
@@ -2646,42 +2713,42 @@ export const SETTINGS = {
     general: new RuneStore(
       "historyGeneral",
       DEFAULT_SETTINGS.history.general,
-      RUNE_STORE_OPTIONS,
+      LIVE_RUNE_STORE_OPTIONS,
     ),
     dps: {
       players: new RuneStore(
         "historyDpsPlayers",
         DEFAULT_SETTINGS.history.dpsPlayers,
-        RUNE_STORE_OPTIONS,
+        LIVE_RUNE_STORE_OPTIONS,
       ),
       skillBreakdown: new RuneStore(
         "historyDpsSkillBreakdown",
         DEFAULT_SETTINGS.history.dpsSkillBreakdown,
-        RUNE_STORE_OPTIONS,
+        LIVE_RUNE_STORE_OPTIONS,
       ),
     },
     heal: {
       players: new RuneStore(
         "historyHealPlayers",
         DEFAULT_SETTINGS.history.healPlayers,
-        RUNE_STORE_OPTIONS,
+        LIVE_RUNE_STORE_OPTIONS,
       ),
       skillBreakdown: new RuneStore(
         "historyHealSkillBreakdown",
         DEFAULT_SETTINGS.history.healSkillBreakdown,
-        RUNE_STORE_OPTIONS,
+        LIVE_RUNE_STORE_OPTIONS,
       ),
     },
     tanked: {
       players: new RuneStore(
         "historyTankedPlayers",
         DEFAULT_SETTINGS.history.tankedPlayers,
-        RUNE_STORE_OPTIONS,
+        LIVE_RUNE_STORE_OPTIONS,
       ),
       skillBreakdown: new RuneStore(
         "historyTankedSkillBreakdown",
         DEFAULT_SETTINGS.history.tankedSkillBreakdown,
-        RUNE_STORE_OPTIONS,
+        LIVE_RUNE_STORE_OPTIONS,
       ),
     },
   },
@@ -2707,6 +2774,7 @@ const LIVE_METER_STORES = [
   SETTINGS.live.deathReplay,
   SETTINGS.live.tableCustomization,
   SETTINGS.live.headerCustomization,
+  SETTINGS.live.columnLabels,
   SETTINGS.live.columnOrder.dpsPlayers,
   SETTINGS.live.columnOrder.dpsSkills,
   SETTINGS.live.columnOrder.healPlayers,
@@ -2720,6 +2788,13 @@ const LIVE_METER_STORES = [
   SETTINGS.live.sorting.healSkills,
   SETTINGS.live.sorting.tankedPlayers,
   SETTINGS.live.sorting.tankedSkills,
+  SETTINGS.history.general,
+  SETTINGS.history.dps.players,
+  SETTINGS.history.dps.skillBreakdown,
+  SETTINGS.history.heal.players,
+  SETTINGS.history.heal.skillBreakdown,
+  SETTINGS.history.tanked.players,
+  SETTINGS.history.tanked.skillBreakdown,
 ] as const;
 
 export async function startLiveMeterStores(): Promise<void> {
@@ -2762,6 +2837,7 @@ export const settings = {
       deathReplay: SETTINGS.live.deathReplay.state,
       tableCustomization: SETTINGS.live.tableCustomization.state,
       headerCustomization: SETTINGS.live.headerCustomization.state,
+      columnLabels: SETTINGS.live.columnLabels.state,
       columnOrder: {
         dpsPlayers: SETTINGS.live.columnOrder.dpsPlayers.state,
         dpsSkills: SETTINGS.live.columnOrder.dpsSkills.state,

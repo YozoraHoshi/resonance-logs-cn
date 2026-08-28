@@ -10,7 +10,7 @@ export const zhCNMessages = {
   "loadout.defaults.copyName": "{name} 副本",
   "loadout.page.title": "监控方案管理",
   "loadout.page.description":
-    "总方案（Loadout）组合了一套技能监控子方案与一套怪物监控子方案，切换总方案即可一键切换整套实时监控、怪物监控与语音播报设置",
+    "总方案（Loadout）组合技能监控、怪物监控与 DPS 设置子方案，切换总方案即可一键切换整套实时监控、历史展示与语音播报设置",
   "loadout.page.loadoutsTitle": "总方案",
   "loadout.page.new": "新建总方案",
   "loadout.page.namePrompt": "请输入总方案名称",
@@ -22,10 +22,10 @@ export const zhCNMessages = {
   "loadout.page.deleteConfirm": "确定要删除该总方案吗？",
   "loadout.page.skillProfileLabel": "技能监控子方案",
   "loadout.page.monsterProfileLabel": "怪物监控子方案",
-  "loadout.page.liveProfileLabel": "实时计量子方案",
+  "loadout.page.liveProfileLabel": "DPS 设置子方案",
   "loadout.page.presetsTitle": "预置方案",
   "loadout.page.presetsDescription":
-    "选择一套已配置的完整方案，快速应用技能、怪物与实时计量设置",
+    "选择一套已配置的完整方案，快速应用技能、怪物与 DPS 设置",
   "loadout.page.presetApplied": "已创建「{name}」方案",
   "loadout.page.importButton": "导入方案",
   "loadout.page.exportButton": "导出方案",
@@ -119,8 +119,9 @@ export const zhCNMessages = {
   "settings.tabs.debug": "调试",
   "settings.tabs.language": "语言",
   "settings.scope.live":
-    "实时计量设置随当前实时计量方案保存，可随总方案导出分享。",
-  "settings.scope.history": "历史统计设置为本机配置，不随方案导出。",
+    "实时统计设置随当前 DPS 设置方案保存，可随总方案导出分享。",
+  "settings.scope.history":
+    "历史统计设置随当前 DPS 设置方案保存，可随总方案导出分享。",
   "appSettings.title": "应用设置",
   "appSettings.description":
     "应用级配置：网络抓包、全局快捷键、语言与诊断。这些设置不随方案导出。",
@@ -582,6 +583,12 @@ export const zhCNMessages = {
     "实时与历史死亡回放共用此列配置。",
   "settings.common.columns.orderHint":
     "使用箭头调整顺序；用开关控制显示/隐藏。",
+  "settings.common.columns.first.player": "玩家首列",
+  "settings.common.columns.first.skill": "技能首列",
+  "settings.common.columns.customNameHint":
+    "可选：输入自定义表头，留空使用当前语言的默认名称。",
+  "settings.common.columns.customNameAriaLabel": "自定义“{column}”列名",
+  "settings.common.columns.resetName": "恢复默认列名",
   "columns.description.deathReplay.time": "显示受击相对死亡的时间",
   "columns.description.deathReplay.skill": "显示造成该次受击的技能",
   "columns.description.deathReplay.source": "显示该次受击的来源",
@@ -1294,15 +1301,15 @@ export const zhCNMessages = {
     "确定要删除该怪物监控方案吗？引用它的总方案将回退到第一个方案。",
   "live.defaults.defaultProfileName": "默认方案",
   "live.defaults.profileName": "方案 {index}",
-  "live.profile.title": "实时计量方案",
+  "live.profile.title": "DPS 设置方案",
   "live.profile.pickerDescription":
-    "当前总方案引用的实时计量子方案，可在此切换或管理；更多方案组合请前往「监控方案」页",
+    "当前总方案引用的 DPS 设置子方案，包含实时与历史统计设置；可在此切换或管理",
   "live.profile.new": "新建方案",
   "live.profile.rename": "重命名",
   "live.profile.delete": "删除方案",
   "live.profile.renamePrompt": "请输入新的方案名称",
   "live.profile.deleteConfirm":
-    "确定要删除该实时计量方案吗？引用它的总方案将回退到第一个方案。",
+    "确定要删除该 DPS 设置方案吗？引用它的总方案将回退到第一个方案。",
   "monsterMonitor.enabled": "启用怪物监控",
   "monsterMonitor.autoHideInDailyScenes.label": "日常场景自动隐藏",
   "monsterMonitor.autoHideInDailyScenes.description":

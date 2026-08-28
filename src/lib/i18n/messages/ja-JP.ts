@@ -10,7 +10,7 @@ export const jaJPMessages = {
   "loadout.defaults.copyName": "{name} のコピー",
   "loadout.page.title": "ロードアウト管理",
   "loadout.page.description":
-    "ロードアウトはスキル監視プロファイルとモンスター監視プロファイルを組み合わせたものです。切り替えるだけでリアルタイム監視・モンスター監視・音声読み上げの設定をまとめて変更できます",
+    "ロードアウトはスキル監視・モンスター監視・DPS 設定プロファイルをまとめたものです。切り替えるだけでリアルタイム監視・履歴表示・音声読み上げの設定を一括変更できます",
   "loadout.page.loadoutsTitle": "ロードアウト",
   "loadout.page.new": "新規ロードアウト",
   "loadout.page.namePrompt": "ロードアウト名を入力",
@@ -22,10 +22,10 @@ export const jaJPMessages = {
   "loadout.page.deleteConfirm": "このロードアウトを削除しますか？",
   "loadout.page.skillProfileLabel": "スキル監視プロファイル",
   "loadout.page.monsterProfileLabel": "モンスター監視プロファイル",
-  "loadout.page.liveProfileLabel": "リアルタイム計測プロファイル",
+  "loadout.page.liveProfileLabel": "DPS 設定プロファイル",
   "loadout.page.presetsTitle": "プリセット",
   "loadout.page.presetsDescription":
-    "スキル・モンスター・リアルタイム計測設定を含む構成済みロードアウトを適用します",
+    "スキル・モンスター・DPS 設定を含む構成済みロードアウトを適用します",
   "loadout.page.presetApplied": "「{name}」ロードアウトを作成しました",
   "loadout.page.importButton": "インポート",
   "loadout.page.exportButton": "エクスポート",
@@ -122,9 +122,9 @@ export const jaJPMessages = {
   "settings.tabs.debug": "デバッグ",
   "settings.tabs.language": "言語",
   "settings.scope.live":
-    "リアルタイム計測の設定は現在のリアルタイム計測プロファイルに保存され、構成のエクスポート時に一緒に出力されます。",
+    "リアルタイム統計の設定は現在の DPS 設定プロファイルに保存され、ロードアウトのエクスポートに含まれます。",
   "settings.scope.history":
-    "履歴統計は端末ごとの設定であり、エクスポートには含まれません。",
+    "履歴統計の設定は現在の DPS 設定プロファイルに保存され、ロードアウトのエクスポートに含まれます。",
   "appSettings.title": "アプリ設定",
   "appSettings.description":
     "アプリ全体の設定：パケットキャプチャ・グローバルショートカット・言語・診断。これらは構成のエクスポートに含まれません。",
@@ -629,6 +629,12 @@ export const jaJPMessages = {
     "リアルタイムと履歴の死亡リプレイで同じ列設定を使います。",
   "settings.common.columns.orderHint":
     "矢印で並べ替え、スイッチで表示/非表示を切り替えます。",
+  "settings.common.columns.first.player": "プレイヤー先頭列",
+  "settings.common.columns.first.skill": "スキル先頭列",
+  "settings.common.columns.customNameHint":
+    "任意：カスタム見出しを入力します。空欄の場合は現在の言語の既定名を使用します。",
+  "settings.common.columns.customNameAriaLabel": "「{column}」列のカスタム名",
+  "settings.common.columns.resetName": "既定の列名に戻す",
   "columns.description.deathReplay.time": "死亡直前の被弾タイミングを表示",
   "columns.description.deathReplay.skill": "被弾を与えたスキルを表示",
   "columns.description.deathReplay.source": "被弾のソースを表示",
@@ -1400,15 +1406,15 @@ export const jaJPMessages = {
     "このモンスター監視プロファイルを削除しますか？参照しているロードアウトは先頭のプロファイルにフォールバックします。",
   "live.defaults.defaultProfileName": "デフォルトプロファイル",
   "live.defaults.profileName": "プロファイル {index}",
-  "live.profile.title": "リアルタイム計測プロファイル",
+  "live.profile.title": "DPS 設定プロファイル",
   "live.profile.pickerDescription":
-    "現在のロードアウトが参照するリアルタイム計測プロファイル。ここで切り替え・管理できます。構成の組み合わせは「構成」ページへ。",
+    "現在のロードアウトが参照する DPS 設定プロファイルです。リアルタイムと履歴の統計設定を含み、ここで切り替え・管理できます。",
   "live.profile.new": "新規プロファイル",
   "live.profile.rename": "名前変更",
   "live.profile.delete": "削除",
   "live.profile.renamePrompt": "新しいプロファイル名を入力",
   "live.profile.deleteConfirm":
-    "このリアルタイム計測プロファイルを削除しますか？参照しているロードアウトは先頭のプロファイルにフォールバックします。",
+    "この DPS 設定プロファイルを削除しますか？参照しているロードアウトは先頭のプロファイルにフォールバックします。",
   "monsterMonitor.enabled": "モンスターモニターを有効化",
   "monsterMonitor.autoHideInDailyScenes.label": "日常シーンで自動的に非表示",
   "monsterMonitor.autoHideInDailyScenes.description":

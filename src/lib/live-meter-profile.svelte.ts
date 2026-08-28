@@ -21,12 +21,29 @@ import {
   type LiveMeterProfile,
   type LiveMeterProfileData,
 } from "./settings-store";
+import { normalizeDpsColumnLabels } from "./column-labels";
 import { untrack } from "svelte";
 
 type LiveStore<T> = { readonly state: T };
 
 type LiveStoreMap = {
   general: LiveStore<LiveMeterProfileData["general"]>;
+  history: {
+    general: LiveStore<LiveMeterProfileData["history"]["general"]>;
+    dpsPlayers: LiveStore<LiveMeterProfileData["history"]["dpsPlayers"]>;
+    dpsSkillBreakdown: LiveStore<
+      LiveMeterProfileData["history"]["dpsSkillBreakdown"]
+    >;
+    healPlayers: LiveStore<LiveMeterProfileData["history"]["healPlayers"]>;
+    healSkillBreakdown: LiveStore<
+      LiveMeterProfileData["history"]["healSkillBreakdown"]
+    >;
+    tankedPlayers: LiveStore<LiveMeterProfileData["history"]["tankedPlayers"]>;
+    tankedSkillBreakdown: LiveStore<
+      LiveMeterProfileData["history"]["tankedSkillBreakdown"]
+    >;
+  };
+  columnLabels: LiveStore<LiveMeterProfileData["columnLabels"]>;
   dpsPlayers: LiveStore<LiveMeterProfileData["dpsPlayers"]>;
   dpsSkillBreakdown: LiveStore<LiveMeterProfileData["dpsSkillBreakdown"]>;
   healPlayers: LiveStore<LiveMeterProfileData["healPlayers"]>;
@@ -81,6 +98,16 @@ function liveStores(): LiveStoreMap {
   const live = SETTINGS.live;
   return {
     general: live.general,
+    history: {
+      general: SETTINGS.history.general,
+      dpsPlayers: SETTINGS.history.dps.players,
+      dpsSkillBreakdown: SETTINGS.history.dps.skillBreakdown,
+      healPlayers: SETTINGS.history.heal.players,
+      healSkillBreakdown: SETTINGS.history.heal.skillBreakdown,
+      tankedPlayers: SETTINGS.history.tanked.players,
+      tankedSkillBreakdown: SETTINGS.history.tanked.skillBreakdown,
+    },
+    columnLabels: live.columnLabels,
     dpsPlayers: live.dps.players,
     dpsSkillBreakdown: live.dps.skillBreakdown,
     healPlayers: live.heal.players,
@@ -133,6 +160,16 @@ export function extractLiveProfileData(): LiveMeterProfileData {
   const stores = liveStores();
   return deepCloneSettings({
     general: { ...stores.general.state },
+    history: {
+      general: { ...stores.history.general.state },
+      dpsPlayers: { ...stores.history.dpsPlayers.state },
+      dpsSkillBreakdown: { ...stores.history.dpsSkillBreakdown.state },
+      healPlayers: { ...stores.history.healPlayers.state },
+      healSkillBreakdown: { ...stores.history.healSkillBreakdown.state },
+      tankedPlayers: { ...stores.history.tankedPlayers.state },
+      tankedSkillBreakdown: { ...stores.history.tankedSkillBreakdown.state },
+    },
+    columnLabels: normalizeDpsColumnLabels(stores.columnLabels.state),
     dpsPlayers: { ...stores.dpsPlayers.state },
     dpsSkillBreakdown: { ...stores.dpsSkillBreakdown.state },
     healPlayers: { ...stores.healPlayers.state },
@@ -175,6 +212,29 @@ function applyProfileData(data: LiveMeterProfileData): void {
   const cloned = deepCloneSettings(data);
   const stores = liveStores();
   Object.assign(stores.general.state, cloned.general);
+  Object.assign(stores.history.general.state, cloned.history.general);
+  Object.assign(stores.history.dpsPlayers.state, cloned.history.dpsPlayers);
+  Object.assign(
+    stores.history.dpsSkillBreakdown.state,
+    cloned.history.dpsSkillBreakdown,
+  );
+  Object.assign(stores.history.healPlayers.state, cloned.history.healPlayers);
+  Object.assign(
+    stores.history.healSkillBreakdown.state,
+    cloned.history.healSkillBreakdown,
+  );
+  Object.assign(
+    stores.history.tankedPlayers.state,
+    cloned.history.tankedPlayers,
+  );
+  Object.assign(
+    stores.history.tankedSkillBreakdown.state,
+    cloned.history.tankedSkillBreakdown,
+  );
+  Object.assign(
+    stores.columnLabels.state,
+    normalizeDpsColumnLabels(cloned.columnLabels),
+  );
   Object.assign(stores.dpsPlayers.state, cloned.dpsPlayers);
   Object.assign(stores.dpsSkillBreakdown.state, cloned.dpsSkillBreakdown);
   Object.assign(stores.healPlayers.state, cloned.healPlayers);

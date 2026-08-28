@@ -8,10 +8,12 @@ import {
   deepCloneSettings,
   MAX_BUFF_COVERAGE_ENTRIES,
   omitProfileId,
+  normalizeHistorySettings,
   type LiveMeterProfile,
   type MonsterMonitorProfile,
   type SkillMonitorProfile,
 } from "./settings-store";
+import { normalizeDpsColumnLabels } from "./column-labels";
 import { ensureShieldDetailStyle } from "./skill-monitor-normalize";
 
 export type LoadoutExport = {
@@ -485,7 +487,7 @@ const monsterProfileSchema = v.object({
   stunPanelStyle: customPanelStyleSchema,
 });
 
-const liveGeneralSchema = v.object({
+const liveGeneralEntries = {
   showYourName: v.optional(
     v.union([v.string(), v.boolean()]),
     "Show Your Name",
@@ -516,7 +518,9 @@ const liveGeneralSchema = v.object({
     v.picklist(["eliteDummies", "firstMonster"]),
     "eliteDummies",
   ),
-});
+};
+
+const liveGeneralSchema = v.object(liveGeneralEntries);
 
 const liveStatsSchema = v.record(v.string(), v.boolean());
 
@@ -567,9 +571,90 @@ const liveAppearanceSchema = v.object({
 
 const defaultLive = createDefaultLiveMeterProfileData();
 
+const historyGeneralSchema = v.object({
+  ...liveGeneralEntries,
+  timelineLaneH: v.optional(
+    finiteNumberSchema,
+    defaultLive.history.general.timelineLaneH,
+  ),
+  timelineCurveH: v.optional(
+    finiteNumberSchema,
+    defaultLive.history.general.timelineCurveH,
+  ),
+});
+
+const historySettingsSchema = v.pipe(
+  v.object({
+    general: v.optional(
+      historyGeneralSchema,
+      defaultClone(defaultLive.history.general),
+    ),
+    dpsPlayers: v.optional(
+      liveStatsSchema,
+      defaultClone(defaultLive.history.dpsPlayers),
+    ),
+    dpsSkillBreakdown: v.optional(
+      liveStatsSchema,
+      defaultClone(defaultLive.history.dpsSkillBreakdown),
+    ),
+    healPlayers: v.optional(
+      liveStatsSchema,
+      defaultClone(defaultLive.history.healPlayers),
+    ),
+    healSkillBreakdown: v.optional(
+      liveStatsSchema,
+      defaultClone(defaultLive.history.healSkillBreakdown),
+    ),
+    tankedPlayers: v.optional(
+      liveStatsSchema,
+      defaultClone(defaultLive.history.tankedPlayers),
+    ),
+    tankedSkillBreakdown: v.optional(
+      liveStatsSchema,
+      defaultClone(defaultLive.history.tankedSkillBreakdown),
+    ),
+  }),
+  v.transform((value) => normalizeHistorySettings(value)),
+);
+
+const tableColumnLabelsSchema = v.object({
+  first: v.optional(v.string(), ""),
+  columns: v.optional(stringRecordSchema, {}),
+});
+
+const columnLabelGroupSchema = v.object({
+  players: v.optional(tableColumnLabelsSchema, {
+    first: "",
+    columns: {},
+  }),
+  skills: v.optional(tableColumnLabelsSchema, {
+    first: "",
+    columns: {},
+  }),
+});
+
+const dpsColumnLabelsSchema = v.pipe(
+  v.object({
+    live: v.optional(
+      columnLabelGroupSchema,
+      defaultClone(defaultLive.columnLabels.live),
+    ),
+    history: v.optional(
+      columnLabelGroupSchema,
+      defaultClone(defaultLive.columnLabels.history),
+    ),
+  }),
+  v.transform((value) => normalizeDpsColumnLabels(value)),
+);
+
 const liveProfileSchema = v.object({
   name: v.string(),
   general: v.optional(liveGeneralSchema, defaultClone(defaultLive.general)),
+  history: v.optional(historySettingsSchema, defaultClone(defaultLive.history)),
+  columnLabels: v.optional(
+    dpsColumnLabelsSchema,
+    defaultClone(defaultLive.columnLabels),
+  ),
   dpsPlayers: v.optional(liveStatsSchema, defaultClone(defaultLive.dpsPlayers)),
   dpsSkillBreakdown: v.optional(
     liveStatsSchema,

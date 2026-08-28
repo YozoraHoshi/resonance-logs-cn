@@ -11,6 +11,7 @@ import {
   createDefaultLiveMeterProfileData,
   createDefaultLiveMeterState,
   mergeLiveHeaderCustomization,
+  normalizeHistorySettings,
   normalizeDeathReplayColumnOrder,
   createDefaultMonsterMonitorState,
   createDefaultSkillMonitorProfile,
@@ -31,12 +32,13 @@ import {
   type SkillMonitorProfile,
   type SkillMonitorState,
 } from "./settings-store";
+import { normalizeDpsColumnLabels } from "./column-labels";
 import { t } from "$lib/i18n/index.svelte";
 import { normalizeMonsterProfileStyles } from "./monster-monitor-profile.svelte.js";
 import { normalizeSkillProfile } from "./skill-monitor-normalize";
 import { isPristineLegacyMonitoring } from "./starter-loadout";
 
-export const CURRENT_MONITORING_SCHEMA_VERSION = 3;
+export const CURRENT_MONITORING_SCHEMA_VERSION = 4;
 
 const READY_EVENT = "monitoring-settings-ready";
 const ERROR_EVENT = "monitoring-settings-error";
@@ -311,6 +313,8 @@ function normalizeLiveProfiles(
         ...profile.general,
         showFantasyCastIcons: profile.general?.showFantasyCastIcons === true,
       },
+      history: normalizeHistorySettings(profile.history),
+      columnLabels: normalizeDpsColumnLabels(profile.columnLabels),
       deathReplay: {
         ...defaults.deathReplay,
         ...profile.deathReplay,
@@ -501,7 +505,8 @@ type V1MonitoringState = MonitoringSettingsState & {
  * flags onto each profile and introduces a live-meter profile that every
  * existing loadout shares. v3 moves the (until then still global)
  * challenge-watch forbidden-damage list and appearance colors onto each
- * live-meter profile too, so both travel with exported loadouts.
+ * live-meter profile too. v4 adds the formerly-global history settings so
+ * they switch and travel with the same profile.
  */
 export function migrateMonitoringStateIncrementally(
   input: MonitoringSettingsState,
@@ -564,6 +569,21 @@ export function migrateMonitoringStateIncrementally(
         deepCloneSettings(liveProfileData.challengeWatch),
       appearance:
         profile.appearance ?? deepCloneSettings(liveProfileData.appearance),
+    }));
+  }
+
+  if (fromSchemaVersion < 4) {
+    // History settings used to live in seven global stores. The snapshot was
+    // read before the monitoring store started, so seed every existing
+    // profile with the user's current history preferences. Assign
+    // unconditionally: the current default shape may already have injected an
+    // empty `history` field into an older persisted profile.
+    state.liveMeter.profiles = state.liveMeter.profiles.map((profile) => ({
+      ...profile,
+      history: deepCloneSettings(liveProfileData.history),
+      columnLabels: normalizeDpsColumnLabels(
+        profile.columnLabels ?? liveProfileData.columnLabels,
+      ),
     }));
   }
 
