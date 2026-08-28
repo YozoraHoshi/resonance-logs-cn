@@ -168,6 +168,15 @@ export type SeasonNodeBuffConfig = {
   templates: SeasonNodeTemplate[];
 };
 
+export const SEASON_NODE_BUFF_MIN_ID = 4;
+
+export type SeasonPanelMode = "unknown" | "factor" | "node";
+
+export function resolveSeasonPanelMode(seasonId: number): SeasonPanelMode {
+  if (!Number.isInteger(seasonId) || seasonId <= 0) return "unknown";
+  return seasonId >= SEASON_NODE_BUFF_MIN_ID ? "node" : "factor";
+}
+
 export type CounterDisplayLabelInput = {
   sourceId: number;
   counterSlotId?: number | undefined;
@@ -256,9 +265,6 @@ const KEY_SKILL_MARKERS_BY_LOCALE = new Map<
   AppLocale,
   KeySkillMarkerDefinition[]
 >();
-let SEASON_NODE_BUFFS_BY_TEMPLATE_ID:
-  | Map<number, SeasonNodeDisplayBuff[]>
-  | null = null;
 
 function getLocaleConfig<T>(locale: AppLocale, fileName: string): T | null {
   const config = LOCALE_CONFIG_MODULES[`./config/${locale}/${fileName}`];
@@ -685,39 +691,27 @@ export function getSeasonNodeBuffIds(): number[] {
   ).sort((left, right) => left - right);
 }
 
-/** Every display buff configured on a template, keyed by templateId.
- * Already deduplicated by the generator (`export_active_and_s4_buffs.py`).
- * Display names come from `BuffName` / `resolveBuffDisplayName` at render
- * time, not from this config.
- *
- * Gating is template-level, not node-level: a template's own basic nodes
- * stay at `activeLevel > 0` forever once unlocked even while a *different*
- * template is the one actually equipped (`cultivateLineAreaList`), so only
- * "is this template the equipped one" (`seasonActiveTemplateIds()`) may be
- * used to decide which buffs to show. */
-export function getSeasonNodeBuffsByTemplateId(): Map<
-  number,
-  SeasonNodeDisplayBuff[]
-> {
-  if (SEASON_NODE_BUFFS_BY_TEMPLATE_ID) return SEASON_NODE_BUFFS_BY_TEMPLATE_ID;
-
-  const map = new Map<number, SeasonNodeDisplayBuff[]>();
-  for (const template of SEASON_NODE_BUFF_CONFIG.templates) {
-    map.set(
-      template.templateId,
-      template.displayBuffs.map((buff) => ({ buffId: buff.buffId })),
-    );
-  }
-  SEASON_NODE_BUFFS_BY_TEMPLATE_ID = map;
-  return map;
+/** Every S4+ buff needed by the frontend projection. In addition to rows,
+ * suppression predicates must be published so their active state is known. */
+export function getSeasonNodeTrackedBuffIds(): number[] {
+  return Array.from(
+    new Set(
+      SEASON_NODE_BUFF_CONFIG.templates.flatMap((template) => [
+        ...template.displayBuffs.map((buff) => buff.buffId),
+        ...template.suppressRules.map((rule) => rule.whenBuffActive),
+      ]),
+    ),
+  ).sort((left, right) => left - right);
 }
 
-/** Suppress rules across all S4+ templates, e.g. hiding the individual
- * 属性交响 stacks once 完美交响 (perfect symphony) is active. Locale
- * independent: only buff ids, no display text. */
-export function getSeasonNodeSuppressRules(): SeasonNodeSuppressRule[] {
-  return SEASON_NODE_BUFF_CONFIG.templates.flatMap(
-    (template) => template.suppressRules,
+/** Resolves only currently equipped S4+ templates. Unlocked-but-unequipped
+ * templates must not contribute rows or suppression rules. */
+export function resolveActiveSeasonNodeTemplates(
+  activeTemplateIds: ReadonlySet<number>,
+  templates: readonly SeasonNodeTemplate[] = SEASON_NODE_BUFF_CONFIG.templates,
+): SeasonNodeTemplate[] {
+  return templates.filter((template) =>
+    activeTemplateIds.has(template.templateId),
   );
 }
 
@@ -780,7 +774,10 @@ export function getSeasonCultivateFactorTemplates(): FactorCounterTemplate[] {
         effectSlots: resolveSeasonCultivateFactorEffectSlots(
           template,
           itemId,
-        ).map(({ displayMode: _displayMode, ...slot }) => slot),
+        ).map(({ displayMode, ...slot }) => {
+          void displayMode;
+          return slot;
+        }),
       })),
     ),
   ];

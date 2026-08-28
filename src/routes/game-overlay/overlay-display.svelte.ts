@@ -3,13 +3,7 @@ import {
   findSpecialBuffDisplays,
   getCounterDisplayLabel,
   getCounterRules,
-  getSeasonCultivateFactorConfiguredEffectBuffIds,
-  getSeasonCultivateFactorEffectBuffIdMap,
-  getSeasonCultivateFactorItemSlotTemplateMap,
-  getSeasonCultivateFactorRuleId,
   getSeasonCultivateFactorRuleMap,
-  getSeasonNodeBuffsByTemplateId,
-  getSeasonNodeSuppressRules,
   type CounterRulePreset,
   type SpecialBuffDisplay,
 } from "$lib/skill-mappings";
@@ -32,8 +26,6 @@ import {
   buildBuffTextRow,
   buildPanelAreaRows,
   computeDisplay,
-  ensureBuffGroups,
-  ensureIndividualMonitorAllGroup,
   formatTimerText,
   getBuffRemainingMs,
   getBuffRemainPercent,
@@ -56,6 +48,7 @@ import {
   buffDisplayMode,
   buffIconOverrides,
   buffPriorityIds,
+  configuredBuffPlan,
   customPanelGroups,
   factorSlotLabels,
   expandedMonitoredBuffIds,
@@ -86,10 +79,12 @@ import {
   hudProjectionRevision,
   type HudTemporalValue,
 } from "$lib/hud-temporal.svelte.js";
+import {
+  buildRuntimeFactorPlan,
+  shouldDisplayOrdinaryBuff,
+  type RuntimeFactorPlan,
+} from "./buff-display-plan";
 
-/** S4+ moved the season panel's content from S3 factor-socket counters to
- * basic-node buffs; mirrors the backend's `SEASON_NODE_BUFF_MIN_ID`. */
-const SEASON_NODE_BUFF_MIN_ID = 4;
 export const GAME_PROJECTION_DEADLINE_SOURCE = "game-overlay:display";
 
 type ResolvedSpecialBuffDisplay = Pick<
@@ -126,17 +121,13 @@ function resolveSpecialBuffDisplay(
   return specialImages.length > 0 ? { specialImages } : {};
 }
 
-const _normalizedBuffGroups = $derived.by(() => {
-  const profile = activeProfile();
-  if (!profile) return [];
-  return ensureBuffGroups(profile);
-});
+const _normalizedBuffGroups = $derived.by(
+  () => configuredBuffPlan().buffGroups,
+);
 
-const _individualMonitorAllGroup = $derived.by(() => {
-  const profile = activeProfile();
-  if (!profile) return null;
-  return ensureIndividualMonitorAllGroup(profile);
-});
+const _individualMonitorAllGroup = $derived.by(
+  () => configuredBuffPlan().individualMonitorAllGroup,
+);
 
 const _panelAreaRows = $derived.by(() =>
   buildPanelAreaRows(activeProfile(), enabledPanelAttrs()),
@@ -168,77 +159,48 @@ const _seasonCultivateFactorRuleMap = $derived.by(() =>
   getSeasonCultivateFactorRuleMap(),
 );
 
-const _seasonCultivateFactorEffectBuffIdMap = $derived.by(() =>
-  getSeasonCultivateFactorEffectBuffIdMap(),
+const _runtimeFactorPlan = $derived.by(() =>
+  buildRuntimeFactorPlan(configuredBuffPlan(), {
+    seasonId: seasonCultivateSeasonId(),
+    slotItemIds: seasonCultivateFactorSlotItemIds(),
+    activeTemplateIds: seasonActiveTemplateIds(),
+  }),
 );
-
-const _seasonCultivateFactorItemSlotTemplateMap = $derived.by(() =>
-  getSeasonCultivateFactorItemSlotTemplateMap(),
-);
-
-const _seasonNodeBuffsByTemplateId = $derived.by(() =>
-  getSeasonNodeBuffsByTemplateId(),
-);
-
-const _seasonNodeSuppressRules = $derived.by(() =>
-  getSeasonNodeSuppressRules(),
-);
-
-const _seasonCultivateFactorOwnedEffectBuffIds = $derived.by(() => {
-  const result = new Set<number>();
-  const hasFactorPanelGroup = customPanelGroups().some(
-    (group) => group.kind === "seasonCultivateFactor",
-  );
-  if (!hasFactorPanelGroup) return result;
-
-  for (const buffId of getSeasonCultivateFactorConfiguredEffectBuffIds()) {
-    result.add(buffId);
-  }
-  return result;
-});
 
 function buildSeasonNodeRows(
+  factorPlan: RuntimeFactorPlan,
   now: number,
+  currentBuffMap: ReturnType<typeof buffMap>,
   currentBuffAliases: BuffAliasMap,
   resolveAlert: (baseId: number) => BuffAlertRule | undefined,
 ): CustomPanelDisplayRow[] {
-  const activeTemplateIds = seasonActiveTemplateIds();
-  const currentBuffMap = buffMap();
-
   const hiddenBuffIds = new Set<number>();
-  for (const rule of _seasonNodeSuppressRules) {
+  for (const rule of factorPlan.suppressRules) {
     if (isBuffActive(currentBuffMap.get(rule.whenBuffActive), now)) {
       for (const buffId of rule.hide) hiddenBuffIds.add(buffId);
     }
   }
 
-  const seenBuffIds = new Set<number>();
   const nextRows: CustomPanelDisplayRow[] = [];
-  for (const [templateId, displayBuffs] of _seasonNodeBuffsByTemplateId) {
-    if (!activeTemplateIds.has(templateId)) continue;
-    for (const buff of displayBuffs) {
-      if (seenBuffIds.has(buff.buffId) || hiddenBuffIds.has(buff.buffId)) {
-        continue;
-      }
-      seenBuffIds.add(buff.buffId);
-      const entry: InlineBuffEntry = {
-        id: `season_node_buff_${buff.buffId}`,
-        sourceType: "buff",
-        sourceId: buff.buffId,
-        label: resolveBuffDisplayName(buff.buffId, currentBuffAliases),
-        format: "timer",
-      };
-      const row = getCustomPanelDisplayRow(
-        entry,
-        now,
-        currentBuffMap,
-        factorCounterMap(),
-        _seasonCultivateFactorRuleMap,
-        (baseId) => resolveBuffDisplayName(baseId, currentBuffAliases),
-        resolveAlert,
-      );
-      if (row) nextRows.push(row);
-    }
+  for (const buff of factorPlan.nodeBuffs) {
+    if (hiddenBuffIds.has(buff.buffId)) continue;
+    const entry: InlineBuffEntry = {
+      id: `season_node_buff_${buff.buffId}`,
+      sourceType: "buff",
+      sourceId: buff.buffId,
+      label: resolveBuffDisplayName(buff.buffId, currentBuffAliases),
+      format: "timer",
+    };
+    const row = getCustomPanelDisplayRow(
+      entry,
+      now,
+      currentBuffMap,
+      factorCounterMap(),
+      _seasonCultivateFactorRuleMap,
+      (baseId) => resolveBuffDisplayName(baseId, currentBuffAliases),
+      resolveAlert,
+    );
+    if (row) nextRows.push(row);
   }
   return nextRows;
 }
@@ -246,33 +208,22 @@ function buildSeasonNodeRows(
 const _buffSnapshot = $derived.by(() => {
   void hudProjectionRevision(GAME_PROJECTION_DEADLINE_SOURCE);
   const now = Date.now();
+  const configuredPlan = configuredBuffPlan();
+  const factorPlan = _runtimeFactorPlan;
   const explicitSelectedBuffIds = monitoredBuffIds();
   const priorityIds = buffPriorityIds();
   const buffDefinitionsMap = buffDefinitions();
   const iconOverrides = buffIconOverrides();
   const iconDirUrl = buffIconDirUrlPrefix();
   const panelGroups = customPanelGroups();
+  const currentBuffMap = buffMap();
   const alertMap = ensureBuffAlerts(activeProfile()?.buffAlerts);
   const resolveAlert = (baseId: number) => alertMap[String(baseId)];
-  const skippedInlineBuffIds = new Set(
-    panelGroups
-      .filter((group) => group.kind === "manual")
-      .flatMap((group) => group.entries)
-      .filter((entry) => entry.sourceType === "buff")
-      .map((entry) => entry.sourceId),
-  );
   const currentBuffAliases = buffAliases();
   const nextActiveBuffIds = new Set<number>();
   const nextIconBuffs: IconBuffDisplay[] = [];
   const nextTextBuffs: TextBuffDisplay[] = [];
   const nextCustomPanelRowsByGroup = new Map<string, CustomPanelDisplayRow[]>();
-  const factorOwnedEffectBuffIds = _seasonCultivateFactorOwnedEffectBuffIds;
-  const userExplicitBuffIds = new Set([
-    ...expandedMonitoredBuffIds(),
-    ..._normalizedBuffGroups
-      .filter((g) => !g.monitorAll)
-      .flatMap((g) => g.buffIds),
-  ]);
   let nextDeadlineMs: number | null = null;
   const includeDeadline = (deadlineMs: number) => {
     if (deadlineMs <= now) return;
@@ -280,11 +231,10 @@ const _buffSnapshot = $derived.by(() => {
       nextDeadlineMs = deadlineMs;
     }
   };
-  for (const [baseId, buff] of buffMap()) {
+  for (const [baseId, buff] of currentBuffMap) {
     if (buff.durationMs > 0) {
       includeDeadline(buff.createTimeMs + buff.durationMs);
     }
-    if (skippedInlineBuffIds.has(baseId)) continue;
 
     const remaining = getBuffRemainingMs(buff, now);
     if (isBuffActive(buff, now)) {
@@ -292,14 +242,16 @@ const _buffSnapshot = $derived.by(() => {
     } else {
       continue;
     }
+    if (!shouldDisplayOrdinaryBuff(configuredPlan, factorPlan, baseId)) {
+      continue;
+    }
 
     if (
       buff.durationMs <= 0 &&
       buff.layer <= 1 &&
-      !userExplicitBuffIds.has(baseId)
+      !configuredPlan.normalDisplayIds.has(baseId)
     )
       continue;
-    if (factorOwnedEffectBuffIds.has(baseId)) continue;
 
     const definition = buffDefinitionsMap.get(baseId);
     const name = withFantasyTierSuffix(
@@ -360,7 +312,9 @@ const _buffSnapshot = $derived.by(() => {
     const iconIds = new Set(nextIconBuffs.map((buff) => buff.baseId));
     const textIds = new Set(nextTextBuffs.map((buff) => buff.key));
     for (const baseId of explicitSelectedBuffIds) {
-      if (factorOwnedEffectBuffIds.has(baseId)) continue;
+      if (!shouldDisplayOrdinaryBuff(configuredPlan, factorPlan, baseId)) {
+        continue;
+      }
       if (iconIds.has(baseId) || textIds.has(`buff_${baseId}`)) continue;
       const definition = buffDefinitionsMap.get(baseId);
       const name = resolveBuffDisplayName(baseId, currentBuffAliases);
@@ -429,90 +383,88 @@ const _buffSnapshot = $derived.by(() => {
   for (const group of panelGroups) {
     const nextRows: CustomPanelDisplayRow[] = [];
     if (group.kind === "seasonCultivateFactor") {
-      if (seasonCultivateSeasonId() >= SEASON_NODE_BUFF_MIN_ID) {
+      if (factorPlan.mode === "node") {
         nextRows.push(
-          ...buildSeasonNodeRows(now, currentBuffAliases, resolveAlert),
+          ...buildSeasonNodeRows(
+            factorPlan,
+            now,
+            currentBuffMap,
+            currentBuffAliases,
+            resolveAlert,
+          ),
         );
-        nextCustomPanelRowsByGroup.set(group.id, nextRows);
-        continue;
-      }
-      // S3 and earlier: unchanged factor-socket counter + configured
-      // effect-buff display.
-      const effectBuffIds = new Set<number>();
-      const effectBuffEntries: InlineBuffEntry[] = [];
-      for (const itemId of seasonCultivateFactorSlotItemIds()) {
-        const ruleId = getSeasonCultivateFactorRuleId(itemId);
-        const rule = _seasonCultivateFactorRuleMap.get(ruleId);
-        if (!rule) continue;
-        const slotTemplateId =
-          _seasonCultivateFactorItemSlotTemplateMap.get(itemId);
-        const customLabel = slotTemplateId
-          ? factorSlotLabels()[slotTemplateId]
-          : undefined;
-        const entry: InlineBuffEntry = {
-          id: `season_cultivate_factor_${itemId}`,
-          sourceType: "counter",
-          sourceId: ruleId,
-          counterSlotId: rule.effectSlots[0]?.slotId ?? 1,
-          hideWhenZero: group.hideZeroCounters === true,
-          label: customLabel || rule.name,
-          format: "timer",
-        };
-        const row = getCustomPanelDisplayRow(
-          entry,
-          now,
-          buffMap(),
-          factorCounterMap(),
-          _seasonCultivateFactorRuleMap,
-          (baseId) => resolveBuffDisplayName(baseId, currentBuffAliases),
-          resolveAlert,
-        );
-        if (row) nextRows.push(row);
-        const configuredEffectBuffIds =
-          _seasonCultivateFactorEffectBuffIdMap.get(itemId) ?? [];
-        for (const buffId of configuredEffectBuffIds) {
-          if (effectBuffIds.has(buffId)) continue;
-          effectBuffIds.add(buffId);
-          effectBuffEntries.push({
-            id: `season_cultivate_factor_effect_${itemId}_${buffId}`,
-            sourceType: "buff",
-            sourceId: buffId,
-            label: resolveBuffDisplayName(buffId, currentBuffAliases),
+      } else if (factorPlan.mode === "factor") {
+        const effectBuffIds = new Set<number>();
+        const effectBuffEntries: InlineBuffEntry[] = [];
+        for (const item of factorPlan.legacyItems) {
+          const rule = _seasonCultivateFactorRuleMap.get(item.ruleId);
+          if (!rule) continue;
+          const customLabel = item.slotTemplateId
+            ? factorSlotLabels()[item.slotTemplateId]
+            : undefined;
+          const entry: InlineBuffEntry = {
+            id: `season_cultivate_factor_${item.itemId}`,
+            sourceType: "counter",
+            sourceId: item.ruleId,
+            counterSlotId: rule.effectSlots[0]?.slotId ?? 1,
+            hideWhenZero: group.hideZeroCounters === true,
+            label: customLabel || rule.name,
             format: "timer",
-          });
+          };
+          const row = getCustomPanelDisplayRow(
+            entry,
+            now,
+            currentBuffMap,
+            factorCounterMap(),
+            _seasonCultivateFactorRuleMap,
+            (baseId) => resolveBuffDisplayName(baseId, currentBuffAliases),
+            resolveAlert,
+          );
+          if (row) nextRows.push(row);
+          for (const buffId of item.effectBuffIds) {
+            if (effectBuffIds.has(buffId)) continue;
+            effectBuffIds.add(buffId);
+            effectBuffEntries.push({
+              id: `season_cultivate_factor_effect_${item.itemId}_${buffId}`,
+              sourceType: "buff",
+              sourceId: buffId,
+              label: resolveBuffDisplayName(buffId, currentBuffAliases),
+              format: "timer",
+            });
+          }
         }
-      }
-      for (const entry of effectBuffEntries) {
-        const row = getCustomPanelDisplayRow(
-          entry,
-          now,
-          buffMap(),
-          factorCounterMap(),
-          _seasonCultivateFactorRuleMap,
-          (baseId) => resolveBuffDisplayName(baseId, currentBuffAliases),
-          resolveAlert,
-        );
-        if (row) {
-          nextRows.push(row);
-          continue;
+        for (const entry of effectBuffEntries) {
+          const row = getCustomPanelDisplayRow(
+            entry,
+            now,
+            currentBuffMap,
+            factorCounterMap(),
+            _seasonCultivateFactorRuleMap,
+            (baseId) => resolveBuffDisplayName(baseId, currentBuffAliases),
+            resolveAlert,
+          );
+          if (row) {
+            nextRows.push(row);
+            continue;
+          }
+          if (!isLayoutScaffold()) continue;
+          const placeholderRow = buildBuffTextRow(
+            `inline_buff_${entry.id}`,
+            entry.label,
+            {
+              baseId: entry.sourceId,
+              durationMs: 0,
+              createTimeMs: now,
+              layer: 1,
+              sourceRemodelLevel: null,
+            },
+            now,
+            true,
+            true,
+            resolveAlert,
+          );
+          if (placeholderRow) nextRows.push(placeholderRow);
         }
-        if (!isLayoutScaffold()) continue;
-        const placeholderRow = buildBuffTextRow(
-          `inline_buff_${entry.id}`,
-          entry.label,
-          {
-            baseId: entry.sourceId,
-            durationMs: 0,
-            createTimeMs: now,
-            layer: 1,
-            sourceRemodelLevel: null,
-          },
-          now,
-          true,
-          true,
-          resolveAlert,
-        );
-        if (placeholderRow) nextRows.push(placeholderRow);
       }
     } else {
       for (const entry of group.entries) {
@@ -533,7 +485,7 @@ const _buffSnapshot = $derived.by(() => {
         const row = getCustomPanelDisplayRow(
           displayEntry,
           now,
-          buffMap(),
+          currentBuffMap,
           counterMap(),
           _counterRuleMap,
           (baseId) => resolveBuffDisplayName(baseId, currentBuffAliases),

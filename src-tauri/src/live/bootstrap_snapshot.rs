@@ -476,4 +476,17 @@ mod tests {
         invalid.skill.buff_timeline_ids = vec![0];
         assert!(invalid.normalize().is_err());
     }
+
+    #[test]
+    fn buff_publication_and_timeline_ids_remain_independent() {
+        let mut snapshot = MonitorRuntimeSnapshot::default();
+        snapshot.skill.enabled = true;
+        snapshot.skill.monitored_buff_ids = vec![9];
+        snapshot.skill.buff_timeline_ids = vec![8];
+
+        let normalized = snapshot.normalize().expect("buff ids are valid");
+
+        assert_eq!(normalized.skill.monitored_buff_ids, vec![9]);
+        assert_eq!(normalized.skill.buff_timeline_ids, vec![8]);
+    }
 }

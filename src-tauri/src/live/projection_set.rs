@@ -6,9 +6,8 @@ use crate::live::bootstrap_snapshot::MonitorRuntimeSnapshot;
 use crate::live::counter::engine::{CounterEngine, CounterNamespace};
 use crate::live::history_writer::HistoryWriterHandle;
 use crate::live::ipc::models::{
-    BuffCoverageEntry, LiveBuffsPayload, LiveCombatPayload, LiveDataPayload, LiveDeathsPayload,
-    LiveFantasyPayload, LiveMonsterPayload, LiveScenePayload, LiveStatusPayload,
-    MinimapUpdatePayload,
+    LiveBuffsPayload, LiveCombatPayload, LiveDataPayload, LiveDeathsPayload, LiveFantasyPayload,
+    LiveMonsterPayload, LiveScenePayload, LiveStatusPayload, MinimapUpdatePayload,
 };
 use crate::live::ipc::topic::{Topic, TopicMask};
 use crate::live::projections::buff_timeline::BuffTimelineProjection;
@@ -127,8 +126,7 @@ impl ProjectionSet {
                 scheduler,
             )
             .map_err(|error| error.to_string())?;
-        self.entity_monitor
-            .apply_config(std::sync::Arc::clone(&config), entities);
+        self.entity_monitor.apply_config(config.as_ref(), entities);
         self.voice
             .apply_config(&config, entities, now_mono, scheduler);
         {
@@ -603,12 +601,14 @@ impl ProjectionSet {
                     self.presentation
                         .take_status_payload(monitored(), self.counter.snapshot()),
                 ),
-                Topic::Buffs => TopicPublication::Buffs(self.presentation.take_buffs_payload(
-                    monitored(),
-                    self.buff_timeline
-                        .coverage_payload(entities, coverage_active_ms(&self.combat)),
-                    self.combat.segment_id().is_some(),
-                )),
+                Topic::Buffs => TopicPublication::Buffs(
+                    self.presentation.take_buffs_payload(
+                        monitored(),
+                        self.buff_timeline
+                            .coverage_payload(entities, coverage_active_ms(&self.combat)),
+                        self.combat.segment_id().is_some(),
+                    ),
+                ),
                 Topic::Monster => {
                     TopicPublication::Monster(self.presentation.take_monster_payload(monitored()))
                 }
@@ -805,8 +805,12 @@ fn clamp_u128_to_i64(value: u128) -> i64 {
 }
 
 fn coverage_active_ms(combat: &CombatProjection) -> u64 {
-    u64::try_from(combat.active_combat_time_ms().min(combat.observed_duration_ms()))
-        .unwrap_or(u64::MAX)
+    u64::try_from(
+        combat
+            .active_combat_time_ms()
+            .min(combat.observed_duration_ms()),
+    )
+    .unwrap_or(u64::MAX)
 }
 
 fn finalized_duration_ms(
@@ -835,7 +839,7 @@ fn payload_for_end(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::live::ipc::models::{LiveDisplayClock, TrainingDummyPhase};
+    use crate::live::ipc::models::{BuffCoverageEntry, LiveDisplayClock, TrainingDummyPhase};
     use crate::live::runtime::events::{
         BatchId, DomainHit, EntityRef, EntityUuid, EventMeta, HitChannel, HitKind, SegmentId,
     };
@@ -1530,13 +1534,13 @@ mod tests {
             ],
         });
 
-        projections.buff_timeline.apply_config(&[BASE], &entities, None, |_| 0);
+        projections
+            .buff_timeline
+            .apply_config(&[BASE], &entities, None, |_| 0);
         projections
             .combat
             .start_segment(SegmentId(1), MonoTimeMs(0), 0);
-        projections
-            .combat
-            .set_local_player(entities.local_player());
+        projections.combat.set_local_player(entities.local_player());
         projections.presentation.segment_started(SegmentId(1));
         let _ = projections
             .buff_timeline
