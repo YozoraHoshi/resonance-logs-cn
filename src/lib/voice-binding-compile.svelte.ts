@@ -20,6 +20,7 @@ import { SvelteSet } from "svelte/reactivity";
 import {
   commands,
   type MonsterBuffSourceScope,
+  type VoiceLanguage,
   type VoiceRule,
   type VoiceTrigger,
 } from "$lib/bindings";
@@ -33,7 +34,9 @@ import {
 import {
   ensureBuffVoiceConfigs,
   ensureDbmVoiceConfigs,
+  ensureGameAlertVoiceConfigs,
   ensureMechanicVoiceConfigs,
+  type GameAlertKind,
   getGlobalBuffAliases,
   resolveVoicePriority,
   SETTINGS,
@@ -162,6 +165,43 @@ export function minimapCueEventKey(cueId: string): string {
   return `voice:minimapCue:${cueId}`;
 }
 
+export function alertEventKey(kind: GameAlertKind): string {
+  return `voice:alert:${kind}`;
+}
+
+export function voiceLanguageForAppLocale(): VoiceLanguage {
+  switch (SETTINGS.i18n.state.locale) {
+    case "en-US":
+      return "enUs";
+    case "ja-JP":
+      return "jaJp";
+    default:
+      return "zhCn";
+  }
+}
+
+export function alertAutoText(kind: GameAlertKind): string {
+  switch (kind) {
+    case "matchReady":
+      return t("voice.alerts.autoText.matchReady");
+    case "readyCheck":
+      return t("voice.alerts.autoText.readyCheck");
+    case "teamVote":
+      return t("voice.alerts.autoText.teamVote");
+  }
+}
+
+export function alertLabel(kind: GameAlertKind): string {
+  switch (kind) {
+    case "matchReady":
+      return t("voice.alerts.matchReady.title");
+    case "readyCheck":
+      return t("voice.alerts.readyCheck.title");
+    case "teamVote":
+      return t("voice.alerts.teamVote.title");
+  }
+}
+
 export function counterEventKey(
   ruleId: number,
   slotId: number,
@@ -199,16 +239,24 @@ export function dbmAutoText(
 // Phrase resolution (auto/custom text -> catalog phrase id via upsert).
 // ---------------------------------------------------------------------------
 
-type ResolvedEntry = { phraseId: string; text: string };
+type ResolvedEntry = {
+  phraseId: string;
+  text: string;
+  language: VoiceLanguage;
+};
 
 const resolved = $state<Record<string, ResolvedEntry>>({});
 const pendingKeys = new SvelteSet<string>();
 
-async function upsertPhrase(key: string, text: string): Promise<string | null> {
+async function upsertPhrase(
+  key: string,
+  text: string,
+  language: VoiceLanguage = "zhCn",
+): Promise<string | null> {
   try {
-    const result = await commands.voiceUpsertPhrase(key, text, "zhCn");
+    const result = await commands.voiceUpsertPhrase(key, text, language);
     if (result.status !== "ok") return null;
-    resolved[key] = { phraseId: result.data.id, text };
+    resolved[key] = { phraseId: result.data.id, text, language };
     return result.data.id;
   } finally {
     pendingKeys.delete(key);
@@ -227,6 +275,7 @@ export function ensurePhraseId(
   key: string,
   binding: VoicePhraseBinding,
   autoText: string,
+  language: VoiceLanguage = "zhCn",
 ): string | null {
   if (binding.source === "phrase") {
     const id = binding.phraseId.trim();
@@ -236,13 +285,15 @@ export function ensurePhraseId(
   if (!text) return null;
   const cacheKey = `${binding.source}:${key}`;
   const cached = resolved[cacheKey];
-  if (!cached || cached.text !== text) {
+  if (!cached || cached.text !== text || cached.language !== language) {
     if (!pendingKeys.has(cacheKey)) {
       pendingKeys.add(cacheKey);
-      void upsertPhrase(cacheKey, text);
+      void upsertPhrase(cacheKey, text, language);
     }
   }
-  return cached?.text === text ? cached.phraseId : (cached?.phraseId ?? null);
+  return cached?.text === text && cached.language === language
+    ? cached.phraseId
+    : (cached?.phraseId ?? null);
 }
 
 export type TieredPhraseResolution = {
@@ -345,6 +396,7 @@ export function resolvedTierPhraseIdsOf(
 export async function materializeBindingPhraseIds(
   key: string,
   binding: VoicePhraseBinding,
+  language: VoiceLanguage = "zhCn",
 ): Promise<string[]> {
   if (binding.source === "phrase") {
     const id = binding.phraseId.trim();
@@ -368,9 +420,9 @@ export async function materializeBindingPhraseIds(
     if (!variant.text) continue;
     const cached = resolved[variant.cacheKey];
     const phraseId =
-      cached?.text === variant.text
+      cached?.text === variant.text && cached.language === language
         ? cached.phraseId
-        : await upsertPhrase(variant.cacheKey, variant.text);
+        : await upsertPhrase(variant.cacheKey, variant.text, language);
     if (phraseId) ids.push(phraseId);
   }
   return ids;
@@ -387,6 +439,7 @@ export async function previewPhraseBinding(
   key: string,
   binding: VoicePhraseBinding,
   autoText: string,
+  language: VoiceLanguage = "zhCn",
 ): Promise<void> {
   if (binding.source === "phrase") {
     const id = binding.phraseId.trim();
@@ -411,9 +464,9 @@ export async function previewPhraseBinding(
     : `${binding.source}:${key}`;
   const cached = resolved[cacheKey];
   const phraseId =
-    cached?.text === text
+    cached?.text === text && cached.language === language
       ? cached.phraseId
-      : await upsertPhrase(cacheKey, text);
+      : await upsertPhrase(cacheKey, text, language);
   if (phraseId) await commands.voiceTestTrigger(phraseId);
 }
 
@@ -426,9 +479,10 @@ function compileEvent(
   trigger: VoiceTrigger,
   config: VoiceEventConfig | undefined,
   autoText: string,
+  language: VoiceLanguage = "zhCn",
 ): VoiceRule | null {
   if (!config?.enabled) return null;
-  const phraseId = ensurePhraseId(ruleId, config.phrase, autoText);
+  const phraseId = ensurePhraseId(ruleId, config.phrase, autoText, language);
   if (!phraseId) return null;
   return {
     id: ruleId,
@@ -640,6 +694,32 @@ function compileDbmVoiceRules(): VoiceRule[] {
   return rules;
 }
 
+function compileAlertVoiceRules(): VoiceRule[] {
+  const configs = ensureGameAlertVoiceConfigs(
+    SETTINGS.voice.state.alertConfigs,
+  );
+  const language = voiceLanguageForAppLocale();
+  const definitions: Array<{
+    kind: GameAlertKind;
+    trigger: VoiceTrigger;
+  }> = [
+    { kind: "matchReady", trigger: { kind: "matchmakingPopped" } },
+    { kind: "readyCheck", trigger: { kind: "readyCheckStarted" } },
+    { kind: "teamVote", trigger: { kind: "teamVoteStarted" } },
+  ];
+
+  return definitions.flatMap(({ kind, trigger }) => {
+    const rule = compileEvent(
+      alertEventKey(kind),
+      trigger,
+      configs[kind],
+      alertAutoText(kind),
+      language,
+    );
+    return rule ? [rule] : [];
+  });
+}
+
 export function prepareMinimapVoicePhrases(): void {
   const configs = ensureMechanicVoiceConfigs(
     SETTINGS.minimap.state.mechanicVoiceConfigs,
@@ -733,6 +813,7 @@ export function compileVoiceRules(): VoiceRule[] {
     ...compileMonsterBuffVoiceRules(),
     ...compileCounterVoiceRules(),
     ...compileDbmVoiceRules(),
+    ...compileAlertVoiceRules(),
   ];
 }
 
@@ -751,10 +832,13 @@ export type VoiceBindingOverviewEntry = {
     | "voice.binding.event.onCast";
   binding: VoicePhraseBinding;
   phraseId: string | null;
+  language: VoiceLanguage;
+  /** True when the app bundle already contains playable audio for this binding. */
+  bundledFallback: boolean;
   /** Per-tier (0-5) variant phrase ids for tier-placeholder custom text; empty otherwise. */
   tierPhraseIds: string[];
   priority: number;
-  navigateTo: "buff" | "monsterBuff" | "counter" | "dbm" | "minimap";
+  navigateTo: "buff" | "monsterBuff" | "counter" | "dbm" | "minimap" | "alerts";
   monsterBuffSourceScope?: MonsterBuffSourceScope;
 };
 
@@ -766,6 +850,8 @@ function pushOverviewEntry(
   eventLabelKey: VoiceBindingOverviewEntry["eventLabelKey"],
   config: VoiceEventConfig | VoiceExpiringEventConfig | undefined,
   monsterBuffSourceScope?: MonsterBuffSourceScope,
+  language: VoiceLanguage = "zhCn",
+  bundledFallback = false,
 ) {
   if (!config?.enabled) return;
   entries.push({
@@ -774,6 +860,8 @@ function pushOverviewEntry(
     eventLabelKey,
     binding: config.phrase,
     phraseId: resolvedPhraseIdOf(id, config.phrase),
+    language,
+    bundledFallback,
     tierPhraseIds: resolvedTierPhraseIdsOf(id, config.phrase),
     priority: resolveVoicePriority(config.priority),
     navigateTo,
@@ -927,6 +1015,24 @@ export function listVoiceBindingOverview(): VoiceBindingOverviewEntry[] {
       t(cue.labelKey),
       "voice.binding.event.onCast",
       minimapConfigs[cue.id],
+    );
+  }
+
+  const alertConfigs = ensureGameAlertVoiceConfigs(
+    SETTINGS.voice.state.alertConfigs,
+  );
+  const alertLanguage = voiceLanguageForAppLocale();
+  for (const kind of ["matchReady", "readyCheck", "teamVote"] as const) {
+    pushOverviewEntry(
+      entries,
+      "alerts",
+      alertEventKey(kind),
+      alertLabel(kind),
+      "voice.binding.event.onCast",
+      alertConfigs[kind],
+      undefined,
+      alertLanguage,
+      alertConfigs[kind]?.phrase.source === "auto",
     );
   }
 

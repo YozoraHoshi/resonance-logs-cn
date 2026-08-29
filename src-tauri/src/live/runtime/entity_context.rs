@@ -595,6 +595,18 @@ impl EntityContext {
             ProtocolObservation::TeamDissolved => {
                 self.apply_team_state(meta, 0, None, HashSet::new(), out);
             }
+            ProtocolObservation::MatchmakingPopped => {
+                self.emit(meta, DomainEvent::MatchmakingPopped, out);
+            }
+            ProtocolObservation::ReadyCheckStarted => {
+                self.emit(meta, DomainEvent::ReadyCheckStarted, out);
+            }
+            ProtocolObservation::TeamVoteStarted { creator_uuid } => {
+                if creator_uuid.is_some_and(|creator| self.local_player == Some(creator)) {
+                    return;
+                }
+                self.emit(meta, DomainEvent::TeamVoteStarted, out);
+            }
             ProtocolObservation::AttackTargetChanged {
                 actor_uuid,
                 target_uuid,
@@ -2882,6 +2894,38 @@ mod tests {
                 .reduce_batch(batch(4, vec![ProtocolObservation::TeamDissolved]))
                 .is_empty()
         );
+    }
+
+    #[test]
+    fn team_vote_alert_ignores_votes_started_by_local_player() {
+        let mut context = EntityContext::new();
+        let local = EntityUuid(20);
+        context.reduce_batch(batch(
+            1,
+            vec![ProtocolObservation::LocalPlayerChanged { uuid: Some(local) }],
+        ));
+
+        let own_vote = context.reduce_batch(batch(
+            2,
+            vec![ProtocolObservation::TeamVoteStarted {
+                creator_uuid: Some(local),
+            }],
+        ));
+        let other_vote = context.reduce_batch(batch(
+            3,
+            vec![ProtocolObservation::TeamVoteStarted {
+                creator_uuid: Some(EntityUuid(21)),
+            }],
+        ));
+
+        assert!(own_vote.is_empty());
+        assert!(matches!(
+            other_vote.as_slice(),
+            [DomainEnvelope {
+                event: DomainEvent::TeamVoteStarted,
+                ..
+            }]
+        ));
     }
 
     #[test]

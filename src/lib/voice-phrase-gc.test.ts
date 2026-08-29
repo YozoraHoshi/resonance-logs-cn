@@ -134,6 +134,14 @@ describe("collectReferencedVoiceKeys", () => {
     expect(keys.has("voice:minimapCue:s3-raid:bomb")).toBe(true);
   });
 
+  it("always keeps bundled alert prompt keys", () => {
+    const keys = collectReferencedVoiceKeys(emptySources());
+
+    expect(keys.has("voice:alert:matchReady")).toBe(true);
+    expect(keys.has("voice:alert:readyCheck")).toBe(true);
+    expect(keys.has("voice:alert:teamVote")).toBe(true);
+  });
+
   it("treats disabled configs as referenced", () => {
     const sources: VoicePhraseGcSources = {
       ...emptySources(),

@@ -1955,6 +1955,7 @@ export const zhCNMessages = {
   "voice.binding.event.threshold": "达到目标时播报",
   "voice.binding.event.onCast": "触发时播报",
   "voice.binding.source.auto": "自动生成",
+  "voice.binding.source.preset": "预置",
   "voice.binding.source.custom": "自定义文本",
   "voice.binding.source.phrase": "短语库引用",
   "voice.binding.priority": "优先级",
@@ -1974,8 +1975,27 @@ export const zhCNMessages = {
   "voice.binding.playFailed": "播放失败，请检查语音模型是否已安装",
 
   "voice.tabs.bindings": "播报总览",
+  "voice.tabs.alerts": "匹配提醒",
+  "voice.alerts.title": "匹配与准备确认提醒",
+  "voice.alerts.description":
+    "在匹配成功、队长发起准备确认或进本投票时，通过现有语音管道播放一次提示。",
+  "voice.alerts.voiceDisabled":
+    "语音播报当前未启用。请先在“播报设置”中启用语音播报。",
+  "voice.alerts.generationHint":
+    "默认使用跟随应用语言的预置语音。改为自定义语句后，可前往“短语与生成”生成自己的语音。",
+  "voice.alerts.event": "收到通知时",
+  "voice.alerts.matchReady.title": "匹配成功待确认",
+  "voice.alerts.matchReady.description": "匹配队列找到队伍并等待确认时提醒。",
+  "voice.alerts.readyCheck.title": "队长准备确认",
+  "voice.alerts.readyCheck.description": "队长发起副本或团队准备确认时提醒。",
+  "voice.alerts.teamVote.title": "进本投票",
+  "voice.alerts.teamVote.description":
+    "其他队员发起进入副本投票时提醒；自己发起时不会提醒。",
+  "voice.alerts.autoText.matchReady": "匹配成功",
+  "voice.alerts.autoText.readyCheck": "准备确认",
+  "voice.alerts.autoText.teamVote": "进本投票",
   "voice.bindings.description":
-    "汇总 Buff 监控、自定义计数器与 Boss 机制中配置的所有语音绑定，为只读视图",
+    "汇总 Buff 监控、自定义计数器、Boss 机制与匹配提醒中配置的所有语音绑定，为只读视图",
   "voice.bindings.empty":
     "尚未配置任何语音绑定，请前往 Buff 监控 / 计数器 / Boss 机制页面内联配置",
   "voice.bindings.column.subject": "对象",
@@ -1991,6 +2011,7 @@ export const zhCNMessages = {
   "voice.bindings.navigate.dbm": "前往 Boss 机制",
   "voice.bindings.navigate.monsterBuff": "前往怪物监控",
   "voice.bindings.navigate.minimap": "前往副本机制",
+  "voice.bindings.navigate.alerts": "前往匹配提醒",
   "voice.bindings.generateMissing": "一键生成缺失语音",
   "voice.bindings.generateMissing.generating": "正在生成…",
   "voice.bindings.generateMissing.needProfile":

@@ -317,6 +317,7 @@ export type VoiceSettingsConfig = {
   volume: number;
   queuePolicy: VoiceQueuePolicySetting;
   rules: VoiceRuleSetting[];
+  alertConfigs?: GameAlertVoiceConfigMap;
   selectedProfileId: string | null;
   selectedSource: VoiceSourceSetting;
   generationBackend: VoiceGenerationBackendSetting;
@@ -329,6 +330,7 @@ export function createDefaultVoiceSettings(): VoiceSettingsConfig {
     volume: 1,
     queuePolicy: "dropLowPriority",
     rules: [],
+    alertConfigs: {},
     selectedProfileId: null,
     selectedSource: "preset",
     generationBackend: "auto",
@@ -380,6 +382,22 @@ export type VoiceEventConfig = {
   /** 0 = lowest, 255 = highest. Missing values use the lowest priority. */
   priority?: number | undefined;
 };
+
+export const GAME_ALERT_KINDS = [
+  "matchReady",
+  "readyCheck",
+  "teamVote",
+] as const;
+export type GameAlertKind = (typeof GAME_ALERT_KINDS)[number];
+export type GameAlertVoiceConfigMap = Partial<
+  Record<GameAlertKind, VoiceEventConfig>
+>;
+
+export function ensureGameAlertVoiceConfigs(
+  configs: GameAlertVoiceConfigMap | null | undefined,
+): GameAlertVoiceConfigMap {
+  return { ...(configs ?? {}) };
+}
 
 /** Like `VoiceEventConfig`, but for triggers that fire ahead of an expiry. */
 export type VoiceExpiringEventConfig = VoiceEventConfig & {

@@ -349,6 +349,11 @@ impl ProjectionSet {
                 reported |= self.entity_monitor.apply(envelope, entities, scheduler);
                 self.voice.apply(envelope, entities, scheduler);
             }
+            DomainEvent::MatchmakingPopped
+            | DomainEvent::ReadyCheckStarted
+            | DomainEvent::TeamVoteStarted => {
+                self.voice.apply(envelope, entities, scheduler);
+            }
             DomainEvent::DeathOccurred { victim, .. } => {
                 combat_changed |= self.combat.observe_death(*victim);
                 reported |= self.entity_monitor.apply(envelope, entities, scheduler);

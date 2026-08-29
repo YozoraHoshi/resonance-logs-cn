@@ -101,6 +101,7 @@ pub struct VoiceProjection {
     buff_rules_by_id: HashMap<i32, Vec<usize>>,
     boss_rules_by_skill: HashMap<i32, Vec<usize>>,
     counter_rules: Vec<usize>,
+    alert_rules: Vec<usize>,
     /// Rule handles for every `*Expiring` buff trigger, so expiry syncing
     /// touches only timer-bearing rules instead of scanning `rules`.
     buff_expiry_rules: Vec<usize>,
@@ -160,6 +161,7 @@ impl VoiceProjection {
         self.buff_rules_by_id.clear();
         self.boss_rules_by_skill.clear();
         self.counter_rules.clear();
+        self.alert_rules.clear();
         self.buff_expiry_rules.clear();
         for (index, rule) in self.rules.iter().enumerate() {
             if !rule.enabled {
@@ -189,6 +191,9 @@ impl VoiceProjection {
                 VoiceTrigger::CounterThreshold { .. } | VoiceTrigger::CounterExpiring { .. } => {
                     self.counter_rules.push(index);
                 }
+                VoiceTrigger::MatchmakingPopped
+                | VoiceTrigger::ReadyCheckStarted
+                | VoiceTrigger::TeamVoteStarted => self.alert_rules.push(index),
             }
         }
     }
@@ -277,6 +282,15 @@ impl VoiceProjection {
                     }
                 }
                 self.matched_rules = matched;
+            }
+            DomainEvent::MatchmakingPopped => {
+                self.fire_alert(VoiceAlertKind::Matchmaking, envelope.occurred_at_ms);
+            }
+            DomainEvent::ReadyCheckStarted => {
+                self.fire_alert(VoiceAlertKind::ReadyCheck, envelope.occurred_at_ms);
+            }
+            DomainEvent::TeamVoteStarted => {
+                self.fire_alert(VoiceAlertKind::TeamVote, envelope.occurred_at_ms);
             }
             DomainEvent::DeadlineReached {
                 key,
@@ -440,6 +454,20 @@ impl VoiceProjection {
         self.matched_rules = matched;
     }
 
+    fn fire_alert(&mut self, kind: VoiceAlertKind, now_ms: i64) {
+        let alert_rules = std::mem::take(&mut self.alert_rules);
+        for &index in &alert_rules {
+            let matches = self
+                .rules
+                .get(index)
+                .is_some_and(|rule| kind.matches(&rule.trigger));
+            if matches {
+                self.fire_rule(index, now_ms, None);
+            }
+        }
+        self.alert_rules = alert_rules;
+    }
+
     fn sync_buff_expiries(&self, now: MonoTimeMs, scheduler: &mut DeadlineScheduler) {
         for &index in &self.buff_expiry_rules {
             let Some(rule) = self.rules.get(index) else {
@@ -590,6 +618,24 @@ impl VoiceProjection {
 enum BossMechanicAction {
     Fire,
     Arm { seconds_before: u32 },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum VoiceAlertKind {
+    Matchmaking,
+    ReadyCheck,
+    TeamVote,
+}
+
+impl VoiceAlertKind {
+    fn matches(self, trigger: &VoiceTrigger) -> bool {
+        matches!(
+            (self, trigger),
+            (Self::Matchmaking, VoiceTrigger::MatchmakingPopped)
+                | (Self::ReadyCheck, VoiceTrigger::ReadyCheckStarted)
+                | (Self::TeamVote, VoiceTrigger::TeamVoteStarted)
+        )
+    }
 }
 
 fn collect_buff_aggregates(entities: &EntityContext) -> BuffAggregates {
@@ -1152,12 +1198,73 @@ mod tests {
         projection
     }
 
+    fn domain_event(sequence: u64, event: DomainEvent) -> DomainEnvelope {
+        DomainEnvelope {
+            sequence,
+            batch_id: BatchId(sequence),
+            occurred_at_ms: sequence as i64 * 1_000,
+            meta: EventMeta {
+                batch_id: BatchId(sequence),
+                capture_sequence: sequence,
+                stream_id: 1,
+                stream_epoch: 1,
+                captured_wall_ms: sequence as i64 * 1_000,
+                captured_mono_ns: sequence * 1_000_000,
+                source_time_ms: None,
+            },
+            event_index: 0,
+            segment_id: None,
+            event,
+        }
+    }
+
     fn fired_phrases(projection: &mut VoiceProjection) -> Vec<String> {
         projection
             .take_cues()
             .into_iter()
             .map(|cue| cue.phrase_id)
             .collect()
+    }
+
+    #[test]
+    fn alert_events_fire_only_their_matching_voice_rules() {
+        let mut projection = projection_with(vec![
+            rule("match", VoiceTrigger::MatchmakingPopped, "match-phrase", 0),
+            rule("ready", VoiceTrigger::ReadyCheckStarted, "ready-phrase", 0),
+            rule("vote", VoiceTrigger::TeamVoteStarted, "vote-phrase", 0),
+        ]);
+        let entities = EntityContext::new();
+        let mut scheduler = DeadlineScheduler::new();
+
+        projection.apply(
+            &domain_event(1, DomainEvent::MatchmakingPopped),
+            &entities,
+            &mut scheduler,
+        );
+        assert_eq!(
+            fired_phrases(&mut projection),
+            vec!["match-phrase".to_string()]
+        );
+
+        projection.apply(
+            &domain_event(2, DomainEvent::ReadyCheckStarted),
+            &entities,
+            &mut scheduler,
+        );
+        assert_eq!(
+            fired_phrases(&mut projection),
+            vec!["ready-phrase".to_string()]
+        );
+
+        projection.apply(
+            &domain_event(3, DomainEvent::TeamVoteStarted),
+            &entities,
+            &mut scheduler,
+        );
+        assert_eq!(
+            fired_phrases(&mut projection),
+            vec!["vote-phrase".to_string()]
+        );
     }
 
     /// Applies `edges` and returns the phrases that fired.

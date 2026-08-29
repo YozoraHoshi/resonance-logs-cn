@@ -23,8 +23,8 @@ use crate::live::runtime::events::{
     ProtocolObservation, ShieldDetail, SkillCooldownState, SkillPhase,
 };
 use crate::packets::opcodes::{
-    GRPC_TEAM_NTF_SERVICE_ID, Pkt, WORLD_CALL_SERVICE_ID, WORLD_NTF_SERVICE_ID, grpc_team_method,
-    world_call_method,
+    GRPC_TEAM_NTF_SERVICE_ID, MATCH_NTF_SERVICE_ID, Pkt, WORLD_CALL_SERVICE_ID,
+    WORLD_NTF_SERVICE_ID, grpc_team_method, match_ntf_method, world_call_method,
 };
 use crate::packets::packet_process::{
     SYNTHETIC_DECODE_ISSUE_OPCODE, SYNTHETIC_REASSEMBLY_RESET_OPCODE, SYNTHETIC_STREAM_GAP_OPCODE,
@@ -71,6 +71,9 @@ enum TeamWireEvent {
         member_uuid: i64,
     },
     Dissolved,
+    TeamVoteStarted {
+        creator_uuid: Option<i64>,
+    },
 }
 
 #[derive(Default)]
@@ -125,6 +128,12 @@ impl ProtocolDecoder {
             && envelope.direction == PacketDirection::ServerToClient
         {
             return decode_team(envelope);
+        }
+
+        if service_id == Some(MATCH_NTF_SERVICE_ID)
+            && envelope.direction == PacketDirection::ServerToClient
+        {
+            return decode_match(envelope);
         }
 
         Vec::new()
@@ -218,6 +227,10 @@ impl ProtocolDecoder {
                         .collect()
                 }
             ),
+            Pkt::NotifyAllMemberReady => {
+                log::info!("ready-check notification detected");
+                vec![ProtocolObservation::ReadyCheckStarted]
+            }
             Pkt::NotifyTimerList => decoded!(
                 blueprotobuf::NotifyTimerList,
                 |message: blueprotobuf::NotifyTimerList| {
@@ -1005,6 +1018,26 @@ fn decode_world_call(envelope: &CaptureEnvelope) -> Vec<ProtocolObservation> {
     }]
 }
 
+fn decode_match(envelope: &CaptureEnvelope) -> Vec<ProtocolObservation> {
+    if envelope.key.method_id != Some(match_ntf_method::ENTER_MATCH_RESULT) {
+        return Vec::new();
+    }
+    let Ok(message) = decode_message::<blueprotobuf::EnterMatchResultNtf>(&envelope.payload) else {
+        return Vec::new();
+    };
+    let is_waiting_for_ready = message
+        .v_request
+        .and_then(|request| request.match_info)
+        .and_then(|info| info.match_status)
+        == Some(blueprotobuf::EMatchStatus::WaitReady as i32);
+    if !is_waiting_for_ready {
+        return Vec::new();
+    }
+
+    log::info!("matchmaking ready notification detected");
+    vec![ProtocolObservation::MatchmakingPopped]
+}
+
 fn decode_team(envelope: &CaptureEnvelope) -> Vec<ProtocolObservation> {
     let Some(method_id) = envelope.key.method_id else {
         return Vec::new();
@@ -1032,6 +1065,12 @@ fn decode_team(envelope: &CaptureEnvelope) -> Vec<ProtocolObservation> {
             member_uuid: EntityUuid(member_uuid),
         }],
         TeamWireEvent::Dissolved => vec![ProtocolObservation::TeamDissolved],
+        TeamWireEvent::TeamVoteStarted { creator_uuid } => {
+            log::info!("team activity vote notification detected");
+            vec![ProtocolObservation::TeamVoteStarted {
+                creator_uuid: creator_uuid.map(EntityUuid),
+            }]
+        }
     }
 }
 
@@ -1148,6 +1187,26 @@ fn decode_team_event(method_id: u32, payload: &[u8]) -> Option<TeamWireEvent> {
             }
         }
         grpc_team_method::NOTICE_TEAM_DISSOLVE => Some(TeamWireEvent::Dissolved),
+        grpc_team_method::NOTIFY_TEAM_ACTIVITY_STATE => {
+            match decode_message::<blueprotobuf::NotifyTeamActivityState>(payload) {
+                Ok(message) => message.v_request.and_then(|request| {
+                    let state = request.state?;
+                    if state.state != Some(blueprotobuf::ETeamActivityState::Voting as i32) {
+                        return None;
+                    }
+                    let creator_uuid = state
+                        .assign_scene_params
+                        .and_then(|params| params.creator_char_id)
+                        .filter(|char_id| *char_id != 0)
+                        .map(canonical_player_uuid);
+                    Some(TeamWireEvent::TeamVoteStarted { creator_uuid })
+                }),
+                Err(category) => {
+                    log::warn!("failed to decode NotifyTeamActivityState: {category:?}");
+                    None
+                }
+            }
+        }
         grpc_team_method::NOTIFY_BE_TRANSFER_LEADER => {
             log::debug!(
                 "GrpcTeamNtf NotifyBeTransferLeader received; state decode not implemented"
@@ -2015,6 +2074,28 @@ mod tests {
         }
     }
 
+    fn service_notify<M: Message>(
+        sequence: u64,
+        service_id: u64,
+        method_id: u32,
+        message: &M,
+    ) -> CaptureEnvelope {
+        CaptureEnvelope {
+            capture_sequence: sequence,
+            stream_id: 7,
+            stream_epoch: 2,
+            captured_wall_ms: 50_000,
+            captured_mono_ns: sequence * 1_000_000,
+            direction: PacketDirection::ServerToClient,
+            key: crate::live::runtime::events::PacketKey {
+                opcode: method_id,
+                service_id: Some(u32::try_from(service_id).expect("test service id fits u32")),
+                method_id: Some(method_id),
+            },
+            payload: message.encode_to_vec().into(),
+        }
+    }
+
     fn canonical(char_id: i64) -> i64 {
         canonical_player_uuid(char_id)
     }
@@ -2317,6 +2398,86 @@ mod tests {
         let batch = decoder.decode(dissolve);
 
         assert_eq!(batch.observations, vec![ProtocolObservation::TeamDissolved]);
+    }
+
+    #[test]
+    fn matchmaking_alert_only_fires_while_waiting_for_ready() {
+        let message = |status| blueprotobuf::EnterMatchResultNtf {
+            v_request: Some(blueprotobuf::EnterMatchResultNtfRequest {
+                match_info: Some(blueprotobuf::MatchInfo {
+                    match_status: Some(status as i32),
+                }),
+            }),
+        };
+        let mut decoder = ProtocolDecoder::new();
+
+        let waiting = decoder.decode(service_notify(
+            1,
+            MATCH_NTF_SERVICE_ID,
+            match_ntf_method::ENTER_MATCH_RESULT,
+            &message(blueprotobuf::EMatchStatus::WaitReady),
+        ));
+        let matching = decoder.decode(service_notify(
+            2,
+            MATCH_NTF_SERVICE_ID,
+            match_ntf_method::ENTER_MATCH_RESULT,
+            &message(blueprotobuf::EMatchStatus::Matching),
+        ));
+
+        assert_eq!(
+            waiting.observations,
+            vec![ProtocolObservation::MatchmakingPopped]
+        );
+        assert!(matching.observations.is_empty());
+    }
+
+    #[test]
+    fn team_vote_alert_only_fires_for_voting_state() {
+        let message = |state| blueprotobuf::NotifyTeamActivityState {
+            v_request: Some(blueprotobuf::NotifyTeamActivityStateRequest {
+                state: Some(blueprotobuf::TeamActivity {
+                    state: Some(state as i32),
+                    assign_scene_params: Some(blueprotobuf::AssignSceneParams {
+                        creator_char_id: Some(42),
+                    }),
+                }),
+            }),
+        };
+        let mut decoder = ProtocolDecoder::new();
+
+        let voting = decoder.decode(service_notify(
+            1,
+            GRPC_TEAM_NTF_SERVICE_ID,
+            grpc_team_method::NOTIFY_TEAM_ACTIVITY_STATE,
+            &message(blueprotobuf::ETeamActivityState::Voting),
+        ));
+        let doing = decoder.decode(service_notify(
+            2,
+            GRPC_TEAM_NTF_SERVICE_ID,
+            grpc_team_method::NOTIFY_TEAM_ACTIVITY_STATE,
+            &message(blueprotobuf::ETeamActivityState::Doing),
+        ));
+
+        assert_eq!(
+            voting.observations,
+            vec![ProtocolObservation::TeamVoteStarted {
+                creator_uuid: Some(EntityUuid(canonical(42))),
+            }]
+        );
+        assert!(doing.observations.is_empty());
+    }
+
+    #[test]
+    fn ready_check_opcode_fires_without_decoding_payload() {
+        let message = blueprotobuf::NoticeTeamDissolveRequest {};
+        let mut decoder = ProtocolDecoder::new();
+
+        let batch = decoder.decode(notify(1, Pkt::NotifyAllMemberReady, &message));
+
+        assert_eq!(
+            batch.observations,
+            vec![ProtocolObservation::ReadyCheckStarted]
+        );
     }
 
     #[test]

@@ -2086,6 +2086,7 @@ export const jaJPMessages = {
   "voice.binding.event.threshold": "目標達成時に読み上げ",
   "voice.binding.event.onCast": "発生時に読み上げ",
   "voice.binding.source.auto": "自動生成",
+  "voice.binding.source.preset": "プリセット",
   "voice.binding.source.custom": "カスタムテキスト",
   "voice.binding.source.phrase": "フレーズ集から参照",
   "voice.binding.priority": "優先度",
@@ -2106,8 +2107,29 @@ export const jaJPMessages = {
     "再生に失敗しました。音声モデルがインストールされているか確認してください",
 
   "voice.tabs.bindings": "読み上げ総覧",
+  "voice.tabs.alerts": "マッチ通知",
+  "voice.alerts.title": "マッチ・準備確認通知",
+  "voice.alerts.description":
+    "マッチ成立、準備確認、またはダンジョン投票の開始時に、既存の音声機能で一度だけ通知します。",
+  "voice.alerts.voiceDisabled":
+    "音声読み上げは現在無効です。先に「読み上げ設定」で有効にしてください。",
+  "voice.alerts.generationHint":
+    "既定ではアプリの言語に合わせたプリセット音声を再生します。独自の文言に変更した場合は、「フレーズと生成」で音声を生成できます。",
+  "voice.alerts.event": "通知を受信したとき",
+  "voice.alerts.matchReady.title": "マッチ成立",
+  "voice.alerts.matchReady.description":
+    "マッチングが成立して承認待ちになったときに通知します。",
+  "voice.alerts.readyCheck.title": "準備確認",
+  "voice.alerts.readyCheck.description":
+    "パーティーリーダーがダンジョンまたはレイドの準備確認を開始したときに通知します。",
+  "voice.alerts.teamVote.title": "ダンジョン投票",
+  "voice.alerts.teamVote.description":
+    "ほかのメンバーがダンジョン入場投票を開始したときに通知します。自分が開始した投票は通知しません。",
+  "voice.alerts.autoText.matchReady": "マッチしました",
+  "voice.alerts.autoText.readyCheck": "準備確認",
+  "voice.alerts.autoText.teamVote": "ダンジョン投票",
   "voice.bindings.description":
-    "バフ監視・カスタムカウンター・ボス機構で設定された全ての音声バインディングを一覧表示します（読み取り専用）",
+    "バフ監視・カスタムカウンター・ボス機構・マッチ通知で設定された全ての音声バインディングを一覧表示します（読み取り専用）",
   "voice.bindings.empty":
     "音声バインディングがまだ設定されていません。バフ監視／カウンター／ボス機構ページでインラインに設定してください",
   "voice.bindings.column.subject": "対象",
@@ -2123,6 +2145,7 @@ export const jaJPMessages = {
   "voice.bindings.navigate.dbm": "ボス機構へ",
   "voice.bindings.navigate.monsterBuff": "モンスター監視へ",
   "voice.bindings.navigate.minimap": "ダンジョンギミックへ",
+  "voice.bindings.navigate.alerts": "マッチ通知へ",
   "voice.bindings.generateMissing": "不足分の音声を一括生成",
   "voice.bindings.generateMissing.generating": "生成中…",
   "voice.bindings.generateMissing.needProfile":

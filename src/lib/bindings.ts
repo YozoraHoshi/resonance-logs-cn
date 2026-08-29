@@ -1061,7 +1061,11 @@ paramsFingerprint: string; createdAtMs: number; durationSec: number; sampleRate:
  * True when the phrase/profile/model changed after this asset was generated.
  */
 stale: boolean }
-export type VoiceAssetSource = { kind: "cloneProfile"; profileId: string } | { kind: "fineTuned"; modelSha256: string; speakerName: string; speakerTokenId: number }
+export type VoiceAssetSource = { kind: "cloneProfile"; profileId: string } | { kind: "fineTuned"; modelSha256: string; speakerName: string; speakerTokenId: number } |
+/**
+ * A final, ready-to-play WAV shipped with the application.
+ */
+{ kind: "bundledPrompt"; key: string; locale: VoicePresetLocale; revision: number }
 export type VoiceBackendInventory = { cpu: VoiceBackendStatus; vulkan: VoiceBackendStatus; recommended: EngineBackend }
 export type VoiceBackendStatus = { backend: EngineBackend; engine: EngineState; componentVersion: string | null; updateAvailable: boolean }
 /**
@@ -1192,7 +1196,19 @@ export type VoiceTrigger =
  * A counter rule's slot freeze window will expire in
  * `seconds_before` seconds.
  */
-{ kind: "counterExpiring"; ruleId: number; slotId: number; secondsBefore: number }
+{ kind: "counterExpiring"; ruleId: number; slotId: number; secondsBefore: number } |
+/**
+ * The matchmaking queue popped and is waiting for acceptance.
+ */
+{ kind: "matchmakingPopped" } |
+/**
+ * The party leader started a ready check.
+ */
+{ kind: "readyCheckStarted" } |
+/**
+ * A team activity vote started.
+ */
+{ kind: "teamVoteStarted" }
 
 /** tauri-specta globals **/
 

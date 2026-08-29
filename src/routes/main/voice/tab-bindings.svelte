@@ -59,6 +59,13 @@
     return tier ? t(PRIORITY_LABEL_KEYS[tier.id]) : String(priority);
   }
 
+  function sourceLabelKey(entry: VoiceBindingOverviewEntry): MessageKey {
+    if (entry.navigateTo === "alerts" && entry.binding.source === "auto") {
+      return "voice.binding.source.preset";
+    }
+    return SOURCE_LABEL_KEYS[entry.binding.source];
+  }
+
   function usesTierPlaceholder(entry: VoiceBindingOverviewEntry): boolean {
     return (
       entry.binding.source === "custom" &&
@@ -78,12 +85,14 @@
   }
 
   function readyPhraseCount(entry: VoiceBindingOverviewEntry): number {
+    if (entry.bundledFallback) return 1;
     return entryPhraseIds(entry).filter(
       (id) => !!phrasesById.get(id)?.activeAssetId,
     ).length;
   }
 
   function isReady(entry: VoiceBindingOverviewEntry): boolean {
+    if (entry.bundledFallback) return true;
     const ids = entryPhraseIds(entry);
     if (ids.length < expectedPhraseCount(entry)) return false;
     return ids.every((id) => !!phrasesById.get(id)?.activeAssetId);
@@ -95,6 +104,7 @@
     const counter = entries.filter((e) => e.navigateTo === "counter");
     const dbm = entries.filter((e) => e.navigateTo === "dbm");
     const minimap = entries.filter((e) => e.navigateTo === "minimap");
+    const alerts = entries.filter((e) => e.navigateTo === "alerts");
     return [
       {
         navigateTo: "buff" as const,
@@ -126,6 +136,12 @@
         navigateKey: "voice.bindings.navigate.minimap" as const,
         items: minimap,
       },
+      {
+        navigateTo: "alerts" as const,
+        titleKey: "voice.alerts.title" as const,
+        navigateKey: "voice.bindings.navigate.alerts" as const,
+        items: alerts,
+      },
     ].filter((group) => group.items.length > 0);
   });
 
@@ -134,6 +150,8 @@
   function navigate(target: VoiceBindingOverviewEntry["navigateTo"]) {
     if (target === "minimap") {
       void goto("/main/minimap");
+    } else if (target === "alerts") {
+      void goto("/main/voice?tab=alerts");
     } else if (target === "dbm" || target === "monsterBuff") {
       void goto("/main/monster-monitor");
     } else {
@@ -178,7 +196,11 @@
     const missingIds: string[] = [];
     for (const entry of entries) {
       if (isReady(entry)) continue;
-      const ids = await materializeBindingPhraseIds(entry.id, entry.binding);
+      const ids = await materializeBindingPhraseIds(
+        entry.id,
+        entry.binding,
+        entry.language,
+      );
       missingIds.push(
         ...ids.filter((id) => !phrasesById.get(id)?.activeAssetId),
       );
@@ -316,7 +338,7 @@
                     {t(entry.eventLabelKey)}
                   </td>
                   <td class="px-3 py-2 text-muted-foreground">
-                    {t(SOURCE_LABEL_KEYS[entry.binding.source])}
+                    {t(sourceLabelKey(entry))}
                   </td>
                   <td class="px-3 py-2 text-muted-foreground">
                     {priorityLabel(entry.priority)}

@@ -2102,6 +2102,7 @@ export const enUSMessages = {
   "voice.binding.event.threshold": "Broadcast on reaching target",
   "voice.binding.event.onCast": "Broadcast on trigger",
   "voice.binding.source.auto": "Auto-generated",
+  "voice.binding.source.preset": "Preset",
   "voice.binding.source.custom": "Custom text",
   "voice.binding.source.phrase": "Phrase library reference",
   "voice.binding.priority": "Priority",
@@ -2122,8 +2123,29 @@ export const enUSMessages = {
     "Playback failed, check the voice model installation",
 
   "voice.tabs.bindings": "Broadcast Overview",
+  "voice.tabs.alerts": "Match Alerts",
+  "voice.alerts.title": "Match and Ready Check Alerts",
+  "voice.alerts.description":
+    "Play a one-time cue through the existing voice pipeline when a match is found, a ready check starts, or a dungeon vote begins.",
+  "voice.alerts.voiceDisabled":
+    "Voice playback is currently disabled. Enable it under Broadcast Settings first.",
+  "voice.alerts.generationHint":
+    "The default option uses a preset voice that follows the app language. After entering custom text, generate your own voice under Phrases & Generation.",
+  "voice.alerts.event": "When the notification arrives",
+  "voice.alerts.matchReady.title": "Match Found",
+  "voice.alerts.matchReady.description":
+    "Notify when matchmaking finds a group and waits for acceptance.",
+  "voice.alerts.readyCheck.title": "Ready Check",
+  "voice.alerts.readyCheck.description":
+    "Notify when the party leader starts a dungeon or raid ready check.",
+  "voice.alerts.teamVote.title": "Dungeon Vote",
+  "voice.alerts.teamVote.description":
+    "Notify when another party member starts a dungeon-entry vote. Votes you start do not trigger an alert.",
+  "voice.alerts.autoText.matchReady": "Match found",
+  "voice.alerts.autoText.readyCheck": "Ready check",
+  "voice.alerts.autoText.teamVote": "Dungeon vote",
   "voice.bindings.description":
-    "Aggregated read-only view of all voice bindings configured across buff monitoring, custom counters, and boss mechanics",
+    "Aggregated read-only view of all voice bindings configured across buff monitoring, custom counters, boss mechanics, and match alerts",
   "voice.bindings.empty":
     "No voice bindings configured yet. Configure them inline on the Buff Monitor / Counter / Boss Mechanics pages",
   "voice.bindings.column.subject": "Subject",
@@ -2139,6 +2161,7 @@ export const enUSMessages = {
   "voice.bindings.navigate.dbm": "Go to Boss Mechanics",
   "voice.bindings.navigate.monsterBuff": "Go to Monster Monitor",
   "voice.bindings.navigate.minimap": "Go to Dungeon Mechanics",
+  "voice.bindings.navigate.alerts": "Go to Match Alerts",
   "voice.bindings.generateMissing": "Generate missing voices",
   "voice.bindings.generateMissing.generating": "Generating…",
   "voice.bindings.generateMissing.needProfile":
