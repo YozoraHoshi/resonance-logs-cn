@@ -1,6 +1,6 @@
 {
   "wind_knight": {
-    "className": "ウインドナイト",
+    "className": "ゲイルランサー",
     "skills": [
       { "skillId": 1420, "name": "風翔" },
       { "skillId": 1426, "name": "必殺技（旗なし）" },
@@ -73,7 +73,7 @@
     ]
   },
   "flame_berserker": {
-    "className": "フレイムバーサーカー",
+    "className": "ツインストライカー",
     "skills": [
       { "skillId": 1606, "name": "炎舞斬" },
       { "skillId": 1613, "name": "野火の舞" },

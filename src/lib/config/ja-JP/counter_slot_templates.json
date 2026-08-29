@@ -26,27 +26,27 @@
   },
   {
     "slotTemplateId": "flame_berserker_x1",
-    "name": "フレイムバーサーカー 真因子 X1、チャージ後の炎舞斬は必ずクリティカル",
+    "name": "ツインストライカー 真因子 X1、チャージ後の炎舞斬は必ずクリティカル",
     "description": "チャージ後の炎舞斬は必ずクリティカル"
   },
   {
     "slotTemplateId": "flame_berserker_x2",
-    "name": "フレイムバーサーカー 真因子 X2、次の斧風の消費が50%減少し射程が2m増加",
+    "name": "ツインストライカー 真因子 X2、次の斧風の消費が50%減少し射程が2m増加",
     "description": "次の斧風の消費が50%減少し、射程が2m増加"
   },
   {
     "slotTemplateId": "flame_berserker_x3",
-    "name": "フレイムバーサーカー 真因子 X3、チャージ後10秒間、炎舞斬の最終ダメージが増加",
+    "name": "ツインストライカー 真因子 X3、チャージ後10秒間、炎舞斬の最終ダメージが増加",
     "description": "チャージ後10秒間、炎舞斬の最終ダメージが増加"
   },
   {
     "slotTemplateId": "flame_berserker_x4",
-    "name": "フレイムバーサーカー 真因子 X4、大紅蓮丸を発動",
+    "name": "ツインストライカー 真因子 X4、大紅蓮丸を発動",
     "description": "大紅蓮丸を発動"
   },
   {
     "slotTemplateId": "flame_berserker_x5",
-    "name": "フレイムバーサーカー 真因子 X5、10秒間、野火の舞の最終ダメージが増加",
+    "name": "ツインストライカー 真因子 X5、10秒間、野火の舞の最終ダメージが増加",
     "description": "10秒間、野火の舞の最終ダメージが増加"
   },
   {

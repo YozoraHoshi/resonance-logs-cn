@@ -73,7 +73,7 @@
     ]
   },
   "flame_berserker": {
-    "className": "Flame Berserker",
+    "className": "Twin Striker",
     "skills": [
       { "skillId": 1606, "name": "Blazing Swing" },
       { "skillId": 1613, "name": "Wildfire Dance" },
