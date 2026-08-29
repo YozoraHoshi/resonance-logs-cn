@@ -841,7 +841,7 @@ mod tests {
         )
         .expect("encode delayed marker");
         append_chunk(&mut conn, &timeline_chunk).expect("append delayed marker");
-        let mut reducer = HistoryProjectionReducer::new(0..100, 10).expect("reducer");
+        let mut reducer = HistoryProjectionReducer::new(0..100).expect("reducer");
         reducer.seed_contexts([
             HistoryEntityContext {
                 entity_id: 1,
@@ -907,12 +907,9 @@ mod tests {
 
         let query = load_encounter_detail_query(&mut conn, summary(encounter_id))
             .expect("load detail query");
-        let detail = project_encounter_detail(query, 4).expect("project detail");
+        let detail = project_encounter_detail(query).expect("project detail");
         assert!(detail.detail_available);
         assert_eq!(detail.end_ms_exclusive, 100);
-        assert_eq!(detail.bucket_ms, 25);
-        assert_eq!(detail.chart_points[0].offset_ms, 0);
-        assert_eq!(detail.chart_points[0].damage, "10");
         assert!(detail.markers.is_empty());
         assert_eq!(
             load_chunks_for_range(&mut conn, encounter_id, 0, i64::MAX as u64)
@@ -920,15 +917,15 @@ mod tests {
                 .len(),
             2
         );
-        // Per-entity series are rebuilt from the raw chunks on load, even
+        // Per-entity damage hits are rebuilt from the raw chunks on load, even
         // though the stored projection snapshot itself carries none.
-        let actor_series = detail
-            .series
+        let actor_hits = detail
+            .damage_hits
             .iter()
-            .find(|row| row.entity_id == "1" && row.metric == HistoryMetric::Damage)
-            .expect("actor 1 damage series");
-        assert_eq!(actor_series.offsets_ms, vec![0]);
-        assert_eq!(actor_series.totals, vec!["10".to_string()]);
+            .find(|row| row.entity_id == "1")
+            .expect("actor 1 damage hits");
+        assert_eq!(actor_hits.offsets_ms, vec![10]);
+        assert_eq!(actor_hits.amounts, vec![10]);
     }
 
     #[test]
@@ -979,9 +976,9 @@ mod tests {
         summary.detail_available = false;
 
         let query = load_encounter_detail_query(&mut conn, summary).expect("load summary");
-        let detail = project_encounter_detail(query, 0).expect("summary remains readable");
+        let detail = project_encounter_detail(query).expect("summary remains readable");
         assert!(!detail.detail_available);
         assert!(detail.entities.is_empty());
-        assert!(detail.chart_points.is_empty());
+        assert!(detail.damage_hits.is_empty());
     }
 }

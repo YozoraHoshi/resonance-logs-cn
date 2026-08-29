@@ -502,13 +502,12 @@ fn get_recent_encounters_filtered_blocking(
 #[specta::specta]
 pub async fn get_encounter_detail(
     encounter_id: i32,
-    target_points: u32,
     history_writer: tauri::State<'_, HistoryWriterHandle>,
 ) -> Result<EncounterDetailData, String> {
     let history_writer = history_writer.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
         history_writer.fence()?;
-        crate::database::load_history_detail(encounter_id, target_points)
+        crate::database::load_history_detail(encounter_id)
     })
     .await
     .map_err(|error| format!("encounter detail worker failed: {error}"))?

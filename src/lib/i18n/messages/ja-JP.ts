@@ -136,6 +136,10 @@ export const jaJPMessages = {
   "appSettings.language.title": "言語",
   "appSettings.language.description":
     "インターフェースの表示言語を切り替えます。",
+  "appSettings.behavior.title": "アプリの動作",
+  "appSettings.behavior.exitOnClose": "閉じるボタンでアプリを終了する",
+  "appSettings.behavior.exitOnCloseDescription":
+    "有効にすると、メインウィンドウの閉じるボタンをクリックした際に、システムトレイへ隠さずアプリ全体を終了します。この設定は次回起動後に反映されます。",
   "appSettings.appearance.scope":
     "以下の外観設定は端末ごとのグローバル設定です。構成のエクスポートには含まれません。",
   "appSettings.appearance.colorScopeMain":

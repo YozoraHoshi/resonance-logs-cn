@@ -137,6 +137,10 @@ export const enUSMessages = {
   "appSettings.tabs.diagnostics": "Diagnostics",
   "appSettings.language.title": "Language",
   "appSettings.language.description": "Switch the interface display language.",
+  "appSettings.behavior.title": "App Behavior",
+  "appSettings.behavior.exitOnClose": "Exit when the close button is clicked",
+  "appSettings.behavior.exitOnCloseDescription":
+    "When enabled, clicking the main window's close button exits the entire app instead of hiding it to the system tray. This setting takes effect after the next launch.",
   "appSettings.appearance.scope":
     "The appearance settings below are local, global settings — they never travel with an exported loadout.",
   "appSettings.appearance.colorScopeMain":

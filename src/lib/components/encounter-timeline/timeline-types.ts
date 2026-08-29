@@ -1,4 +1,5 @@
 import type {
+  DamageHitIndex,
   EncounterCurvePoint,
   EncounterTimelineEvent,
   TeammateCurveMode,
@@ -80,5 +81,8 @@ export type TimelineTeammateCurve = {
   name: string;
   color: string;
   mode: TeammateCurveMode;
+  /** Immutable raw-hit index used for exact hover reads. */
+  hits: DamageHitIndex;
+  /** Pixel-bounded samples for the current viewport. */
   curve: EncounterCurvePoint[];
 };

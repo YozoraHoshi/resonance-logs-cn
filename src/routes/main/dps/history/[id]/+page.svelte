@@ -29,7 +29,7 @@
     historyBuffCoverageByKey,
     historyBuffTimeline,
     historyBuffTimelineRange,
-    historyChartSeries,
+    historyDamageHits,
     historyDeathEntries,
     historyEntityToRaw,
     type HistoryEntity,
@@ -56,8 +56,6 @@
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { SvelteMap, SvelteURLSearchParams } from "svelte/reactivity";
   import { toast } from "svelte-sonner";
-
-  const TARGET_CHART_POINTS = 600;
 
   type HistoryTab = "damage" | "tanked" | "healing" | "death";
   type HistorySkillType = "dps" | "heal" | "tanked" | "death";
@@ -359,12 +357,11 @@
   // ---- Timeline chart ------------------------------------------------------
   const chart = $derived.by<EncounterChart | null>(() => {
     if (!detail?.detailAvailable) return null;
-    const series = historyChartSeries(detail.series);
-    if (series.length === 0) return null;
+    const damageHits = historyDamageHits(detail.damageHits);
+    if (damageHits.length === 0) return null;
     return {
       durationMs: Math.max(1, detail.endMsExclusive - detail.startMs),
-      bucketMs: Math.max(1, detail.bucketMs),
-      series,
+      damageHits,
     };
   });
 
@@ -474,7 +471,7 @@
     }
     detailState = { kind: "loading" };
     void commands
-      .getEncounterDetail(requestedId, TARGET_CHART_POINTS)
+      .getEncounterDetail(requestedId)
       .then((result) => {
         if (generation !== detailRequestGeneration) return;
         detailState =

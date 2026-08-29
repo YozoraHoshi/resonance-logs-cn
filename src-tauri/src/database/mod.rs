@@ -318,15 +318,12 @@ pub fn finalize_history_recording(finalize: FinalizeEncounter) -> Result<Finaliz
     request(|reply| DatabaseRequest::Finalize { finalize, reply })
 }
 
-pub fn load_history_detail(
-    encounter_id: i32,
-    target_points: u32,
-) -> Result<EncounterDetailData, String> {
+pub fn load_history_detail(encounter_id: i32) -> Result<EncounterDetailData, String> {
     let query = request(|reply| DatabaseRequest::LoadDetail {
         encounter_id,
         reply,
     })?;
-    history_query::project_encounter_detail(query, target_points).map_err(|error| error.to_string())
+    history_query::project_encounter_detail(query).map_err(|error| error.to_string())
 }
 
 pub fn load_history_range(

@@ -5,9 +5,9 @@
   // `pointer-events: none` - the gesture layer underneath owns all input.
   import {
     collapseHoverLanePoints,
-    interpolateCurveValue,
+    dpsValueAt,
     resolveHoverDisplayTimeMs,
-    type EncounterCurvePoint,
+    type DamageHitIndex,
     type EncounterTimelineEvent,
   } from "./timeline-data";
   import { formatTimeMs, formatValue } from "./timeline-format";
@@ -29,8 +29,7 @@
     hoverPoint: TimelineHoverPoint | null;
     brushPreviewMs: [number, number] | null;
     selectedRange: [number, number] | null;
-    mineInstantCurve: EncounterCurvePoint[] | null;
-    mineAverageCurve: EncounterCurvePoint[] | null;
+    mineHits: DamageHitIndex | null;
     teammateCurves?: TimelineTeammateCurve[];
     showAverageCurve: boolean;
     resolveEvent: (event: EncounterTimelineEvent) => TimelineEventDisplay;
@@ -45,8 +44,7 @@
     hoverPoint,
     brushPreviewMs,
     selectedRange,
-    mineInstantCurve,
-    mineAverageCurve,
+    mineHits,
     teammateCurves = [],
     showAverageCurve,
     resolveEvent,
@@ -99,13 +97,15 @@
 
   const hoverCurveInfo = $derived.by(() => {
     if (!hoverPoint || hoverLaneIndex !== null) return null;
-    const instant = interpolateCurveValue(mineInstantCurve, hoverPoint.timeMs);
-    const average = showAverageCurve
-      ? interpolateCurveValue(mineAverageCurve, hoverPoint.timeMs)
+    const instant = mineHits
+      ? dpsValueAt(mineHits, "instant", hoverPoint.timeMs)
       : null;
+    const average =
+      showAverageCurve && mineHits
+        ? dpsValueAt(mineHits, "average", hoverPoint.timeMs)
+        : null;
     const teammates = teammateCurves.flatMap((row) => {
-      const value = interpolateCurveValue(row.curve, hoverPoint.timeMs);
-      if (value === null) return [];
+      const value = dpsValueAt(row.hits, row.mode, hoverPoint.timeMs);
       return [
         {
           entityUuid: row.entityUuid,

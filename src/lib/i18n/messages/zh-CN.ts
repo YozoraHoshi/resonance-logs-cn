@@ -132,6 +132,10 @@ export const zhCNMessages = {
   "appSettings.tabs.diagnostics": "诊断",
   "appSettings.language.title": "语言",
   "appSettings.language.description": "切换界面显示语言。",
+  "appSettings.behavior.title": "应用行为",
+  "appSettings.behavior.exitOnClose": "点击关闭按钮时退出程序",
+  "appSettings.behavior.exitOnCloseDescription":
+    "启用后，点击主窗口的关闭按钮将直接退出整个程序，而不是隐藏到系统托盘。此设置将在下次启动后生效。",
   "appSettings.appearance.scope":
     "以下外观设置为本机全局配置，不随方案导出分享。",
   "appSettings.appearance.colorScopeMain":

@@ -8,7 +8,7 @@
  */
 import type {
   EncounterBuffTimelineData,
-  EncounterChartSeriesData,
+  EncounterDamageHitsData,
   EncounterEntityData,
   EncounterSkillData,
   EncounterStatsData,
@@ -21,7 +21,7 @@ import type {
   RawPerSourceStats,
 } from "$lib/api";
 import type { DeathPlayerEntry } from "$lib/components/death-replay/death-player-list.svelte";
-import type { EncounterChartSeries } from "$lib/components/encounter-timeline/timeline-data";
+import type { EntityDamageHits } from "$lib/components/encounter-timeline/timeline-data";
 import { formatClassSpecLabel } from "$lib/class-labels";
 import { t } from "$lib/i18n/index.svelte";
 import { ipcBigInt } from "$lib/ipc-decimal";
@@ -232,21 +232,14 @@ export function historyDeathEntries(
     }));
 }
 
-const CHART_METRIC_INDEX: Record<HistoryMetric, number> = {
-  damage: 0,
-  healing: 1,
-  damage_taken: 2,
-};
-
-/** Map backend per-entity bucket series onto the chart component's DTO. */
-export function historyChartSeries(
-  series: EncounterChartSeriesData[] | undefined,
-): EncounterChartSeries[] {
-  return (series ?? []).map((row) => ({
+/** Map backend per-entity damage hit streams onto the chart component's DTO. */
+export function historyDamageHits(
+  hits: EncounterDamageHitsData[] | undefined,
+): EntityDamageHits[] {
+  return (hits ?? []).map((row) => ({
     entityUuid: row.entityId,
-    metric: CHART_METRIC_INDEX[row.metric],
-    offsetsMs: row.offsetsMs,
-    totals: row.totals.map((total) => Number(total)),
+    timesMs: row.offsetsMs,
+    amounts: row.amounts,
   }));
 }
 

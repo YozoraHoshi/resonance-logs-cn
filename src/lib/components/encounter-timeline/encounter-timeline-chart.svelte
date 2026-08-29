@@ -32,10 +32,9 @@
   import { tooltip } from "$lib/utils.svelte";
   import { laneColor, playerColor } from "./timeline-colors";
   import {
-    foldEncounterDamageBuckets,
-    teammateDpsCurves,
-    toCumulativeDpsCurve,
-    toRollingDpsCurve,
+    foldEncounterDamageHits,
+    sampleDpsCurve,
+    teammateDpsSources,
     zoomTierFor,
     type EncounterChart,
     type EncounterTimelineEvent,
@@ -118,31 +117,18 @@
     buffRangeCoverage = null,
   }: Props = $props();
 
-  // ---- Damage buckets / DPS curves -----------------------------------------
-  // The DTO is sparse and column-oriented. Fold it once into per-entity
-  // damage buckets; curves are built on demand from those buckets so the
-  // cost stays independent of party size.
-  const damageBuckets = $derived(foldEncounterDamageBuckets(chart));
-  const chartDurationMs = $derived(damageBuckets.durationMs);
-  const chartBucketMs = $derived(damageBuckets.bucketMs);
-  const perEntityBuckets = $derived(damageBuckets.perEntityBuckets);
+  // ---- Damage hits / DPS curves --------------------------------------------
+  // The DTO carries per-entity damage hit streams (columnar, ascending by
+  // time). Index them once; curves are built on demand from those streams so
+  // the cost stays independent of party size.
+  const damageHits = $derived(foldEncounterDamageHits(chart));
+  const chartDurationMs = $derived(damageHits.durationMs);
+  const perEntityHits = $derived(damageHits.perEntityHits);
 
   const localPlayer = $derived(players.find((p) => p.isLocalPlayer) ?? null);
 
-  const mineBuckets = $derived.by(() =>
-    localPlayer ? (perEntityBuckets.get(localPlayer.entityUuid) ?? null) : null,
-  );
-
-  const mineInstantCurve = $derived.by(() =>
-    mineBuckets
-      ? toRollingDpsCurve(mineBuckets, chartBucketMs, chartDurationMs)
-      : null,
-  );
-
-  const mineAverageCurve = $derived.by(() =>
-    mineBuckets
-      ? toCumulativeDpsCurve(mineBuckets, chartBucketMs, chartDurationMs)
-      : null,
+  const mineHits = $derived.by(() =>
+    localPlayer ? (perEntityHits.get(localPlayer.entityUuid) ?? null) : null,
   );
 
   function clampEventOffsetMs(ev: EncounterTimelineEvent): number {
@@ -197,7 +183,7 @@
       if (localPlayer && p.entityUuid === localPlayer.entityUuid) return false;
       return (
         (playerEventsByCaster.get(p.entityUuid)?.length ?? 0) > 0 ||
-        (perEntityBuckets.get(p.entityUuid)?.some((total) => total > 0) ??
+        (perEntityHits.get(p.entityUuid)?.amounts.some((amount) => amount > 0) ??
           false)
       );
     });
@@ -245,7 +231,8 @@
   let curveTeammates = $derived(
     teammates.filter(
       (p) =>
-        perEntityBuckets.get(p.entityUuid)?.some((total) => total > 0) ?? false,
+        perEntityHits.get(p.entityUuid)?.amounts.some((amount) => amount > 0) ??
+        false,
     ),
   );
 
@@ -263,30 +250,6 @@
         availableUuids.has(uuid),
       ),
     );
-  });
-
-  let selectedTeammateCurves = $derived.by<TimelineTeammateCurve[]>(() => {
-    const byUuid = new Map(
-      curveTeammates.map((player) => [player.entityUuid, player]),
-    );
-    return teammateDpsCurves(
-      selectedCurveTeammateModes,
-      perEntityBuckets,
-      chartBucketMs,
-      chartDurationMs,
-    ).flatMap((row) => {
-      const player = byUuid.get(row.entityUuid);
-      if (!player) return [];
-      return [
-        {
-          entityUuid: row.entityUuid,
-          name: player.name,
-          color: playerColor(player),
-          mode: row.mode,
-          curve: row.curve,
-        },
-      ];
-    });
   });
 
   function toggleCurveTeammate(entityUuid: string) {
@@ -451,6 +414,66 @@
   let brushPreviewMs = $state<[number, number] | null>(null);
   let plotWidthPx = $state(0);
 
+  // Curves are viewport products, not encounter-sized caches. Each sample is
+  // an exact read from the immutable hit index and there is at most one
+  // interval per CSS pixel (with a hard ceiling in sampleDpsCurve).
+  const mineInstantCurve = $derived.by(() =>
+    mineHits
+      ? sampleDpsCurve(
+          mineHits,
+          "instant",
+          viewport.startMs,
+          viewport.endMs,
+          plotWidthPx,
+        )
+      : null,
+  );
+  const mineAverageCurve = $derived.by(() =>
+    mineHits
+      ? sampleDpsCurve(
+          mineHits,
+          "average",
+          viewport.startMs,
+          viewport.endMs,
+          plotWidthPx,
+        )
+      : null,
+  );
+  const mineOverviewCurve = $derived.by(() =>
+    mineHits
+      ? sampleDpsCurve(mineHits, "instant", 0, chartDurationMs, 160)
+      : null,
+  );
+
+  let selectedTeammateCurves = $derived.by<TimelineTeammateCurve[]>(() => {
+    const byUuid = new Map(
+      curveTeammates.map((player) => [player.entityUuid, player]),
+    );
+    return teammateDpsSources(
+      selectedCurveTeammateModes,
+      perEntityHits,
+    ).flatMap((row) => {
+      const player = byUuid.get(row.entityUuid);
+      if (!player) return [];
+      return [
+        {
+          entityUuid: row.entityUuid,
+          name: player.name,
+          color: playerColor(player),
+          mode: row.mode,
+          hits: row.hits,
+          curve: sampleDpsCurve(
+            row.hits,
+            row.mode,
+            viewport.startMs,
+            viewport.endMs,
+            plotWidthPx,
+          ),
+        },
+      ];
+    });
+  });
+
   // Created once: the options object's accessors close over the component's
   // reactive bindings directly, so the attachment's pointer/wheel listeners
   // are wired up exactly once per mount instead of on every re-render.
@@ -596,8 +619,7 @@
         {hoverPoint}
         {brushPreviewMs}
         selectedRange={selectionEnabled ? selectedRange : null}
-        {mineInstantCurve}
-        {mineAverageCurve}
+        {mineHits}
         teammateCurves={selectedTeammateCurves}
         {showAverageCurve}
         {resolveEvent}
@@ -710,7 +732,7 @@
          the minimap blue, matching the series it now actually draws. -->
     <TimelineMinimap
       {viewport}
-      curve={mineInstantCurve ?? mineAverageCurve}
+      curve={mineOverviewCurve}
       selectedRange={selectionEnabled ? selectedRange : null}
     />
   </div>

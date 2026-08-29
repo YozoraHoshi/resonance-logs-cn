@@ -44,7 +44,7 @@ impl HistoryProjection {
         recording: RecordingEncounter,
     ) -> Result<(), String> {
         let reducer =
-            crate::database::history_query::HistoryProjectionReducer::new(0..u64::MAX, 1_000)
+            crate::database::history_query::HistoryProjectionReducer::new(0..u64::MAX)
                 .map_err(|error| error.to_string())?
                 .without_dynamic_series();
         self.writer.begin(segment_id, recording)?;

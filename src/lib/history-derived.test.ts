@@ -12,7 +12,7 @@ import {
   historyBuffLaneKey,
   historyBuffTimeline,
   historyBuffTimelineRange,
-  historyChartSeries,
+  historyDamageHits,
   historyDeathEntries,
   historyEntityToRaw,
   historySkillRecord,
@@ -218,23 +218,26 @@ describe("historyDeathEntries", () => {
   });
 });
 
-describe("historyChartSeries", () => {
-  it("maps metric names to chart indices and parses totals", () => {
-    const mapped = historyChartSeries([
-      { entityId: "1", metric: "damage", offsetsMs: [0], totals: ["100"] },
-      { entityId: "1", metric: "damage_taken", offsetsMs: [0], totals: ["5"] },
+describe("historyDamageHits", () => {
+  it("passes the columnar hit stream through per entity", () => {
+    const mapped = historyDamageHits([
+      { entityId: "1", offsetsMs: [100, 900], amounts: [100, 50] },
+      { entityId: "2", offsetsMs: [0], amounts: [25] },
     ]);
     expect(mapped[0]).toEqual({
       entityUuid: "1",
-      metric: 0,
-      offsetsMs: [0],
-      totals: [100],
+      timesMs: [100, 900],
+      amounts: [100, 50],
     });
-    expect(mapped[1]?.metric).toBe(2);
+    expect(mapped[1]).toEqual({
+      entityUuid: "2",
+      timesMs: [0],
+      amounts: [25],
+    });
   });
 
-  it("returns an empty array for missing series", () => {
-    expect(historyChartSeries(undefined)).toEqual([]);
+  it("returns an empty array for missing hits", () => {
+    expect(historyDamageHits(undefined)).toEqual([]);
   });
 });
 

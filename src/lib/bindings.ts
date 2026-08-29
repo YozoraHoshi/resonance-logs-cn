@@ -136,9 +136,9 @@ async getRecentEncountersFiltered(limit: number, offset: number, filters: Encoun
     else return { status: "error", error: e  as any };
 }
 },
-async getEncounterDetail(encounterId: number, targetPoints: number) : Promise<Result<EncounterDetailData, string>> {
+async getEncounterDetail(encounterId: number) : Promise<Result<EncounterDetailData, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_encounter_detail", { encounterId, targetPoints }) };
+    return { status: "ok", data: await TAURI_INVOKE("get_encounter_detail", { encounterId }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -625,18 +625,22 @@ activeSpans?: EncounterBuffSpanData[];
  * First-hit / post-inactivity credits for the denominator.
  */
 gracePoints?: EncounterBuffGraceData[]; lanes: EncounterBuffLaneData[] }
-export type EncounterChartPointData = { offsetMs: number; damage: string; healing: string; damageTaken: string }
 /**
- * Sparse per-entity bucket series: one row per (entity, metric), holding only
- * the buckets with a non-zero total. Recomputed from raw chunks at query time.
+ * Per-entity damage hit stream: columnar (offset_ms, amount) pairs ordered
+ * by time. Recomputed from raw chunks at query time; never persisted.
  */
-export type EncounterChartSeriesData = { entityId: string; metric: HistoryMetric; offsetsMs: number[]; totals: string[] }
+export type EncounterDamageHitsData = { entityId: string; offsetsMs: number[];
+/**
+ * Single-hit amounts saturate at u64::MAX (u128 headroom only matters
+ * for accumulated totals, not individual hits).
+ */
+amounts: number[] }
 export type EncounterDeathData = { offsetMs: number; sourceEntityId: string | null; skillId: string | null; replay: DeathRecord | null }
-export type EncounterDetailData = { encounterId: number; summary: EncounterSummaryDto; detailAvailable: boolean; qualityFlags: HistoryQualityFlag[]; startMs: number; endMsExclusive: number; bucketMs: number; totals: EncounterTotalsData; entities: EncounterEntityData[]; chartPoints: EncounterChartPointData[];
+export type EncounterDetailData = { encounterId: number; summary: EncounterSummaryDto; detailAvailable: boolean; qualityFlags: HistoryQualityFlag[]; startMs: number; endMsExclusive: number; totals: EncounterTotalsData; entities: EncounterEntityData[];
 /**
  * Always recomputed from chunks on load; stored snapshots leave it empty.
  */
-series?: EncounterChartSeriesData[]; markers: EncounterMarkerData[];
+damageHits?: EncounterDamageHitsData[]; markers: EncounterMarkerData[];
 /**
  * Always recomputed from chunks on load; `None` for encounters recorded
  * before buff timeline persistence existed.
@@ -655,7 +659,12 @@ export type EncounterMarkerData = { offsetMs: number; sequence: number; casterEn
  * Fantasy remodel tier when recorded. Absent on older encounters and non-fantasy casts.
  */
 remodelLevel?: number | null }
-export type EncounterRangeData = { encounterId: number; qualityFlags: HistoryQualityFlag[]; startMs: number; endMsExclusive: number; bucketMs: number; totals: EncounterTotalsData; entities: EncounterEntityData[]; chartPoints: EncounterChartPointData[]; series?: EncounterChartSeriesData[]; markers: EncounterMarkerData[] }
+export type EncounterRangeData = { encounterId: number; qualityFlags: HistoryQualityFlag[]; startMs: number; endMsExclusive: number; totals: EncounterTotalsData; entities: EncounterEntityData[];
+/**
+ * Populated only on the detail path (which shares the range reducer
+ * drain); range recounts leave it empty since they render no curves.
+ */
+damageHits?: EncounterDamageHitsData[]; markers: EncounterMarkerData[] }
 export type EncounterSkillData = { skillId: string; metric: HistoryMetric; property: number | null; damageMode: number | null; stats: EncounterStatsData }
 export type EncounterSourceBreakdownData = { sourceMonsterId: number | null; stats: EncounterStatsData; skills: EncounterSkillData[] }
 export type EncounterStatsData = { total: string; effectiveTotal: string; hits: string; criticalHits: string; criticalTotal: string; luckyHits: string; luckyTotal: string; triggerHits: string; blockedHits: string; luckyBlockHits: string }
