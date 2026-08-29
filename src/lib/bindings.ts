@@ -598,7 +598,7 @@ export type DeathRecord = { victimEntityUuid: string; deathTimestampMs: string;
  */
 recentDamages?: DamageSnapshot[]; victimBuffs?: DeathBuffSnapshot[]; participantBuffs?: DeathParticipantBuffSnapshot[] }
 export type Device = { name: string; description: string | null }
-export type EffectSlotConfig = { slotId: number; threshold: number | null; resetBuffId: number; resetSourceConfigId?: number | null; resetBuffTarget?: ResetBuffTarget; onBuffAdd?: CounterAction; onBuffChange?: CounterAction; onBuffRemove?: CounterAction; freezeDurationMs?: number | null; onFreezeExpire?: CounterAction; altFreeze?: AltFreezeConfig | null; thresholdModifier?: AttrModifier | null; freezeDurationModifier?: AttrModifier | null; resetSkillKeys?: number[] | null; onResetSkill?: CounterAction; dungeonStartFreezeMs?: number | null }
+export type EffectSlotConfig = { slotId: number; threshold: number | null; resetBuffId: number; resetSourceConfigId?: number | null; resetBuffTarget?: ResetBuffTarget; onBuffAdd?: CounterAction; onBuffChange?: CounterAction; onBuffRemove?: CounterAction; freezeDurationMs?: number | null; onFreezeExpire?: CounterAction; altFreeze?: AltFreezeConfig | null; thresholdModifier?: AttrModifier | null; freezeDurationModifier?: AttrModifier | null; resetSkillKeys?: number[] | null; onResetSkill?: CounterAction; resetPassiveSkillIds?: number[] | null; onPassiveSkill?: CounterAction; dungeonStartFreezeMs?: number | null }
 export type EncounterBuffGraceData = { offsetMs: number; creditedMs: number }
 export type EncounterBuffLaneData = { entityId: string; baseId: number;
 /**

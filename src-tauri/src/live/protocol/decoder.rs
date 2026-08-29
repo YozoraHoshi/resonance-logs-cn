@@ -13,8 +13,8 @@
 use crate::live::damage_id;
 use crate::live::entity_id::{canonical_player_uuid, entity_type_bits};
 use crate::live::monster_registry::{self, MonsterType};
-use crate::live::protocol::MARKER_SKILL_ID_BASE;
 use crate::live::protocol::attrs as attr_type;
+use crate::live::protocol::{COUNTER_PASSIVE_SKILL_IDS, MARKER_SKILL_ID_BASE};
 use crate::live::runtime::events::{
     AttributeValue, BatchId, BossMechanicObservation, CaptureEnvelope, EntityIdentityPatch,
     EntityKind, EntityUuid, FieldPatch, GameTimerKey, GameTimerState, HateEntry, HitChannel,
@@ -341,7 +341,7 @@ impl ProtocolDecoder {
             decode_temp_attributes(uuid, temp_attrs, origin, observations);
         }
         if let Some(passives) = entity.passive_skill_infos.as_ref() {
-            Self::decode_passive_starts(uuid, passives, observations);
+            Self::decode_passive_starts(uuid, passives, origin, observations);
         }
         if let Some(snapshot) = entity.buff_infos.as_ref() {
             self.decode_buff_snapshot(uuid, snapshot, envelope, observations);
@@ -419,7 +419,7 @@ impl ProtocolDecoder {
             decode_temp_attributes(uuid, temp_attrs, ObservationOrigin::Delta, observations);
         }
         if let Some(passives) = delta.passive_skill_infos.as_ref() {
-            Self::decode_passive_starts(uuid, passives, observations);
+            Self::decode_passive_starts(uuid, passives, ObservationOrigin::Delta, observations);
         }
         if let Some(ended) = delta.passive_skill_end_infos.as_ref() {
             Self::decode_passive_ends(uuid, ended, observations);
@@ -666,6 +666,7 @@ impl ProtocolDecoder {
     fn decode_passive_starts(
         fallback_entity: EntityUuid,
         sequence: &blueprotobuf::SeqPassiveSkillInfo,
+        origin: ObservationOrigin,
         observations: &mut Vec<ProtocolObservation>,
     ) {
         let entity_uuid = sequence
@@ -677,7 +678,9 @@ impl ProtocolDecoder {
                 continue;
             };
             let marker_range = (MARKER_SKILL_ID_BASE + 1)..=(MARKER_SKILL_ID_BASE + 6);
-            if !marker_range.contains(&skill_id) {
+            let is_counter_delta =
+                origin == ObservationOrigin::Delta && COUNTER_PASSIVE_SKILL_IDS.contains(&skill_id);
+            if !marker_range.contains(&skill_id) && !is_counter_delta {
                 continue;
             }
             observations.push(ProtocolObservation::PassiveSkillObserved(
@@ -2916,6 +2919,93 @@ mod tests {
             observation,
             ProtocolObservation::EntityDisappeared { .. }
         )));
+    }
+
+    #[test]
+    fn counter_passive_start_is_decoded_only_from_delta() {
+        let delta = blueprotobuf::SyncNearDeltaInfo {
+            delta_infos: vec![blueprotobuf::AoiSyncDelta {
+                uuid: Some(30),
+                passive_skill_infos: Some(blueprotobuf::SeqPassiveSkillInfo {
+                    passive_infos: vec![
+                        blueprotobuf::PassiveSkillInfo {
+                            uuid: Some(900),
+                            skill_id: Some(1434),
+                            ..Default::default()
+                        },
+                        blueprotobuf::PassiveSkillInfo {
+                            uuid: Some(901),
+                            skill_id: Some(1107),
+                            ..Default::default()
+                        },
+                    ],
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }],
+        };
+        let snapshot = blueprotobuf::SyncNearEntities {
+            appear: vec![blueprotobuf::Entity {
+                uuid: Some(30),
+                passive_skill_infos: Some(blueprotobuf::SeqPassiveSkillInfo {
+                    passive_infos: vec![
+                        blueprotobuf::PassiveSkillInfo {
+                            uuid: Some(902),
+                            skill_id: Some(1434),
+                            ..Default::default()
+                        },
+                        blueprotobuf::PassiveSkillInfo {
+                            uuid: Some(903),
+                            skill_id: Some(1101),
+                            ..Default::default()
+                        },
+                    ],
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        let mut decoder = ProtocolDecoder::new();
+
+        let delta_batch = decoder.decode(notify(1, Pkt::SyncNearDeltaInfo, &delta));
+        let snapshot_batch = decoder.decode(notify(2, Pkt::SyncNearEntities, &snapshot));
+
+        assert!(
+            delta_batch
+                .observations
+                .contains(&ProtocolObservation::PassiveSkillObserved(
+                    PassiveSkillObservation {
+                        entity_uuid: EntityUuid(30),
+                        passive_instance_id: 900,
+                        skill_id: 1434,
+                        target_position: None,
+                        ended: false,
+                    }
+                ))
+        );
+        assert!(!delta_batch.observations.iter().any(|observation| matches!(
+            observation,
+            ProtocolObservation::PassiveSkillObserved(passive) if passive.skill_id == 1107
+        )));
+        assert!(
+            !snapshot_batch
+                .observations
+                .iter()
+                .any(|observation| matches!(
+                    observation,
+                    ProtocolObservation::PassiveSkillObserved(passive) if passive.skill_id == 1434
+                ))
+        );
+        assert!(
+            snapshot_batch
+                .observations
+                .iter()
+                .any(|observation| matches!(
+                    observation,
+                    ProtocolObservation::PassiveSkillObserved(passive) if passive.skill_id == 1101
+                ))
+        );
     }
 
     #[test]

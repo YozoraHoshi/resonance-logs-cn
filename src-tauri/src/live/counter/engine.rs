@@ -200,6 +200,10 @@ pub struct EffectSlotConfig {
     #[serde(default)]
     pub on_reset_skill: CounterAction,
     #[serde(default)]
+    pub reset_passive_skill_ids: Option<Vec<i32>>,
+    #[serde(default)]
+    pub on_passive_skill: CounterAction,
+    #[serde(default)]
     pub dungeon_start_freeze_ms: Option<u64>,
 }
 
@@ -298,6 +302,7 @@ struct EventIndexes {
     position_by_attr: HashMap<i32, Vec<SourceHandle>>,
     watched_attrs: HashSet<i32>,
     skill_phase: HashMap<(i32, PhaseKey), Vec<SourceHandle>>,
+    passive_reset_by_skill: HashMap<i32, Vec<SlotHandle>>,
     dungeon_start_slots: Vec<SlotHandle>,
 }
 
@@ -640,6 +645,23 @@ impl CounterEngine {
                 for namespace in &mut self.namespaces {
                     changed |= namespace
                         .apply_skill_phase(*caster, *skill_id, *phase, now_mono, scheduler);
+                }
+            }
+            DomainEvent::PassiveSkillObserved {
+                entity,
+                skill_id,
+                ended,
+                ..
+            } if self.is_local(*entity) => {
+                for namespace in &mut self.namespaces {
+                    changed |= namespace.apply_passive_skill(
+                        *skill_id,
+                        *ended,
+                        now_mono,
+                        now_wall,
+                        &self.attrs,
+                        scheduler,
+                    );
                 }
             }
             DomainEvent::DungeonFlowChanged { previous, current }
@@ -1001,6 +1023,18 @@ impl NamespaceState {
                 }
             }
         }
+        if let Some(skill_ids) = &config.reset_passive_skill_ids {
+            let mut seen = HashSet::with_capacity(skill_ids.len());
+            for skill_id in skill_ids {
+                if seen.insert(*skill_id) {
+                    self.indexes
+                        .passive_reset_by_skill
+                        .entry(*skill_id)
+                        .or_default()
+                        .push(handle);
+                }
+            }
+        }
         if config
             .dungeon_start_freeze_ms
             .is_some_and(|duration| duration > 0)
@@ -1307,6 +1341,35 @@ impl NamespaceState {
                 _ => 0,
             };
             changed |= rule.add_increment(increment);
+        }
+        changed
+    }
+
+    fn apply_passive_skill(
+        &mut self,
+        skill_id: i32,
+        ended: bool,
+        now_mono: MonoTimeMs,
+        now_wall: i64,
+        attrs: &HashMap<i32, i64>,
+        scheduler: &mut DeadlineScheduler,
+    ) -> bool {
+        if ended {
+            return false;
+        }
+        let rule_set = self.rule_set;
+        let (indexes, rules) = (&self.indexes, &mut self.rules);
+        let Some(handles) = indexes.passive_reset_by_skill.get(&skill_id) else {
+            return false;
+        };
+        let mut changed = false;
+        for &handle in handles {
+            let rule_id = rules[handle.rule_index].rule_id;
+            let slot = &mut rules[handle.rule_index].slots[handle.slot_index];
+            let action = slot.config.on_passive_skill;
+            changed |= slot.apply_action(
+                action, rule_set, rule_id, now_mono, now_wall, attrs, scheduler,
+            );
         }
         changed
     }
@@ -2273,6 +2336,8 @@ mod tests {
             freeze_duration_modifier: None,
             reset_skill_keys: None,
             on_reset_skill: CounterAction::NoOp,
+            reset_passive_skill_ids: None,
+            on_passive_skill: CounterAction::NoOp,
             dungeon_start_freeze_ms: None,
         }
     }
@@ -4231,6 +4296,138 @@ mod tests {
             )
             .expect("hit from previous local");
         assert_eq!(count(&engine, CounterNamespace::Normal, 49), 10);
+    }
+
+    #[test]
+    fn buff_added_filters_by_source_config_id() {
+        let mut scheduler = DeadlineScheduler::new();
+        let mut engine = CounterEngine::new();
+        engine
+            .apply_config(
+                CounterNamespace::Normal,
+                vec![CounterRule {
+                    rule_id: 50,
+                    sources: vec![CounterSource::BuffAdded {
+                        buff_id: 77,
+                        source_config_id: Some(8),
+                        increment: 1,
+                    }],
+                    effect_slots: vec![slot(1)],
+                }],
+                &mut scheduler,
+            )
+            .expect("valid rules");
+        engine
+            .apply_event(&local_changed(1, 10), &mut scheduler)
+            .expect("local change");
+
+        let mut mismatch = local_buff(BuffWireKind::Add, 1, None);
+        mismatch.state.source_config_id = Some(9);
+        engine
+            .apply_event(
+                &envelope(2, 20, DomainEvent::BuffChanged(mismatch)),
+                &mut scheduler,
+            )
+            .expect("mismatched buff");
+        assert_eq!(count(&engine, CounterNamespace::Normal, 50), 0);
+
+        engine
+            .apply_event(
+                &envelope(
+                    3,
+                    30,
+                    DomainEvent::BuffChanged(local_buff(BuffWireKind::Add, 1, None)),
+                ),
+                &mut scheduler,
+            )
+            .expect("matching buff");
+        assert_eq!(count(&engine, CounterNamespace::Normal, 50), 1);
+    }
+
+    #[test]
+    fn passive_skill_start_resets_slots_only_for_local_starts() {
+        let mut scheduler = DeadlineScheduler::new();
+        let mut engine = CounterEngine::new();
+        let mut reset_slot = slot(1);
+        reset_slot.reset_passive_skill_ids = Some(vec![1434]);
+        reset_slot.on_passive_skill = CounterAction::Reset;
+        engine
+            .apply_config(
+                CounterNamespace::Normal,
+                vec![CounterRule {
+                    rule_id: 53,
+                    sources: vec![CounterSource::SkillCastComplete {
+                        skill_base_ids: vec![1434],
+                        increment: 1,
+                    }],
+                    effect_slots: vec![reset_slot],
+                }],
+                &mut scheduler,
+            )
+            .expect("valid rules");
+        engine
+            .apply_event(&local_changed(1, 10), &mut scheduler)
+            .expect("local change");
+
+        let cast_complete = || DomainEvent::SkillLifecycleChanged {
+            caster: LOCAL,
+            skill_id: 1434,
+            phase: SkillPhase::Completed,
+            target: None,
+        };
+        let passive = |entity, passive_instance_id, ended| DomainEvent::PassiveSkillObserved {
+            entity,
+            passive_instance_id,
+            skill_id: 1434,
+            target_position: None,
+            ended,
+        };
+
+        for batch in 2..=3 {
+            engine
+                .apply_event(
+                    &envelope(batch, batch * 10, cast_complete()),
+                    &mut scheduler,
+                )
+                .expect("cast complete");
+        }
+        assert_eq!(count(&engine, CounterNamespace::Normal, 53), 2);
+
+        // 结束事件不触发重置。
+        engine
+            .apply_event(&envelope(4, 40, passive(LOCAL, 100, true)), &mut scheduler)
+            .expect("passive end");
+        assert_eq!(count(&engine, CounterNamespace::Normal, 53), 2);
+
+        // 队友的被动开始不触发重置。
+        engine
+            .apply_event(
+                &envelope(5, 50, passive(TARGET_A, 200, false)),
+                &mut scheduler,
+            )
+            .expect("remote passive start");
+        assert_eq!(count(&engine, CounterNamespace::Normal, 53), 2);
+
+        // 本地被动开始(额外神影螺旋触发)重置计数。
+        engine
+            .apply_event(&envelope(6, 60, passive(LOCAL, 100, false)), &mut scheduler)
+            .expect("local passive start");
+        assert_eq!(count(&engine, CounterNamespace::Normal, 53), 0);
+
+        // 暂停期间丢弃被动事件,不触发重置。
+        engine
+            .apply_event(&envelope(7, 70, cast_complete()), &mut scheduler)
+            .expect("cast complete");
+        engine
+            .apply_event(
+                &envelope(8, 80, DomainEvent::PauseChanged { is_paused: true }),
+                &mut scheduler,
+            )
+            .expect("pause");
+        engine
+            .apply_event(&envelope(9, 90, passive(LOCAL, 300, false)), &mut scheduler)
+            .expect("paused passive start");
+        assert_eq!(count(&engine, CounterNamespace::Normal, 53), 1);
     }
 }
 
