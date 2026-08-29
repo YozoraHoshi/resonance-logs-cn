@@ -378,5 +378,29 @@
         "onBuffRemove": "noOp"
       }
     ]
+  },
+  {
+    "ruleId": 15,
+    "name": "射线S4-冰之灌注四件套",
+    "sources": [
+      {
+        "skillCast": {
+          "skillBaseIds": [1243],
+          "increment": 1
+        }
+      }
+    ],
+    "effectSlots": [
+      {
+        "slotId": 1,
+        "threshold": 2,
+        "displayMode": "remainingToThreshold",
+        "resetBuffId": 0,
+        "wrapAtThreshold": true,
+        "onBuffAdd": "noOp",
+        "onBuffChange": "noOp",
+        "onBuffRemove": "noOp"
+      }
+    ]
   }
 ]

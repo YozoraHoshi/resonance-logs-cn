@@ -200,6 +200,8 @@ pub struct EffectSlotConfig {
     #[serde(default)]
     pub on_reset_skill: CounterAction,
     #[serde(default)]
+    pub wrap_at_threshold: bool,
+    #[serde(default)]
     pub reset_passive_skill_ids: Option<Vec<i32>>,
     #[serde(default)]
     pub on_passive_skill: CounterAction,
@@ -1861,6 +1863,18 @@ impl RuleRuntime {
             if !slot.is_counting {
                 continue;
             }
+            // Self-cycling counters: once the count reaches the threshold, the
+            // next increment restarts the cycle at zero instead of stacking.
+            if slot.config.wrap_at_threshold
+                && slot
+                    .config
+                    .threshold
+                    .is_some_and(|threshold| slot.current_count >= threshold)
+            {
+                changed |= slot.current_count != 0;
+                slot.current_count = 0;
+                continue;
+            }
             let next = slot.current_count.saturating_add(increment);
             changed |= next != slot.current_count;
             slot.current_count = next;
@@ -2336,6 +2350,7 @@ mod tests {
             freeze_duration_modifier: None,
             reset_skill_keys: None,
             on_reset_skill: CounterAction::NoOp,
+            wrap_at_threshold: false,
             reset_passive_skill_ids: None,
             on_passive_skill: CounterAction::NoOp,
             dungeon_start_freeze_ms: None,
@@ -4428,6 +4443,109 @@ mod tests {
             .apply_event(&envelope(9, 90, passive(LOCAL, 300, false)), &mut scheduler)
             .expect("paused passive start");
         assert_eq!(count(&engine, CounterNamespace::Normal, 53), 1);
+    }
+
+    fn infusion_4pc_engine(scheduler: &mut DeadlineScheduler) -> CounterEngine {
+        let mut engine = CounterEngine::new();
+        let mut wrap_slot = slot(1);
+        wrap_slot.threshold = Some(2);
+        wrap_slot.wrap_at_threshold = true;
+        engine
+            .apply_config(
+                CounterNamespace::Normal,
+                vec![CounterRule {
+                    rule_id: 54,
+                    sources: vec![CounterSource::SkillCast {
+                        skill_base_ids: vec![1243],
+                        increment: 1,
+                    }],
+                    effect_slots: vec![wrap_slot],
+                }],
+                scheduler,
+            )
+            .expect("valid rules");
+        engine
+            .apply_event(&local_changed(1, 10), scheduler)
+            .expect("local change");
+        engine
+    }
+
+    fn infusion_cast() -> DomainEvent {
+        DomainEvent::SkillLifecycleChanged {
+            caster: LOCAL,
+            skill_id: 1243,
+            phase: SkillPhase::CastStarted,
+            target: None,
+        }
+    }
+
+    #[test]
+    fn wrap_at_threshold_restarts_cycle_on_empowered_cast() {
+        let mut scheduler = DeadlineScheduler::new();
+        let mut engine = infusion_4pc_engine(&mut scheduler);
+
+        // 灌注 1 → 1(显示 1);灌注 2 → 2(显示 0,强化就绪);
+        // 灌注 3 是强化灌注,释放即归零(显示回 2),与是否命中无关。
+        for (batch, expected) in [(2, 1), (3, 2), (4, 0)] {
+            engine
+                .apply_event(
+                    &envelope(batch, batch * 10, infusion_cast()),
+                    &mut scheduler,
+                )
+                .expect("infusion cast");
+            assert_eq!(count(&engine, CounterNamespace::Normal, 54), expected);
+        }
+    }
+
+    #[test]
+    fn wrap_at_threshold_cycle_repeats() {
+        let mut scheduler = DeadlineScheduler::new();
+        let mut engine = infusion_4pc_engine(&mut scheduler);
+
+        // 环绕消耗触发它的 increment:循环为 1 → 2 → 0 → 1 → 2 → 0。
+        for (batch, expected) in [(2, 1), (3, 2), (4, 0), (5, 1), (6, 2), (7, 0)] {
+            engine
+                .apply_event(
+                    &envelope(batch, batch * 10, infusion_cast()),
+                    &mut scheduler,
+                )
+                .expect("infusion cast");
+            assert_eq!(count(&engine, CounterNamespace::Normal, 54), expected);
+        }
+    }
+
+    #[test]
+    fn wrap_at_threshold_disabled_accumulates_past_threshold() {
+        let mut scheduler = DeadlineScheduler::new();
+        let mut engine = CounterEngine::new();
+        engine
+            .apply_config(
+                CounterNamespace::Normal,
+                vec![CounterRule {
+                    rule_id: 55,
+                    sources: vec![CounterSource::SkillCast {
+                        skill_base_ids: vec![1243],
+                        increment: 1,
+                    }],
+                    effect_slots: vec![slot(1)],
+                }],
+                &mut scheduler,
+            )
+            .expect("valid rules");
+        engine
+            .apply_event(&local_changed(1, 10), &mut scheduler)
+            .expect("local change");
+
+        // 默认行为不变:计数越过阈值继续累加。
+        for batch in 2..=4 {
+            engine
+                .apply_event(
+                    &envelope(batch, batch * 10, infusion_cast()),
+                    &mut scheduler,
+                )
+                .expect("infusion cast");
+        }
+        assert_eq!(count(&engine, CounterNamespace::Normal, 55), 3);
     }
 }
 

@@ -122,6 +122,7 @@ export type CounterEffectSlotPreset = {
   freezeDurationModifier?: AttrModifierPreset;
   resetSkillKeys?: number[];
   onResetSkill?: CounterAction;
+  wrapAtThreshold?: boolean;
   resetPassiveSkillIds?: number[];
   onPassiveSkill?: CounterAction;
   displayMode?: CounterSlotDisplayMode;
@@ -897,6 +898,9 @@ export function resolveCounterEffectSlots(
               : {}),
             ...(item.slot.onResetSkill !== undefined
               ? { onResetSkill: item.slot.onResetSkill }
+              : {}),
+            ...(item.slot.wrapAtThreshold !== undefined
+              ? { wrapAtThreshold: item.slot.wrapAtThreshold }
               : {}),
             ...(item.slot.resetPassiveSkillIds !== undefined
               ? { resetPassiveSkillIds: item.slot.resetPassiveSkillIds }
