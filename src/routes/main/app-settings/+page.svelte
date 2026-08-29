@@ -11,6 +11,7 @@
   import ShortcutsSettings from "../dps/settings/shortcuts.svelte";
   import DebugSettings from "../dps/settings/debug.svelte";
   import LanguageSettings from "./language.svelte";
+  import BehaviorSettings from "./behavior.svelte";
   import AppearanceSettings from "./appearance.svelte";
   import CogIcon from "virtual:icons/lucide/cog";
 
@@ -50,7 +51,10 @@
     </Tabs.List>
 
     <Tabs.Content value="general">
-      <LanguageSettings />
+      <div class="space-y-3">
+        <LanguageSettings />
+        <BehaviorSettings />
+      </div>
     </Tabs.Content>
 
     <Tabs.Content value="appearance">

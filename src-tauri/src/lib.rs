@@ -13,7 +13,10 @@ use specta_typescript::{BigIntExportBehavior, Typescript};
 use std::process::{Command, Stdio};
 
 use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
+use std::sync::{
+    OnceLock,
+    atomic::{AtomicBool, Ordering},
+};
 
 use tauri::menu::MenuBuilder;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
@@ -44,6 +47,12 @@ const LIVE_PULL_GATE_EVENT: &str = "live-pull-gate";
 static LOGGING_GUARD: OnceLock<tracing_appender::non_blocking::WorkerGuard> = OnceLock::new();
 /// Ensures we only initialize global logging once.
 static LOGGING_INIT: OnceLock<Result<(), String>> = OnceLock::new();
+
+/// Whether closing the main window exits the app instead of hiding it to the tray.
+///
+/// The value is loaded once at startup, so setting changes apply on the next launch.
+#[derive(Default)]
+pub(crate) struct ExitOnClose(AtomicBool);
 
 /// The main entry point for the application logic.
 ///
@@ -154,6 +163,7 @@ pub fn run() {
         .manage(live_runtime)
         .manage(publication_cache.clone())
         .manage(history_writer.clone())
+        .manage(ExitOnClose::default())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -166,6 +176,10 @@ pub fn run() {
             if let Err(e) = setup_logs(&app_handle) {
                 eprintln!("Failed to setup logs: {e}");
             }
+
+            app.state::<ExitOnClose>()
+                .0
+                .store(read_exit_on_close(&app_handle), Ordering::Relaxed);
 
             // Attach key-value-ish context to the setup flow via a span.
             // Existing log::info!/warn! calls will flow into tracing via LogTracer.
@@ -1112,6 +1126,15 @@ fn on_window_event_fn(window: &Window, event: &WindowEvent) {
     match event {
         // when you click the X button to close a window
         WindowEvent::CloseRequested { api, .. } => {
+            if window.label() == WINDOW_MAIN_LABEL
+                && window
+                    .app_handle()
+                    .try_state::<ExitOnClose>()
+                    .is_some_and(|setting| setting.0.load(Ordering::Relaxed))
+            {
+                window.app_handle().exit(0);
+                return;
+            }
             api.prevent_close();
             if is_live_pull_window(window.label()) {
                 set_live_pull_window_active(window.app_handle(), window.label(), false);
@@ -1132,6 +1155,18 @@ fn on_window_event_fn(window: &Window, event: &WindowEvent) {
         }
         _ => {}
     }
+}
+
+fn read_exit_on_close(app: &tauri::AppHandle) -> bool {
+    use tauri_plugin_svelte::ManagerExt as _;
+
+    app.with_store("accessibility", |store| {
+        store.get::<bool>("exitOnClose").unwrap_or(false)
+    })
+    .unwrap_or_else(|error| {
+        warn!("failed to read exitOnClose setting, using tray behavior: {error}");
+        false
+    })
 }
 
 fn is_live_pull_window(label: &str) -> bool {

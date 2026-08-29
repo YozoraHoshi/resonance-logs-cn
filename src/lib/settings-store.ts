@@ -2389,6 +2389,7 @@ const DEFAULT_SETTINGS = {
   accessibility: {
     blur: false,
     clickthrough: false,
+    exitOnClose: false,
     fontSizes: { ...DEFAULT_FONT_SIZES },
     customThemeColors: { ...DEFAULT_CUSTOM_THEME_COLORS },
     // Background image settings
