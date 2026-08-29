@@ -22,6 +22,11 @@
     MIN_LANE_H,
   } from "$lib/components/encounter-timeline/timeline-layout";
   import {
+    DEFAULT_INSTANT_DPS_WINDOW_SEC,
+    MAX_INSTANT_DPS_WINDOW_SEC,
+    MIN_INSTANT_DPS_WINDOW_SEC,
+  } from "$lib/components/encounter-timeline/timeline-data";
+  import {
     SETTINGS,
     DEFAULT_HISTORY_TANKED_STATS,
     DEFAULT_HISTORY_TANKED_SKILL_STATS,
@@ -58,6 +63,8 @@
   $effect(() => {
     SETTINGS.history.general.state.timelineLaneH ??= DEFAULT_LANE_H;
     SETTINGS.history.general.state.timelineCurveH ??= DEFAULT_CURVE_H;
+    SETTINGS.history.general.state.instantDpsWindowSec ??=
+      DEFAULT_INSTANT_DPS_WINDOW_SEC;
     for (const key of Object.keys(DEFAULT_HISTORY_TANKED_STATS)) {
       const typedKey = key as keyof typeof DEFAULT_HISTORY_TANKED_STATS;
       SETTINGS.history.tanked.players.state[typedKey] ??=
@@ -271,6 +278,17 @@
             max={MAX_CURVE_H}
             step={10}
             unit="px"
+          />
+          <SettingsSlider
+            bind:value={SETTINGS.history.general.state.instantDpsWindowSec}
+            label={t("settings.history.timeline.instantWindow")}
+            description={t(
+              "settings.history.timeline.instantWindowDescription",
+            )}
+            min={MIN_INSTANT_DPS_WINDOW_SEC}
+            max={MAX_INSTANT_DPS_WINDOW_SEC}
+            step={1}
+            unit="s"
           />
         </div>
       {/if}

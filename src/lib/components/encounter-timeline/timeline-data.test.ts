@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampInstantDpsWindowSec,
   clampViewportWindow,
   collapseHoverLanePoints,
   curveMaxValue,
@@ -24,6 +25,8 @@ import {
   type EntityDamageHits,
   type TeammateCurveMode,
 } from "./timeline-data";
+
+const DEFAULT_WINDOW_MS = 10_000;
 
 function hits(
   entityUuid: string,
@@ -89,42 +92,65 @@ describe("dpsValueAt", () => {
   it("uses the 500ms startup grace for a hit at segment offset zero", () => {
     const source = indexed([0], [10_000]);
 
-    expect(dpsValueAt(source, "instant", 0)).toBe(20_000);
-    expect(dpsValueAt(source, "average", 0)).toBe(20_000);
-    expect(dpsValueAt(source, "instant", 500)).toBe(20_000);
+    expect(dpsValueAt(source, "instant", 0, DEFAULT_WINDOW_MS)).toBe(20_000);
+    expect(dpsValueAt(source, "average", 0, DEFAULT_WINDOW_MS)).toBe(20_000);
+    expect(dpsValueAt(source, "instant", 500, DEFAULT_WINDOW_MS)).toBe(20_000);
   });
 
   it("returns zero before the first hit instead of leaking future damage", () => {
     const source = indexed([5_000], [10_000]);
 
-    expect(dpsValueAt(source, "instant", 4_999)).toBe(0);
-    expect(dpsValueAt(source, "average", 4_999)).toBe(0);
-    expect(dpsValueAt(source, "instant", 5_000)).toBe(2_000);
+    expect(dpsValueAt(source, "instant", 4_999, DEFAULT_WINDOW_MS)).toBe(0);
+    expect(dpsValueAt(source, "average", 4_999, DEFAULT_WINDOW_MS)).toBe(0);
+    expect(dpsValueAt(source, "instant", 5_000, DEFAULT_WINDOW_MS)).toBe(2_000);
   });
 
   it("uses a left-open 10s rolling window and merges same-ms hits", () => {
     const source = indexed([5_000, 15_000, 15_000], [1_000, 200, 300]);
 
-    expect(dpsValueAt(source, "instant", 14_999)).toBe(100);
+    expect(dpsValueAt(source, "instant", 14_999, DEFAULT_WINDOW_MS)).toBe(100);
     // At exactly 15s the 5s hit has expired; both new hits count.
-    expect(dpsValueAt(source, "instant", 15_000)).toBe(50);
-    expect(dpsValueAt(source, "average", 15_000)).toBe(100);
+    expect(dpsValueAt(source, "instant", 15_000, DEFAULT_WINDOW_MS)).toBe(50);
+    expect(dpsValueAt(source, "average", 15_000, DEFAULT_WINDOW_MS)).toBe(100);
+  });
+
+  it("uses the configured rolling window", () => {
+    const source = indexed([5_000, 10_000], [1_000, 500]);
+
+    expect(dpsValueAt(source, "instant", 9_999, 5_000)).toBe(200);
+    expect(dpsValueAt(source, "instant", 10_000, 5_000)).toBe(100);
   });
 
   it("divides cumulative damage by the complete elapsed fight time", () => {
     const source = indexed([1_000, 2_000, 4_000], [100, 100, 200]);
 
-    expect(dpsValueAt(source, "average", 1_000)).toBe(100);
-    expect(dpsValueAt(source, "average", 2_000)).toBe(100);
-    expect(dpsValueAt(source, "average", 4_000)).toBe(100);
-    expect(dpsValueAt(source, "average", 8_000)).toBe(50);
+    expect(dpsValueAt(source, "average", 1_000, DEFAULT_WINDOW_MS)).toBe(100);
+    expect(dpsValueAt(source, "average", 2_000, DEFAULT_WINDOW_MS)).toBe(100);
+    expect(dpsValueAt(source, "average", 4_000, DEFAULT_WINDOW_MS)).toBe(100);
+    expect(dpsValueAt(source, "average", 8_000, DEFAULT_WINDOW_MS)).toBe(50);
+  });
+});
+
+describe("clampInstantDpsWindowSec", () => {
+  it("clamps and rounds the setting to a whole second", () => {
+    expect(clampInstantDpsWindowSec(0)).toBe(1);
+    expect(clampInstantDpsWindowSec(4.6)).toBe(5);
+    expect(clampInstantDpsWindowSec(31)).toBe(30);
+    expect(clampInstantDpsWindowSec(Number.NaN)).toBe(10);
   });
 });
 
 describe("sampleDpsCurve", () => {
   it("samples both viewport boundaries with exact values", () => {
     const source = indexed([1_000], [5_000]);
-    const curve = sampleDpsCurve(source, "average", 1_000, 10_000, 2);
+    const curve = sampleDpsCurve(
+      source,
+      "average",
+      1_000,
+      10_000,
+      2,
+      DEFAULT_WINDOW_MS,
+    );
 
     expect(curve).toEqual([
       [1_000, 5_000],
@@ -134,12 +160,21 @@ describe("sampleDpsCurve", () => {
   });
 
   it("returns no points without a hit source", () => {
-    expect(sampleDpsCurve(null, "instant", 0, 10_000, 100)).toEqual([]);
+    expect(
+      sampleDpsCurve(null, "instant", 0, 10_000, 100, DEFAULT_WINDOW_MS),
+    ).toEqual([]);
   });
 
   it("keeps instant intervals within the rolling window on narrow plots", () => {
     const source = indexed([15_000], [1_000]);
-    const curve = sampleDpsCurve(source, "instant", 0, 30_000, 1);
+    const curve = sampleDpsCurve(
+      source,
+      "instant",
+      0,
+      30_000,
+      1,
+      DEFAULT_WINDOW_MS,
+    );
 
     expect(curve).toHaveLength(4);
     expect(curve.some(([, value]) => value > 0)).toBe(true);
@@ -150,7 +185,14 @@ describe("sampleDpsCurve", () => {
     const timesMs = Array.from({ length: count }, (_, index) => index * 10);
     const source = indexed(timesMs, new Array<number>(count).fill(1));
 
-    const curve = sampleDpsCurve(source, "instant", 0, 1_000_000, 800);
+    const curve = sampleDpsCurve(
+      source,
+      "instant",
+      0,
+      1_000_000,
+      800,
+      DEFAULT_WINDOW_MS,
+    );
 
     expect(curve).toHaveLength(801);
     expect(curve[0]?.[0]).toBe(0);

@@ -77,8 +77,10 @@ export function foldEncounterDamageHits(
   return { durationMs, perEntityHits };
 }
 
-/** Instant-DPS trailing window length. */
-const ROLLING_WINDOW_MS = 10_000;
+/** User-configurable instant-DPS trailing-window bounds, in whole seconds. */
+export const DEFAULT_INSTANT_DPS_WINDOW_SEC = 10;
+export const MIN_INSTANT_DPS_WINDOW_SEC = 1;
+export const MAX_INSTANT_DPS_WINDOW_SEC = 30;
 /** The segment usually starts on its first hit (offset 0). Treating that hit
  * as one millisecond of elapsed time creates a meaningless million-DPS spike;
  * this matches the app's existing first-hit active-time grace. */
@@ -86,6 +88,15 @@ const DPS_STARTUP_GRACE_MS = 500;
 /** Hard ceiling for 4K/ultrawide layouts. The main path still targets one
  * interval per CSS pixel, but can never hand an unbounded array to ECharts. */
 const MAX_CURVE_SAMPLE_INTERVALS = 4_096;
+
+export function clampInstantDpsWindowSec(value: unknown): number {
+  const seconds = typeof value === "number" ? value : Number.NaN;
+  if (!Number.isFinite(seconds)) return DEFAULT_INSTANT_DPS_WINDOW_SEC;
+  return Math.min(
+    MAX_INSTANT_DPS_WINDOW_SEC,
+    Math.max(MIN_INSTANT_DPS_WINDOW_SEC, Math.round(seconds)),
+  );
+}
 
 function upperBound(values: readonly number[], target: number): number {
   let lo = 0;
@@ -105,20 +116,21 @@ function amountThrough(hits: DamageHitIndex, atMs: number): number {
 export type TeammateCurveMode = "average" | "instant";
 
 /** Evaluates the selected DPS definition from raw hits at one exact instant.
- * Instant DPS uses the half-open trailing window (t - 10s, t]. */
+ * Instant DPS uses the half-open trailing window (t - windowMs, t]. */
 export function dpsValueAt(
   hits: DamageHitIndex,
   mode: TeammateCurveMode,
   atMs: number,
+  windowMs: number,
 ): number {
   const timeMs = Number.isFinite(atMs) ? Math.max(0, atMs) : 0;
   const total = amountThrough(hits, timeMs);
   if (total <= 0) return 0;
   const elapsedMs = Math.max(timeMs, DPS_STARTUP_GRACE_MS);
   if (mode === "average") return (total * 1_000) / elapsedMs;
-  const expired = amountThrough(hits, timeMs - ROLLING_WINDOW_MS);
-  const windowMs = Math.min(elapsedMs, ROLLING_WINDOW_MS);
-  return ((total - expired) * 1_000) / windowMs;
+  const expired = amountThrough(hits, timeMs - windowMs);
+  const effectiveWindowMs = Math.min(elapsedMs, windowMs);
+  return ((total - expired) * 1_000) / effectiveWindowMs;
 }
 
 /** Samples exact DPS reads at CSS-pixel boundaries. The renderer uses
@@ -129,12 +141,13 @@ export function sampleDpsCurve(
   startMs: number,
   endMs: number,
   targetIntervals: number,
+  windowMs: number,
 ): EncounterCurvePoint[] {
   if (!hits) return [];
   const start = Number.isFinite(startMs) ? Math.max(0, startMs) : 0;
   const end = Number.isFinite(endMs) ? Math.max(start, endMs) : start;
   const minimumWindowIntervals =
-    mode === "instant" ? Math.ceil((end - start) / ROLLING_WINDOW_MS) : 1;
+    mode === "instant" ? Math.ceil((end - start) / windowMs) : 1;
   const intervals = Math.min(
     MAX_CURVE_SAMPLE_INTERVALS,
     Math.max(
@@ -143,12 +156,12 @@ export function sampleDpsCurve(
       Math.ceil(Number(targetIntervals) || 1),
     ),
   );
-  if (end === start) return [[start, dpsValueAt(hits, mode, start)]];
+  if (end === start) return [[start, dpsValueAt(hits, mode, start, windowMs)]];
 
   const span = end - start;
   return Array.from({ length: intervals + 1 }, (_, index) => {
     const atMs = index === intervals ? end : start + (span * index) / intervals;
-    return [atMs, dpsValueAt(hits, mode, atMs)];
+    return [atMs, dpsValueAt(hits, mode, atMs, windowMs)];
   });
 }
 

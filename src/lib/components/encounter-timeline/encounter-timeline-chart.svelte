@@ -32,6 +32,7 @@
   import { tooltip } from "$lib/utils.svelte";
   import { laneColor, playerColor } from "./timeline-colors";
   import {
+    clampInstantDpsWindowSec,
     foldEncounterDamageHits,
     sampleDpsCurve,
     teammateDpsSources,
@@ -183,7 +184,9 @@
       if (localPlayer && p.entityUuid === localPlayer.entityUuid) return false;
       return (
         (playerEventsByCaster.get(p.entityUuid)?.length ?? 0) > 0 ||
-        (perEntityHits.get(p.entityUuid)?.amounts.some((amount) => amount > 0) ??
+        (perEntityHits
+          .get(p.entityUuid)
+          ?.amounts.some((amount) => amount > 0) ??
           false)
       );
     });
@@ -339,6 +342,11 @@
   const persistedCurveH = $derived(
     SETTINGS.history.general.state.timelineCurveH ?? DEFAULT_CURVE_H,
   );
+  const instantWindowMs = $derived(
+    clampInstantDpsWindowSec(
+      SETTINGS.history.general.state.instantDpsWindowSec,
+    ) * 1_000,
+  );
   const baseLaneH = $derived(draftLaneH ?? persistedLaneH);
   const baseCurveH = $derived(draftCurveH ?? persistedCurveH);
   let layout = $derived(
@@ -425,6 +433,7 @@
           viewport.startMs,
           viewport.endMs,
           plotWidthPx,
+          instantWindowMs,
         )
       : null,
   );
@@ -436,12 +445,20 @@
           viewport.startMs,
           viewport.endMs,
           plotWidthPx,
+          instantWindowMs,
         )
       : null,
   );
   const mineOverviewCurve = $derived.by(() =>
     mineHits
-      ? sampleDpsCurve(mineHits, "instant", 0, chartDurationMs, 160)
+      ? sampleDpsCurve(
+          mineHits,
+          "instant",
+          0,
+          chartDurationMs,
+          160,
+          instantWindowMs,
+        )
       : null,
   );
 
@@ -468,6 +485,7 @@
             viewport.startMs,
             viewport.endMs,
             plotWidthPx,
+            instantWindowMs,
           ),
         },
       ];

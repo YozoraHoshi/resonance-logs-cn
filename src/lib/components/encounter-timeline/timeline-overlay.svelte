@@ -4,6 +4,7 @@
   // preview and the persisted selection highlight. Everything here is
   // `pointer-events: none` - the gesture layer underneath owns all input.
   import {
+    clampInstantDpsWindowSec,
     collapseHoverLanePoints,
     dpsValueAt,
     resolveHoverDisplayTimeMs,
@@ -51,6 +52,11 @@
   }: Props = $props();
 
   const spanMs = $derived(Math.max(1, endMs - startMs));
+  const instantWindowMs = $derived(
+    clampInstantDpsWindowSec(
+      SETTINGS.history.general.state.instantDpsWindowSec,
+    ) * 1_000,
+  );
 
   /** Same abbreviation the curve's Y axis uses, so the tooltip and the axis
    * never disagree about a value's unit. Called from the markup, so the
@@ -98,14 +104,19 @@
   const hoverCurveInfo = $derived.by(() => {
     if (!hoverPoint || hoverLaneIndex !== null) return null;
     const instant = mineHits
-      ? dpsValueAt(mineHits, "instant", hoverPoint.timeMs)
+      ? dpsValueAt(mineHits, "instant", hoverPoint.timeMs, instantWindowMs)
       : null;
     const average =
       showAverageCurve && mineHits
-        ? dpsValueAt(mineHits, "average", hoverPoint.timeMs)
+        ? dpsValueAt(mineHits, "average", hoverPoint.timeMs, instantWindowMs)
         : null;
     const teammates = teammateCurves.flatMap((row) => {
-      const value = dpsValueAt(row.hits, row.mode, hoverPoint.timeMs);
+      const value = dpsValueAt(
+        row.hits,
+        row.mode,
+        hoverPoint.timeMs,
+        instantWindowMs,
+      );
       return [
         {
           entityUuid: row.entityUuid,

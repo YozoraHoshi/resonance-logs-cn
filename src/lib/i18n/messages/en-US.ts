@@ -638,6 +638,9 @@ export const enUSMessages = {
   "settings.history.timeline.curveH": "Timeline curve height",
   "settings.history.timeline.curveHDescription":
     "Height of the DPS curve area on the history timeline, independent of lane height.",
+  "settings.history.timeline.instantWindow": "Instant DPS window",
+  "settings.history.timeline.instantWindowDescription":
+    "Set how many recent seconds of damage the instant DPS curve includes.",
   "settings.common.columns.dpsPlayers": "DPS (Player) Columns",
   "settings.common.columns.dpsSkills": "DPS (Skill Details) Columns",
   "settings.common.columns.healPlayers": "Healing (Player) Columns",

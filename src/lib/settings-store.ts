@@ -2015,6 +2015,7 @@ export function createDefaultHistorySettings() {
       ...DEFAULT_GENERAL_SETTINGS,
       timelineLaneH: 44,
       timelineCurveH: 300,
+      instantDpsWindowSec: 10,
     },
     dpsPlayers: { ...DEFAULT_HISTORY_STATS },
     dpsSkillBreakdown: { ...DEFAULT_HISTORY_STATS },

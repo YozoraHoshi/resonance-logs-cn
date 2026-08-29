@@ -581,6 +581,10 @@ const historyGeneralSchema = v.object({
     finiteNumberSchema,
     defaultLive.history.general.timelineCurveH,
   ),
+  instantDpsWindowSec: v.optional(
+    finiteNumberSchema,
+    defaultLive.history.general.instantDpsWindowSec,
+  ),
 });
 
 const historySettingsSchema = v.pipe(

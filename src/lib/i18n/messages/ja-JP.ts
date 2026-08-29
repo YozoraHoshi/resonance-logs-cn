@@ -624,6 +624,9 @@ export const jaJPMessages = {
   "settings.history.timeline.curveH": "タイムラインの曲線高さ",
   "settings.history.timeline.curveHDescription":
     "履歴タイムラインの DPS 曲線エリアの高さ。レーン高さとは独立しています。",
+  "settings.history.timeline.instantWindow": "瞬間 DPS の集計時間",
+  "settings.history.timeline.instantWindowDescription":
+    "履歴の瞬間 DPS 曲線に含める直近のダメージ集計秒数を設定します。",
   "settings.common.columns.dpsPlayers": "DPS（プレイヤー）列",
   "settings.common.columns.dpsSkills": "DPS（スキル詳細）列",
   "settings.common.columns.healPlayers": "回復（プレイヤー）列",

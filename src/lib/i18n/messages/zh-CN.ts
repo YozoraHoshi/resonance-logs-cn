@@ -575,6 +575,9 @@ export const zhCNMessages = {
   "settings.history.timeline.curveH": "时间轴曲线高度",
   "settings.history.timeline.curveHDescription":
     "历史详情 DPS 曲线区域的高度，与泳道行高相互独立。",
+  "settings.history.timeline.instantWindow": "瞬时 DPS 统计窗口",
+  "settings.history.timeline.instantWindowDescription":
+    "设置历史详情瞬时 DPS 曲线统计最近多少秒内的伤害。",
   "settings.history.fantasyCastIcons": "显示幻想图标",
   "settings.history.fantasyCastIconsDescription":
     "在历史玩家名称旁显示整场最近释放的 2 种幻想图标，不随时间轴框选变化。",
