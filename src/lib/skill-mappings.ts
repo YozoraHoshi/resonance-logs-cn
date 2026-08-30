@@ -1016,6 +1016,19 @@ export function findSkillDerivationBySource(
   );
 }
 
+export function findActiveSkillDerivation(
+  classKey: string,
+  sourceSkillId: number,
+  activeBuffIds: ReadonlySet<number>,
+  locale = getLocale(),
+): SkillDerivation | undefined {
+  return getClassConfigMap(locale)[classKey]?.derivations?.find(
+    (derivation) =>
+      derivation.sourceSkillId === sourceSkillId &&
+      activeBuffIds.has(derivation.triggerBuffBaseId),
+  );
+}
+
 export function findResonanceSkill(
   skillId: number,
   locale = getLocale(),

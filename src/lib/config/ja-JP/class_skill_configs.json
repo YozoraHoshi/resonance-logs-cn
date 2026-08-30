@@ -38,6 +38,12 @@
       {
         "sourceSkillId": 1401,
         "derivedSkillId": 1435,
+        "triggerBuffBaseId": 2205421,
+        "derivedName": "龍砲"
+      },
+      {
+        "sourceSkillId": 1401,
+        "derivedSkillId": 1435,
         "triggerBuffBaseId": 2205521,
         "derivedName": "龍砲"
       },

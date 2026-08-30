@@ -13,8 +13,8 @@
     startResize,
   } from "./overlay-state.svelte.js";
   import {
+    findActiveSkillDerivation,
     findAnySkillByBaseId,
-    findSkillDerivationBySource,
   } from "$lib/skill-mappings";
 
   const editing = $derived(isEditing());
@@ -48,11 +48,9 @@
         ? findAnySkillByBaseId(classKey, skillId)
         : undefined}
       {@const derivation = skillId
-        ? findSkillDerivationBySource(classKey, skillId)
+        ? findActiveSkillDerivation(classKey, skillId, activeIds)
         : undefined}
-      {@const isDerivedActive = derivation
-        ? activeIds.has(derivation.triggerBuffBaseId)
-        : false}
+      {@const isDerivedActive = derivation !== undefined}
       {@const displaySkill =
         isDerivedActive && derivation
           ? {

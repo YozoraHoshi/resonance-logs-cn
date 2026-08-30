@@ -38,6 +38,12 @@
       {
         "sourceSkillId": 1401,
         "derivedSkillId": 1435,
+        "triggerBuffBaseId": 2205421,
+        "derivedName": "Drake Cannon"
+      },
+      {
+        "sourceSkillId": 1401,
+        "derivedSkillId": 1435,
         "triggerBuffBaseId": 2205521,
         "derivedName": "Drake Cannon"
       },

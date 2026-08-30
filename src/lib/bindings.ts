@@ -598,16 +598,7 @@ export type DeathRecord = { victimEntityUuid: string; deathTimestampMs: string;
  */
 recentDamages?: DamageSnapshot[]; victimBuffs?: DeathBuffSnapshot[]; participantBuffs?: DeathParticipantBuffSnapshot[] }
 export type Device = { name: string; description: string | null }
-export type EffectSlotConfig = { slotId: number; threshold: number | null; resetBuffId: number; resetSourceConfigId?: number | null; resetBuffTarget?: ResetBuffTarget; onBuffAdd?: CounterAction; onBuffChange?: CounterAction; onBuffRemove?: CounterAction; freezeDurationMs?: number | null; onFreezeExpire?: CounterAction; altFreeze?: AltFreezeConfig | null; thresholdModifier?: AttrModifier | null; freezeDurationModifier?: AttrModifier | null; resetSkillKeys?: number[] | null; onResetSkill?: CounterAction;
-/**
- * When set, a slot whose count has reached `threshold` restarts at zero
- * on the next source increment instead of accumulating past it
- * (self-cycling counters, e.g. S4 4-pc Frost Infusion: the cast made
- * while the display reads 0 is the empowered one and restarts the
- * cycle). Consults the static `threshold` only; `threshold_modifier`
- * does not apply on this path.
- */
-wrapAtThreshold?: boolean; resetPassiveSkillIds?: number[] | null; onPassiveSkill?: CounterAction; dungeonStartFreezeMs?: number | null }
+export type EffectSlotConfig = { slotId: number; threshold: number | null; resetBuffId: number; resetSourceConfigId?: number | null; resetBuffTarget?: ResetBuffTarget; onBuffAdd?: CounterAction; onBuffChange?: CounterAction; onBuffRemove?: CounterAction; freezeDurationMs?: number | null; onFreezeExpire?: CounterAction; altFreeze?: AltFreezeConfig | null; thresholdModifier?: AttrModifier | null; freezeDurationModifier?: AttrModifier | null; resetSkillKeys?: number[] | null; onResetSkill?: CounterAction; wrapAtThreshold?: boolean; resetPassiveSkillIds?: number[] | null; onPassiveSkill?: CounterAction; dungeonStartFreezeMs?: number | null }
 export type EncounterBuffGraceData = { offsetMs: number; creditedMs: number }
 export type EncounterBuffLaneData = { entityId: string; baseId: number;
 /**
