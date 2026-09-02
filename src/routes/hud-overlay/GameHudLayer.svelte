@@ -1,4 +1,5 @@
 <script lang="ts">
+  import BuffCoverageGroup from "../game-overlay/BuffCoverageGroup.svelte";
   import CustomPanelGroup from "../game-overlay/CustomPanelGroup.svelte";
   import GroupedBuffDisplay from "../game-overlay/GroupedBuffDisplay.svelte";
   import IndividualBuffDisplay from "../game-overlay/IndividualBuffDisplay.svelte";
@@ -41,6 +42,9 @@
   {/if}
   {#if visibility.showShieldDetailGroup}
     <ShieldDetailGroup />
+  {/if}
+  {#if visibility.showBuffCoverageGroup}
+    <BuffCoverageGroup />
   {/if}
   <TextBuffPanel />
   {#if displayMode === "grouped"}

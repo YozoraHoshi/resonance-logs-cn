@@ -825,6 +825,17 @@ mod tests {
                 ended: false,
             },
         ));
+        projection.apply(&envelope(
+            3,
+            10_003,
+            DomainEvent::PassiveSkillObserved {
+                entity: LOCAL,
+                passive_instance_id: 901,
+                skill_id: 1434,
+                target_position: None,
+                ended: false,
+            },
+        ));
 
         let snapshot = projection
             .take_payload()

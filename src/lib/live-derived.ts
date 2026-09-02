@@ -32,6 +32,7 @@ function statsByMetric(entity: RawEntityData, metric: Metric): RawCombatStats {
 type PlayerRowsSource = {
   entities: RawEntityData[];
   elapsedMs: IpcDecimal;
+  damageElapsedMs: IpcDecimal;
   activeCombatTimeMs: IpcDecimal;
   totalDmg: IpcDecimal;
   totalHeal: IpcDecimal;
@@ -44,6 +45,8 @@ export function computePlayerRowsFromEntities(
   forbiddenIds?: Set<number>,
 ): PlayerRow[] {
   const elapsedMs = ipcBigInt(source.elapsedMs);
+  const rateElapsedMs =
+    metric === "dps" ? ipcBigInt(source.damageElapsedMs) : elapsedMs;
   const activeCombatTimeMs = ipcBigInt(source.activeCombatTimeMs);
   const effectiveActiveCombatMs =
     elapsedMs > 0n && activeCombatTimeMs > 0n
@@ -88,13 +91,13 @@ export function computePlayerRowsFromEntities(
         abilityScore: entity.abilityScore,
         seasonStrength: entity.seasonStrength ?? 0,
         totalDmg: ipcNumber(total),
-        dps: ipcRatio(total, elapsedMs, 1_000),
+        dps: ipcRatio(total, rateElapsedMs, 1_000),
         tdps:
           metric === "dps"
             ? ipcRatio(total, effectiveActiveCombatMs, 1_000)
             : 0,
         activeTimeMs: metric === "dps" ? ipcNumber(effectiveActiveCombatMs) : 0,
-        bossDps: metric === "dps" ? ipcRatio(bossDmg, elapsedMs, 1_000) : 0,
+        bossDps: metric === "dps" ? ipcRatio(bossDmg, rateElapsedMs, 1_000) : 0,
         dmgPct: percent(total, totalMetric),
         critRate: rate(stats.critHits, hits),
         critDmgRate: percent(stats.critTotal, total),
@@ -104,7 +107,7 @@ export function computePlayerRowsFromEntities(
         luckyBlockRate:
           metric === "tanked" ? rate(stats.luckyBlockHits, hits) : 0,
         hits: ipcNumber(hits),
-        hitsPerMinute: ipcRatio(hits, elapsedMs, 60_000),
+        hitsPerMinute: ipcRatio(hits, rateElapsedMs, 60_000),
         bossDmg: ipcNumber(bossDmg),
         bossDmgPct: metric === "dps" ? percent(bossDmg, bossTotal) : 0,
         effectiveTotal: ipcNumber(effectiveTotal),
@@ -128,6 +131,7 @@ export function computePlayerRows(
     {
       entities: data.entities,
       elapsedMs: data.elapsedMs,
+      damageElapsedMs: data.damageElapsedMs,
       activeCombatTimeMs: data.activeCombatTimeMs,
       totalDmg: data.totalDmg,
       totalHeal: data.totalHeal,

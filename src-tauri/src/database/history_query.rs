@@ -12,18 +12,20 @@ use crate::live::projections::combat::accumulator::{
     CombatantStats,
 };
 use crate::live::projections::combat::stats::class::{
-    get_class_id_from_spec, get_class_spec, ClassSpec,
+    ClassSpec, get_class_id_from_spec, get_class_spec,
 };
 use crate::live::projections::combat::stats::{CombatStats, Skill, SkillTargetStats};
 
 use super::commands::EncounterSummaryDto;
+use crate::live::active_window::{ActiveWindowAdvance, BuffCoverageTracker, active_window_advance};
+
 use super::event_journal::{
-    load_all_chunks, load_chunks_for_range, load_encounter_descriptor, load_projection,
     EncounterHistoryDescriptor, EventJournalError, StoredHistoryChunk, StoredProjection,
+    load_chunks_for_range, load_encounter_descriptor, load_projection,
 };
 use super::history_codec::{
-    decode_history_chunk, HistoryCastKind, HistoryChunkDocument, HistoryCodecError,
-    HistoryEntityContext, HistoryEnvelope, HistoryEvent, HistoryMetric,
+    HistoryBuff, HistoryBuffEdge, HistoryCastKind, HistoryChunkDocument, HistoryCodecError,
+    HistoryEntityContext, HistoryEnvelope, HistoryEvent, HistoryMetric, decode_history_chunk,
 };
 
 const KNOWN_QUALITY_FLAGS: i32 = (1 << 3) - 1;
@@ -143,24 +145,16 @@ pub struct EncounterEntityData {
     pub deaths: Vec<EncounterDeathData>,
 }
 
+/// Per-entity damage hit stream: columnar (offset_ms, amount) pairs ordered
+/// by time. Recomputed from raw chunks at query time; never persisted.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct EncounterChartPointData {
-    pub offset_ms: u64,
-    pub damage: String,
-    pub healing: String,
-    pub damage_taken: String,
-}
-
-/// Sparse per-entity bucket series: one row per (entity, metric), holding only
-/// the buckets with a non-zero total. Recomputed from raw chunks at query time.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct EncounterChartSeriesData {
+pub struct EncounterDamageHitsData {
     pub entity_id: String,
-    pub metric: HistoryMetric,
     pub offsets_ms: Vec<u64>,
-    pub totals: Vec<String>,
+    /// Single-hit amounts saturate at u64::MAX (u128 headroom only matters
+    /// for accumulated totals, not individual hits).
+    pub amounts: Vec<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -176,6 +170,50 @@ pub struct EncounterMarkerData {
     pub remodel_level: Option<i64>,
 }
 
+/// One contiguous wall-clock presence interval of a buff on an entity,
+/// as segment offsets clamped to the queried range.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct EncounterBuffSpanData {
+    pub start_ms: u64,
+    pub end_ms_exclusive: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct EncounterBuffLaneData {
+    pub entity_id: String,
+    pub base_id: i32,
+    /// Buff-on time intersected with the active-combat windows (the
+    /// "true dps" denominator rule). Compare against `active_window_ms`.
+    pub covered_active_ms: u64,
+    pub spans: Vec<EncounterBuffSpanData>,
+    /// Grace credits sampled while this buff was present. Sequence ordering
+    /// is resolved by the backend before exposing these compact points.
+    #[serde(default)]
+    pub grace_points: Vec<EncounterBuffGraceData>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct EncounterBuffGraceData {
+    pub offset_ms: u64,
+    pub credited_ms: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct EncounterBuffTimelineData {
+    pub active_window_ms: u64,
+    /// Non-grace active intervals on the encounter offset axis.
+    #[serde(default)]
+    pub active_spans: Vec<EncounterBuffSpanData>,
+    /// First-hit / post-inactivity credits for the denominator.
+    #[serde(default)]
+    pub grace_points: Vec<EncounterBuffGraceData>,
+    pub lanes: Vec<EncounterBuffLaneData>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct EncounterDetailData {
@@ -185,14 +223,16 @@ pub struct EncounterDetailData {
     pub quality_flags: Vec<HistoryQualityFlag>,
     pub start_ms: u64,
     pub end_ms_exclusive: u64,
-    pub bucket_ms: u64,
     pub totals: EncounterTotalsData,
     pub entities: Vec<EncounterEntityData>,
-    pub chart_points: Vec<EncounterChartPointData>,
     /// Always recomputed from chunks on load; stored snapshots leave it empty.
     #[serde(default)]
-    pub series: Vec<EncounterChartSeriesData>,
+    pub damage_hits: Vec<EncounterDamageHitsData>,
     pub markers: Vec<EncounterMarkerData>,
+    /// Always recomputed from chunks on load; `None` for encounters recorded
+    /// before buff timeline persistence existed.
+    #[serde(default)]
+    pub buff_timeline: Option<EncounterBuffTimelineData>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -202,12 +242,12 @@ pub struct EncounterRangeData {
     pub quality_flags: Vec<HistoryQualityFlag>,
     pub start_ms: u64,
     pub end_ms_exclusive: u64,
-    pub bucket_ms: u64,
     pub totals: EncounterTotalsData,
     pub entities: Vec<EncounterEntityData>,
-    pub chart_points: Vec<EncounterChartPointData>,
+    /// Populated only on the detail path (which shares the range reducer
+    /// drain); range recounts leave it empty since they render no curves.
     #[serde(default)]
-    pub series: Vec<EncounterChartSeriesData>,
+    pub damage_hits: Vec<EncounterDamageHitsData>,
     pub markers: Vec<EncounterMarkerData>,
 }
 
@@ -243,19 +283,10 @@ pub struct EncounterRangeQuery {
     chunks: Vec<StoredHistoryChunk>,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-struct ChartProjection {
-    damage: u128,
-    healing: u128,
-    taken: u128,
-}
-
 #[derive(Debug, thiserror::Error)]
 pub enum HistoryProjectionError {
     #[error("range start {start_ms} is after end {end_ms}")]
     ReversedRange { start_ms: u64, end_ms: u64 },
-    #[error("chart bucket width must be greater than zero")]
-    ZeroBucketWidth,
     #[error("projection serialization failed: {0}")]
     Encode(String),
     #[error("projection decoding failed: {0}")]
@@ -266,50 +297,63 @@ pub enum HistoryProjectionError {
 #[derive(Debug)]
 pub struct HistoryProjectionReducer {
     range: Range<u64>,
-    bucket_ms: u64,
     collect_dynamic_series: bool,
+    collect_damage_hits: bool,
     accept_context_events: bool,
     last_sequence: u64,
     quality: BTreeSet<HistoryQualityFlag>,
     contexts: BTreeMap<i64, HistoryEntityContext>,
     combat: CombatAccumulator,
     deaths: BTreeMap<i64, Vec<EncounterDeathData>>,
-    chart: BTreeMap<u64, ChartProjection>,
-    /// Per-actor mirror of `chart`: actor entity id -> bucket offset -> totals.
-    entity_chart: BTreeMap<i64, BTreeMap<u64, ChartProjection>>,
+    /// Per-actor damage hit stream: actor entity id -> (offset_ms, amount)
+    /// pairs in replay order. Drained into the detail DTO; never persisted.
+    entity_damage_hits: BTreeMap<i64, Vec<(u64, u64)>>,
     markers: Vec<EncounterMarkerData>,
+    /// In-range player damage hits as (offset, sequence); the active-window
+    /// clock for buff coverage replays exactly this stream.
+    player_damage_hits: Vec<(u64, u64)>,
+    /// Buff presence edges as (offset, sequence, record). Edges before the
+    /// range are kept for state seeding and clamped at merge time.
+    buff_edges: Vec<(u64, u64, HistoryBuff)>,
 }
 
 impl HistoryProjectionReducer {
-    pub fn new(range: Range<u64>, bucket_ms: u64) -> Result<Self, HistoryProjectionError> {
+    pub fn new(range: Range<u64>) -> Result<Self, HistoryProjectionError> {
         if range.start > range.end {
             return Err(HistoryProjectionError::ReversedRange {
                 start_ms: range.start,
                 end_ms: range.end,
             });
         }
-        if bucket_ms == 0 {
-            return Err(HistoryProjectionError::ZeroBucketWidth);
-        }
         Ok(Self {
             range,
-            bucket_ms,
             collect_dynamic_series: true,
+            collect_damage_hits: true,
             accept_context_events: true,
             last_sequence: 0,
             quality: BTreeSet::new(),
             contexts: BTreeMap::new(),
             combat: CombatAccumulator::default(),
             deaths: BTreeMap::new(),
-            chart: BTreeMap::new(),
-            entity_chart: BTreeMap::new(),
+            entity_damage_hits: BTreeMap::new(),
             markers: Vec::new(),
+            player_damage_hits: Vec::new(),
+            buff_edges: Vec::new(),
         })
     }
 
     #[must_use]
     pub fn without_dynamic_series(mut self) -> Self {
         self.collect_dynamic_series = false;
+        self.collect_damage_hits = false;
+        self
+    }
+
+    /// Toggles per-entity damage hit collection. Range recounts turn this off:
+    /// they render no curves, so collecting the stream would be dead weight.
+    #[must_use]
+    pub fn with_damage_hits(mut self, collect: bool) -> Self {
+        self.collect_damage_hits = collect;
         self
     }
 
@@ -347,6 +391,15 @@ impl HistoryProjectionReducer {
             }
             return;
         }
+        if let HistoryEvent::Buff(record) = &envelope.event {
+            // Pre-range edges are kept to seed presence state; edges past the
+            // range end can never influence it.
+            if self.collect_dynamic_series && envelope.offset_ms < self.range.end {
+                self.buff_edges
+                    .push((envelope.offset_ms, envelope.sequence, *record));
+            }
+            return;
+        }
         if envelope.offset_ms < self.range.start || envelope.offset_ms >= self.range.end {
             return;
         }
@@ -357,19 +410,22 @@ impl HistoryProjectionReducer {
                 if self.combat.apply(&fact) {
                     self.quality.insert(HistoryQualityFlag::SaturatedAmount);
                 }
-                if self.collect_dynamic_series {
-                    let bucket_offset = self.range.start
-                        + ((envelope.offset_ms - self.range.start) / self.bucket_ms)
-                            * self.bucket_ms;
-                    let bucket = self.chart.entry(bucket_offset).or_default();
-                    add_chart_amount(bucket, fact.metric, fact.amount, &mut self.quality);
-                    let entity_bucket = self
-                        .entity_chart
-                        .entry(fact.actor_entity_id)
-                        .or_default()
-                        .entry(bucket_offset)
-                        .or_default();
-                    add_chart_amount(entity_bucket, fact.metric, fact.amount, &mut self.quality);
+                if self.collect_dynamic_series && fact.metric == CombatMetric::Damage {
+                    self.player_damage_hits
+                        .push((envelope.offset_ms, envelope.sequence));
+                    if self.collect_damage_hits {
+                        let amount = match u64::try_from(fact.amount) {
+                            Ok(value) => value,
+                            Err(_) => {
+                                self.quality.insert(HistoryQualityFlag::SaturatedAmount);
+                                u64::MAX
+                            }
+                        };
+                        self.entity_damage_hits
+                            .entry(fact.actor_entity_id)
+                            .or_default()
+                            .push((envelope.offset_ms, amount));
+                    }
                 }
             }
             HistoryEvent::SkillCast(cast) if self.collect_dynamic_series => {
@@ -394,7 +450,7 @@ impl HistoryProjectionReducer {
                         replay: death.replay.as_ref().map(DeathRecord::from),
                     });
             }
-            HistoryEvent::EntityContext(_) => {}
+            HistoryEvent::EntityContext(_) | HistoryEvent::Buff(_) => {}
         }
     }
 
@@ -418,10 +474,9 @@ impl HistoryProjectionReducer {
         let mut detail = self.build_detail(encounter_id, summary, combat);
         detail.start_ms = 0;
         detail.end_ms_exclusive = 0;
-        detail.bucket_ms = 0;
-        detail.chart_points.clear();
-        detail.series.clear();
+        detail.damage_hits.clear();
         detail.markers.clear();
+        detail.buff_timeline = None;
         DetailProjectionSnapshot {
             last_sequence: self.last_sequence,
             contexts: self.contexts,
@@ -429,21 +484,29 @@ impl HistoryProjectionReducer {
         }
     }
 
-    fn finish_range(mut self, encounter_id: i32) -> EncounterRangeData {
+    #[cfg(test)]
+    fn finish_range(self, encounter_id: i32) -> EncounterRangeData {
+        self.finish_range_with_buff(encounter_id).0
+    }
+
+    fn finish_range_with_buff(
+        mut self,
+        encounter_id: i32,
+    ) -> (EncounterRangeData, Option<EncounterBuffTimelineData>) {
         let combat = std::mem::take(&mut self.combat);
         let detail = self.build_detail(encounter_id, empty_summary(encounter_id), &combat);
-        EncounterRangeData {
+        let buff_timeline = detail.buff_timeline;
+        let range = EncounterRangeData {
             encounter_id: detail.encounter_id,
             quality_flags: detail.quality_flags,
             start_ms: detail.start_ms,
             end_ms_exclusive: detail.end_ms_exclusive,
-            bucket_ms: detail.bucket_ms,
             totals: detail.totals,
             entities: detail.entities,
-            chart_points: detail.chart_points,
-            series: detail.series,
+            damage_hits: detail.damage_hits,
             markers: detail.markers,
-        }
+        };
+        (range, buff_timeline)
     }
 
     fn build_detail(
@@ -458,6 +521,11 @@ impl HistoryProjectionReducer {
 
         let mut entity_ids = combat.entities.keys().copied().collect::<BTreeSet<_>>();
         entity_ids.extend(self.deaths.keys().copied());
+        entity_ids.extend(
+            self.buff_edges
+                .iter()
+                .map(|(_, _, record)| record.entity_id),
+        );
         for entity_id in &entity_ids {
             if !self.contexts.contains_key(entity_id) {
                 self.quality
@@ -552,21 +620,32 @@ impl HistoryProjectionReducer {
                 }
             })
             .collect();
-        let chart_points = std::mem::take(&mut self.chart)
+        let damage_hits = std::mem::take(&mut self.entity_damage_hits)
             .into_iter()
-            .map(|(offset_ms, point)| EncounterChartPointData {
-                offset_ms,
-                damage: point.damage.to_string(),
-                healing: point.healing.to_string(),
-                damage_taken: point.taken.to_string(),
+            .filter(|(_, hits)| !hits.is_empty())
+            .map(|(entity_id, mut hits)| {
+                // Chunks replay in time order, so hits arrive sorted; sort
+                // defensively since the DTO contract requires ascending
+                // offsets.
+                hits.sort_by_key(|hit| hit.0);
+                EncounterDamageHitsData {
+                    entity_id: entity_id.to_string(),
+                    offsets_ms: hits.iter().map(|hit| hit.0).collect(),
+                    amounts: hits.into_iter().map(|hit| hit.1).collect(),
+                }
             })
             .collect();
-        let series = chart_series_from_entity_chart(std::mem::take(&mut self.entity_chart));
         self.markers.sort_unstable_by(|left, right| {
             left.offset_ms
                 .cmp(&right.offset_ms)
                 .then_with(|| left.sequence.cmp(&right.sequence))
         });
+
+        let buff_timeline = build_buff_timeline(
+            &self.range,
+            std::mem::take(&mut self.player_damage_hits),
+            std::mem::take(&mut self.buff_edges),
+        );
 
         EncounterDetailData {
             encounter_id,
@@ -575,7 +654,6 @@ impl HistoryProjectionReducer {
             quality_flags: self.quality.iter().copied().collect(),
             start_ms: self.range.start,
             end_ms_exclusive: self.range.end,
-            bucket_ms: self.bucket_ms,
             totals: EncounterTotalsData {
                 damage: combat.totals.damage.to_string(),
                 boss_damage: combat.totals.boss_damage.to_string(),
@@ -584,11 +662,230 @@ impl HistoryProjectionReducer {
                 damage_taken: combat.totals.damage_taken.to_string(),
             },
             entities,
-            chart_points,
-            series,
+            damage_hits,
             markers: std::mem::take(&mut self.markers),
+            buff_timeline,
         }
     }
+}
+
+/// Per-key wall-clock span state used while replaying merged buff edges.
+#[derive(Debug, Default)]
+struct BuffSpanState {
+    on_since_ms: Option<u64>,
+    expires_hint_ms: Option<u64>,
+    spans: Vec<EncounterBuffSpanData>,
+}
+
+impl BuffSpanState {
+    /// Closes an expired presence at its hint before applying time `at`.
+    fn settle(&mut self, at: u64) {
+        let Some(on_since) = self.on_since_ms else {
+            return;
+        };
+        let Some(hint) = self.expires_hint_ms else {
+            return;
+        };
+        if hint <= at {
+            self.push_span(on_since, hint);
+            self.on_since_ms = None;
+            self.expires_hint_ms = None;
+        }
+    }
+
+    fn push_span(&mut self, start: u64, end: u64) {
+        if end > start {
+            self.spans.push(EncounterBuffSpanData {
+                start_ms: start,
+                end_ms_exclusive: end,
+            });
+        }
+    }
+
+    fn set_on(&mut self, at: u64, hint: Option<u64>) {
+        self.settle(at);
+        if self.on_since_ms.is_none() {
+            self.on_since_ms = Some(at);
+        }
+        self.expires_hint_ms = hint;
+    }
+
+    fn set_off(&mut self, at: u64) {
+        self.settle(at);
+        if let Some(on_since) = self.on_since_ms.take() {
+            self.push_span(on_since, at);
+        }
+        self.expires_hint_ms = None;
+    }
+
+    fn finish(mut self, range_end: u64) -> Vec<EncounterBuffSpanData> {
+        if let Some(on_since) = self.on_since_ms.take() {
+            let end = self
+                .expires_hint_ms
+                .map_or(range_end, |hint| hint.min(range_end));
+            self.push_span(on_since, end);
+        }
+        self.spans
+    }
+}
+
+/// Replays merged (by sequence) buff edges and player damage hits through the
+/// shared coverage tracker, and derives wall-clock presence spans in the same
+/// pass. Returns `None` when the encounter carries no buff edges at all —
+/// the frontend's "recorded before buff persistence" degradation signal.
+fn build_buff_timeline(
+    range: &Range<u64>,
+    hits: Vec<(u64, u64)>,
+    edges: Vec<(u64, u64, HistoryBuff)>,
+) -> Option<EncounterBuffTimelineData> {
+    if edges.is_empty() {
+        return None;
+    }
+
+    enum ReplayItem {
+        Hit {
+            offset_ms: u64,
+            sequence: u64,
+        },
+        Edge {
+            offset_ms: u64,
+            sequence: u64,
+            record: HistoryBuff,
+        },
+    }
+
+    impl ReplayItem {
+        const fn sequence(&self) -> u64 {
+            match self {
+                Self::Hit { sequence, .. } | Self::Edge { sequence, .. } => *sequence,
+            }
+        }
+    }
+
+    let mut replay = Vec::with_capacity(hits.len() + edges.len());
+    replay.extend(
+        hits.into_iter()
+            .map(|(offset_ms, sequence)| ReplayItem::Hit {
+                offset_ms,
+                sequence,
+            }),
+    );
+    replay.extend(
+        edges
+            .into_iter()
+            .map(|(offset_ms, sequence, record)| ReplayItem::Edge {
+                offset_ms,
+                sequence,
+                record,
+            }),
+    );
+    replay.sort_unstable_by_key(ReplayItem::sequence);
+
+    let mut tracker = BuffCoverageTracker::default();
+    let mut span_states: BTreeMap<(i64, i32), BuffSpanState> = BTreeMap::new();
+    let mut lane_grace = BTreeMap::<(i64, i32), Vec<EncounterBuffGraceData>>::new();
+    let mut active_spans = Vec::<EncounterBuffSpanData>::new();
+    let mut grace_points = Vec::<EncounterBuffGraceData>::new();
+    let mut last_hit_offset_ms = None;
+    let mut active_window_ms = 0u128;
+
+    for item in replay {
+        match item {
+            ReplayItem::Edge {
+                offset_ms, record, ..
+            } => {
+                // Pre-range edges seed state at the range start without adding time.
+                let at = offset_ms.max(range.start);
+                let key = (record.entity_id, record.base_id);
+                let state = span_states.entry(key).or_default();
+                let hint = record.expires_offset_ms;
+                match record.edge {
+                    HistoryBuffEdge::Baseline | HistoryBuffEdge::Applied => {
+                        tracker.set_on(key, at, hint);
+                        state.set_on(at, hint);
+                    }
+                    HistoryBuffEdge::Refreshed => {
+                        tracker.refresh_hint(key, at, hint);
+                        state.set_on(at, hint);
+                    }
+                    HistoryBuffEdge::LayerChanged => {}
+                    HistoryBuffEdge::Removed => {
+                        tracker.set_off(key, at);
+                        state.set_off(at);
+                    }
+                }
+            }
+            ReplayItem::Hit { offset_ms, .. } => {
+                let advance = active_window_advance(last_hit_offset_ms, offset_ms);
+                active_window_ms =
+                    active_window_ms.saturating_add(u128::from(advance.credited_ms()));
+                tracker.apply_advance(advance);
+                match advance {
+                    ActiveWindowAdvance::FullGap {
+                        start_offset_ms,
+                        end_offset_ms,
+                    } => push_merged_span(
+                        &mut active_spans,
+                        start_offset_ms.max(range.start),
+                        end_offset_ms.min(range.end),
+                    ),
+                    ActiveWindowAdvance::Grace {
+                        at_offset_ms,
+                        credited_ms,
+                    } => {
+                        let point = EncounterBuffGraceData {
+                            offset_ms: at_offset_ms,
+                            credited_ms,
+                        };
+                        grace_points.push(point);
+                        for (key, state) in &mut span_states {
+                            state.settle(at_offset_ms);
+                            if state.on_since_ms.is_some() {
+                                lane_grace.entry(*key).or_default().push(point);
+                            }
+                        }
+                    }
+                }
+                last_hit_offset_ms = Some(offset_ms);
+            }
+        }
+    }
+
+    let effective_active_ms =
+        active_window_ms.min(u128::from(range.end.saturating_sub(range.start)));
+    let lanes = span_states
+        .into_iter()
+        .map(|(key, state)| EncounterBuffLaneData {
+            entity_id: key.0.to_string(),
+            base_id: key.1,
+            covered_active_ms: u64::try_from(tracker.coverage_ms(key).min(effective_active_ms))
+                .unwrap_or(u64::MAX),
+            spans: state.finish(range.end),
+            grace_points: lane_grace.remove(&key).unwrap_or_default(),
+        })
+        .collect();
+    Some(EncounterBuffTimelineData {
+        active_window_ms: u64::try_from(effective_active_ms).unwrap_or(u64::MAX),
+        active_spans,
+        grace_points,
+        lanes,
+    })
+}
+
+fn push_merged_span(spans: &mut Vec<EncounterBuffSpanData>, start: u64, end: u64) {
+    if end <= start {
+        return;
+    }
+    if let Some(last) = spans.last_mut()
+        && start <= last.end_ms_exclusive
+    {
+        last.end_ms_exclusive = last.end_ms_exclusive.max(end);
+        return;
+    }
+    spans.push(EncounterBuffSpanData {
+        start_ms: start,
+        end_ms_exclusive: end,
+    });
 }
 
 fn history_skills(stats: &CombatantStats) -> Vec<EncounterSkillData> {
@@ -802,17 +1099,12 @@ pub fn load_encounter_detail_query(
 ) -> Result<EncounterDetailQuery, HistoryQueryError> {
     let descriptor = load_encounter_descriptor(conn, summary.id)?;
     let projection = load_projection(conn, summary.id)?;
+    let timeline_end_ms_exclusive = encounter_duration_ms(&summary);
     let chunks = if projection.is_some() {
-        load_all_chunks(conn, summary.id)?
+        load_chunks_for_range(conn, summary.id, 0, timeline_end_ms_exclusive)?
     } else {
         Vec::new()
     };
-    let timeline_end_ms_exclusive = chunks
-        .iter()
-        .map(|chunk| chunk.end_offset_ms_exclusive)
-        .max()
-        .unwrap_or_default()
-        .max(encounter_duration_ms(&summary));
     Ok(EncounterDetailQuery {
         summary,
         descriptor,
@@ -825,7 +1117,6 @@ pub fn load_encounter_detail_query(
 /// Decode and project a detail query after releasing the SQLite actor.
 pub fn project_encounter_detail(
     query: EncounterDetailQuery,
-    target_points: u32,
 ) -> Result<EncounterDetailData, HistoryQueryError> {
     let EncounterDetailQuery {
         summary,
@@ -837,45 +1128,18 @@ pub fn project_encounter_detail(
     let Some(stored) = projection else {
         return Ok(unavailable_detail(summary, descriptor.quality_flags));
     };
-    let mut snapshot = decode_detail_projection(&stored.data)?;
+    let snapshot = decode_detail_projection(&stored.data)?;
     let quality_flags = validate_projection_metadata(&descriptor, &stored, &snapshot)?;
-    let start_ms = 0;
-    let end_ms_exclusive = timeline_end_ms_exclusive;
-    let bucket_ms = bucket_width_for_points(start_ms, end_ms_exclusive, target_points)?;
-    let chart = replay_chunks(
+    let (range, buff_timeline) = replay_chunks(
         summary.id,
         quality_flags,
         &snapshot,
         &chunks,
-        start_ms,
-        end_ms_exclusive,
-        bucket_ms,
+        0,
+        timeline_end_ms_exclusive,
+        true,
     )?;
-    snapshot.detail.summary = summary;
-    snapshot.detail.detail_available = true;
-    snapshot.detail.start_ms = start_ms;
-    snapshot.detail.end_ms_exclusive = end_ms_exclusive;
-    snapshot.detail.bucket_ms = bucket_ms;
-    snapshot.detail.chart_points = chart.chart_points;
-    snapshot.detail.series = chart.series;
-    snapshot.detail.markers = chart.markers;
-    for entity in &mut snapshot.detail.entities {
-        // Projections stored before `class_spec_name` existed decode it as
-        // `None`; resolve it from the persisted spec discriminant instead.
-        if entity.class_spec_name.is_none() {
-            entity.class_spec_name = entity
-                .class_spec
-                .map(ClassSpec::from_i32)
-                .filter(|spec| *spec != ClassSpec::Unknown)
-                .map(get_class_spec);
-        }
-    }
-    merge_quality_flags(
-        &mut snapshot.detail.quality_flags,
-        quality_flags_from_bits(quality_flags),
-    );
-    merge_quality_flags(&mut snapshot.detail.quality_flags, chart.quality_flags);
-    Ok(snapshot.detail)
+    Ok(detail_from_range(summary, range, buff_timeline))
 }
 
 /// Replay only chunks intersecting the requested half-open range.
@@ -906,7 +1170,6 @@ pub fn project_encounter_range(
     let snapshot = decode_detail_projection(&query.projection.data)?;
     let quality_flags =
         validate_projection_metadata(&query.descriptor, &query.projection, &snapshot)?;
-    let bucket_ms = end_ms_exclusive.saturating_sub(start_ms).max(1);
     replay_chunks(
         query.encounter_id,
         quality_flags,
@@ -914,8 +1177,9 @@ pub fn project_encounter_range(
         &query.chunks,
         start_ms,
         end_ms_exclusive,
-        bucket_ms,
+        false,
     )
+    .map(|(range, _)| range)
 }
 
 fn replay_chunks(
@@ -925,10 +1189,11 @@ fn replay_chunks(
     chunks: &[StoredHistoryChunk],
     start_ms: u64,
     end_ms_exclusive: u64,
-    bucket_ms: u64,
-) -> Result<EncounterRangeData, HistoryQueryError> {
-    let mut reducer = HistoryProjectionReducer::new(start_ms..end_ms_exclusive, bucket_ms)?
-        .with_seeded_contexts_only();
+    collect_damage_hits: bool,
+) -> Result<(EncounterRangeData, Option<EncounterBuffTimelineData>), HistoryQueryError> {
+    let mut reducer = HistoryProjectionReducer::new(start_ms..end_ms_exclusive)?
+        .with_seeded_contexts_only()
+        .with_damage_hits(collect_damage_hits);
     reducer.seed_contexts(snapshot.contexts.values().cloned());
     reducer.add_quality_flags(quality_flags_from_bits(quality_flags));
 
@@ -937,7 +1202,7 @@ fn replay_chunks(
         validate_chunk_metadata(chunk, &document)?;
         reducer.apply_document(&document);
     }
-    Ok(reducer.finish_range(encounter_id))
+    Ok(reducer.finish_range_with_buff(encounter_id))
 }
 
 fn validate_projection_metadata(
@@ -1011,8 +1276,6 @@ pub enum HistoryQueryError {
     ProjectionQualityMismatch { encounter_id: i32 },
     #[error("encounter {encounter_id} chunk metadata is inconsistent")]
     ChunkMetadataMismatch { encounter_id: i32 },
-    #[error("target points must be greater than zero")]
-    ZeroTargetPoints,
 }
 
 fn encounter_duration_ms(summary: &EncounterSummaryDto) -> u64 {
@@ -1026,19 +1289,6 @@ fn encounter_duration_ms(summary: &EncounterSummaryDto) -> u64 {
             .unwrap_or_default()
     };
     duration_ms.max(1)
-}
-
-fn bucket_width_for_points(
-    start_ms: u64,
-    end_ms_exclusive: u64,
-    target_points: u32,
-) -> Result<u64, HistoryQueryError> {
-    if target_points == 0 {
-        return Err(HistoryQueryError::ZeroTargetPoints);
-    }
-    let duration = end_ms_exclusive.saturating_sub(start_ms).max(1);
-    let points = u64::from(target_points);
-    Ok((duration / points + u64::from(duration % points != 0)).max(1))
 }
 
 pub fn quality_flags_to_bits(flags: &[HistoryQualityFlag]) -> i32 {
@@ -1073,78 +1323,31 @@ fn unavailable_detail(summary: EncounterSummaryDto, quality_flags: i32) -> Encou
         quality_flags: quality_flags_from_bits(quality_flags),
         start_ms: 0,
         end_ms_exclusive: 0,
-        bucket_ms: 0,
         totals: EncounterTotalsData::default(),
         entities: Vec::new(),
-        chart_points: Vec::new(),
-        series: Vec::new(),
+        damage_hits: Vec::new(),
         markers: Vec::new(),
+        buff_timeline: None,
     }
 }
 
-fn merge_quality_flags(
-    destination: &mut Vec<HistoryQualityFlag>,
-    additional: impl IntoIterator<Item = HistoryQualityFlag>,
-) {
-    let mut flags = destination.iter().copied().collect::<BTreeSet<_>>();
-    flags.extend(additional);
-    *destination = flags.into_iter().collect();
-}
-
-fn add_chart_amount(
-    bucket: &mut ChartProjection,
-    metric: CombatMetric,
-    amount: u128,
-    quality: &mut BTreeSet<HistoryQualityFlag>,
-) {
-    match metric {
-        CombatMetric::Damage => add_u128(&mut bucket.damage, amount, quality),
-        CombatMetric::Healing => add_u128(&mut bucket.healing, amount, quality),
-        CombatMetric::DamageTaken => add_u128(&mut bucket.taken, amount, quality),
-    }
-}
-
-/// Drain per-actor buckets into sparse (entity, metric) series rows.
-fn chart_series_from_entity_chart(
-    entity_chart: BTreeMap<i64, BTreeMap<u64, ChartProjection>>,
-) -> Vec<EncounterChartSeriesData> {
-    const SELECTORS: [(HistoryMetric, fn(&ChartProjection) -> u128); 3] = [
-        (HistoryMetric::Damage, |point| point.damage),
-        (HistoryMetric::Healing, |point| point.healing),
-        (HistoryMetric::DamageTaken, |point| point.taken),
-    ];
-    let mut series = Vec::new();
-    for (entity_id, buckets) in entity_chart {
-        let entity_id = entity_id.to_string();
-        for (metric, select) in SELECTORS {
-            let mut offsets_ms = Vec::new();
-            let mut totals = Vec::new();
-            for (offset, point) in &buckets {
-                let value = select(point);
-                if value > 0 {
-                    offsets_ms.push(*offset);
-                    totals.push(value.to_string());
-                }
-            }
-            if !offsets_ms.is_empty() {
-                series.push(EncounterChartSeriesData {
-                    entity_id: entity_id.clone(),
-                    metric,
-                    offsets_ms,
-                    totals,
-                });
-            }
-        }
-    }
-    series
-}
-
-fn add_u128(target: &mut u128, value: u128, quality: &mut BTreeSet<HistoryQualityFlag>) {
-    if let Some(total) = target.checked_add(value) {
-        *target = total;
-    } else {
-        *target = u128::MAX;
-        quality.insert(HistoryQualityFlag::SaturatedAmount);
+fn detail_from_range(
+    summary: EncounterSummaryDto,
+    range: EncounterRangeData,
+    buff_timeline: Option<EncounterBuffTimelineData>,
+) -> EncounterDetailData {
+    EncounterDetailData {
+        encounter_id: range.encounter_id,
+        summary,
+        detail_available: true,
+        quality_flags: range.quality_flags,
+        start_ms: range.start_ms,
+        end_ms_exclusive: range.end_ms_exclusive,
+        totals: range.totals,
+        entities: range.entities,
+        damage_hits: range.damage_hits,
+        markers: range.markers,
+        buff_timeline,
     }
 }
 
@@ -1173,7 +1376,7 @@ fn empty_summary(encounter_id: i32) -> EncounterSummaryDto {
 mod tests {
     use super::*;
     use crate::database::history_codec::{
-        encode_history_chunk, HistoryDeath, HistoryHit, HistorySkillCast, HistoryStream,
+        HistoryDeath, HistoryHit, HistorySkillCast, HistoryStream, encode_history_chunk,
     };
     use crate::live::projections::combat::accumulator::CombatHitFlags;
     use crate::live::projections::death::{
@@ -1206,6 +1409,113 @@ mod tests {
         }
     }
 
+    fn buff(
+        sequence: u64,
+        offset_ms: u64,
+        edge: HistoryBuffEdge,
+        expires_offset_ms: Option<u64>,
+    ) -> HistoryEnvelope {
+        HistoryEnvelope {
+            sequence,
+            offset_ms,
+            event: HistoryEvent::Buff(HistoryBuff {
+                entity_id: 1,
+                base_id: 500,
+                edge,
+                layer: 1,
+                expires_offset_ms,
+            }),
+        }
+    }
+
+    #[test]
+    fn buff_timeline_is_none_without_buff_events() {
+        let mut reducer = HistoryProjectionReducer::new(0..10_000).expect("reducer");
+        reducer.apply(&hit(1, 1_000, 10));
+        let detail = reducer.finish_detail(1, empty_summary(1));
+        // finish_detail_with_combat clears dynamic fields, so check the range path.
+        assert!(detail.detail.buff_timeline.is_none());
+
+        let mut reducer = HistoryProjectionReducer::new(0..10_000).expect("reducer");
+        reducer.apply(&hit(1, 1_000, 10));
+        assert!(reducer.finish_range_with_buff(1).1.is_none());
+    }
+
+    #[test]
+    fn buff_timeline_replay_matches_live_tracker() {
+        // Live side: shared tracker fed in event order.
+        let mut tracker = crate::live::active_window::BuffCoverageTracker::default();
+        let key = (1i64, 500i32);
+        let first = active_window_advance(None, 1_000);
+        tracker.apply_advance(first);
+        tracker.set_on(key, 1_500, Some(9_000));
+        let second = active_window_advance(Some(1_000), 2_500);
+        tracker.apply_advance(second);
+        tracker.set_off(key, 3_000);
+        let third = active_window_advance(Some(2_500), 4_000);
+        tracker.apply_advance(third);
+        let active_ms = first.credited_ms() + second.credited_ms() + third.credited_ms();
+
+        // History side: same facts through the reducer.
+        let mut reducer = HistoryProjectionReducer::new(0..20_000).expect("reducer");
+        reducer.apply(&hit(1, 1_000, 10));
+        reducer.apply(&buff(2, 1_500, HistoryBuffEdge::Applied, Some(9_000)));
+        reducer.apply(&hit(3, 2_500, 10));
+        reducer.apply(&buff(4, 3_000, HistoryBuffEdge::Removed, None));
+        reducer.apply(&hit(5, 4_000, 10));
+        let timeline = reducer.finish_range_with_buff(1).1.expect("buff timeline");
+
+        assert_eq!(timeline.active_window_ms, active_ms);
+        assert_eq!(timeline.lanes.len(), 1);
+        assert_eq!(
+            u128::from(timeline.lanes[0].covered_active_ms),
+            tracker.coverage_ms(key)
+        );
+        assert_eq!(
+            timeline.lanes[0].spans,
+            vec![EncounterBuffSpanData {
+                start_ms: 1_500,
+                end_ms_exclusive: 3_000
+            }]
+        );
+    }
+
+    #[test]
+    fn pre_range_edges_seed_state_clamped_to_range_start() {
+        let mut reducer = HistoryProjectionReducer::new(5_000..10_000).expect("reducer");
+        // Applied before the range with a hint inside it.
+        reducer.apply(&buff(1, 2_000, HistoryBuffEdge::Applied, Some(8_000)));
+        // First in-range damage hit earns the grace slice only.
+        reducer.apply(&hit(2, 6_000, 10));
+        reducer.apply(&hit(3, 7_000, 10));
+        let timeline = reducer.finish_range_with_buff(1).1.expect("buff timeline");
+        // active = 500 (grace) + 1000; buff covers all of it (expires at 8000).
+        assert_eq!(timeline.active_window_ms, 1_500);
+        assert_eq!(timeline.lanes[0].covered_active_ms, 1_500);
+        assert_eq!(
+            timeline.lanes[0].spans,
+            vec![EncounterBuffSpanData {
+                start_ms: 5_000,
+                end_ms_exclusive: 8_000
+            }]
+        );
+    }
+
+    #[test]
+    fn open_presence_is_closed_at_range_end() {
+        let mut reducer = HistoryProjectionReducer::new(0..6_000).expect("reducer");
+        reducer.apply(&buff(1, 1_000, HistoryBuffEdge::Applied, None));
+        reducer.apply(&hit(2, 2_000, 10));
+        let timeline = reducer.finish_range_with_buff(1).1.expect("buff timeline");
+        assert_eq!(
+            timeline.lanes[0].spans,
+            vec![EncounterBuffSpanData {
+                start_ms: 1_000,
+                end_ms_exclusive: 6_000
+            }]
+        );
+    }
+
     fn death(
         sequence: u64,
         offset_ms: u64,
@@ -1233,6 +1543,8 @@ mod tests {
                 attacker_monster_type_id: Some(9_001),
                 skill_key: 17_140_101,
                 value: u128::MAX,
+                property: Some(3),
+                damage_mode: Some(2),
             }],
             victim_buffs: vec![DeathReplayBuff {
                 base_id: 77,
@@ -1299,33 +1611,14 @@ mod tests {
         }
     }
 
-    fn stored_combat_chunk(
+    fn stored_chunk(
         encounter_id: i32,
+        stream_kind: HistoryStream,
         chunk_index: u64,
         events: Vec<HistoryEnvelope>,
     ) -> StoredHistoryChunk {
-        let chunk = encode_history_chunk(encounter_id, HistoryStream::Combat, chunk_index, events)
-            .expect("encode combat chunk");
-        StoredHistoryChunk {
-            encounter_id: chunk.encounter_id,
-            stream_kind: chunk.stream_kind,
-            chunk_index: chunk.chunk_index,
-            first_sequence: chunk.first_sequence,
-            last_sequence: chunk.last_sequence,
-            start_offset_ms: chunk.start_offset_ms,
-            end_offset_ms_exclusive: chunk.end_offset_ms_exclusive,
-            event_count: chunk.event_count,
-            data: chunk.data,
-        }
-    }
-
-    fn stored_context_chunk(
-        encounter_id: i32,
-        chunk_index: u64,
-        events: Vec<HistoryEnvelope>,
-    ) -> StoredHistoryChunk {
-        let chunk = encode_history_chunk(encounter_id, HistoryStream::Context, chunk_index, events)
-            .expect("encode context chunk");
+        let chunk = encode_history_chunk(encounter_id, stream_kind, chunk_index, events)
+            .expect("encode history chunk");
         StoredHistoryChunk {
             encounter_id: chunk.encounter_id,
             stream_kind: chunk.stream_kind,
@@ -1357,7 +1650,7 @@ mod tests {
     }
 
     fn replay_range(range: Range<u64>, chunks: &[StoredHistoryChunk]) -> EncounterRangeData {
-        let mut seed = HistoryProjectionReducer::new(0..0, 1).expect("seed reducer");
+        let mut seed = HistoryProjectionReducer::new(0..0).expect("seed reducer");
         seed.seed_contexts([HistoryEntityContext {
             entity_id: 1,
             display_uid: 1,
@@ -1381,32 +1674,26 @@ mod tests {
             })
             .cloned()
             .collect::<Vec<_>>();
-        let bucket_ms = range.end.saturating_sub(range.start).max(1);
-        replay_chunks(
-            1,
-            0,
-            &snapshot,
-            &intersecting,
-            range.start,
-            range.end,
-            bucket_ms,
-        )
-        .expect("replay range")
+        replay_chunks(1, 0, &snapshot, &intersecting, range.start, range.end, false)
+            .map(|(range, _)| range)
+            .expect("replay range")
     }
 
     #[test]
     fn range_replay_keeps_final_context_when_intersecting_chunk_contains_old_context() {
-        let context_chunk = stored_context_chunk(
+        let context_chunk = stored_chunk(
             1,
+            HistoryStream::Context,
             0,
             vec![context_at(1, 0, "initial"), context_at(2, 1_000, "stale")],
         );
-        let combat_chunk = stored_combat_chunk(
+        let combat_chunk = stored_chunk(
             1,
+            HistoryStream::Combat,
             0,
             vec![metric_hit_at(3, 100, HistoryMetric::Damage, 5, 0)],
         );
-        let mut seed = HistoryProjectionReducer::new(0..0, 1).expect("seed reducer");
+        let mut seed = HistoryProjectionReducer::new(0..0).expect("seed reducer");
         seed.seed_contexts([HistoryEntityContext {
             entity_id: 1,
             display_uid: 1,
@@ -1420,8 +1707,9 @@ mod tests {
         let mut snapshot = seed.finish_detail(1, empty_summary(1));
         snapshot.last_sequence = 3;
 
-        let range = replay_chunks(1, 0, &snapshot, &[context_chunk, combat_chunk], 0, 500, 500)
-            .expect("range replay");
+        let (range, _) =
+            replay_chunks(1, 0, &snapshot, &[context_chunk, combat_chunk], 0, 500, false)
+                .expect("range replay");
 
         assert_eq!(range.entities[0].name.as_deref(), Some("final"));
     }
@@ -1430,8 +1718,9 @@ mod tests {
     fn adjacent_ranges_include_death_replays_by_death_offset_only() {
         let first_replay = death_replay(10_999);
         let second_replay = death_replay(11_000);
-        let chunk = stored_combat_chunk(
+        let chunk = stored_chunk(
             1,
+            HistoryStream::Combat,
             0,
             vec![
                 death(1, 999, Some(first_replay.clone())),
@@ -1565,8 +1854,8 @@ mod tests {
             metric_hit_at(5, 2_000, HistoryMetric::Damage, 19, 0),
         ];
         let chunks = vec![
-            stored_combat_chunk(1, 0, events[..2].to_vec()),
-            stored_combat_chunk(1, 1, events[2..].to_vec()),
+            stored_chunk(1, HistoryStream::Combat, 0, events[..2].to_vec()),
+            stored_chunk(1, HistoryStream::Combat, 1, events[2..].to_vec()),
         ];
 
         let whole = replay_range(0..2_000, &chunks);
@@ -1637,8 +1926,9 @@ mod tests {
     fn frozen_clock_offsets_have_no_pause_gap_and_remain_additive() {
         // These two events were captured six wall-clock seconds apart, but the
         // segment clock supplied to history froze for five paused seconds.
-        let chunk = stored_combat_chunk(
+        let chunk = stored_chunk(
             1,
+            HistoryStream::Combat,
             0,
             vec![
                 metric_hit_at(0, 1_000, HistoryMetric::Damage, 10, 0),
@@ -1663,7 +1953,7 @@ mod tests {
 
     #[test]
     fn projection_codec_round_trips() {
-        let mut reducer = HistoryProjectionReducer::new(0..10, 1).expect("valid reducer");
+        let mut reducer = HistoryProjectionReducer::new(0..10).expect("valid reducer");
         reducer.apply(&hit(0, 1, 42));
         let snapshot = reducer.finish_detail(9, empty_summary(9));
         let encoded = encode_detail_projection(&snapshot).expect("encode projection");
@@ -1675,7 +1965,7 @@ mod tests {
 
     #[test]
     fn projection_metadata_merges_external_quality_and_rejects_divergence() {
-        let mut reducer = HistoryProjectionReducer::new(0..10, 1).expect("valid reducer");
+        let mut reducer = HistoryProjectionReducer::new(0..10).expect("valid reducer");
         reducer.apply(&hit(0, 1, 42));
         let snapshot = reducer.finish_detail(9, empty_summary(9));
         let encoded = encode_detail_projection(&snapshot).expect("encode projection");
@@ -1709,7 +1999,7 @@ mod tests {
 
     #[test]
     fn canonical_metric_updates_exactly_one_combat_side() {
-        let mut reducer = HistoryProjectionReducer::new(0..10, 10).expect("reducer");
+        let mut reducer = HistoryProjectionReducer::new(0..10).expect("reducer");
         reducer.seed_contexts([HistoryEntityContext {
             entity_id: 1,
             display_uid: 1,
@@ -1742,7 +2032,7 @@ mod tests {
 
     #[test]
     fn range_projects_target_and_source_breakdowns_without_top_level_pollution() {
-        let mut reducer = HistoryProjectionReducer::new(0..1_000, 1_000).expect("reducer");
+        let mut reducer = HistoryProjectionReducer::new(0..1_000).expect("reducer");
         reducer.seed_contexts([
             HistoryEntityContext {
                 entity_id: 1,
@@ -1844,7 +2134,7 @@ mod tests {
 
     #[test]
     fn lucky_bonus_packets_do_not_count_as_triggers() {
-        let mut reducer = HistoryProjectionReducer::new(0..10, 10).expect("reducer");
+        let mut reducer = HistoryProjectionReducer::new(0..10).expect("reducer");
         reducer.apply(&metric_hit(
             1,
             HistoryMetric::Damage,
@@ -1865,22 +2155,6 @@ mod tests {
         assert_eq!(stats.trigger_hits, "1");
         assert_eq!(stats.lucky_hits, "1");
         assert_eq!(stats.lucky_total, "20");
-    }
-
-    #[test]
-    fn chart_bucket_ceil_divides_duration_by_target_points() {
-        assert_eq!(
-            bucket_width_for_points(0, 10_001, 10).expect("bucket"),
-            1_001
-        );
-        assert_eq!(
-            bucket_width_for_points(5_000, 5_001, 500).expect("bucket"),
-            1
-        );
-        assert!(matches!(
-            bucket_width_for_points(0, 1_000, 0),
-            Err(HistoryQueryError::ZeroTargetPoints)
-        ));
     }
 
     fn actor_hit(
@@ -1919,20 +2193,19 @@ mod tests {
         }
     }
 
-    fn series_row<'a>(
+    fn damage_hits_row<'a>(
         range: &'a EncounterRangeData,
         entity_id: &str,
-        metric: HistoryMetric,
-    ) -> Option<&'a EncounterChartSeriesData> {
+    ) -> Option<&'a EncounterDamageHitsData> {
         range
-            .series
+            .damage_hits
             .iter()
-            .find(|row| row.entity_id == entity_id && row.metric == metric)
+            .find(|row| row.entity_id == entity_id)
     }
 
     #[test]
-    fn per_entity_series_track_actors_and_sum_to_team_chart() {
-        let mut reducer = HistoryProjectionReducer::new(0..10_000, 1_000).expect("reducer");
+    fn damage_hits_track_actors_per_hit_and_skip_other_metrics() {
+        let mut reducer = HistoryProjectionReducer::new(0..10_000).expect("reducer");
         reducer.apply(&actor_hit(1, 100, 1, HistoryMetric::Damage, 100));
         reducer.apply(&actor_hit(2, 1_500, 1, HistoryMetric::Damage, 150));
         reducer.apply(&actor_hit(3, 100, 2, HistoryMetric::Damage, 300));
@@ -1940,53 +2213,74 @@ mod tests {
 
         let range = reducer.finish_range(1);
 
-        let actor_one = series_row(&range, "1", HistoryMetric::Damage).expect("actor 1 damage");
-        assert_eq!(actor_one.offsets_ms, vec![0, 1_000]);
-        assert_eq!(actor_one.totals, vec!["100".to_string(), "150".to_string()]);
-        let actor_two = series_row(&range, "2", HistoryMetric::Damage).expect("actor 2 damage");
-        assert_eq!(actor_two.offsets_ms, vec![0]);
-        assert_eq!(actor_two.totals, vec!["300".to_string()]);
-        let actor_two_healing =
-            series_row(&range, "2", HistoryMetric::Healing).expect("actor 2 healing");
-        assert_eq!(actor_two_healing.totals, vec!["50".to_string()]);
-        // Sparse: metrics without any hit emit no row at all.
-        assert!(series_row(&range, "1", HistoryMetric::Healing).is_none());
-        assert!(series_row(&range, "1", HistoryMetric::DamageTaken).is_none());
-        assert!(series_row(&range, "2", HistoryMetric::DamageTaken).is_none());
+        let actor_one = damage_hits_row(&range, "1").expect("actor 1 hits");
+        assert_eq!(actor_one.offsets_ms, vec![100, 1_500]);
+        assert_eq!(actor_one.amounts, vec![100, 150]);
+        let actor_two = damage_hits_row(&range, "2").expect("actor 2 hits");
+        assert_eq!(actor_two.offsets_ms, vec![100]);
+        assert_eq!(actor_two.amounts, vec![300]);
+        // Only damage hits are collected: healing/taken emit no rows, and the
+        // per-entity streams partition the team damage total exactly.
+        assert_eq!(range.damage_hits.len(), 2);
+        let entity_damage: u64 = range
+            .damage_hits
+            .iter()
+            .flat_map(|row| row.amounts.iter().copied())
+            .sum();
+        assert_eq!(entity_damage, 550);
+        assert_eq!(range.totals.damage, "550");
+    }
 
-        // The per-entity series partition the team chart exactly.
-        let team_damage: u128 = range
-            .chart_points
-            .iter()
-            .map(|point| decimal(&point.damage))
-            .sum();
-        let entity_damage: u128 = range
-            .series
-            .iter()
-            .filter(|row| row.metric == HistoryMetric::Damage)
-            .flat_map(|row| row.totals.iter().map(|total| decimal(total)))
-            .sum();
-        assert_eq!(team_damage, entity_damage);
-        let bucket_zero = &range.chart_points[0];
-        assert_eq!(bucket_zero.damage, "400");
-        assert_eq!(bucket_zero.healing, "50");
+    #[test]
+    fn damage_hits_are_sorted_and_saturate_at_u64_max() {
+        let mut reducer = HistoryProjectionReducer::new(0..10_000).expect("reducer");
+        reducer.apply(&actor_hit(1, 500, 1, HistoryMetric::Damage, 50));
+        reducer.apply(&actor_hit(2, 100, 1, HistoryMetric::Damage, 10));
+        let mut saturated = actor_hit(3, 800, 1, HistoryMetric::Damage, 1);
+        if let HistoryEvent::Hit(hit) = &mut saturated.event {
+            hit.amount = u128::MAX;
+        }
+        reducer.apply(&saturated);
+
+        let range = reducer.finish_range(1);
+
+        let row = damage_hits_row(&range, "1").expect("actor 1 hits");
+        assert_eq!(row.offsets_ms, vec![100, 500, 800]);
+        assert_eq!(row.amounts, vec![10, 50, u64::MAX]);
+        assert!(
+            range
+                .quality_flags
+                .contains(&HistoryQualityFlag::SaturatedAmount)
+        );
+    }
+
+    #[test]
+    fn range_replay_skips_damage_hits_collection() {
+        let mut reducer = HistoryProjectionReducer::new(0..10_000)
+            .expect("reducer")
+            .with_damage_hits(false);
+        reducer.apply(&actor_hit(1, 100, 1, HistoryMetric::Damage, 100));
+
+        let range = reducer.finish_range(1);
+
+        assert!(range.damage_hits.is_empty());
+        assert_eq!(range.totals.damage, "100");
     }
 
     #[test]
     fn stored_projection_snapshot_drops_dynamic_series() {
-        let mut reducer = HistoryProjectionReducer::new(0..10_000, 1_000).expect("reducer");
+        let mut reducer = HistoryProjectionReducer::new(0..10_000).expect("reducer");
         reducer.apply(&actor_hit(1, 100, 1, HistoryMetric::Damage, 100));
 
         let snapshot = reducer.finish_detail(1, empty_summary(1));
 
-        assert!(snapshot.detail.chart_points.is_empty());
-        assert!(snapshot.detail.series.is_empty());
+        assert!(snapshot.detail.damage_hits.is_empty());
         assert!(snapshot.detail.markers.is_empty());
     }
 
     #[test]
     fn context_class_spec_discriminant_resolves_spec_name() {
-        let mut reducer = HistoryProjectionReducer::new(0..10, 10).expect("reducer");
+        let mut reducer = HistoryProjectionReducer::new(0..10).expect("reducer");
         reducer.seed_contexts([HistoryEntityContext {
             entity_id: 1,
             display_uid: 1,
@@ -2007,8 +2301,88 @@ mod tests {
     }
 
     #[test]
+    fn default_detail_clips_trailing_heal_and_markers_to_duration() {
+        let mut seed = HistoryProjectionReducer::new(0..0).expect("seed reducer");
+        seed.seed_contexts([HistoryEntityContext {
+            entity_id: 1,
+            display_uid: 1,
+            name: Some("player".to_string()),
+            class_id: None,
+            class_spec: None,
+            ability_score: None,
+            season_strength: None,
+            monster_id: None,
+        }]);
+        let mut snapshot = seed.finish_detail(1, empty_summary(1));
+        snapshot.last_sequence = 2;
+
+        let combat_chunk = stored_chunk(
+            1,
+            HistoryStream::Combat,
+            0,
+            vec![
+                metric_hit_at(0, 0, HistoryMetric::Damage, 100, 0),
+                metric_hit_at(1, 2_000, HistoryMetric::Healing, 40, 0),
+            ],
+        );
+        let timeline_chunk = stored_chunk(
+            1,
+            HistoryStream::Timeline,
+            0,
+            vec![HistoryEnvelope {
+                sequence: 2,
+                offset_ms: 2_500,
+                event: HistoryEvent::SkillCast(HistorySkillCast {
+                    caster_entity_id: 1,
+                    skill_id: 42,
+                    kind: HistoryCastKind::KeySkill,
+                    remodel_level: None,
+                }),
+            }],
+        );
+
+        let encoded = encode_detail_projection(&snapshot).expect("encode snapshot");
+        let stored = StoredProjection {
+            encounter_id: 1,
+            last_sequence: encoded.last_sequence,
+            quality_flags: encoded.quality_flags,
+            data: encoded.data,
+        };
+        let mut summary = empty_summary(1);
+        summary.duration = 1.0;
+        summary.detail_available = true;
+        let descriptor = EncounterHistoryDescriptor {
+            encounter_id: 1,
+            quality_flags: stored.quality_flags,
+            started_at_ms: 0,
+            ended_at_ms: Some(3_000),
+        };
+        let chunks = vec![combat_chunk, timeline_chunk];
+        let detail = project_encounter_detail(EncounterDetailQuery {
+            summary: summary.clone(),
+            descriptor: descriptor.clone(),
+            projection: Some(stored.clone()),
+            chunks: chunks.clone(),
+            timeline_end_ms_exclusive: 1_000,
+        })
+        .expect("project clipped detail");
+
+        assert_eq!(detail.end_ms_exclusive, 1_000);
+        assert_eq!(detail.totals.damage, "100");
+        assert_eq!(detail.totals.healing, "0");
+        assert!(detail.markers.is_empty());
+
+        let decoded = decode_detail_projection(&stored.data).expect("decode snapshot");
+        let (full, _) =
+            replay_chunks(1, 0, &decoded, &chunks, 0, 3_000, false).expect("full range");
+        assert_eq!(full.totals.healing, "40");
+        assert_eq!(full.markers.len(), 1);
+        assert_eq!(full.markers[0].offset_ms, 2_500);
+    }
+
+    #[test]
     fn skill_cast_markers_preserve_remodel_level() {
-        let mut reducer = HistoryProjectionReducer::new(0..10_000, 1_000).expect("reducer");
+        let mut reducer = HistoryProjectionReducer::new(0..10_000).expect("reducer");
         reducer.apply(&HistoryEnvelope {
             sequence: 1,
             offset_ms: 250,

@@ -40,15 +40,20 @@ function raidSnapshot(): MinimapSnapshot {
 }
 
 describe("S3 voice cue registry", () => {
-  it("groups all five current scenes under S3", () => {
+  it("groups S4 first then all five S3 scenes", () => {
     const groups = allMinimapVoiceCueSeasonGroups();
 
-    expect(groups).toHaveLength(1);
-    expect(groups[0]?.season).toBe(3);
-    expect(groups[0]?.scenes).toHaveLength(5);
-    expect(groups[0]?.scenes.every(({ scene }) => scene.resolveVoiceCues)).toBe(
-      true,
-    );
+    expect(groups).toHaveLength(2);
+    expect(groups[0]?.season).toBe(4);
+    expect(groups[0]?.scenes).toHaveLength(1);
+    expect(groups[0]?.scenes[0]?.scene.id).toBe("s4-wasteland-court");
+    expect(groups[1]?.season).toBe(3);
+    expect(groups[1]?.scenes).toHaveLength(5);
+    expect(
+      groups.every((group) =>
+        group.scenes.every(({ scene }) => scene.resolveVoiceCues),
+      ),
+    ).toBe(true);
   });
 
   it("registers globally unique cue ids", () => {

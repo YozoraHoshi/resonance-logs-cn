@@ -297,27 +297,33 @@ describe("parseLoadoutExport", () => {
       defaults.challengeWatch,
     );
     expect(result.output.liveProfile.appearance).toEqual(defaults.appearance);
+    expect(result.output.liveProfile.history).toEqual(defaults.history);
+    expect(result.output.liveProfile.columnLabels).toEqual(
+      defaults.columnLabels,
+    );
     expect(result.output.liveProfile.general.showFantasyCastIcons).toBe(false);
   });
 
-  it("preserves an explicit liveProfile.challengeWatch/appearance payload", () => {
+  it("preserves explicit live profile scoped settings", () => {
     const data = validExport();
+    const profile = omitProfileId({
+      ...createDefaultLiveMeterProfileData(),
+      id: "unused",
+      name: "Live",
+    });
+    profile.general.showFantasyCastIcons = true;
+    profile.challengeWatch = { forbiddenDamageIds: [123, 456] };
+    profile.appearance = {
+      ...profile.appearance,
+      classColors: { Warrior: "#abcdef" },
+      useClassSpecColors: true,
+    };
+    profile.history.general.timelineLaneH = 72;
+    profile.history.dpsPlayers.critRate = true;
+    profile.columnLabels.live.players.first = "Party";
+    profile.columnLabels.history.skills.columns.dps = "每秒";
     data["liveProfile"] = {
-      ...omitProfileId({
-        ...createDefaultLiveMeterProfileData(),
-        id: "unused",
-        name: "Live",
-      }),
-      general: {
-        ...createDefaultLiveMeterProfileData().general,
-        showFantasyCastIcons: true,
-      },
-      challengeWatch: { forbiddenDamageIds: [123, 456] },
-      appearance: {
-        ...createDefaultLiveMeterProfileData().appearance,
-        classColors: { Warrior: "#abcdef" },
-        useClassSpecColors: true,
-      },
+      ...profile,
     };
 
     const result = parseLoadoutExport(data);
@@ -331,6 +337,14 @@ describe("parseLoadoutExport", () => {
     });
     expect(result.output.liveProfile.appearance.useClassSpecColors).toBe(true);
     expect(result.output.liveProfile.general.showFantasyCastIcons).toBe(true);
+    expect(result.output.liveProfile.history.general.timelineLaneH).toBe(72);
+    expect(result.output.liveProfile.history.dpsPlayers.critRate).toBe(true);
+    expect(result.output.liveProfile.columnLabels.live.players.first).toBe(
+      "Party",
+    );
+    expect(
+      result.output.liveProfile.columnLabels.history.skills.columns.dps,
+    ).toBe("每秒");
     expect(parseLoadoutExport(result.output).success).toBe(true);
   });
 

@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { page } from "$app/state";
+  import BellRingIcon from "virtual:icons/lucide/bell-ring";
   import LayersIcon from "virtual:icons/lucide/layers";
   import ListMusicIcon from "virtual:icons/lucide/list-music";
   import SlidersHorizontalIcon from "virtual:icons/lucide/sliders-horizontal";
@@ -9,12 +11,13 @@
     ensureVoiceListeners,
     refreshVoiceStatus,
   } from "$lib/stores/voice-store.svelte";
+  import TabAlerts from "./tab-alerts.svelte";
   import TabBindings from "./tab-bindings.svelte";
   import TabModel from "./tab-model.svelte";
   import TabOverview from "./tab-overview.svelte";
   import TabPhrases from "./tab-phrases.svelte";
 
-  type VoiceTab = "overview" | "model" | "phrases" | "bindings";
+  type VoiceTab = "overview" | "model" | "phrases" | "bindings" | "alerts";
 
   const TABS: { id: VoiceTab; labelKey: MessageKey; icon: typeof ZapIcon }[] = [
     {
@@ -25,9 +28,17 @@
     { id: "model", labelKey: "voice.tabs.model", icon: LayersIcon },
     { id: "phrases", labelKey: "voice.tabs.phrases", icon: ListMusicIcon },
     { id: "bindings", labelKey: "voice.tabs.bindings", icon: ZapIcon },
+    { id: "alerts", labelKey: "voice.tabs.alerts", icon: BellRingIcon },
   ];
 
   let activeTab = $state<VoiceTab>("overview");
+
+  $effect(() => {
+    const requested = page.url.searchParams.get("tab");
+    if (TABS.some((tab) => tab.id === requested)) {
+      activeTab = requested as VoiceTab;
+    }
+  });
 
   onMount(async () => {
     await ensureVoiceListeners();
@@ -64,5 +75,7 @@
     <TabPhrases />
   {:else if activeTab === "bindings"}
     <TabBindings />
+  {:else if activeTab === "alerts"}
+    <TabAlerts />
   {/if}
 </div>

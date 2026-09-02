@@ -2,6 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+use crate::live::active_window::{ActiveWindowAdvance, active_window_advance};
 use crate::live::ipc::models::{
     BossHealth, LiveDataPayload, LiveDisplayClock, RawEntityData, build_taken_per_source,
     to_raw_combat_stats, to_raw_skill_stats,
@@ -18,13 +19,11 @@ use crate::live::runtime::events::{
     DomainHit, EntityIdentity, EntityRef, EntityUuid, HitKind, MonoTimeMs, SegmentId,
 };
 
-const INACTIVITY_CUTOFF_MS: u128 = 3_000;
-const HIT_GRACE_MS: u128 = 500;
-
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ProjectionOutcome {
     pub had_combat: bool,
     pub had_player_damage: bool,
+    pub active_window: Option<ActiveWindowAdvance>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -110,8 +109,8 @@ pub struct CombatProjection {
     started_at_mono_ms: MonoTimeMs,
     started_at_wall_ms: i64,
     last_combat_offset_ms: Option<u64>,
+    last_player_damage_offset_ms: Option<u64>,
     active_combat_time_ms: u128,
-    last_player_damage_wall_ms: Option<i64>,
     accumulator: CombatAccumulator,
     local_player: Option<EntityUuid>,
     scene_id: Option<i32>,
@@ -314,6 +313,7 @@ impl CombatProjection {
                 || hit.resolved_owner.is_some()
                 || hit.kind == HitKind::Damage,
             had_player_damage: hit.source_is_player && hit.kind == HitKind::Damage,
+            active_window: None,
         };
         if self.segment_id.is_none() {
             return ProjectionOutcome::default();
@@ -342,16 +342,23 @@ impl CombatProjection {
             outcome.had_player_damage = false;
         }
 
-        if outcome.had_player_damage {
-            let timestamp = u128::try_from(occurred_at_ms).unwrap_or_default();
-            self.active_combat_time_ms = self.active_combat_time_ms.saturating_add(
-                active_increment(self.last_player_damage_wall_ms, occurred_at_ms),
-            );
-            self.last_player_damage_wall_ms = Some(occurred_at_ms);
-            debug_assert!(timestamp >= u128::try_from(self.started_at_wall_ms).unwrap_or_default());
-        }
-        if outcome.had_combat {
-            self.last_combat_offset_ms = Some(self.segment_offset_ms(occurred_at_mono_ms));
+        if outcome.had_player_damage || outcome.had_combat {
+            let offset = self.segment_offset_ms(occurred_at_mono_ms);
+            if outcome.had_player_damage {
+                let timestamp = u128::try_from(occurred_at_ms).unwrap_or_default();
+                let advance = active_window_advance(self.last_player_damage_offset_ms, offset);
+                self.active_combat_time_ms = self
+                    .active_combat_time_ms
+                    .saturating_add(u128::from(advance.credited_ms()));
+                self.last_player_damage_offset_ms = Some(offset);
+                outcome.active_window = Some(advance);
+                debug_assert!(
+                    timestamp >= u128::try_from(self.started_at_wall_ms).unwrap_or_default()
+                );
+            }
+            if outcome.had_combat {
+                self.last_combat_offset_ms = Some(offset);
+            }
         }
         outcome
     }
@@ -377,15 +384,14 @@ impl CombatProjection {
             .map(|(_, boss)| boss.clone())
             .collect::<Vec<_>>();
         bosses.sort_unstable_by(|left, right| left.entity_uuid.cmp(&right.entity_uuid));
+        let elapsed_ms = self.observed_duration_ms();
         LiveDataPayload {
-            elapsed_ms: self.observed_duration_ms().to_string(),
+            elapsed_ms: elapsed_ms.to_string(),
+            damage_elapsed_ms: self.damage_elapsed_ms().to_string(),
             // The first-hit grace can push active time past the observed
             // duration; cap at the publication boundary so the header's
             // active timer never reads ahead of the elapsed timer.
-            active_combat_time_ms: self
-                .active_combat_time_ms
-                .min(self.observed_duration_ms())
-                .to_string(),
+            active_combat_time_ms: self.active_combat_time_ms.min(elapsed_ms).to_string(),
             fight_start_timestamp_ms: u128::try_from(self.started_at_wall_ms)
                 .unwrap_or_default()
                 .to_string(),
@@ -407,8 +413,15 @@ impl CombatProjection {
 
     #[must_use]
     pub fn observed_duration_ms(&self) -> u128 {
-        self.last_combat_offset_ms
-            .map_or(0, |offset| u128::from(offset).saturating_add(1))
+        exclusive_span_ms(self.last_combat_offset_ms)
+    }
+
+    #[must_use]
+    pub fn damage_elapsed_ms(&self) -> u128 {
+        exclusive_span_ms(
+            self.last_player_damage_offset_ms
+                .or(self.last_combat_offset_ms),
+        )
     }
 
     #[must_use]
@@ -598,21 +611,14 @@ impl CombatProjection {
     }
 }
 
-fn active_increment(previous: Option<i64>, current: i64) -> u128 {
-    let Some(previous) = previous else {
-        return HIT_GRACE_MS;
-    };
-    let delta = u128::try_from(current.saturating_sub(previous)).unwrap_or_default();
-    if delta <= INACTIVITY_CUTOFF_MS {
-        delta
-    } else {
-        HIT_GRACE_MS
-    }
+fn exclusive_span_ms(offset: Option<u64>) -> u128 {
+    offset.map_or(0, |ms| u128::from(ms).saturating_add(1))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::live::active_window::HIT_GRACE_MS;
     use crate::live::projections::combat::stats::damage_type_flag;
     use crate::live::runtime::events::{
         BatchId, EntityIdentityPatch, EntityKind, EventMeta, FieldPatch, HitChannel, ProtocolBatch,
@@ -753,7 +759,7 @@ mod tests {
             MonoTimeMs(1_000),
             &entities,
         );
-        assert_eq!(projection.active_combat_time_ms(), HIT_GRACE_MS);
+        assert_eq!(projection.active_combat_time_ms(), u128::from(HIT_GRACE_MS));
     }
 
     #[test]
@@ -772,10 +778,88 @@ mod tests {
         // The first hit grants active time the 500ms grace while the observed
         // duration is only 1ms; the payload must cap active at elapsed so the
         // header's active timer never reads ahead of the elapsed timer.
-        assert_eq!(projection.active_combat_time_ms(), HIT_GRACE_MS);
+        assert_eq!(projection.active_combat_time_ms(), u128::from(HIT_GRACE_MS));
         let payload = projection.payload();
         assert_eq!(payload.elapsed_ms, "1");
+        assert_eq!(payload.damage_elapsed_ms, "1");
         assert_eq!(payload.active_combat_time_ms, "1");
+    }
+
+    #[test]
+    fn healing_after_player_damage_does_not_advance_damage_elapsed() {
+        let mut projection = CombatProjection::default();
+        projection.start_segment(SegmentId(1), MonoTimeMs(0), 0);
+        let entities = EntityContext::new();
+        apply_hit(
+            &mut projection,
+            hit(true, HitKind::Damage),
+            1_000,
+            MonoTimeMs(1_000),
+            &entities,
+        );
+        apply_hit(
+            &mut projection,
+            hit(true, HitKind::Healing),
+            21_000,
+            MonoTimeMs(21_000),
+            &entities,
+        );
+
+        assert_eq!(projection.observed_duration_ms(), 21_001);
+        assert_eq!(projection.damage_elapsed_ms(), 1_001);
+        assert_eq!(projection.active_combat_time_ms(), u128::from(HIT_GRACE_MS));
+    }
+
+    #[test]
+    fn paused_player_damage_does_not_advance_damage_elapsed() {
+        let mut projection = CombatProjection::default();
+        projection.start_segment(SegmentId(1), MonoTimeMs(0), 0);
+        let entities = EntityContext::new();
+        apply_hit(
+            &mut projection,
+            hit(true, HitKind::Damage),
+            1_000,
+            MonoTimeMs(1_000),
+            &entities,
+        );
+        projection.set_paused(true, MonoTimeMs(1_000), 1_000);
+        apply_hit(
+            &mut projection,
+            hit(true, HitKind::Damage),
+            5_000,
+            MonoTimeMs(5_000),
+            &entities,
+        );
+
+        assert_eq!(projection.segment_offset_ms(MonoTimeMs(5_000)), 1_000);
+        assert_eq!(projection.damage_elapsed_ms(), 1_001);
+    }
+
+    #[test]
+    fn mechanic_gap_stays_in_damage_elapsed_but_not_active_time() {
+        let mut projection = CombatProjection::default();
+        projection.start_segment(SegmentId(1), MonoTimeMs(0), 0);
+        let entities = EntityContext::new();
+        apply_hit(
+            &mut projection,
+            hit(true, HitKind::Damage),
+            1_000,
+            MonoTimeMs(1_000),
+            &entities,
+        );
+        apply_hit(
+            &mut projection,
+            hit(true, HitKind::Damage),
+            16_000,
+            MonoTimeMs(16_000),
+            &entities,
+        );
+
+        assert_eq!(projection.damage_elapsed_ms(), 16_001);
+        assert_eq!(
+            projection.active_combat_time_ms(),
+            u128::from(HIT_GRACE_MS) * 2
+        );
     }
 
     #[test]
@@ -803,6 +887,7 @@ mod tests {
 
         assert_eq!(projection.segment_offset_ms(MonoTimeMs(7_000)), 2_000);
         assert_eq!(projection.observed_duration_ms(), 2_001);
+        assert_eq!(projection.active_combat_time_ms(), 1_500);
     }
 
     #[test]

@@ -1,7 +1,6 @@
 //! Incremental DTO projection for live skill/entity monitoring.
 
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::sync::Arc;
 
 use crate::live::bootstrap_snapshot::MonitorRuntimeSnapshot;
 use crate::live::ipc::models::{
@@ -66,8 +65,70 @@ type BuffViews = (
 );
 
 #[derive(Debug, Default)]
+struct BuffPublishFilter {
+    monitor_all_local: bool,
+    local_ids: HashSet<i32>,
+    monster_global_ids: HashSet<i32>,
+    monitor_all_monster_self_applied: bool,
+    monster_self_applied_ids: HashSet<i32>,
+    monitor_all_teammate: bool,
+    teammate_any_source_ids: HashSet<i32>,
+    teammate_local_source_ids: HashSet<i32>,
+    teammate_self_source_ids: HashSet<i32>,
+}
+
+impl BuffPublishFilter {
+    fn from_snapshot(config: &MonitorRuntimeSnapshot) -> Self {
+        Self {
+            monitor_all_local: config.skill.monitor_all_buff,
+            local_ids: config.skill.monitored_buff_ids.iter().copied().collect(),
+            monster_global_ids: config.monster.global_ids.iter().copied().collect(),
+            monitor_all_monster_self_applied: config.monster.monitor_all_self_applied,
+            monster_self_applied_ids: config.monster.self_applied_ids.iter().copied().collect(),
+            monitor_all_teammate: config.teammate.monitor_all,
+            teammate_any_source_ids: config.teammate.any_source_ids.iter().copied().collect(),
+            teammate_local_source_ids: config
+                .teammate
+                .local_player_source_ids
+                .iter()
+                .copied()
+                .collect(),
+            teammate_self_source_ids: config
+                .teammate
+                .target_self_source_ids
+                .iter()
+                .copied()
+                .collect(),
+        }
+    }
+
+    fn watches_local(&self, base_id: i32) -> bool {
+        self.monitor_all_local || self.local_ids.contains(&base_id)
+    }
+
+    fn watches_monster(&self, base_id: i32, local_player_applied: bool) -> bool {
+        self.monster_global_ids.contains(&base_id)
+            || (local_player_applied
+                && (self.monitor_all_monster_self_applied
+                    || self.monster_self_applied_ids.contains(&base_id)))
+    }
+
+    fn watches_teammate(
+        &self,
+        base_id: i32,
+        local_player_applied: bool,
+        target_self_applied: bool,
+    ) -> bool {
+        self.monitor_all_teammate
+            || self.teammate_any_source_ids.contains(&base_id)
+            || (local_player_applied && self.teammate_local_source_ids.contains(&base_id))
+            || (target_self_applied && self.teammate_self_source_ids.contains(&base_id))
+    }
+}
+
+#[derive(Debug, Default)]
 pub struct EntityMonitorProjection {
-    config: Arc<MonitorRuntimeSnapshot>,
+    buff_filter: BuffPublishFilter,
     local_player: Option<EntityRef>,
     current_target: Option<EntityRef>,
     skill_cds: HashMap<i32, SkillCdState>,
@@ -123,14 +184,14 @@ impl EntityMonitorProjection {
             .collect()
     }
 
-    pub fn apply_config(&mut self, config: Arc<MonitorRuntimeSnapshot>, entities: &EntityContext) {
+    pub fn apply_config(&mut self, config: &MonitorRuntimeSnapshot, entities: &EntityContext) {
         self.local_player = entities.local_player();
         self.current_target = entities.current_attack_target();
         self.rebuild_current_target_details(entities);
         self.monitored_panel_attr_ids.clear();
         self.monitored_panel_attr_ids
             .extend(config.skill.monitored_panel_attr_ids.iter().copied());
-        self.config = config;
+        self.buff_filter = BuffPublishFilter::from_snapshot(config);
         self.panel_attrs
             .retain(|attr_id, _| self.monitored_panel_attr_ids.contains(attr_id));
         if let Some(local) = self
@@ -238,12 +299,28 @@ impl EntityMonitorProjection {
                 // Buff state lives in EntityContext; only classify whether this
                 // change enters a published view.
                 let roles = event.target_roles;
-                if roles.is_local_player {
-                    TopicMask::BUFFS
-                } else if roles.is_current_target || roles.is_team_member {
-                    TopicMask::MONSTER
+                let state = &event.state;
+                let local_player_applied = state.source == self.local_player;
+                let watched = if roles.is_local_player {
+                    self.buff_filter.watches_local(state.base_id)
+                } else if roles.is_current_target {
+                    self.buff_filter
+                        .watches_monster(state.base_id, local_player_applied)
+                } else if roles.is_team_member {
+                    self.buff_filter.watches_teammate(
+                        state.base_id,
+                        local_player_applied,
+                        state.source == Some(state.target),
+                    )
                 } else {
+                    false
+                };
+                if !watched {
                     TopicMask::EMPTY
+                } else if roles.is_local_player {
+                    TopicMask::BUFFS
+                } else {
+                    TopicMask::MONSTER
                 }
             }
             DomainEvent::SkillCooldownUpdated { entity, cooldowns }
@@ -747,13 +824,7 @@ impl EntityMonitorProjection {
 
             for state in entity.active_buffs.values() {
                 if is_local {
-                    if self.config.skill.monitor_all_buff
-                        || self
-                            .config
-                            .skill
-                            .monitored_buff_ids
-                            .contains(&state.base_id)
-                    {
+                    if self.buff_filter.watches_local(state.base_id) {
                         local_buffs.push(buff_dto(state, entities));
                     }
                     continue;
@@ -761,14 +832,9 @@ impl EntityMonitorProjection {
 
                 if is_current_target {
                     let local_player_applied = state.source == local_player;
-                    let watched = self.config.monster.global_ids.contains(&state.base_id)
-                        || (local_player_applied
-                            && (self.config.monster.monitor_all_self_applied
-                                || self
-                                    .config
-                                    .monster
-                                    .self_applied_ids
-                                    .contains(&state.base_id)));
+                    let watched = self
+                        .buff_filter
+                        .watches_monster(state.base_id, local_player_applied);
                     if watched {
                         boss_buffs
                             .entry(target.uuid.0.to_string())
@@ -778,20 +844,11 @@ impl EntityMonitorProjection {
                     continue;
                 }
 
-                let watched = self.config.teammate.monitor_all
-                    || self.config.teammate.any_source_ids.contains(&state.base_id)
-                    || (state.source == local_player
-                        && self
-                            .config
-                            .teammate
-                            .local_player_source_ids
-                            .contains(&state.base_id))
-                    || (state.source == Some(target)
-                        && self
-                            .config
-                            .teammate
-                            .target_self_source_ids
-                            .contains(&state.base_id));
+                let watched = self.buff_filter.watches_teammate(
+                    state.base_id,
+                    state.source == local_player,
+                    state.source == Some(target),
+                );
                 if watched {
                     teammate_buffs
                         .entry(target.uuid.0.to_string())
@@ -862,6 +919,8 @@ fn boss_deadline_key(base_skill_id: i32) -> TimerKey {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Arc;
+
     use crate::live::runtime::events::{
         BatchId, EventMeta, FantasyState, ObservationOrigin, ObservedBuff, ObservedBuffChange,
         ProtocolBatch, ProtocolObservation, SegmentId, SkillCooldownState,
@@ -1288,11 +1347,95 @@ mod tests {
 
         let mut config = MonitorRuntimeSnapshot::default();
         config.skill.monitor_all_buff = true;
-        projection.apply_config(Arc::new(config), &entities);
+        projection.apply_config(&config, &entities);
         assert_eq!(projection.snapshot(&entities).local_buffs.len(), 1);
 
-        projection.apply_config(Arc::new(MonitorRuntimeSnapshot::default()), &entities);
+        projection.apply_config(&MonitorRuntimeSnapshot::default(), &entities);
         assert!(projection.snapshot(&entities).local_buffs.is_empty());
+    }
+
+    #[test]
+    fn timeline_only_buff_is_not_published_as_local_buff() {
+        let mut projection = EntityMonitorProjection::default();
+        let mut entities = EntityContext::new();
+        let mut scheduler = DeadlineScheduler::new();
+        let mut timeline_only = observed_buff(2, EntityUuid(10));
+        timeline_only.base_id = 88;
+        apply_observations(
+            &mut projection,
+            &mut entities,
+            &mut scheduler,
+            1,
+            vec![
+                ProtocolObservation::EntityAppeared {
+                    uuid: EntityUuid(10),
+                    kind: crate::live::runtime::events::EntityKind::Character,
+                },
+                ProtocolObservation::LocalPlayerChanged {
+                    uuid: Some(EntityUuid(10)),
+                },
+                ProtocolObservation::BuffChanged {
+                    target_uuid: EntityUuid(10),
+                    change: ObservedBuffChange::Applied {
+                        buff: observed_buff(1, EntityUuid(10)),
+                    },
+                },
+                ProtocolObservation::BuffChanged {
+                    target_uuid: EntityUuid(10),
+                    change: ObservedBuffChange::Applied {
+                        buff: timeline_only,
+                    },
+                },
+            ],
+        );
+
+        let mut config = MonitorRuntimeSnapshot::default();
+        config.skill.monitored_buff_ids.push(77);
+        config.skill.buff_timeline_ids.push(88);
+        projection.apply_config(&config, &entities);
+
+        let local_buffs = &projection.snapshot(&entities).local_buffs;
+        assert_eq!(local_buffs.len(), 1);
+        assert_eq!(local_buffs[0].base_id, 77);
+    }
+
+    #[test]
+    fn unwatched_local_buff_does_not_dirty_buff_topic() {
+        let mut projection = EntityMonitorProjection::default();
+        let mut entities = EntityContext::new();
+        let mut scheduler = DeadlineScheduler::new();
+        seed_local_player(&mut projection, &mut entities, &mut scheduler);
+        let mut config = MonitorRuntimeSnapshot::default();
+        config.skill.monitored_buff_ids.push(77);
+        projection.apply_config(&config, &entities);
+
+        let mut unwatched = observed_buff(1, EntityUuid(10));
+        unwatched.base_id = 88;
+        let events = entities.apply_batch(ProtocolBatch {
+            meta: meta(2, 2_000),
+            observations: vec![ProtocolObservation::BuffChanged {
+                target_uuid: EntityUuid(10),
+                change: ObservedBuffChange::Applied { buff: unwatched },
+            }],
+        });
+        let mask = events.into_iter().fold(TopicMask::EMPTY, |mask, event| {
+            mask | projection.apply(&event, &entities, &mut scheduler)
+        });
+        assert_eq!(mask, TopicMask::EMPTY);
+
+        let events = entities.apply_batch(ProtocolBatch {
+            meta: meta(3, 3_000),
+            observations: vec![ProtocolObservation::BuffChanged {
+                target_uuid: EntityUuid(10),
+                change: ObservedBuffChange::Applied {
+                    buff: observed_buff(2, EntityUuid(10)),
+                },
+            }],
+        });
+        let mask = events.into_iter().fold(TopicMask::EMPTY, |mask, event| {
+            mask | projection.apply(&event, &entities, &mut scheduler)
+        });
+        assert_eq!(mask, TopicMask::BUFFS);
     }
 
     #[test]
@@ -1331,7 +1474,7 @@ mod tests {
 
         let mut config = MonitorRuntimeSnapshot::default();
         config.skill.monitor_all_buff = true;
-        projection.apply_config(Arc::new(config), &entities);
+        projection.apply_config(&config, &entities);
 
         // A remodel tier on the source identity alone never tags the buff:
         // only a marker-observed fantasy registration does.
@@ -1475,7 +1618,7 @@ mod tests {
         let mut config = MonitorRuntimeSnapshot::default();
         config.monster.global_ids.push(77);
         config.teammate.any_source_ids.push(77);
-        projection.apply_config(Arc::new(config), &entities);
+        projection.apply_config(&config, &entities);
 
         let snapshot = projection.snapshot(&entities);
         assert_eq!(snapshot.boss_buffs.len(), 1);
@@ -1588,7 +1731,7 @@ mod tests {
 
         let mut config = MonitorRuntimeSnapshot::default();
         config.monster.self_applied_ids.push(77);
-        projection.apply_config(Arc::new(config), &entities);
+        projection.apply_config(&config, &entities);
 
         // Only the buff whose raw source is the local player matches
         // self-applied; summon/fantasy sources and teammates do not.
@@ -1634,7 +1777,7 @@ mod tests {
         );
         let mut config = MonitorRuntimeSnapshot::default();
         config.monster.global_ids.push(77);
-        projection.apply_config(Arc::new(config), &entities);
+        projection.apply_config(&config, &entities);
         assert_eq!(projection.snapshot(&entities).boss_buffs.len(), 1);
 
         apply_observations(
@@ -1645,6 +1788,77 @@ mod tests {
             vec![ProtocolObservation::EntityDisappeared { uuid: target }],
         );
         assert!(projection.snapshot(&entities).boss_buffs.is_empty());
+    }
+
+    #[test]
+    fn reappeared_current_target_buffs_return_without_retarget() {
+        let mut projection = EntityMonitorProjection::default();
+        let mut entities = EntityContext::new();
+        let mut scheduler = DeadlineScheduler::new();
+        let local = EntityUuid(10);
+        let target = EntityUuid(20);
+        apply_observations(
+            &mut projection,
+            &mut entities,
+            &mut scheduler,
+            1,
+            vec![
+                ProtocolObservation::EntityAppeared {
+                    uuid: local,
+                    kind: crate::live::runtime::events::EntityKind::Character,
+                },
+                ProtocolObservation::EntityAppeared {
+                    uuid: target,
+                    kind: crate::live::runtime::events::EntityKind::Monster,
+                },
+                ProtocolObservation::LocalPlayerChanged { uuid: Some(local) },
+                ProtocolObservation::AttackTargetChanged {
+                    actor_uuid: local,
+                    target_uuid: Some(target),
+                },
+                ProtocolObservation::BuffChanged {
+                    target_uuid: target,
+                    change: ObservedBuffChange::Applied {
+                        buff: observed_buff(1, target),
+                    },
+                },
+            ],
+        );
+        let mut config = MonitorRuntimeSnapshot::default();
+        config.monster.global_ids.push(77);
+        projection.apply_config(&config, &entities);
+        assert_eq!(projection.snapshot(&entities).boss_buffs.len(), 1);
+
+        apply_observations(
+            &mut projection,
+            &mut entities,
+            &mut scheduler,
+            2,
+            vec![ProtocolObservation::EntityDisappeared { uuid: target }],
+        );
+        assert!(projection.snapshot(&entities).boss_buffs.is_empty());
+
+        apply_observations(
+            &mut projection,
+            &mut entities,
+            &mut scheduler,
+            3,
+            vec![
+                ProtocolObservation::EntityAppeared {
+                    uuid: target,
+                    kind: crate::live::runtime::events::EntityKind::Monster,
+                },
+                ProtocolObservation::BuffChanged {
+                    target_uuid: target,
+                    change: ObservedBuffChange::Applied {
+                        buff: observed_buff(2, target),
+                    },
+                },
+            ],
+        );
+        let snapshot = projection.snapshot(&entities);
+        assert_eq!(snapshot.boss_buffs.len(), 1);
+        assert!(snapshot.boss_buffs.contains_key(&target.0.to_string()));
     }
 
     #[test]

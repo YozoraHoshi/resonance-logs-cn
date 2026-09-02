@@ -1,217 +1,228 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampInstantDpsWindowSec,
   clampViewportWindow,
   collapseHoverLanePoints,
+  curveMaxValue,
   dedupeMarkersByPixel,
-  downsampleCurve,
-  foldEncounterDamageBuckets,
-  interpolateCurveValue,
+  dpsValueAt,
+  foldEncounterDamageHits,
   laneMarkerTier,
   normalizeEncounterBrushRange,
   panViewportWindow,
   resolveHoverDisplayTimeMs,
+  sampleDpsCurve,
   sliceLanePointsByTime,
   timeToX,
-  teammateAverageCurves,
-  toCumulativeDpsCurve,
-  toRollingDpsCurve,
-  windowMaxValue,
+  teammateDpsSources,
+  visibleSpanRects,
   xToTime,
   zoomTierFor,
   zoomViewportWindow,
+  type DamageHitIndex,
   type EncounterChart,
-  type EncounterChartSeries,
   type EncounterTimelineEvent,
+  type EntityDamageHits,
+  type TeammateCurveMode,
 } from "./timeline-data";
 
-function series(
-  values: Partial<EncounterChartSeries> &
-    Pick<EncounterChartSeries, "entityUuid" | "metric">,
-): EncounterChartSeries {
-  const offsetsMs = values.offsetsMs ?? [];
-  const zeros = offsetsMs.map(() => 0);
-  return {
-    entityUuid: values.entityUuid,
-    metric: values.metric,
-    offsetsMs,
-    totals: values.totals ?? zeros,
-  };
+const DEFAULT_WINDOW_MS = 10_000;
+
+function hits(
+  entityUuid: string,
+  timesMs: number[],
+  amounts: number[],
+): EntityDamageHits {
+  return { entityUuid, timesMs, amounts };
 }
 
-describe("foldEncounterDamageBuckets", () => {
-  it("sums sparse damage series per entity and ignores heal/taken rows", () => {
+function indexed(timesMs: number[], amounts: number[]): DamageHitIndex {
+  const result = foldEncounterDamageHits({
+    durationMs: 60_000,
+    damageHits: [hits("player", timesMs, amounts)],
+  }).perEntityHits.get("player");
+  if (!result) throw new Error("expected indexed hit stream");
+  return result;
+}
+
+describe("foldEncounterDamageHits", () => {
+  it("indexes per-entity hit streams and skips empty ones", () => {
     const chart: EncounterChart = {
       durationMs: 1_500,
-      bucketMs: 1_000,
-      series: [
-        series({
-          entityUuid: "a",
-          metric: 0,
-          offsetsMs: [0, 1_000],
-          totals: [100, 100],
-        }),
-        series({
-          entityUuid: "a",
-          metric: 0,
-          offsetsMs: [0],
-          totals: [50],
-        }),
-        series({
-          entityUuid: "b",
-          metric: 0,
-          offsetsMs: [0],
-          totals: [25],
-        }),
-        series({
-          entityUuid: "a",
-          metric: 1,
-          offsetsMs: [0],
-          totals: [40],
-        }),
-        series({
-          entityUuid: "a",
-          metric: 2,
-          offsetsMs: [0],
-          totals: [30],
-        }),
+      damageHits: [
+        hits("a", [100, 900], [100, 50]),
+        hits("empty", [], []),
+        hits("b", [0], [25]),
       ],
     };
 
-    const result = foldEncounterDamageBuckets(chart);
+    const result = foldEncounterDamageHits(chart);
 
     expect(result.durationMs).toBe(1_500);
-    expect(result.bucketMs).toBe(1_000);
-    expect(result.perEntityBuckets.get("a")).toEqual([150, 100]);
-    expect(result.perEntityBuckets.get("b")).toEqual([25, 0]);
+    expect(result.perEntityHits.size).toBe(2);
+    expect(result.perEntityHits.get("a")?.timesMs).toEqual([100, 900]);
+    expect(result.perEntityHits.get("a")?.amounts).toEqual([100, 50]);
+    expect(result.perEntityHits.get("a")?.prefixAmounts).toEqual(
+      new Float64Array([0, 100, 150]),
+    );
+    expect(result.perEntityHits.get("b")?.timesMs).toEqual([0]);
   });
 
-  it("fills absent buckets with zeroes", () => {
-    const result = foldEncounterDamageBuckets({
-      durationMs: 3_000,
-      bucketMs: 1_000,
-      series: [
-        series({
-          entityUuid: "a",
-          metric: 0,
-          offsetsMs: [1_000],
-          totals: [100],
-        }),
-      ],
+  it("normalizes a degenerate duration to 1ms", () => {
+    const result = foldEncounterDamageHits({
+      durationMs: 0,
+      damageHits: [hits("a", [0], [1])],
     });
 
-    expect(result.perEntityBuckets.get("a")).toEqual([0, 100, 0]);
+    expect(result.durationMs).toBe(1);
   });
+  it("clips mismatched columns so prefix sums and times stay aligned", () => {
+    const result = foldEncounterDamageHits({
+      durationMs: 1_000,
+      damageHits: [hits("a", [0, 100], [25])],
+    }).perEntityHits.get("a");
 
-  it("drops out-of-range and non-finite samples", () => {
-    const result = foldEncounterDamageBuckets({
-      durationMs: 2_000,
-      bucketMs: 1_000,
-      series: [
-        series({
-          entityUuid: "a",
-          metric: 0,
-          offsetsMs: [-1, 0, 2_000, Number.NaN],
-          totals: [1, 100, 2, Number.NaN],
-        }),
-      ],
-    });
-
-    expect(result.perEntityBuckets.get("a")).toEqual([100, 0]);
+    expect(result?.timesMs).toEqual([0]);
+    expect(result?.amounts).toEqual([25]);
+    expect(result?.prefixAmounts).toEqual(new Float64Array([0, 25]));
   });
 });
 
-describe("toRollingDpsCurve", () => {
-  it("uses the actual bucket count as divisor while the window is filling", () => {
-    // 1s buckets, 10s window: the first 9 points divide by (index + 1)
-    // buckets, not by 10.
-    const totals = [100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    const curve = toRollingDpsCurve(totals, 1_000, 12_000);
+describe("dpsValueAt", () => {
+  it("uses the 500ms startup grace for a hit at segment offset zero", () => {
+    const source = indexed([0], [10_000]);
 
-    expect(curve[0]).toEqual([1_000, 100]);
-    expect(curve[1]).toEqual([2_000, 50]);
-    expect(curve[9]).toEqual([10_000, 10]);
+    expect(dpsValueAt(source, "instant", 0, DEFAULT_WINDOW_MS)).toBe(20_000);
+    expect(dpsValueAt(source, "average", 0, DEFAULT_WINDOW_MS)).toBe(20_000);
+    expect(dpsValueAt(source, "instant", 500, DEFAULT_WINDOW_MS)).toBe(20_000);
   });
 
-  it("evicts damage once it leaves the trailing window", () => {
-    const totals = [100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    const curve = toRollingDpsCurve(totals, 1_000, 12_000);
+  it("returns zero before the first hit instead of leaking future damage", () => {
+    const source = indexed([5_000], [10_000]);
 
-    // The window is left-closed right-open: at 10s it covers [0s, 10s) and
-    // still contains the 0s hit; at 11s it covers [1s, 11s) and the hit is
-    // gone.
-    expect(curve[9]).toEqual([10_000, 10]);
-    expect(curve[10]).toEqual([11_000, 0]);
+    expect(dpsValueAt(source, "instant", 4_999, DEFAULT_WINDOW_MS)).toBe(0);
+    expect(dpsValueAt(source, "average", 4_999, DEFAULT_WINDOW_MS)).toBe(0);
+    expect(dpsValueAt(source, "instant", 5_000, DEFAULT_WINDOW_MS)).toBe(2_000);
   });
 
-  it("sums concurrent hits inside the window", () => {
-    const totals = [0, 0, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0];
-    const curve = toRollingDpsCurve(totals, 1_000, 12_000);
+  it("uses a left-open 10s rolling window and merges same-ms hits", () => {
+    const source = indexed([5_000, 15_000, 15_000], [1_000, 200, 300]);
 
-    expect(curve[9]).toEqual([10_000, 30]);
+    expect(dpsValueAt(source, "instant", 14_999, DEFAULT_WINDOW_MS)).toBe(100);
+    // At exactly 15s the 5s hit has expired; both new hits count.
+    expect(dpsValueAt(source, "instant", 15_000, DEFAULT_WINDOW_MS)).toBe(50);
+    expect(dpsValueAt(source, "average", 15_000, DEFAULT_WINDOW_MS)).toBe(100);
   });
 
-  it("clamps the final point to durationMs", () => {
-    // 2.5s duration with 1s buckets: the third bucket only covers 0.5s of
-    // wall-clock time, but the window divisor stays bucket-based.
-    const curve = toRollingDpsCurve([0, 0, 100], 1_000, 2_500);
+  it("uses the configured rolling window", () => {
+    const source = indexed([5_000, 10_000], [1_000, 500]);
 
-    expect(curve[2]?.[0]).toBe(2_500);
+    expect(dpsValueAt(source, "instant", 9_999, 5_000)).toBe(200);
+    expect(dpsValueAt(source, "instant", 10_000, 5_000)).toBe(100);
+  });
+
+  it("divides cumulative damage by the complete elapsed fight time", () => {
+    const source = indexed([1_000, 2_000, 4_000], [100, 100, 200]);
+
+    expect(dpsValueAt(source, "average", 1_000, DEFAULT_WINDOW_MS)).toBe(100);
+    expect(dpsValueAt(source, "average", 2_000, DEFAULT_WINDOW_MS)).toBe(100);
+    expect(dpsValueAt(source, "average", 4_000, DEFAULT_WINDOW_MS)).toBe(100);
+    expect(dpsValueAt(source, "average", 8_000, DEFAULT_WINDOW_MS)).toBe(50);
   });
 });
 
-describe("toCumulativeDpsCurve", () => {
-  it("divides the running total by elapsed time", () => {
-    const curve = toCumulativeDpsCurve([100, 0, 300], 1_000, 3_000);
+describe("clampInstantDpsWindowSec", () => {
+  it("clamps and rounds the setting to a whole second", () => {
+    expect(clampInstantDpsWindowSec(0)).toBe(1);
+    expect(clampInstantDpsWindowSec(4.6)).toBe(5);
+    expect(clampInstantDpsWindowSec(31)).toBe(30);
+    expect(clampInstantDpsWindowSec(Number.NaN)).toBe(10);
+  });
+});
+
+describe("sampleDpsCurve", () => {
+  it("samples both viewport boundaries with exact values", () => {
+    const source = indexed([1_000], [5_000]);
+    const curve = sampleDpsCurve(
+      source,
+      "average",
+      1_000,
+      10_000,
+      2,
+      DEFAULT_WINDOW_MS,
+    );
 
     expect(curve).toEqual([
-      [1_000, 100],
-      [2_000, 50],
-      [3_000, 400 / 3],
+      [1_000, 5_000],
+      [5_500, 5_000_000 / 5_500],
+      [10_000, 500],
     ]);
   });
 
-  it("ends at total damage over durationMs", () => {
-    const totals = [10, 20, 30, 40];
-    const curve = toCumulativeDpsCurve(totals, 1_000, 4_000);
+  it("returns no points without a hit source", () => {
+    expect(
+      sampleDpsCurve(null, "instant", 0, 10_000, 100, DEFAULT_WINDOW_MS),
+    ).toEqual([]);
+  });
 
-    expect(curve.at(-1)).toEqual([4_000, 25]);
+  it("keeps instant intervals within the rolling window on narrow plots", () => {
+    const source = indexed([15_000], [1_000]);
+    const curve = sampleDpsCurve(
+      source,
+      "instant",
+      0,
+      30_000,
+      1,
+      DEFAULT_WINDOW_MS,
+    );
+
+    expect(curve).toHaveLength(4);
+    expect(curve.some(([, value]) => value > 0)).toBe(true);
+  });
+
+  it("bounds a 100k-hit encounter by the requested pixel intervals", () => {
+    const count = 100_000;
+    const timesMs = Array.from({ length: count }, (_, index) => index * 10);
+    const source = indexed(timesMs, new Array<number>(count).fill(1));
+
+    const curve = sampleDpsCurve(
+      source,
+      "instant",
+      0,
+      1_000_000,
+      800,
+      DEFAULT_WINDOW_MS,
+    );
+
+    expect(curve).toHaveLength(801);
+    expect(curve[0]?.[0]).toBe(0);
+    expect(curve.at(-1)?.[0]).toBe(1_000_000);
   });
 });
 
-describe("teammateAverageCurves", () => {
-  it("emits cumulative curves only for selected entities with damage", () => {
-    const buckets = new Map<string, number[]>([
-      ["a", [100, 0, 200]],
-      ["b", [50, 50, 0]],
-      ["empty", [0, 0, 0]],
+describe("teammateDpsSources", () => {
+  it("resolves the selected mode only for indexed entities with damage", () => {
+    const perEntityHits = foldEncounterDamageHits({
+      durationMs: 3_000,
+      damageHits: [
+        hits("a", [1_000, 3_000], [100, 200]),
+        hits("b", [1_000, 2_000], [50, 50]),
+        hits("empty", [1_000], [0]),
+      ],
+    }).perEntityHits;
+    const modes = new Map<string, TeammateCurveMode>([
+      ["b", "instant"],
+      ["missing", "average"],
+      ["empty", "instant"],
+      ["a", "average"],
     ]);
 
-    const result = teammateAverageCurves(
-      ["b", "missing", "empty", "a"],
-      buckets,
-      1_000,
-      3_000,
-    );
+    const result = teammateDpsSources(modes, perEntityHits);
 
     expect(result.map((row) => row.entityUuid)).toEqual(["b", "a"]);
-    expect(result[0]?.curve).toEqual(
-      toCumulativeDpsCurve([50, 50, 0], 1_000, 3_000),
-    );
-    expect(result[1]?.curve).toEqual(
-      toCumulativeDpsCurve([100, 0, 200], 1_000, 3_000),
-    );
-  });
-});
-
-describe("rolling vs cumulative", () => {
-  it("coincide when the fight is shorter than the rolling window", () => {
-    // 5s fight, 1s buckets: the 10s window never fills, so both curves divide
-    // the same running sum by the same covered time.
-    const totals = [100, 50, 0, 200, 0];
-    const rolling = toRollingDpsCurve(totals, 1_000, 5_000);
-    const cumulative = toCumulativeDpsCurve(totals, 1_000, 5_000);
-
-    expect(rolling).toEqual(cumulative);
+    expect(result.map((row) => row.mode)).toEqual(["instant", "average"]);
+    expect(result[0]?.hits.entityUuid).toBe("b");
+    expect(result[1]?.hits.entityUuid).toBe("a");
   });
 });
 
@@ -322,63 +333,19 @@ describe("timeToX / xToTime", () => {
   });
 });
 
-describe("windowMaxValue", () => {
-  it("only considers points inside the window", () => {
+describe("curveMaxValue", () => {
+  it("finds the maximum across the pixel-bounded viewport samples", () => {
     const curve: [number, number][] = [
       [0, 10],
       [1_000, 100],
       [2_000, 5],
-      [3_000, 999],
     ];
-    expect(windowMaxValue(curve, 0, 2_000)).toBe(100);
+    expect(curveMaxValue(curve)).toBe(100);
   });
 
   it("returns 0 for an empty or missing curve", () => {
-    expect(windowMaxValue(null, 0, 1_000)).toBe(0);
-    expect(windowMaxValue([], 0, 1_000)).toBe(0);
-  });
-});
-
-describe("interpolateCurveValue", () => {
-  const curve: [number, number][] = [
-    [0, 0],
-    [1_000, 100],
-    [2_000, 100],
-  ];
-
-  it("interpolates linearly between bracketing points", () => {
-    expect(interpolateCurveValue(curve, 500)).toBe(50);
-  });
-
-  it("clamps to the first/last value outside the curve's range", () => {
-    expect(interpolateCurveValue(curve, -100)).toBe(0);
-    expect(interpolateCurveValue(curve, 5_000)).toBe(100);
-  });
-
-  it("returns null for an empty curve", () => {
-    expect(interpolateCurveValue([], 100)).toBeNull();
-  });
-});
-
-describe("downsampleCurve", () => {
-  it("leaves short curves untouched", () => {
-    const curve: [number, number][] = [
-      [0, 1],
-      [1, 2],
-    ];
-    expect(downsampleCurve(curve, 10)).toBe(curve);
-  });
-
-  it("bucket-averages long curves down to roughly the target size", () => {
-    const curve: [number, number][] = Array.from({ length: 100 }, (_, i) => [
-      i * 10,
-      i,
-    ]);
-    const result = downsampleCurve(curve, 10);
-
-    expect(result.length).toBe(10);
-    // First bucket covers indices [0, 10) -> average value (0+...+9)/10 = 4.5.
-    expect(result[0]?.[1]).toBeCloseTo(4.5, 5);
+    expect(curveMaxValue(null)).toBe(0);
+    expect(curveMaxValue([])).toBe(0);
   });
 });
 
@@ -543,6 +510,53 @@ describe("collapseHoverLanePoints", () => {
   it("passes a single point through", () => {
     const only = hoverPoint(1, 50);
     expect(collapseHoverLanePoints([only])).toEqual([only]);
+  });
+});
+
+describe("visibleSpanRects", () => {
+  it("converts a fully-visible span to left/width percentages", () => {
+    expect(
+      visibleSpanRects([{ startMs: 1_000, endMs: 3_000 }], 0, 10_000),
+    ).toEqual([{ startMs: 1_000, endMs: 3_000, leftPct: 10, widthPct: 20 }]);
+  });
+
+  it("clamps a span straddling the window edges without changing its reported times", () => {
+    const [rect] = visibleSpanRects(
+      [{ startMs: -1_000, endMs: 2_000 }],
+      0,
+      10_000,
+    );
+    expect(rect).toEqual({
+      startMs: -1_000,
+      endMs: 2_000,
+      leftPct: 0,
+      widthPct: 20,
+    });
+  });
+
+  it("drops spans entirely outside the window", () => {
+    expect(
+      visibleSpanRects(
+        [
+          { startMs: -2_000, endMs: -1_000 },
+          { startMs: 11_000, endMs: 12_000 },
+        ],
+        0,
+        10_000,
+      ),
+    ).toEqual([]);
+  });
+
+  it("keeps a span that exactly touches the window boundary excluded (half-open)", () => {
+    expect(
+      visibleSpanRects([{ startMs: -1_000, endMs: 0 }], 0, 10_000),
+    ).toEqual([]);
+  });
+
+  it("returns an empty array for a degenerate window", () => {
+    expect(visibleSpanRects([{ startMs: 0, endMs: 100 }], 500, 500)).toEqual(
+      [],
+    );
   });
 });
 

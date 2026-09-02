@@ -22,6 +22,10 @@ pub struct DeathReplayDamage {
     pub attacker_monster_type_id: Option<i32>,
     pub skill_key: i64,
     pub value: u128,
+    #[serde(default)]
+    pub property: Option<i32>,
+    #[serde(default)]
+    pub damage_mode: Option<i32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -71,6 +75,8 @@ impl From<&DeathReplaySnapshot> for DeathRecord {
                     attacker_monster_type_id: damage.attacker_monster_type_id,
                     skill_key: damage.skill_key,
                     value: damage.value.to_string(),
+                    property: damage.property,
+                    damage_mode: damage.damage_mode,
                 })
                 .collect(),
             victim_buffs: snapshot
@@ -98,6 +104,8 @@ struct PendingDamage {
     attacker_monster_id: Option<i32>,
     skill_key: i64,
     value: u128,
+    property: Option<i32>,
+    damage_mode: Option<i32>,
 }
 
 #[derive(Debug, Default)]
@@ -134,6 +142,8 @@ impl DeathProjection {
                         attacker_monster_type_id: damage.attacker_monster_id,
                         skill_key: damage.skill_key,
                         value: damage.value,
+                        property: damage.property,
+                        damage_mode: damage.damage_mode,
                     })
                     .collect();
                 let victim_buffs = buffs_for(buff_checkpoint, *victim);
@@ -172,6 +182,8 @@ impl DeathProjection {
             attacker_monster_id: hit.source_monster_id,
             skill_key: hit.skill_key,
             value: hit.amount,
+            property: hit.property,
+            damage_mode: hit.damage_mode,
         });
     }
 
@@ -339,8 +351,8 @@ mod tests {
             hp_loss: 100,
             shield_loss: 23,
             is_lucky_bonus_only: false,
-            property: None,
-            damage_mode: None,
+            property: Some(3),
+            damage_mode: Some(2),
             effective_amount: None,
         }
     }
@@ -434,6 +446,8 @@ mod tests {
             .expect("damage in replay window");
 
         assert_eq!(replay.recent_damages[0].value, u128::from(u64::MAX) + 123);
+        assert_eq!(replay.recent_damages[0].property, Some(3));
+        assert_eq!(replay.recent_damages[0].damage_mode, Some(2));
         assert_eq!(replay.victim_buffs.len(), 1);
         assert_eq!(replay.victim_buffs[0].instance_id, 99);
         assert_eq!(replay.victim_buffs[0].duration_ms, None);
@@ -526,6 +540,8 @@ mod tests {
                 attacker_monster_type_id: Some(9_001),
                 skill_key: 17_140_101,
                 value: u128::MAX,
+                property: Some(3),
+                damage_mode: Some(2),
             }],
             victim_buffs: vec![DeathReplayBuff {
                 base_id: 77,
@@ -542,6 +558,8 @@ mod tests {
         let record = DeathRecord::from(&snapshot);
         assert_eq!(record.victim_entity_uuid, "20");
         assert_eq!(record.recent_damages[0].value, u128::MAX.to_string());
+        assert_eq!(record.recent_damages[0].property, Some(3));
+        assert_eq!(record.recent_damages[0].damage_mode, Some(2));
         assert_eq!(record.victim_buffs[0].buff_uuid, 99);
         assert_eq!(record.victim_buffs[0].duration_ms, 0);
         assert_eq!(

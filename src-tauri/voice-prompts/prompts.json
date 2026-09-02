@@ -1,0 +1,56 @@
+{
+  "revision": 1,
+  "prompts": [
+    {
+      "key": "voice:alert:matchReady",
+      "variants": {
+        "zh-CN": {
+          "text": "匹配成功",
+          "file": "alerts/matchReady.zh-CN.wav"
+        },
+        "en-US": {
+          "text": "Match found",
+          "file": "alerts/matchReady.en-US.wav"
+        },
+        "ja-JP": {
+          "text": "マッチしました",
+          "file": "alerts/matchReady.ja-JP.wav"
+        }
+      }
+    },
+    {
+      "key": "voice:alert:readyCheck",
+      "variants": {
+        "zh-CN": {
+          "text": "准备确认",
+          "file": "alerts/readyCheck.zh-CN.wav"
+        },
+        "en-US": {
+          "text": "Ready check",
+          "file": "alerts/readyCheck.en-US.wav"
+        },
+        "ja-JP": {
+          "text": "準備確認",
+          "file": "alerts/readyCheck.ja-JP.wav"
+        }
+      }
+    },
+    {
+      "key": "voice:alert:teamVote",
+      "variants": {
+        "zh-CN": {
+          "text": "进本投票",
+          "file": "alerts/teamVote.zh-CN.wav"
+        },
+        "en-US": {
+          "text": "Dungeon vote",
+          "file": "alerts/teamVote.en-US.wav"
+        },
+        "ja-JP": {
+          "text": "ダンジョン投票",
+          "file": "alerts/teamVote.ja-JP.wav"
+        }
+      }
+    }
+  ]
+}

@@ -2,11 +2,11 @@ import {
   SETTINGS,
   ensureBuffAliases,
   ensureOverlayTextStyle,
-  type InlineBuffEntry,
   type OverlayTextStyle,
   type ShieldDetailStyle,
   type TextBuffPanelStyle,
 } from "$lib/settings-store";
+import { buildConfiguredBuffPlan } from "$lib/buff-monitor-plan";
 import { ensureBuffIconOverrides } from "$lib/buff-icons";
 import {
   activeProfile as sharedActiveProfile,
@@ -14,6 +14,7 @@ import {
   updateActiveProfile,
 } from "$lib/skill-monitor-profile.svelte.js";
 import {
+  ensureBuffCoverageStyle,
   ensureFactorSlotLabels,
   ensurePanelAttrs,
 } from "$lib/skill-monitor-normalize";
@@ -26,10 +27,8 @@ import {
   resolveUserCounterRulesToPresets,
   type CounterRulePreset,
 } from "$lib/skill-mappings";
-import { ensureCustomPanelGroups } from "$lib/custom-panel-utils";
 import { DEFAULT_OVERLAY_VISIBILITY } from "./overlay-constants";
 import {
-  ensureBuffGroups,
   ensureOverlayVisibility,
   ensureShieldDetailStyle,
   ensureTextBuffPanelStyle,
@@ -42,6 +41,9 @@ const _activeProfileIndex = $derived.by(() => {
 const _activeProfile = $derived.by(() => {
   return sharedActiveProfile();
 });
+const _configuredBuffPlan = $derived.by(() =>
+  buildConfiguredBuffPlan(_activeProfile),
+);
 
 const _selectedClassKey = $derived.by(
   () => _activeProfile?.selectedClass ?? "wind_knight",
@@ -72,7 +74,7 @@ const _buffPriorityIds = $derived.by(() => {
   return Array.from(
     new Set([
       ...(_activeProfile.buffPriorityIds ?? []),
-      ...ensureBuffGroups(_activeProfile).flatMap(
+      ..._configuredBuffPlan.buffGroups.flatMap(
         (group) => group.priorityBuffIds ?? [],
       ),
     ]),
@@ -95,29 +97,23 @@ const _textBuffPanelStyle = $derived.by<TextBuffPanelStyle>(() =>
 const _shieldDetailStyle = $derived.by<ShieldDetailStyle>(() =>
   ensureShieldDetailStyle(_activeProfile),
 );
+const _buffCoverageEntries = $derived.by(
+  () => _configuredBuffPlan.coverageEntries,
+);
+const _buffCoverageStyle = $derived.by(() =>
+  ensureBuffCoverageStyle(_activeProfile),
+);
 const _overlayTextStyle = $derived.by<OverlayTextStyle>(() =>
   ensureOverlayTextStyle(_activeProfile?.overlayTextStyle),
 );
-const _monitoredPanelAttrs = $derived.by(() => ensurePanelAttrs(_activeProfile));
+const _monitoredPanelAttrs = $derived.by(() =>
+  ensurePanelAttrs(_activeProfile),
+);
 const _enabledPanelAttrs = $derived.by(() =>
   _monitoredPanelAttrs.filter((item) => item.enabled),
 );
-const _customPanelGroups = $derived.by(() => {
-  if (!_activeProfile) return [];
-  return ensureCustomPanelGroups(_activeProfile);
-});
-const _inlineBuffEntries = $derived.by<InlineBuffEntry[]>(() => {
-  return _customPanelGroups
-    .filter((group) => group.kind === "manual")
-    .flatMap((group) => group.entries);
-});
-const _inlineBuffIds = $derived.by(
-  () =>
-    new Set(
-      _inlineBuffEntries
-        .filter((entry) => entry.sourceType === "buff")
-        .map((entry) => entry.sourceId),
-    ),
+const _customPanelGroups = $derived.by(
+  () => _configuredBuffPlan.customPanelGroups,
 );
 const _resolvedUserCounterRules = $derived.by<CounterRulePreset[]>(() =>
   resolveUserCounterRulesToPresets(_activeProfile?.userCounterRules),
@@ -132,6 +128,10 @@ export function activeProfileIndex() {
 
 export function activeProfile() {
   return _activeProfile;
+}
+
+export function configuredBuffPlan() {
+  return _configuredBuffPlan;
 }
 
 export function selectedClassKey() {
@@ -190,6 +190,14 @@ export function shieldDetailStyle() {
   return _shieldDetailStyle;
 }
 
+export function buffCoverageEntries() {
+  return _buffCoverageEntries;
+}
+
+export function buffCoverageStyle() {
+  return _buffCoverageStyle;
+}
+
 export function overlayTextStyle() {
   return _overlayTextStyle;
 }
@@ -204,14 +212,6 @@ export function enabledPanelAttrs() {
 
 export function customPanelGroups() {
   return _customPanelGroups;
-}
-
-export function inlineBuffEntries() {
-  return _inlineBuffEntries;
-}
-
-export function inlineBuffIds() {
-  return _inlineBuffIds;
 }
 
 export function resolvedUserCounterRules() {

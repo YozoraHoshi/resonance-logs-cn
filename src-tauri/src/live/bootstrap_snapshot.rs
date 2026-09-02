@@ -1,6 +1,6 @@
 use crate::live::counter::engine::CounterRule;
 use crate::live::counter::season_cultivate::{FactorCounterTemplate, normalize_factor_templates};
-use crate::live::runtime::segment::TRAINING_WINDOW_MS;
+use crate::live::runtime::segment::{TRAINING_WINDOW_MS, TrainingLockPolicy};
 use crate::voice::models::VoiceRuntimeSnapshot;
 use log::{info, warn};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -94,6 +94,13 @@ impl MonitorRuntimeSnapshot {
             return Err("最多监控10个技能".to_string());
         }
         dedup_and_sort_i32(&mut self.skill.monitored_buff_ids);
+        if self.skill.buff_timeline_ids.iter().any(|id| *id <= 0) {
+            return Err("buff覆盖率ID必须为正整数".to_string());
+        }
+        dedup_and_sort_i32(&mut self.skill.buff_timeline_ids);
+        if self.skill.buff_timeline_ids.len() > MAX_BUFF_COVERAGE_ENTRIES {
+            return Err(format!("buff覆盖率最多监控{MAX_BUFF_COVERAGE_ENTRIES}项"));
+        }
         dedup_and_sort_i32(&mut self.skill.monitored_panel_attr_ids);
         self.skill
             .buff_counter_rules
@@ -126,6 +133,7 @@ impl MonitorRuntimeSnapshot {
         if !self.skill.enabled {
             self.skill.monitored_skill_ids.clear();
             self.skill.monitored_buff_ids.clear();
+            self.skill.buff_timeline_ids.clear();
             self.skill.monitor_all_buff = false;
             self.skill.monitored_panel_attr_ids.clear();
             self.skill.buff_counter_rules.clear();
@@ -164,6 +172,8 @@ impl MonitorRuntimeSnapshot {
     }
 }
 
+pub const MAX_BUFF_COVERAGE_ENTRIES: usize = 32;
+
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", default)]
 pub struct I18nRuntimeSnapshot {
@@ -183,6 +193,7 @@ impl Default for I18nRuntimeSnapshot {
 pub struct LiveRuntimeSnapshot {
     pub event_update_rate_ms: u64,
     pub training_window_ms: u64,
+    pub training_lock_policy: TrainingLockPolicy,
 }
 
 impl Default for LiveRuntimeSnapshot {
@@ -190,6 +201,7 @@ impl Default for LiveRuntimeSnapshot {
         Self {
             event_update_rate_ms: 200,
             training_window_ms: TRAINING_WINDOW_MS,
+            training_lock_policy: TrainingLockPolicy::EliteDummies,
         }
     }
 }
@@ -204,6 +216,9 @@ pub struct SkillRuntimeSnapshot {
     pub monitored_panel_attr_ids: Vec<i32>,
     pub buff_counter_rules: Vec<CounterRule>,
     pub season_cultivate_factor_templates: Vec<FactorCounterTemplate>,
+    /// Coverage watch list: these buff ids are tracked for live coverage on
+    /// the local player and persisted as timeline edges for all players.
+    pub buff_timeline_ids: Vec<i32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Default)]
@@ -432,5 +447,46 @@ mod tests {
         let live: LiveRuntimeSnapshot = serde_json::from_str(r#"{"eventUpdateRateMs":200}"#)
             .expect("legacy live snapshot deserializes");
         assert_eq!(live.training_window_ms, TRAINING_WINDOW_MS);
+        assert_eq!(live.training_lock_policy, TrainingLockPolicy::EliteDummies);
+    }
+
+    #[test]
+    fn missing_training_lock_policy_deserializes_to_elite_dummies() {
+        let live: LiveRuntimeSnapshot =
+            serde_json::from_str(r#"{"eventUpdateRateMs":200,"trainingWindowMs":183000}"#)
+                .expect("legacy live snapshot deserializes");
+        assert_eq!(live.training_lock_policy, TrainingLockPolicy::EliteDummies);
+    }
+
+    #[test]
+    fn coverage_ids_are_deduplicated_and_bounded() {
+        let mut snapshot = MonitorRuntimeSnapshot::default();
+        snapshot.skill.enabled = true;
+        snapshot.skill.buff_timeline_ids = vec![3, 1, 3, 2];
+        let normalized = snapshot.normalize().expect("coverage ids are valid");
+        assert_eq!(normalized.skill.buff_timeline_ids, vec![1, 2, 3]);
+
+        let mut too_many = MonitorRuntimeSnapshot::default();
+        too_many.skill.enabled = true;
+        too_many.skill.buff_timeline_ids = (1..=33).collect();
+        assert!(too_many.normalize().is_err());
+
+        let mut invalid = MonitorRuntimeSnapshot::default();
+        invalid.skill.enabled = true;
+        invalid.skill.buff_timeline_ids = vec![0];
+        assert!(invalid.normalize().is_err());
+    }
+
+    #[test]
+    fn buff_publication_and_timeline_ids_remain_independent() {
+        let mut snapshot = MonitorRuntimeSnapshot::default();
+        snapshot.skill.enabled = true;
+        snapshot.skill.monitored_buff_ids = vec![9];
+        snapshot.skill.buff_timeline_ids = vec![8];
+
+        let normalized = snapshot.normalize().expect("buff ids are valid");
+
+        assert_eq!(normalized.skill.monitored_buff_ids, vec![9]);
+        assert_eq!(normalized.skill.buff_timeline_ids, vec![8]);
     }
 }

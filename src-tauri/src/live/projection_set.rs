@@ -10,6 +10,7 @@ use crate::live::ipc::models::{
     LiveMonsterPayload, LiveScenePayload, LiveStatusPayload, MinimapUpdatePayload,
 };
 use crate::live::ipc::topic::{Topic, TopicMask};
+use crate::live::projections::buff_timeline::BuffTimelineProjection;
 use crate::live::projections::combat::accumulator::CombatHitFact;
 use crate::live::projections::combat::projection::CombatProjection;
 use crate::live::projections::death::DeathProjection;
@@ -21,7 +22,7 @@ use crate::live::projections::timeline::TimelineProjection;
 use crate::live::projections::voice::VoiceProjection;
 use crate::live::runtime::entity_context::EntityContext;
 use crate::live::runtime::events::{
-    AttributeValue, DomainEnvelope, DomainEvent, MonoTimeMs, SegmentReason,
+    AttributeValue, DomainEnvelope, DomainEvent, EntityKind, MonoTimeMs, SegmentReason,
 };
 use crate::live::runtime::scheduler::{DeadlineScheduler, DueTimer};
 use crate::live::runtime::segment::SegmentState;
@@ -73,6 +74,7 @@ impl TopicPublication {
 
 #[derive(Debug)]
 pub struct ProjectionSet {
+    buff_timeline: BuffTimelineProjection,
     combat: CombatProjection,
     counter: CounterEngine,
     entity_monitor: EntityMonitorProjection,
@@ -89,6 +91,7 @@ pub struct ProjectionSet {
 impl ProjectionSet {
     pub fn new(history_writer: HistoryWriterHandle) -> Self {
         Self {
+            buff_timeline: BuffTimelineProjection::default(),
             combat: CombatProjection::default(),
             counter: CounterEngine::new(),
             entity_monitor: EntityMonitorProjection::default(),
@@ -123,10 +126,26 @@ impl ProjectionSet {
                 scheduler,
             )
             .map_err(|error| error.to_string())?;
-        self.entity_monitor
-            .apply_config(std::sync::Arc::clone(&config), entities);
+        self.entity_monitor.apply_config(config.as_ref(), entities);
         self.voice
             .apply_config(&config, entities, now_mono, scheduler);
+        {
+            let combat = &self.combat;
+            let current_offset = combat
+                .segment_id()
+                .map(|_| combat.segment_offset_ms(now_mono));
+            let edges = self.buff_timeline.apply_config(
+                &config.skill.buff_timeline_ids,
+                entities,
+                current_offset,
+                |mono| combat.segment_offset_ms(mono),
+            );
+            if let Some(offset) = current_offset {
+                for edge in edges {
+                    self.history.persist_buff(edge, entities, offset)?;
+                }
+            }
+        }
         self.counter_side_effect_dirty = true;
         self.dirty |= SEGMENT_TOPICS;
         Ok(())
@@ -164,7 +183,13 @@ impl ProjectionSet {
                 ended_at_wall_ms,
                 ended_at_mono_ms,
             } => {
-                self.end_segment(*segment_id, *reason, *ended_at_wall_ms, *ended_at_mono_ms)?;
+                self.end_segment(
+                    *segment_id,
+                    *reason,
+                    *ended_at_wall_ms,
+                    *ended_at_mono_ms,
+                    entities,
+                )?;
                 return Ok(());
             }
             _ => {}
@@ -200,9 +225,21 @@ impl ProjectionSet {
                 self.death.apply(envelope);
                 self.voice.apply(envelope, entities, scheduler);
                 minimap_changed |= self.minimap.apply(envelope);
+                let offset = self.combat.segment_offset_ms(envelope.meta.mono_ms());
+                let edges = self
+                    .buff_timeline
+                    .on_entity_disappeared(entity.uuid.0, offset);
+                if !edges.is_empty() {
+                    reported |= TopicMask::BUFFS;
+                    for edge in edges {
+                        self.history.persist_buff(edge, entities, offset)?;
+                    }
+                }
             }
             DomainEvent::IdentityChanged {
-                entity, current, ..
+                entity,
+                previous,
+                current,
             } => {
                 combat_changed |= self.combat.observe_identity(*entity, current, entities);
                 reported |= self.entity_monitor.apply(envelope, entities, scheduler);
@@ -214,6 +251,21 @@ impl ProjectionSet {
                     self.combat.segment_offset_ms(envelope.meta.mono_ms()),
                     None,
                 )?;
+                if previous.kind != current.kind {
+                    let offset = self.combat.segment_offset_ms(envelope.meta.mono_ms());
+                    let combat = &self.combat;
+                    let edges =
+                        self.buff_timeline
+                            .reconcile_from_entities(entities, offset, &mut |mono| {
+                                combat.segment_offset_ms(mono)
+                            });
+                    if !edges.is_empty() {
+                        reported |= TopicMask::BUFFS;
+                        for edge in edges {
+                            self.history.persist_buff(edge, entities, offset)?;
+                        }
+                    }
+                }
             }
             DomainEvent::AttributeChanged {
                 entity,
@@ -250,8 +302,33 @@ impl ProjectionSet {
                 ) {
                     self.voice.apply(envelope, entities, scheduler);
                 }
+                if let DomainEvent::BuffChanged(event) = &envelope.event {
+                    let offset = self.combat.segment_offset_ms(envelope.meta.mono_ms());
+                    let target_is_character = entities
+                        .entity(event.state.target.uuid)
+                        .is_some_and(|state| state.identity.kind == EntityKind::Character);
+                    let expires_offset = event
+                        .state
+                        .expires_mono_ms
+                        .map(|mono| self.combat.segment_offset_ms(mono));
+                    let edges = self.buff_timeline.apply_buff(
+                        event,
+                        target_is_character,
+                        offset,
+                        expires_offset,
+                    );
+                    if !edges.is_empty() {
+                        reported |= TopicMask::BUFFS;
+                        for edge in edges {
+                            self.history.apply_buff(envelope, edge, entities, offset)?;
+                        }
+                    }
+                }
                 if let DomainEvent::LocalPlayerChanged { current, .. } = &envelope.event {
                     combat_changed |= self.combat.set_local_player(*current);
+                    let offset = self.combat.segment_offset_ms(envelope.meta.mono_ms());
+                    self.buff_timeline.rebind_local_player(entities, offset);
+                    reported |= TopicMask::BUFFS;
                 }
             }
             DomainEvent::HateListUpdated { .. }
@@ -270,6 +347,11 @@ impl ProjectionSet {
             }
             DomainEvent::BossMechanicStarted(_) => {
                 reported |= self.entity_monitor.apply(envelope, entities, scheduler);
+                self.voice.apply(envelope, entities, scheduler);
+            }
+            DomainEvent::MatchmakingPopped
+            | DomainEvent::ReadyCheckStarted
+            | DomainEvent::TeamVoteStarted => {
                 self.voice.apply(envelope, entities, scheduler);
             }
             DomainEvent::DeathOccurred { victim, .. } => {
@@ -302,12 +384,12 @@ impl ProjectionSet {
                 );
                 combat_changed |= outcome.had_combat;
                 self.death.apply_hit(envelope, hit, fact.as_ref());
-                self.history.apply_hit(
-                    envelope,
-                    fact.as_ref(),
-                    entities,
-                    self.combat.segment_offset_ms(envelope.meta.mono_ms()),
-                )?;
+                let offset = self.combat.segment_offset_ms(envelope.meta.mono_ms());
+                self.history
+                    .apply_hit(envelope, fact.as_ref(), entities, offset)?;
+                if self.buff_timeline.observe_hit(outcome.active_window) {
+                    reported |= TopicMask::BUFFS;
+                }
             }
             DomainEvent::SceneChanged {
                 scene_id,
@@ -326,6 +408,21 @@ impl ProjectionSet {
                     envelope.meta.mono_ms(),
                     envelope.occurred_at_ms,
                 );
+                if !*is_paused {
+                    let offset = self.combat.segment_offset_ms(envelope.meta.mono_ms());
+                    let combat = &self.combat;
+                    let edges =
+                        self.buff_timeline
+                            .reconcile_from_entities(entities, offset, &mut |mono| {
+                                combat.segment_offset_ms(mono)
+                            });
+                    if !edges.is_empty() {
+                        reported |= TopicMask::BUFFS;
+                        for edge in edges {
+                            self.history.persist_buff(edge, entities, offset)?;
+                        }
+                    }
+                }
             }
             DomainEvent::DeadlineReached { .. } => {
                 reported |= self.entity_monitor.apply(envelope, entities, scheduler);
@@ -339,6 +436,7 @@ impl ProjectionSet {
             | DomainEvent::WipeDetected { .. }
             | DomainEvent::DungeonFlowChanged { .. }
             | DomainEvent::DungeonObjectiveChanged { .. }
+            | DomainEvent::DungeonProgressStateChanged { .. }
             | DomainEvent::SeasonCultivateChanged { .. } => {}
             DomainEvent::SegmentStarted { .. } | DomainEvent::SegmentEnded { .. } => {
                 unreachable!("segment events returned above")
@@ -404,6 +502,7 @@ impl ProjectionSet {
     pub fn clear_display(&mut self) {
         self.presentation.clear_display();
         self.entity_monitor.clear_segment_display();
+        self.buff_timeline.clear();
         self.combat.clear_segment();
         self.death.start_segment();
         self.counter_side_effect_dirty = false;
@@ -422,6 +521,7 @@ impl ProjectionSet {
             self.death.snapshot(),
             self.entity_monitor.displayed_fantasies(),
         );
+        self.buff_timeline.clear();
         self.combat.clear_segment();
         self.combat.set_local_player(None);
         self.entity_monitor.reset_runtime(scheduler);
@@ -506,9 +606,14 @@ impl ProjectionSet {
                     self.presentation
                         .take_status_payload(monitored(), self.counter.snapshot()),
                 ),
-                Topic::Buffs => {
-                    TopicPublication::Buffs(self.presentation.take_buffs_payload(monitored()))
-                }
+                Topic::Buffs => TopicPublication::Buffs(
+                    self.presentation.take_buffs_payload(
+                        monitored(),
+                        self.buff_timeline
+                            .coverage_payload(entities, coverage_active_ms(&self.combat)),
+                        self.combat.segment_id().is_some(),
+                    ),
+                ),
                 Topic::Monster => {
                     TopicPublication::Monster(self.presentation.take_monster_payload(monitored()))
                 }
@@ -569,6 +674,15 @@ impl ProjectionSet {
             },
         )?;
         self.presentation.segment_started(segment_id);
+        {
+            let combat = &self.combat;
+            let edges = self
+                .buff_timeline
+                .start_segment(entities, |mono| combat.segment_offset_ms(mono));
+            for edge in edges {
+                self.history.persist_buff(edge, entities, 0)?;
+            }
+        }
         self.counter_side_effect_dirty = true;
         self.dirty |= SEGMENT_TOPICS;
         Ok(())
@@ -580,14 +694,15 @@ impl ProjectionSet {
         reason: SegmentReason,
         ended_at_wall_ms: i64,
         ended_at_mono_ms: MonoTimeMs,
+        entities: &EntityContext,
     ) -> Result<(), String> {
-        let observed_ms = self.combat.observed_duration_ms();
+        let damage_ms = self.combat.damage_elapsed_ms();
         let scheduled_window_ms = u128::from(
             ended_at_mono_ms
                 .0
                 .saturating_sub(self.combat.started_at_mono_ms().0),
         );
-        let duration_ms = finalized_duration_ms(reason, observed_ms, scheduled_window_ms);
+        let duration_ms = finalized_duration_ms(reason, damage_ms, scheduled_window_ms);
         if reason == SegmentReason::Manual {
             self.presentation.clear_display();
         } else {
@@ -598,8 +713,14 @@ impl ProjectionSet {
                 payload_for_end(self.combat.payload(), reason, duration_ms),
                 clock,
             );
+            self.presentation.freeze_coverage(
+                segment_id,
+                self.buff_timeline
+                    .coverage_payload(entities, coverage_active_ms(&self.combat)),
+            );
         }
 
+        self.buff_timeline.clear();
         let active_ms = self.combat.active_combat_time_ms().min(duration_ms);
         let total_damage_exact = self.combat.total_damage();
         let total_healing_exact = self.combat.total_healing();
@@ -656,7 +777,7 @@ impl ProjectionSet {
 
         self.combat.clear_segment();
         self.counter_side_effect_dirty = false;
-        self.dirty |= TopicMask::COMBAT | TopicMask::STATUS;
+        self.dirty |= TopicMask::COMBAT | TopicMask::STATUS | TopicMask::BUFFS;
         Ok(())
     }
 
@@ -688,14 +809,23 @@ fn clamp_u128_to_i64(value: u128) -> i64 {
     value.min(i64::MAX as u128) as i64
 }
 
+fn coverage_active_ms(combat: &CombatProjection) -> u64 {
+    u64::try_from(
+        combat
+            .active_combat_time_ms()
+            .min(combat.observed_duration_ms()),
+    )
+    .unwrap_or(u64::MAX)
+}
+
 fn finalized_duration_ms(
     reason: SegmentReason,
-    observed_ms: u128,
+    damage_ms: u128,
     scheduled_window_ms: u128,
 ) -> u128 {
     match reason {
         SegmentReason::TrainingElapsed => scheduled_window_ms,
-        _ => observed_ms,
+        _ => damage_ms,
     }
 }
 
@@ -706,6 +836,7 @@ fn payload_for_end(
 ) -> LiveDataPayload {
     if reason == SegmentReason::TrainingElapsed {
         payload.elapsed_ms = duration_ms.to_string();
+        payload.damage_elapsed_ms = duration_ms.to_string();
     }
     payload
 }
@@ -713,7 +844,10 @@ fn payload_for_end(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::live::ipc::models::{LiveDisplayClock, TrainingDummyPhase};
+    use crate::live::ipc::models::{BuffCoverageEntry, LiveDisplayClock, TrainingDummyPhase};
+    use crate::live::runtime::events::{
+        BatchId, DomainHit, EntityRef, EntityUuid, EventMeta, HitChannel, HitKind, SegmentId,
+    };
     use crate::live::runtime::segment::{IdleMode, TRAINING_WINDOW_MS};
 
     #[test]
@@ -815,6 +949,7 @@ mod tests {
             u128::from(TRAINING_WINDOW_MS),
         );
         assert_eq!(frozen.elapsed_ms, TRAINING_WINDOW_MS.to_string());
+        assert_eq!(frozen.damage_elapsed_ms, TRAINING_WINDOW_MS.to_string());
         assert_eq!(frozen.active_combat_time_ms, "182000");
 
         let early = payload_for_end(
@@ -1291,6 +1426,255 @@ mod tests {
             .apply(&envelope, &entities, &mut scheduler)
             .unwrap();
         assert_eq!(projections.dirty_mask(), TopicMask::MINIMAP);
+
+        drop(projections);
+        join.join().expect("history writer stops after disconnect");
+    }
+
+    fn test_meta(sequence: u64, wall_ms: i64, mono_ms: u64) -> EventMeta {
+        EventMeta {
+            batch_id: BatchId(sequence),
+            capture_sequence: sequence,
+            stream_id: 1,
+            stream_epoch: 1,
+            captured_wall_ms: wall_ms,
+            captured_mono_ns: mono_ms.saturating_mul(1_000_000),
+            source_time_ms: None,
+        }
+    }
+
+    fn test_envelope(
+        sequence: u64,
+        wall_ms: i64,
+        mono_ms: u64,
+        event: DomainEvent,
+    ) -> DomainEnvelope {
+        DomainEnvelope {
+            sequence,
+            batch_id: BatchId(sequence),
+            occurred_at_ms: wall_ms,
+            meta: test_meta(sequence, wall_ms, mono_ms),
+            event_index: 0,
+            segment_id: Some(SegmentId(1)),
+            event,
+        }
+    }
+
+    fn local_player() -> EntityRef {
+        EntityRef {
+            uuid: EntityUuid(10),
+            generation: 1,
+        }
+    }
+
+    fn player_hit() -> DomainHit {
+        DomainHit {
+            channel: HitChannel::ToMe,
+            source: Some(local_player()),
+            packet_owner: None,
+            resolved_owner: None,
+            target: EntityRef {
+                uuid: EntityUuid(20),
+                generation: 1,
+            },
+            source_kind: Some(EntityKind::Character),
+            target_kind: EntityKind::Monster,
+            source_monster_id: None,
+            target_monster_id: Some(30_001),
+            target_is_boss: true,
+            source_is_player: true,
+            source_is_local_player: true,
+            skill_key: 17_140_101,
+            skill_id: Some(1_714),
+            type_flags: 0,
+            kind: HitKind::Damage,
+            amount: 100,
+            has_loss_breakdown: true,
+            hp_loss: 100,
+            shield_loss: 0,
+            is_lucky_bonus_only: false,
+            property: None,
+            damage_mode: None,
+            effective_amount: None,
+        }
+    }
+
+    fn published_coverage(publications: &[TopicPublication]) -> &[BuffCoverageEntry] {
+        publications
+            .iter()
+            .find_map(|publication| match publication {
+                TopicPublication::Buffs(payload) => Some(payload.coverage.as_slice()),
+                _ => None,
+            })
+            .expect("buffs publication")
+    }
+
+    #[test]
+    fn ended_segment_freezes_coverage_metrics_and_forces_inactive() {
+        use crate::live::runtime::events::{
+            BuffEvent, BuffState, BuffTransition, BuffWireKind, EntityRoles, ProtocolBatch,
+            ProtocolObservation,
+        };
+        use std::sync::Arc;
+
+        const BASE: i32 = 2_201;
+
+        let (writer, join) = HistoryWriterHandle::start().expect("history writer starts");
+        let mut projections = ProjectionSet::new(writer);
+        let mut entities = EntityContext::new();
+        let idle = SegmentState::Idle {
+            mode: IdleMode::Standard,
+        };
+
+        entities.apply_batch(ProtocolBatch {
+            meta: test_meta(1, 0, 0),
+            observations: vec![
+                ProtocolObservation::EntityAppeared {
+                    uuid: EntityUuid(10),
+                    kind: EntityKind::Character,
+                },
+                ProtocolObservation::LocalPlayerChanged {
+                    uuid: Some(EntityUuid(10)),
+                },
+            ],
+        });
+
+        projections
+            .buff_timeline
+            .apply_config(&[BASE], &entities, None, |_| 0);
+        projections
+            .combat
+            .start_segment(SegmentId(1), MonoTimeMs(0), 0);
+        projections.combat.set_local_player(entities.local_player());
+        projections.presentation.segment_started(SegmentId(1));
+        let _ = projections
+            .buff_timeline
+            .start_segment(&entities, |mono| projections.combat.segment_offset_ms(mono));
+
+        let _ = projections.buff_timeline.apply_buff(
+            &BuffEvent {
+                transition: BuffTransition::Applied,
+                wire_kind: BuffWireKind::Add,
+                duration_updated: false,
+                previous_layer: None,
+                state: BuffState {
+                    target: local_player(),
+                    instance_id: 1,
+                    base_id: BASE,
+                    layer: 2,
+                    source: None,
+                    resolved_owner: None,
+                    source_config_id: None,
+                    duration_ms: Some(10_000),
+                    started_wall_ms: None,
+                    expires_wall_ms: None,
+                    started_mono_ms: Some(MonoTimeMs(0)),
+                    expires_mono_ms: Some(MonoTimeMs(10_000)),
+                    effect_ids: Arc::from([]),
+                },
+                target_roles: EntityRoles {
+                    is_local_player: true,
+                    is_team_member: true,
+                    is_current_target: false,
+                },
+            },
+            true,
+            0,
+            Some(10_000),
+        );
+
+        for at_ms in [1_000_u64, 3_000] {
+            let hit = player_hit();
+            let fact = CombatHitFact::from_domain(&hit);
+            let outcome = projections.combat.apply_hit(
+                &hit,
+                fact.as_ref(),
+                i64::try_from(at_ms).expect("hit offset fits"),
+                MonoTimeMs(at_ms),
+                &entities,
+            );
+            assert!(projections.buff_timeline.observe_hit(outcome.active_window));
+        }
+
+        projections.dirty |= TopicMask::BUFFS;
+        let live = projections.take_publications(&entities, &idle, TopicMask::BUFFS);
+        let live_coverage = published_coverage(&live);
+        assert_eq!(live_coverage.len(), 1);
+        assert_eq!(live_coverage[0].covered_ms, 2_500);
+        assert_eq!(live_coverage[0].active_ms, 2_500);
+        assert!(live_coverage[0].active_now);
+        assert_eq!(live_coverage[0].count, 1);
+
+        // Same hold-then-clear order as a non-manual `end_segment`, without
+        // the history writer (this fixture has no database).
+        let coverage = projections
+            .buff_timeline
+            .coverage_payload(&entities, coverage_active_ms(&projections.combat));
+        projections
+            .presentation
+            .freeze_coverage(SegmentId(1), coverage);
+        projections.buff_timeline.clear();
+        projections.combat.clear_segment();
+        projections.dirty |= TopicMask::BUFFS;
+
+        let frozen = projections.take_publications(&entities, &idle, TopicMask::BUFFS);
+        let frozen_coverage = published_coverage(&frozen);
+        assert_eq!(frozen_coverage.len(), 1);
+        assert_eq!(frozen_coverage[0].covered_ms, 2_500);
+        assert_eq!(frozen_coverage[0].active_ms, 2_500);
+        assert_eq!(frozen_coverage[0].count, 1);
+        assert!(!frozen_coverage[0].active_now);
+        assert_eq!(frozen_coverage[0].layer, 0);
+
+        projections.mark_dirty(TopicMask::BUFFS);
+        let republished = projections.take_publications(&entities, &idle, TopicMask::BUFFS);
+        let republished_coverage = published_coverage(&republished);
+        assert_eq!(republished_coverage[0].covered_ms, 2_500);
+        assert_eq!(republished_coverage[0].active_ms, 2_500);
+        assert!(!republished_coverage[0].active_now);
+
+        drop(projections);
+        join.join().expect("history writer stops after disconnect");
+    }
+
+    #[test]
+    fn container_reset_keeps_frozen_coverage() {
+        let (writer, join) = HistoryWriterHandle::start().expect("history writer starts");
+        let mut projections = ProjectionSet::new(writer);
+        let entities = EntityContext::new();
+        let mut scheduler = DeadlineScheduler::new();
+        let idle = SegmentState::Idle {
+            mode: IdleMode::Standard,
+        };
+
+        projections.presentation.segment_started(SegmentId(1));
+        projections.presentation.freeze_coverage(
+            SegmentId(1),
+            vec![BuffCoverageEntry {
+                base_id: 2_201,
+                covered_ms: 1_500,
+                active_ms: 2_000,
+                active_now: true,
+                layer: 2,
+                count: 3,
+            }],
+        );
+
+        projections
+            .apply(
+                &test_envelope(1, 1_000, 1_000, DomainEvent::ContainerReset),
+                &entities,
+                &mut scheduler,
+            )
+            .expect("container reset clears runtime state");
+
+        let publications = projections.take_publications(&entities, &idle, TopicMask::BUFFS);
+        let coverage = published_coverage(&publications);
+        assert_eq!(coverage[0].covered_ms, 1_500);
+        assert_eq!(coverage[0].active_ms, 2_000);
+        assert_eq!(coverage[0].count, 3);
+        assert!(!coverage[0].active_now);
+        assert_eq!(coverage[0].layer, 0);
 
         drop(projections);
         join.join().expect("history writer stops after disconnect");

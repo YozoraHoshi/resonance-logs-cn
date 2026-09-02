@@ -4,9 +4,10 @@ use std::collections::HashSet;
 
 use crate::database::event_journal::RecordingEncounter;
 use crate::database::history_codec::{
-    HistoryDeath, HistoryEntityContext, HistoryEnvelope, HistoryEvent, HistoryHit, HistorySkillCast,
+    HistoryBuff, HistoryDeath, HistoryEntityContext, HistoryEnvelope, HistoryEvent, HistoryHit,
+    HistorySkillCast,
 };
-use crate::database::history_query::{quality_flags_to_bits, HistoryQualityFlag};
+use crate::database::history_query::{HistoryQualityFlag, quality_flags_to_bits};
 use crate::live::history_writer::{HistoryFinalization, HistoryWriterHandle};
 use crate::live::projections::combat::accumulator::{CombatAccumulator, CombatHitFact};
 use crate::live::projections::death::DeathReplaySnapshot;
@@ -43,7 +44,7 @@ impl HistoryProjection {
         recording: RecordingEncounter,
     ) -> Result<(), String> {
         let reducer =
-            crate::database::history_query::HistoryProjectionReducer::new(0..u64::MAX, 1_000)
+            crate::database::history_query::HistoryProjectionReducer::new(0..u64::MAX)
                 .map_err(|error| error.to_string())?
                 .without_dynamic_series();
         self.writer.begin(segment_id, recording)?;
@@ -159,6 +160,35 @@ impl HistoryProjection {
             }),
             true,
         )
+    }
+
+    /// Persists a buff presence edge derived from a domain event.
+    pub fn apply_buff(
+        &mut self,
+        envelope: &DomainEnvelope,
+        record: HistoryBuff,
+        entities: &EntityContext,
+        segment_offset_ms: u64,
+    ) -> Result<(), String> {
+        if !self.accepts(envelope) {
+            return Ok(());
+        }
+        self.persist_buff(record, entities, segment_offset_ms)
+    }
+
+    /// Persists a synthetic buff edge (segment baseline, despawn close,
+    /// config change) that has no originating envelope.
+    pub fn persist_buff(
+        &mut self,
+        record: HistoryBuff,
+        entities: &EntityContext,
+        segment_offset_ms: u64,
+    ) -> Result<(), String> {
+        if self.active.is_none() {
+            return Ok(());
+        }
+        self.ensure_context_id(record.entity_id, entities, segment_offset_ms)?;
+        self.persist(segment_offset_ms, HistoryEvent::Buff(record), true)
     }
 
     pub fn finalize(

@@ -12,7 +12,7 @@ export const enUSMessages = {
   "loadout.defaults.copyName": "{name} Copy",
   "loadout.page.title": "Loadout Manager",
   "loadout.page.description":
-    "A loadout bundles one skill-monitor profile and one monster-monitor profile. Switching loadouts swaps your entire live monitoring, monster monitoring, and voice announcement setup in one action",
+    "A loadout bundles skill-monitor, monster-monitor, and DPS settings profiles. Switching loadouts swaps live monitoring, history display, and voice announcement settings in one action",
   "loadout.page.loadoutsTitle": "Loadouts",
   "loadout.page.new": "New Loadout",
   "loadout.page.namePrompt": "Enter a loadout name",
@@ -24,10 +24,10 @@ export const enUSMessages = {
   "loadout.page.deleteConfirm": "Delete this loadout?",
   "loadout.page.skillProfileLabel": "Skill monitor profile",
   "loadout.page.monsterProfileLabel": "Monster monitor profile",
-  "loadout.page.liveProfileLabel": "Live meter profile",
+  "loadout.page.liveProfileLabel": "DPS settings profile",
   "loadout.page.presetsTitle": "Presets",
   "loadout.page.presetsDescription":
-    "Apply a curated loadout with skill, monster, and live meter settings",
+    "Apply a curated loadout with skill, monster, and DPS settings",
   "loadout.page.presetApplied": 'Created loadout "{name}"',
   "loadout.page.importButton": "Import",
   "loadout.page.exportButton": "Export",
@@ -124,9 +124,9 @@ export const enUSMessages = {
   "settings.tabs.debug": "Debug",
   "settings.tabs.language": "Language",
   "settings.scope.live":
-    "Live meter settings are saved with the active live meter profile and travel with the loadout when exported.",
+    "Live stats settings are saved with the active DPS settings profile and travel with the loadout when exported.",
   "settings.scope.history":
-    "History stats are a per-machine preference and are not included in exports.",
+    "History stats settings are saved with the active DPS settings profile and travel with the loadout when exported.",
   "appSettings.title": "App Settings",
   "appSettings.description":
     "Application-level configuration: packet capture, global shortcuts, language and diagnostics. These do not travel with exported loadouts.",
@@ -137,6 +137,10 @@ export const enUSMessages = {
   "appSettings.tabs.diagnostics": "Diagnostics",
   "appSettings.language.title": "Language",
   "appSettings.language.description": "Switch the interface display language.",
+  "appSettings.behavior.title": "App Behavior",
+  "appSettings.behavior.exitOnClose": "Exit when the close button is clicked",
+  "appSettings.behavior.exitOnCloseDescription":
+    "When enabled, clicking the main window's close button exits the entire app instead of hiding it to the system tray. This setting takes effect after the next launch.",
   "appSettings.appearance.scope":
     "The appearance settings below are local, global settings — they never travel with an exported loadout.",
   "appSettings.appearance.colorScopeMain":
@@ -494,6 +498,8 @@ export const enUSMessages = {
   "history.timeline.curves.selectAll": "Select all",
   "history.timeline.curves.clearAll": "Clear",
   "history.timeline.curves.closeSelector": "Close curve selector",
+  "history.timeline.curves.modeAverage": "Average",
+  "history.timeline.curves.modeInstant": "Instant",
   "history.timeline.chartAriaLabel":
     "Encounter timeline: boss skills, player key skills and fantasy casts, with DPS curves",
   "history.timeline.selection.label": "Selected {start} - {end} ({duration})",
@@ -507,6 +513,22 @@ export const enUSMessages = {
     "Drag to resize lane height, double-click to reset",
   "history.timeline.resize.curve":
     "Drag to resize curve height, double-click to reset",
+  "history.timeline.buff.title": "Buff coverage",
+  "history.timeline.buff.toggle": "Expand or collapse buff coverage timeline",
+  "history.timeline.buff.playerPicker": "Select players",
+  "history.timeline.buff.empty":
+    "No players selected, or none have watched buffs",
+  "history.timeline.buff.spanTooltip":
+    "{player} · {name}: {start} - {end} ({duration})",
+  "history.timeline.buff.pillTooltip": "Triggered {count} times",
+  "history.buffCoverage.title": "Buff coverage summary",
+  "history.buffCoverage.caption": "Based on active combat time ({seconds}s)",
+  "history.buffCoverage.rangeCaption":
+    "Based on the selection's active combat time",
+  "history.buffCoverage.player": "Player",
+  "history.buffCoverage.count": "×{value}",
+  "history.buffCoverage.unavailable":
+    "This encounter predates buff coverage tracking; no data available",
   "tanked.monster.unknownSource": "Unknown source",
   "live.tanked.monsters.title": "Damage source",
   "history.detail.table.player": "Player",
@@ -616,6 +638,9 @@ export const enUSMessages = {
   "settings.history.timeline.curveH": "Timeline curve height",
   "settings.history.timeline.curveHDescription":
     "Height of the DPS curve area on the history timeline, independent of lane height.",
+  "settings.history.timeline.instantWindow": "Instant DPS window",
+  "settings.history.timeline.instantWindowDescription":
+    "Set how many recent seconds of damage the instant DPS curve includes.",
   "settings.common.columns.dpsPlayers": "DPS (Player) Columns",
   "settings.common.columns.dpsSkills": "DPS (Skill Details) Columns",
   "settings.common.columns.healPlayers": "Healing (Player) Columns",
@@ -623,8 +648,25 @@ export const enUSMessages = {
   "settings.common.columns.tankedPlayers": "Damage Taken (Player) Columns",
   "settings.common.columns.tankedSkills":
     "Damage Taken (Skill Details) Columns",
+  "settings.common.columns.deathReplay": "Death Replay Columns",
+  "settings.common.columns.deathReplaySharedHint":
+    "Live and history death replay share this column setup.",
   "settings.common.columns.orderHint":
     "Use arrows to reorder; use switches to show/hide.",
+  "settings.common.columns.first.player": "Player first column",
+  "settings.common.columns.first.skill": "Skill first column",
+  "settings.common.columns.customNameHint":
+    "Optional: enter a custom header, or leave blank to use the current language default.",
+  "settings.common.columns.customNameAriaLabel":
+    'Custom name for the "{column}" column',
+  "settings.common.columns.resetName": "Restore default column name",
+  "columns.description.deathReplay.time":
+    "Shows how long before death the hit landed",
+  "columns.description.deathReplay.skill": "Shows the skill that dealt the hit",
+  "columns.description.deathReplay.source": "Shows the source of the hit",
+  "columns.description.deathReplay.damage": "Shows the damage of the hit",
+  "columns.description.deathReplay.share":
+    "Shows the hit's share of damage in the replay window",
   "settings.history.fantasyCastIcons": "Show Fantasy Icons",
   "settings.history.fantasyCastIconsDescription":
     "Show the two most recent fantasy types next to history player names. The selection on the timeline does not change them.",
@@ -637,6 +679,11 @@ export const enUSMessages = {
   "settings.live.trainingWindow": "Training Duration",
   "settings.live.trainingWindowDescription":
     "Starts when you hit a dummy and ends when this duration elapses. Default 3:03 (183 seconds). Changing this does not affect a run already in progress.",
+  "settings.live.trainingLockPolicy": "Training Lock",
+  "settings.live.trainingLockPolicyDescription":
+    "Elite dummies only lock training dummies 115 / 122. First monster hit locks the next monster you or your summons damage.",
+  "settings.live.trainingLockPolicy.eliteDummies": "Elite Dummies",
+  "settings.live.trainingLockPolicy.firstMonster": "First Monster Hit",
   "settings.network.packetCapture": "Packet Capture",
   "settings.network.method": "Capture Method",
   "settings.network.methodDescription":
@@ -664,7 +711,7 @@ export const enUSMessages = {
   "settings.shortcuts.togglePauseEncounter": "Toggle Encounter Pause",
   "settings.shortcuts.toggleBossHp": "Toggle Boss Health",
   "settings.shortcuts.toggleOverlayEdit": "Toggle Overlay Edit Mode",
-  "settings.shortcuts.toggleOverlayWindow": "Toggle Overlay Window",
+  "settings.shortcuts.toggleOverlayWindow": "Toggle Live Monitor",
   "settings.debug.title": "Debug",
   "settings.debug.logFiles": "Log Files",
   "settings.debug.logFilesDescription": "Open the app log folder",
@@ -1031,6 +1078,7 @@ export const enUSMessages = {
   "components.deathReplay.relativeSeconds.zero": "0s",
   "components.deathReplay.relativeSeconds.value": "{seconds}s",
   "components.deathReplay.monsterSkillFallback": "{monsterName} · #{skillKey}",
+  "components.deathReplay.buff.toggle": "Death-moment buff snapshot ({count})",
   "components.deathReplay.buff.victim": "Victim Buff Snapshot",
   "components.deathReplay.buff.none": "No buffs",
   "components.deathReplay.buff.id": "Buff ID: {id}",
@@ -1047,7 +1095,7 @@ export const enUSMessages = {
   "skillMonitor.layout.title": "Live Monitor",
   "skillMonitor.layout.description":
     "Customize skill cooldowns, combat resources, and more",
-  "skillMonitor.layout.toggleOverlayWindow": "Toggle Overlay Window",
+  "skillMonitor.layout.toggleOverlayWindow": "Toggle Live Monitor",
   "skillMonitor.layout.editOverlayLayout": "Edit Overlay Layout",
   "skillMonitor.main.enabled.label": "Enable Live Monitor",
   "skillMonitor.main.enabled.description":
@@ -1060,6 +1108,31 @@ export const enUSMessages = {
   "skillMonitor.tabs.panelAttr": "Character Panel",
   "skillMonitor.tabs.customPanel": "Custom Monitor",
   "skillMonitor.tabs.shieldDetail": "HP/Shield Area",
+  "skillMonitor.tabs.buffCoverage": "Buff Coverage",
+  "skillMonitor.buffCoverage.title": "Buff Coverage Monitor",
+  "skillMonitor.buffCoverage.description":
+    "Watched buffs are measured against the active combat time. The live overlay only shows your own coverage; all watched buffs are recorded to history for every party member.",
+  "skillMonitor.buffCoverage.list.title": "Watch List",
+  "skillMonitor.buffCoverage.list.description":
+    'Search and add buffs to track. Entries with "Show live" off are history-only (useful for buffs that only appear on teammates).',
+  "skillMonitor.buffCoverage.list.empty": "No coverage buffs added yet",
+  "skillMonitor.buffCoverage.list.count": "{count}/{max}",
+  "skillMonitor.buffCoverage.list.limit": "You can watch up to {max} buffs",
+  "skillMonitor.buffCoverage.status.added": "Added",
+  "skillMonitor.buffCoverage.searchPlaceholder": "Search buff name or id…",
+  "skillMonitor.buffCoverage.entry.showInLive": "Show live",
+  "skillMonitor.buffCoverage.entry.remove": "Remove",
+  "skillMonitor.buffCoverage.style.title": "Display Style",
+  "skillMonitor.buffCoverage.style.description":
+    "Coverage rows: state dot + name + remaining time + coverage % + trigger count, with a countdown bar below.",
+  "skillMonitor.buffCoverage.style.showName": "Show name",
+  "skillMonitor.buffCoverage.style.showRemaining": "Show remaining time",
+  "skillMonitor.buffCoverage.style.showCount": "Show trigger count",
+  "skillMonitor.buffCoverage.style.showStateDot": "Show state dot",
+  "skillMonitor.buffCoverage.style.showProgress": "Show countdown bar",
+  "skillMonitor.buffCoverage.style.nameColor": "Name color",
+  "skillMonitor.buffCoverage.style.valueColor": "Value color",
+  "skillMonitor.buffCoverage.style.progressColor": "Progress color",
   "skillMonitor.tabs.overlay": "Enable Window",
   "skillMonitor.common.clear": "Clear",
   "skillMonitor.common.remove": "Remove",
@@ -1336,12 +1409,13 @@ export const enUSMessages = {
   "skillMonitor.panelAttr.textStyle": "Text style",
   "skillMonitor.overlay.customPanel": "Custom Monitor Area: {state}",
   "skillMonitor.overlay.shieldDetail": "HP/Shield Area: {state}",
+  "skillMonitor.overlay.buffCoverage": "Buff Coverage Area: {state}",
   "skillMonitor.overlay.help":
     "Click a button to toggle visibility. Saved per profile",
   "monsterMonitor.title": "Monster Monitor",
   "monsterMonitor.description":
     "Monitor current target monster buffs and related data",
-  "monsterMonitor.actions.toggleOverlay": "Toggle Monster Overlay",
+  "monsterMonitor.actions.toggleOverlay": "Toggle Monster Monitor",
   "monsterMonitor.actions.editLayout": "Edit Monster Layout",
   "monsterMonitor.defaults.profileName": "Profile {index}",
   "monsterMonitor.defaults.defaultProfileName": "Default Profile",
@@ -1356,15 +1430,15 @@ export const enUSMessages = {
     "Delete this monster-monitor profile? Loadouts referencing it will fall back to the first profile.",
   "live.defaults.defaultProfileName": "Default profile",
   "live.defaults.profileName": "Profile {index}",
-  "live.profile.title": "Live Meter Profile",
+  "live.profile.title": "DPS Settings Profile",
   "live.profile.pickerDescription":
-    "The live-meter sub-profile referenced by the active loadout. Switch or manage it here; for more loadout combinations visit the Loadouts page.",
+    "The DPS settings profile referenced by the active loadout, including live and history stats settings. Switch or manage it here.",
   "live.profile.new": "New profile",
   "live.profile.rename": "Rename",
   "live.profile.delete": "Delete",
   "live.profile.renamePrompt": "Enter a new profile name",
   "live.profile.deleteConfirm":
-    "Delete this live-meter profile? Loadouts referencing it will fall back to the first profile.",
+    "Delete this DPS settings profile? Loadouts referencing it will fall back to the first profile.",
   "monsterMonitor.enabled": "Enable Monster Monitor",
   "monsterMonitor.autoHideInDailyScenes.label": "Auto Hide in Daily Scenes",
   "monsterMonitor.autoHideInDailyScenes.description":
@@ -1564,6 +1638,10 @@ export const enUSMessages = {
   "gameOverlay.group.skillCd": "Skill CD Area",
   "gameOverlay.group.textBuff": "Text Buff Area",
   "gameOverlay.group.shieldDetail": "HP/Shield Area",
+  "gameOverlay.group.buffCoverage": "Buff Coverage Area",
+  "gameOverlay.coverage.count": "{value}x",
+  "gameOverlay.coverage.empty":
+    "Add coverage buffs in the skill monitor page first",
   "gameOverlay.groupedBuff.empty":
     "Create buff groups on the Skill Monitor page first",
   "gameOverlay.timer.infinite": "∞",
@@ -1630,25 +1708,25 @@ export const enUSMessages = {
   "game.moduleName.5500304": "Superior Guard - Preferred",
   "game.moduleAttr.1110": "Strength Boost",
   "game.moduleAttr.1111": "Agility Boost",
-  "game.moduleAttr.1112": "Intelligence Boost",
-  "game.moduleAttr.1113": "Special Attack Damage",
+  "game.moduleAttr.1112": "Intellect Boost",
+  "game.moduleAttr.1113": "Special Attack",
   "game.moduleAttr.1114": "Elite Strike",
-  "game.moduleAttr.1205": "Special Attack Healing Boost",
-  "game.moduleAttr.1206": "Specialized Healing Boost",
-  "game.moduleAttr.1407": "Casting Focus",
-  "game.moduleAttr.1408": "Attack Speed Focus",
+  "game.moduleAttr.1205": "Healing Boost",
+  "game.moduleAttr.1206": "Healing Enhance",
+  "game.moduleAttr.1407": "Cast Focus",
+  "game.moduleAttr.1408": "Attack SPD",
   "game.moduleAttr.1409": "Crit Focus",
   "game.moduleAttr.1410": "Luck Focus",
-  "game.moduleAttr.1307": "Magic Resistance",
-  "game.moduleAttr.1308": "Physical Resistance",
-  "game.moduleAttr.2104": "EX - Damage Stacking",
-  "game.moduleAttr.2105": "EX - Agile Footwork",
-  "game.moduleAttr.2204": "EX - Life Focus",
-  "game.moduleAttr.2205": "EX - First Aid",
-  "game.moduleAttr.2404": "EX - Life Fluctuation",
-  "game.moduleAttr.2405": "EX - Life Drain",
-  "game.moduleAttr.2406": "EX - Team Luck/Crit",
-  "game.moduleAttr.2304": "EX - Last Stand Guard",
+  "game.moduleAttr.1307": "Resistance",
+  "game.moduleAttr.1308": "Armor",
+  "game.moduleAttr.2104": "DMG Stack",
+  "game.moduleAttr.2105": "Agile",
+  "game.moduleAttr.2204": "Life Condense",
+  "game.moduleAttr.2205": "First Aid",
+  "game.moduleAttr.2404": "Life Wave",
+  "game.moduleAttr.2405": "Life Steal",
+  "game.moduleAttr.2406": "Team Luck & Crit",
+  "game.moduleAttr.2304": "Final Protection",
   "game.damage.unknown": "Unknown ({id})",
   "game.damageProperty.generic": "Generic",
   "game.damageProperty.fire": "Fire",
@@ -1669,7 +1747,7 @@ export const enUSMessages = {
   "minimap.title": "Dungeon Mechanics",
   "minimap.description":
     "Show dungeon mechanics live in a standalone overlay window.",
-  "minimap.actions.toggleOverlay": "Toggle Dungeon Mechanics Window",
+  "minimap.actions.toggleOverlay": "Toggle Dungeon Mechanics",
   "minimap.actions.editLayout": "Edit Layout",
   "minimap.hint": "",
   "minimap.edit.title": "Minimap Layout Edit",
@@ -1683,6 +1761,9 @@ export const enUSMessages = {
   "minimap.settings.display.title": "Display Options",
   "minimap.settings.display.description":
     "Control the minimap information density during combat and reduce noise.",
+  "minimap.settings.enabled.label": "Enable Dungeon Mechanics",
+  "minimap.settings.enabled.description":
+    "Turn off to stop showing the dungeon-mechanic overlay. Controls the same setting as the toggle button at the top of this page.",
   "minimap.settings.autoHideInDailyScenes.label": "Auto Hide in Daily Scenes",
   "minimap.settings.autoHideInDailyScenes.description":
     "Automatically hide the minimap overlay in daily scene blacklist entries and restore its previous visibility after leaving.",
@@ -1853,6 +1934,27 @@ export const enUSMessages = {
   "minimap.s3TinaMindrealm.pizzaGroup": "Pizza Danger Zone",
   "minimap.s3TinaMindrealm.pizzaSlow": "Pizza · Slow Wave",
   "minimap.s3TinaMindrealm.pizzaFast": "Pizza · Fast Wave",
+  "minimap.s4WastelandCourt.pair.group": "Void-Mark Swap",
+  "minimap.s4WastelandCourt.pair.mark": "{pattern} → target {target}",
+  "minimap.s4WastelandCourt.pair.swap": "{left} ↔ {right}",
+  "minimap.s4WastelandCourt.pair.matched": "Already matched",
+  "minimap.s4WastelandCourt.pair.white": "White",
+  "minimap.s4WastelandCourt.pair.black": "Black",
+  "minimap.s4WastelandCourt.pair.settle": "Void-Mark Resolve",
+  "minimap.s4WastelandCourt.orb.group": "Swap Orbs",
+  "minimap.s4WastelandCourt.orb.active": "Swapping",
+  "minimap.s4WastelandCourt.wheel.group": "Wheels",
+  "minimap.s4WastelandCourt.wheel.blue": "Fate Wheel · Stack",
+  "minimap.s4WastelandCourt.wheel.red": "Woe Wheel · Spread",
+  "minimap.s4WastelandCourt.wheel.doom": "Despair Wheel",
+  "minimap.s4WastelandCourt.shadow.group": "Shadow of Heluga",
+  "minimap.s4WastelandCourt.shadow.phase": "Shadow of Heluga",
+  "minimap.s4WastelandCourt.shadow.energyTarget": "Energy Orb Tracking",
+  "minimap.s4WastelandCourt.chain.group": "Near/Far Chain",
+  "minimap.s4WastelandCourt.chain.overview": "Near ×{near} / Far ×{far}",
+  "minimap.s4WastelandCourt.chain.step": "Hit {order}: {type}",
+  "minimap.s4WastelandCourt.chain.near": "Near",
+  "minimap.s4WastelandCourt.chain.far": "Far",
 
   "routes.tools.voice": "Voice",
 
@@ -2011,6 +2113,7 @@ export const enUSMessages = {
   "voice.binding.event.threshold": "Broadcast on reaching target",
   "voice.binding.event.onCast": "Broadcast on trigger",
   "voice.binding.source.auto": "Auto-generated",
+  "voice.binding.source.preset": "Preset",
   "voice.binding.source.custom": "Custom text",
   "voice.binding.source.phrase": "Phrase library reference",
   "voice.binding.priority": "Priority",
@@ -2031,8 +2134,29 @@ export const enUSMessages = {
     "Playback failed, check the voice model installation",
 
   "voice.tabs.bindings": "Broadcast Overview",
+  "voice.tabs.alerts": "Match Alerts",
+  "voice.alerts.title": "Match and Ready Check Alerts",
+  "voice.alerts.description":
+    "Play a one-time cue through the existing voice pipeline when a match is found, a ready check starts, or a dungeon vote begins.",
+  "voice.alerts.voiceDisabled":
+    "Voice playback is currently disabled. Enable it under Broadcast Settings first.",
+  "voice.alerts.generationHint":
+    "The default option uses a preset voice that follows the app language. After entering custom text, generate your own voice under Phrases & Generation.",
+  "voice.alerts.event": "When the notification arrives",
+  "voice.alerts.matchReady.title": "Match Found",
+  "voice.alerts.matchReady.description":
+    "Notify when matchmaking finds a group and waits for acceptance.",
+  "voice.alerts.readyCheck.title": "Ready Check",
+  "voice.alerts.readyCheck.description":
+    "Notify when the party leader starts a dungeon or raid ready check.",
+  "voice.alerts.teamVote.title": "Dungeon Vote",
+  "voice.alerts.teamVote.description":
+    "Notify when another party member starts a dungeon-entry vote. Votes you start do not trigger an alert.",
+  "voice.alerts.autoText.matchReady": "Match found",
+  "voice.alerts.autoText.readyCheck": "Ready check",
+  "voice.alerts.autoText.teamVote": "Dungeon vote",
   "voice.bindings.description":
-    "Aggregated read-only view of all voice bindings configured across buff monitoring, custom counters, and boss mechanics",
+    "Aggregated read-only view of all voice bindings configured across buff monitoring, custom counters, boss mechanics, and match alerts",
   "voice.bindings.empty":
     "No voice bindings configured yet. Configure them inline on the Buff Monitor / Counter / Boss Mechanics pages",
   "voice.bindings.column.subject": "Subject",
@@ -2048,6 +2172,7 @@ export const enUSMessages = {
   "voice.bindings.navigate.dbm": "Go to Boss Mechanics",
   "voice.bindings.navigate.monsterBuff": "Go to Monster Monitor",
   "voice.bindings.navigate.minimap": "Go to Dungeon Mechanics",
+  "voice.bindings.navigate.alerts": "Go to Match Alerts",
   "voice.bindings.generateMissing": "Generate missing voices",
   "voice.bindings.generateMissing.generating": "Generating…",
   "voice.bindings.generateMissing.needProfile":

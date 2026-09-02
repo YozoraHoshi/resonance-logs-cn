@@ -329,5 +329,78 @@
         "onFreezeExpire": "noOp"
       }
     ]
+  },
+  {
+    "ruleId": 13,
+    "name": "重装S4-自动龙炮",
+    "sources": [
+      {
+        "skillCast": {
+          "skillBaseIds": [1418, 1421, 1430, 1434],
+          "increment": 1
+        }
+      }
+    ],
+    "effectSlots": [
+      {
+        "slotId": 1,
+        "threshold": 8,
+        "displayMode": "remainingToThreshold",
+        "resetBuffId": 2403171,
+        "resetSourceConfigId": 2403170,
+        "onBuffAdd": "reset",
+        "onBuffChange": "noOp",
+        "onBuffRemove": "noOp"
+      }
+    ]
+  },
+  {
+    "ruleId": 14,
+    "name": "重装S4-额外神影螺旋",
+    "sources": [
+      {
+        "skillCast": {
+          "skillBaseIds": [1434],
+          "increment": 1
+        }
+      }
+    ],
+    "effectSlots": [
+      {
+        "slotId": 1,
+        "threshold": 3,
+        "displayMode": "remainingToThreshold",
+        "resetBuffId": 0,
+        "resetPassiveSkillIds": [1434],
+        "onPassiveSkill": "reset",
+        "onBuffAdd": "noOp",
+        "onBuffChange": "noOp",
+        "onBuffRemove": "noOp"
+      }
+    ]
+  },
+  {
+    "ruleId": 15,
+    "name": "射线S4-冰之灌注四件套",
+    "sources": [
+      {
+        "skillCast": {
+          "skillBaseIds": [1243],
+          "increment": 1
+        }
+      }
+    ],
+    "effectSlots": [
+      {
+        "slotId": 1,
+        "threshold": 2,
+        "displayMode": "remainingToThreshold",
+        "resetBuffId": 0,
+        "wrapAtThreshold": true,
+        "onBuffAdd": "noOp",
+        "onBuffChange": "noOp",
+        "onBuffRemove": "noOp"
+      }
+    ]
   }
 ]

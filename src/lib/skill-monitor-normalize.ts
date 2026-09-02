@@ -1,5 +1,7 @@
 import {
   AVAILABLE_PANEL_ATTRS,
+  type BuffCoverageEntry,
+  type BuffCoverageStyle,
   type BuffGroup,
   type CustomPanelStyle,
   type OverlaySizes,
@@ -8,9 +10,11 @@ import {
   type ShieldDetailStyle,
   type SkillMonitorProfile,
   type TextBuffPanelStyle,
+  createDefaultBuffCoverageStyle,
   createDefaultCustomPanelStyle,
   createDefaultOverlayTextStyle,
   createDefaultSkillMonitorProfile,
+  MAX_BUFF_COVERAGE_ENTRIES,
   ensureOverlayTextStyle,
 } from "$lib/settings-store";
 
@@ -21,6 +25,7 @@ export const DEFAULT_OVERLAY_SIZES: OverlaySizes = {
   panelAttrGroupScale: 1,
   customPanelGroupScale: 1,
   shieldDetailGroupScale: 1,
+  buffCoverageGroupScale: 1,
   panelAttrGap: 4,
   panelAttrFontSize: 14,
   panelAttrColumnGap: 12,
@@ -147,6 +152,9 @@ export function ensureOverlaySizes(profile: SkillMonitorProfile): OverlaySizes {
     shieldDetailGroupScale:
       current?.shieldDetailGroupScale ??
       DEFAULT_OVERLAY_SIZES.shieldDetailGroupScale,
+    buffCoverageGroupScale:
+      current?.buffCoverageGroupScale ??
+      DEFAULT_OVERLAY_SIZES.buffCoverageGroupScale,
     panelAttrGap: clampRounded(
       current?.panelAttrGap ?? DEFAULT_OVERLAY_SIZES.panelAttrGap,
       0,
@@ -214,15 +222,76 @@ export function ensureTextBuffPanelStyle(
   profile: SkillMonitorProfile | null,
 ): TextBuffPanelStyle {
   const current = profile?.textBuffPanelStyle;
+  const base = createDefaultCustomPanelStyle();
   return {
     displayMode: current?.displayMode === "classic" ? "classic" : "modern",
-    gap: clampRounded(current?.gap ?? 6, 0, 24),
-    columnGap: clampRounded(current?.columnGap ?? 8, 0, 240),
-    fontSize: clampRounded(current?.fontSize ?? 12, 10, 28),
-    nameColor: current?.nameColor ?? "#ffffff",
-    valueColor: current?.valueColor ?? "#ffffff",
-    progressColor: current?.progressColor ?? "#ffffff",
-    progressOpacity: clampDecimal(current?.progressOpacity ?? 0.4, 0, 1),
+    gap: clampRounded(current?.gap ?? base.gap, 0, 24),
+    columnGap: clampRounded(current?.columnGap ?? base.columnGap, 0, 240),
+    fontSize: clampRounded(current?.fontSize ?? base.fontSize, 10, 28),
+    nameColor: current?.nameColor ?? base.nameColor,
+    valueColor: current?.valueColor ?? base.valueColor,
+    progressColor: current?.progressColor ?? base.progressColor,
+    progressOpacity: clampDecimal(
+      current?.progressOpacity ?? base.progressOpacity,
+      0,
+      1,
+    ),
+    ...ensureOverlayTextStyle(current),
+  };
+}
+
+export function ensureBuffCoverageEntries(
+  profile: SkillMonitorProfile | null,
+): BuffCoverageEntry[] {
+  const result: BuffCoverageEntry[] = [];
+  const seenBuffIds = new Set<number>();
+  const seenEntryIds = new Set<string>();
+  for (const [index, entry] of (profile?.buffCoverageEntries ?? []).entries()) {
+    const buffId = entry?.buffId;
+    if (
+      !Number.isSafeInteger(buffId) ||
+      buffId <= 0 ||
+      buffId > 2_147_483_647 ||
+      seenBuffIds.has(buffId)
+    ) {
+      continue;
+    }
+    let id = entry.id?.trim() || `coverage_${index + 1}`;
+    if (seenEntryIds.has(id)) id = `coverage_${buffId}_${index + 1}`;
+    seenBuffIds.add(buffId);
+    seenEntryIds.add(id);
+    result.push({
+      id,
+      buffId,
+      label: entry.label ?? "",
+      showInLive: entry.showInLive ?? true,
+    });
+    if (result.length === MAX_BUFF_COVERAGE_ENTRIES) break;
+  }
+  return result;
+}
+
+export function ensureBuffCoverageStyle(
+  profile: SkillMonitorProfile | null,
+): BuffCoverageStyle {
+  const current = profile?.buffCoverageStyle;
+  const base = createDefaultBuffCoverageStyle();
+  return {
+    fontSize: clampRounded(current?.fontSize ?? base.fontSize, 10, 28),
+    gap: clampRounded(current?.gap ?? base.gap, 0, 24),
+    nameColor: current?.nameColor ?? base.nameColor,
+    valueColor: current?.valueColor ?? base.valueColor,
+    progressColor: current?.progressColor ?? base.progressColor,
+    progressOpacity: clampDecimal(
+      current?.progressOpacity ?? base.progressOpacity,
+      0,
+      1,
+    ),
+    showName: current?.showName ?? base.showName,
+    showRemaining: current?.showRemaining ?? base.showRemaining,
+    showCount: current?.showCount ?? base.showCount,
+    showStateDot: current?.showStateDot ?? base.showStateDot,
+    showProgress: current?.showProgress ?? base.showProgress,
     ...ensureOverlayTextStyle(current),
   };
 }
@@ -282,6 +351,8 @@ export function normalizeSkillProfile(
     overlaySizes: ensureOverlaySizes(profile),
     overlayTextStyle: ensureOverlayTextStyle(profile.overlayTextStyle),
     textBuffPanelStyle: ensureTextBuffPanelStyle(profile),
+    buffCoverageEntries: ensureBuffCoverageEntries(profile),
+    buffCoverageStyle: ensureBuffCoverageStyle(profile),
     buffGroups: ensureBuffGroups(profile),
     individualMonitorAllGroup: ensureIndividualMonitorAllGroup(profile),
     customPanelGroups: (profile.customPanelGroups ?? []).map((group) => ({

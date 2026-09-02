@@ -5,7 +5,7 @@
  * don't each need their own plumbing of getters/setters through props.
  */
 import { t, type MessageKey } from "$lib/i18n/index.svelte";
-import type { MonsterBuffSourceScope } from "$lib/bindings";
+import type { MonsterBuffSourceScope, VoiceLanguage } from "$lib/bindings";
 import {
   activeProfile,
   updateActiveProfile,
@@ -16,9 +16,11 @@ import {
   ensureBuffVoiceConfigs,
   ensureCounterVoiceConfigs,
   ensureDbmVoiceConfigs,
+  ensureGameAlertVoiceConfigs,
   ensureMechanicVoiceConfigs,
   ensurePresetCounterVoiceConfigs,
   SETTINGS,
+  type GameAlertKind,
   type VoiceEventConfig,
   type VoiceExpiringEventConfig,
 } from "$lib/settings-store";
@@ -30,6 +32,9 @@ import {
   findCounterVoiceSlot,
 } from "$lib/voice-binding-counter";
 import {
+  alertAutoText,
+  alertEventKey,
+  alertLabel,
   buffAutoText,
   buffEventKey,
   buffSubjectLabel,
@@ -42,6 +47,7 @@ import {
   minimapCueEventKey,
   monsterBuffAutoText,
   monsterBuffEventKey,
+  voiceLanguageForAppLocale,
 } from "$lib/voice-binding-compile.svelte.js";
 import { findMinimapVoiceCue } from "../routes/minimap-overlay/scene-registry";
 
@@ -54,7 +60,8 @@ export type VoiceBindingSubject =
     }
   | { kind: "counterSlot"; ruleId: number; slotId: number }
   | { kind: "dbm"; baseSkillId: number }
-  | { kind: "minimapCue"; cueId: string };
+  | { kind: "minimapCue"; cueId: string }
+  | { kind: "gameAlert"; alertKind: GameAlertKind };
 
 export type VoiceBindingEventKind =
   | "gained"
@@ -70,6 +77,9 @@ export type VoiceBindingEventDef = {
   expiring: boolean;
   config: VoiceEventConfig | VoiceExpiringEventConfig | undefined;
   autoText: (secondsBefore: number) => string;
+  language?: VoiceLanguage;
+  /** Label for `phrase.source === "auto"`. Alerts use bundled presets. */
+  autoSourceLabelKey?: MessageKey;
   /**
    * Whether custom text for this event may use the `${阶数}` / `${remodelLevel}`
    * fantasy-tier placeholder. Only buff/monsterBuff gained/lost triggers
@@ -96,6 +106,7 @@ export function subjectLabel(subject: VoiceBindingSubject): string {
     const cue = findMinimapVoiceCue(subject.cueId);
     return cue ? t(cue.labelKey) : subject.cueId;
   }
+  if (subject.kind === "gameAlert") return alertLabel(subject.alertKind);
   const rule = findCounterVoiceRule(activeProfile(), subject.ruleId);
   return rule ? counterSlotLabel(rule, subject.slotId) : `#${subject.slotId}`;
 }
@@ -104,6 +115,25 @@ export function subjectLabel(subject: VoiceBindingSubject): string {
 export function subjectEvents(
   subject: VoiceBindingSubject,
 ): VoiceBindingEventDef[] {
+  if (subject.kind === "gameAlert") {
+    const config = ensureGameAlertVoiceConfigs(
+      SETTINGS.voice.state.alertConfigs,
+    )[subject.alertKind];
+    return [
+      {
+        key: alertEventKey(subject.alertKind),
+        eventKind: "onCast",
+        labelKey: "voice.alerts.event",
+        expiring: false,
+        config,
+        autoText: () => alertAutoText(subject.alertKind),
+        language: voiceLanguageForAppLocale(),
+        autoSourceLabelKey: "voice.binding.source.preset",
+        supportsTierPlaceholder: false,
+      },
+    ];
+  }
+
   if (subject.kind === "buff") {
     const configs = ensureBuffVoiceConfigs(activeProfile()?.buffVoiceConfigs);
     const config = configs[String(subject.buffId)] ?? {};
@@ -268,6 +298,21 @@ export function updateSubjectEvent(
   eventKind: VoiceBindingEventKind,
   patch: Partial<VoiceEventConfig & VoiceExpiringEventConfig>,
 ): void {
+  if (subject.kind === "gameAlert") {
+    const configs = ensureGameAlertVoiceConfigs(
+      SETTINGS.voice.state.alertConfigs,
+    );
+    const current = configs[subject.alertKind];
+    SETTINGS.voice.state.alertConfigs = {
+      ...configs,
+      [subject.alertKind]: {
+        ...(current ?? defaultEventConfig("onCast")),
+        ...patch,
+      },
+    };
+    return;
+  }
+
   if (subject.kind === "buff") {
     const key = String(subject.buffId);
     updateActiveProfile((profile) => {

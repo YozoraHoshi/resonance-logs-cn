@@ -14,6 +14,10 @@ import {
   type HeaderCustomLayout,
   type HeaderLayoutMode,
 } from "./live-header-layout";
+import {
+  createDefaultDpsColumnLabels,
+  type DpsColumnLabels,
+} from "./column-labels";
 
 export const DEFAULT_STATS = {
   totalDmg: true,
@@ -205,6 +209,24 @@ export const DEFAULT_TANKED_SKILL_COLUMN_ORDER = [
   "property",
   "damageMode",
 ];
+export const DEFAULT_DEATH_REPLAY_COLUMNS = {
+  time: true,
+  skill: true,
+  source: true,
+  damage: true,
+  share: false,
+  property: false,
+  damageMode: false,
+};
+export const DEFAULT_DEATH_REPLAY_COLUMN_ORDER = [
+  "time",
+  "skill",
+  "source",
+  "damage",
+  "share",
+  "property",
+  "damageMode",
+];
 
 function normalizeColumnOrder(
   order: readonly string[] | undefined,
@@ -235,6 +257,12 @@ export function normalizeTankedSkillColumnOrder(
   order: readonly string[] | undefined,
 ) {
   return normalizeColumnOrder(order, DEFAULT_TANKED_SKILL_COLUMN_ORDER);
+}
+
+export function normalizeDeathReplayColumnOrder(
+  order: readonly string[] | undefined,
+) {
+  return normalizeColumnOrder(order, DEFAULT_DEATH_REPLAY_COLUMN_ORDER);
 }
 
 // Default sort settings for live tables
@@ -289,6 +317,7 @@ export type VoiceSettingsConfig = {
   volume: number;
   queuePolicy: VoiceQueuePolicySetting;
   rules: VoiceRuleSetting[];
+  alertConfigs?: GameAlertVoiceConfigMap;
   selectedProfileId: string | null;
   selectedSource: VoiceSourceSetting;
   generationBackend: VoiceGenerationBackendSetting;
@@ -301,6 +330,7 @@ export function createDefaultVoiceSettings(): VoiceSettingsConfig {
     volume: 1,
     queuePolicy: "dropLowPriority",
     rules: [],
+    alertConfigs: {},
     selectedProfileId: null,
     selectedSource: "preset",
     generationBackend: "auto",
@@ -352,6 +382,22 @@ export type VoiceEventConfig = {
   /** 0 = lowest, 255 = highest. Missing values use the lowest priority. */
   priority?: number | undefined;
 };
+
+export const GAME_ALERT_KINDS = [
+  "matchReady",
+  "readyCheck",
+  "teamVote",
+] as const;
+export type GameAlertKind = (typeof GAME_ALERT_KINDS)[number];
+export type GameAlertVoiceConfigMap = Partial<
+  Record<GameAlertKind, VoiceEventConfig>
+>;
+
+export function ensureGameAlertVoiceConfigs(
+  configs: GameAlertVoiceConfigMap | null | undefined,
+): GameAlertVoiceConfigMap {
+  return { ...(configs ?? {}) };
+}
 
 /** Like `VoiceEventConfig`, but for triggers that fire ahead of an expiry. */
 export type VoiceExpiringEventConfig = VoiceEventConfig & {
@@ -516,6 +562,12 @@ export type MinimapDeadStyle = {
 };
 
 export type MinimapConfig = {
+  /**
+   * Whether the user wants the dungeon-mechanic overlay at all. Matches the
+   * `enabled` switch the skill/monster monitors already have, so all three HUD
+   * domains are controlled the same way.
+   */
+  enabled: boolean;
   autoHideInDailyScenes: boolean;
   hideNormalTeammates: boolean;
   hideAllTeammates: boolean;
@@ -838,6 +890,7 @@ export type OverlayPositions = {
   panelAttrGroup: Point;
   customPanelGroup: Point;
   shieldDetailGroup: Point;
+  buffCoverageGroup: Point;
   iconBuffPositions: Record<number, Point>;
   skillDurationPositions: Record<number, Point>;
   categoryIconPositions?: Partial<Record<BuffCategoryKey, Point>>;
@@ -850,6 +903,7 @@ export type OverlaySizes = {
   panelAttrGroupScale: number;
   customPanelGroupScale: number;
   shieldDetailGroupScale: number;
+  buffCoverageGroupScale: number;
   panelAttrGap: number;
   panelAttrFontSize: number;
   panelAttrColumnGap: number;
@@ -866,6 +920,7 @@ export type OverlayVisibility = {
   showPanelAttrGroup: boolean;
   showCustomPanelGroup: boolean;
   showShieldDetailGroup: boolean;
+  showBuffCoverageGroup: boolean;
 };
 
 export type OverlayTextStyle = {
@@ -1016,6 +1071,32 @@ export type InlineBuffEntry = {
   format: InlineBuffFormat;
 };
 
+/** One watched buff in the coverage monitor. `showInLive: false` entries are
+ * still recorded to history but hidden from the live HUD (buffs that only
+ * ever appear on teammates would otherwise sit at a permanent 0%). */
+export type BuffCoverageEntry = {
+  id: string;
+  buffId: number;
+  label: string;
+  showInLive: boolean;
+};
+
+export const MAX_BUFF_COVERAGE_ENTRIES = 32;
+
+export type BuffCoverageStyle = {
+  fontSize: number;
+  gap: number;
+  nameColor: string;
+  valueColor: string;
+  progressColor: string;
+  progressOpacity: number;
+  showName: boolean;
+  showRemaining: boolean;
+  showCount: boolean;
+  showStateDot: boolean;
+  showProgress: boolean;
+} & OverlayTextStyle;
+
 export type UserCounterRule = {
   ruleId: number;
   name: string;
@@ -1080,6 +1161,8 @@ export type SkillMonitorProfile = {
   customPanelGroups?: CustomPanelGroup[];
   factorSlotLabels?: Record<string, string>;
   inlineBuffEntries?: InlineBuffEntry[];
+  buffCoverageEntries?: BuffCoverageEntry[];
+  buffCoverageStyle?: BuffCoverageStyle;
   panelAreaRowOrder?: PanelAreaRowRef[];
   /** @deprecated Legacy shared style, kept only for migrating old custom panel groups. */
   customPanelStyle?: CustomPanelStyle;
@@ -1197,6 +1280,7 @@ function createDefaultOverlayPositions(): OverlayPositions {
     panelAttrGroup: { x: 700, y: 40 },
     customPanelGroup: { x: 700, y: 280 },
     shieldDetailGroup: { x: 40, y: 550 },
+    buffCoverageGroup: { x: 360, y: 550 },
     iconBuffPositions: {},
     skillDurationPositions: {},
     categoryIconPositions: {},
@@ -1211,6 +1295,7 @@ function createDefaultOverlaySizes(): OverlaySizes {
     panelAttrGroupScale: 1,
     customPanelGroupScale: 1,
     shieldDetailGroupScale: 1,
+    buffCoverageGroupScale: 1,
     panelAttrGap: 4,
     panelAttrFontSize: 14,
     panelAttrColumnGap: 12,
@@ -1229,6 +1314,24 @@ function createDefaultOverlayVisibility(): OverlayVisibility {
     showPanelAttrGroup: true,
     showCustomPanelGroup: true,
     showShieldDetailGroup: false,
+    showBuffCoverageGroup: false,
+  };
+}
+
+export function createDefaultBuffCoverageStyle(): BuffCoverageStyle {
+  return {
+    fontSize: 13,
+    gap: 4,
+    nameColor: "#e5e7eb",
+    valueColor: "#6ee7b7",
+    progressColor: "#34d399",
+    progressOpacity: 0.4,
+    showName: true,
+    showRemaining: true,
+    showCount: true,
+    showStateDot: true,
+    showProgress: true,
+    ...createDefaultOverlayTextStyle(),
   };
 }
 
@@ -1403,14 +1506,7 @@ export function ensureTeammatePanelStyle(
 function createDefaultTextBuffPanelStyle(): TextBuffPanelStyle {
   return {
     displayMode: "modern",
-    gap: 6,
-    columnGap: 8,
-    fontSize: 12,
-    nameColor: "#ffffff",
-    valueColor: "#ffffff",
-    progressColor: "#ffffff",
-    progressOpacity: 0.4,
-    ...createDefaultOverlayTextStyle(),
+    ...createDefaultCustomPanelStyle(),
   };
 }
 
@@ -1478,6 +1574,8 @@ export function createDefaultSkillMonitorProfile(
     customPanelGroups: [],
     factorSlotLabels: {},
     inlineBuffEntries: [],
+    buffCoverageEntries: [],
+    buffCoverageStyle: createDefaultBuffCoverageStyle(),
     panelAreaRowOrder: [],
     textBuffPanelStyle: createDefaultTextBuffPanelStyle(),
     overlayTextStyle: createDefaultOverlayTextStyle(),
@@ -1681,6 +1779,7 @@ export type LiveMeterColumnOrderState = {
   healSkills: { order: string[] };
   tankedPlayers: { order: string[] };
   tankedSkills: { order: string[] };
+  deathReplay: { order: string[] };
 };
 
 export type LiveMeterSortingState = {
@@ -1701,12 +1800,17 @@ export type LiveMeterSortingState = {
  */
 export type LiveMeterProfileData = {
   general: typeof DEFAULT_SETTINGS.live.general;
+  /** History display settings mirrored with the active DPS profile. */
+  history: HistorySettings;
+  /** Per-table user overrides for live/history DPS column headers. */
+  columnLabels: DpsColumnLabels;
   dpsPlayers: typeof DEFAULT_SETTINGS.live.dpsPlayers;
   dpsSkillBreakdown: typeof DEFAULT_SETTINGS.live.dpsSkillBreakdown;
   healPlayers: typeof DEFAULT_SETTINGS.live.healPlayers;
   healSkillBreakdown: typeof DEFAULT_SETTINGS.live.healSkillBreakdown;
   tankedPlayers: typeof DEFAULT_SETTINGS.live.tankedPlayers;
   tankedSkillBreakdown: typeof DEFAULT_SETTINGS.live.tankedSkillBreakdown;
+  deathReplay: typeof DEFAULT_SETTINGS.live.deathReplay;
   tableCustomization: typeof DEFAULT_SETTINGS.live.tableCustomization;
   headerCustomization: typeof DEFAULT_SETTINGS.live.headerCustomization;
   columnOrder: LiveMeterColumnOrderState;
@@ -1731,12 +1835,15 @@ export type LiveMeterState = {
 export function createDefaultLiveMeterProfileData(): LiveMeterProfileData {
   return {
     general: { ...DEFAULT_GENERAL_SETTINGS },
+    history: createDefaultHistorySettings(),
+    columnLabels: createDefaultDpsColumnLabels(),
     dpsPlayers: { ...DEFAULT_STATS },
     dpsSkillBreakdown: { ...DEFAULT_STATS },
     healPlayers: { ...DEFAULT_STATS },
     healSkillBreakdown: { ...DEFAULT_STATS },
     tankedPlayers: { ...DEFAULT_LIVE_TANKED_PLAYER_STATS },
     tankedSkillBreakdown: { ...DEFAULT_LIVE_TANKED_SKILL_STATS },
+    deathReplay: { ...DEFAULT_DEATH_REPLAY_COLUMNS },
     tableCustomization: { ...DEFAULT_LIVE_TABLE_SETTINGS },
     headerCustomization: {
       windowPadding: 12,
@@ -1793,6 +1900,7 @@ export function createDefaultLiveMeterProfileData(): LiveMeterProfileData {
       healSkills: { order: [...DEFAULT_HEAL_SKILL_COLUMN_ORDER] },
       tankedPlayers: { order: [...DEFAULT_TANKED_PLAYER_COLUMN_ORDER] },
       tankedSkills: { order: [...DEFAULT_TANKED_SKILL_COLUMN_ORDER] },
+      deathReplay: { order: [...DEFAULT_DEATH_REPLAY_COLUMN_ORDER] },
     },
     sorting: {
       dpsPlayers: { ...DEFAULT_LIVE_SORT_SETTINGS.dpsPlayers },
@@ -1868,6 +1976,7 @@ export function createDefaultMonitoringSettingsState(): MonitoringSettingsState 
 
 export function createDefaultMinimapConfig(): MinimapConfig {
   return {
+    enabled: true,
     autoHideInDailyScenes: false,
     hideNormalTeammates: true,
     hideAllTeammates: false,
@@ -1937,7 +2046,72 @@ const DEFAULT_GENERAL_SETTINGS = {
   abbreviatedDecimalPlaces: 1,
   eventUpdateRateMs: 200,
   trainingWindowMs: 183_000,
+  trainingLockPolicy: "eliteDummies" as "eliteDummies" | "firstMonster",
 };
+
+export function createDefaultHistorySettings() {
+  return {
+    general: {
+      ...DEFAULT_GENERAL_SETTINGS,
+      timelineLaneH: 44,
+      timelineCurveH: 300,
+      instantDpsWindowSec: 10,
+    },
+    dpsPlayers: { ...DEFAULT_HISTORY_STATS },
+    dpsSkillBreakdown: { ...DEFAULT_HISTORY_STATS },
+    healPlayers: { ...DEFAULT_HISTORY_HEAL_STATS },
+    healSkillBreakdown: { ...DEFAULT_HISTORY_STATS },
+    tankedPlayers: { ...DEFAULT_HISTORY_TANKED_STATS },
+    tankedSkillBreakdown: { ...DEFAULT_HISTORY_TANKED_SKILL_STATS },
+  };
+}
+
+export type HistorySettings = ReturnType<typeof createDefaultHistorySettings>;
+
+function mergeSettingsSection<T extends object>(
+  defaults: T,
+  value: unknown,
+): T {
+  return {
+    ...defaults,
+    ...(typeof value === "object" && value !== null && !Array.isArray(value)
+      ? value
+      : {}),
+  };
+}
+
+export function normalizeHistorySettings(value: unknown): HistorySettings {
+  const defaults = createDefaultHistorySettings();
+  const source =
+    typeof value === "object" && value !== null && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+
+  return {
+    general: mergeSettingsSection(defaults.general, source["general"]),
+    dpsPlayers: mergeSettingsSection(defaults.dpsPlayers, source["dpsPlayers"]),
+    dpsSkillBreakdown: mergeSettingsSection(
+      defaults.dpsSkillBreakdown,
+      source["dpsSkillBreakdown"],
+    ),
+    healPlayers: mergeSettingsSection(
+      defaults.healPlayers,
+      source["healPlayers"],
+    ),
+    healSkillBreakdown: mergeSettingsSection(
+      defaults.healSkillBreakdown,
+      source["healSkillBreakdown"],
+    ),
+    tankedPlayers: mergeSettingsSection(
+      defaults.tankedPlayers,
+      source["tankedPlayers"],
+    ),
+    tankedSkillBreakdown: mergeSettingsSection(
+      defaults.tankedSkillBreakdown,
+      source["tankedSkillBreakdown"],
+    ),
+  };
+}
 
 export const DEFAULT_CLASS_COLORS: Record<string, string> = {
   Stormblade: "#674598",
@@ -2256,6 +2430,7 @@ const DEFAULT_SETTINGS = {
   accessibility: {
     blur: false,
     clickthrough: false,
+    exitOnClose: false,
     fontSizes: { ...DEFAULT_FONT_SIZES },
     customThemeColors: { ...DEFAULT_CUSTOM_THEME_COLORS },
     // Background image settings
@@ -2303,12 +2478,14 @@ const DEFAULT_SETTINGS = {
   },
   live: {
     general: { ...DEFAULT_GENERAL_SETTINGS },
+    columnLabels: createDefaultDpsColumnLabels(),
     dpsPlayers: { ...DEFAULT_STATS },
     dpsSkillBreakdown: { ...DEFAULT_STATS },
     healPlayers: { ...DEFAULT_STATS },
     healSkillBreakdown: { ...DEFAULT_STATS },
     tankedPlayers: { ...DEFAULT_LIVE_TANKED_PLAYER_STATS },
     tankedSkillBreakdown: { ...DEFAULT_LIVE_TANKED_SKILL_STATS },
+    deathReplay: { ...DEFAULT_DEATH_REPLAY_COLUMNS },
     tableCustomization: { ...DEFAULT_LIVE_TABLE_SETTINGS },
     headerCustomization: {
       windowPadding: 12,
@@ -2359,19 +2536,7 @@ const DEFAULT_SETTINGS = {
       navTabPaddingY: 6,
     },
   },
-  history: {
-    general: {
-      ...DEFAULT_GENERAL_SETTINGS,
-      timelineLaneH: 44,
-      timelineCurveH: 300,
-    },
-    dpsPlayers: { ...DEFAULT_HISTORY_STATS },
-    dpsSkillBreakdown: { ...DEFAULT_HISTORY_STATS },
-    healPlayers: { ...DEFAULT_HISTORY_HEAL_STATS },
-    healSkillBreakdown: { ...DEFAULT_HISTORY_STATS },
-    tankedPlayers: { ...DEFAULT_HISTORY_TANKED_STATS },
-    tankedSkillBreakdown: { ...DEFAULT_HISTORY_TANKED_SKILL_STATS },
-  },
+  history: createDefaultHistorySettings(),
 };
 
 // We need flattened settings for every update to be able to auto-detect new changes
@@ -2494,6 +2659,11 @@ export const SETTINGS = {
         LIVE_RUNE_STORE_OPTIONS,
       ),
     },
+    deathReplay: new RuneStore(
+      "liveDeathReplay",
+      DEFAULT_SETTINGS.live.deathReplay,
+      LIVE_RUNE_STORE_OPTIONS,
+    ),
     tableCustomization: new RuneStore(
       "liveTableCustomization",
       DEFAULT_SETTINGS.live.tableCustomization,
@@ -2502,6 +2672,11 @@ export const SETTINGS = {
     headerCustomization: new RuneStore(
       "liveHeaderCustomization",
       DEFAULT_SETTINGS.live.headerCustomization,
+      LIVE_RUNE_STORE_OPTIONS,
+    ),
+    columnLabels: new RuneStore(
+      "liveDpsColumnLabels",
+      DEFAULT_SETTINGS.live.columnLabels,
       LIVE_RUNE_STORE_OPTIONS,
     ),
     // Column order settings
@@ -2534,6 +2709,11 @@ export const SETTINGS = {
       tankedSkills: new RuneStore(
         "liveTankedSkillsColumnOrder",
         { order: DEFAULT_TANKED_SKILL_COLUMN_ORDER },
+        LIVE_RUNE_STORE_OPTIONS,
+      ),
+      deathReplay: new RuneStore(
+        "liveDeathReplayColumnOrder",
+        { order: DEFAULT_DEATH_REPLAY_COLUMN_ORDER },
         LIVE_RUNE_STORE_OPTIONS,
       ),
     },
@@ -2575,42 +2755,42 @@ export const SETTINGS = {
     general: new RuneStore(
       "historyGeneral",
       DEFAULT_SETTINGS.history.general,
-      RUNE_STORE_OPTIONS,
+      LIVE_RUNE_STORE_OPTIONS,
     ),
     dps: {
       players: new RuneStore(
         "historyDpsPlayers",
         DEFAULT_SETTINGS.history.dpsPlayers,
-        RUNE_STORE_OPTIONS,
+        LIVE_RUNE_STORE_OPTIONS,
       ),
       skillBreakdown: new RuneStore(
         "historyDpsSkillBreakdown",
         DEFAULT_SETTINGS.history.dpsSkillBreakdown,
-        RUNE_STORE_OPTIONS,
+        LIVE_RUNE_STORE_OPTIONS,
       ),
     },
     heal: {
       players: new RuneStore(
         "historyHealPlayers",
         DEFAULT_SETTINGS.history.healPlayers,
-        RUNE_STORE_OPTIONS,
+        LIVE_RUNE_STORE_OPTIONS,
       ),
       skillBreakdown: new RuneStore(
         "historyHealSkillBreakdown",
         DEFAULT_SETTINGS.history.healSkillBreakdown,
-        RUNE_STORE_OPTIONS,
+        LIVE_RUNE_STORE_OPTIONS,
       ),
     },
     tanked: {
       players: new RuneStore(
         "historyTankedPlayers",
         DEFAULT_SETTINGS.history.tankedPlayers,
-        RUNE_STORE_OPTIONS,
+        LIVE_RUNE_STORE_OPTIONS,
       ),
       skillBreakdown: new RuneStore(
         "historyTankedSkillBreakdown",
         DEFAULT_SETTINGS.history.tankedSkillBreakdown,
-        RUNE_STORE_OPTIONS,
+        LIVE_RUNE_STORE_OPTIONS,
       ),
     },
   },
@@ -2633,20 +2813,30 @@ const LIVE_METER_STORES = [
   SETTINGS.live.heal.skillBreakdown,
   SETTINGS.live.tanked.players,
   SETTINGS.live.tanked.skills,
+  SETTINGS.live.deathReplay,
   SETTINGS.live.tableCustomization,
   SETTINGS.live.headerCustomization,
+  SETTINGS.live.columnLabels,
   SETTINGS.live.columnOrder.dpsPlayers,
   SETTINGS.live.columnOrder.dpsSkills,
   SETTINGS.live.columnOrder.healPlayers,
   SETTINGS.live.columnOrder.healSkills,
   SETTINGS.live.columnOrder.tankedPlayers,
   SETTINGS.live.columnOrder.tankedSkills,
+  SETTINGS.live.columnOrder.deathReplay,
   SETTINGS.live.sorting.dpsPlayers,
   SETTINGS.live.sorting.dpsSkills,
   SETTINGS.live.sorting.healPlayers,
   SETTINGS.live.sorting.healSkills,
   SETTINGS.live.sorting.tankedPlayers,
   SETTINGS.live.sorting.tankedSkills,
+  SETTINGS.history.general,
+  SETTINGS.history.dps.players,
+  SETTINGS.history.dps.skillBreakdown,
+  SETTINGS.history.heal.players,
+  SETTINGS.history.heal.skillBreakdown,
+  SETTINGS.history.tanked.players,
+  SETTINGS.history.tanked.skillBreakdown,
 ] as const;
 
 export async function startLiveMeterStores(): Promise<void> {
@@ -2686,8 +2876,10 @@ export const settings = {
         players: SETTINGS.live.tanked.players.state,
         skills: SETTINGS.live.tanked.skills.state,
       },
+      deathReplay: SETTINGS.live.deathReplay.state,
       tableCustomization: SETTINGS.live.tableCustomization.state,
       headerCustomization: SETTINGS.live.headerCustomization.state,
+      columnLabels: SETTINGS.live.columnLabels.state,
       columnOrder: {
         dpsPlayers: SETTINGS.live.columnOrder.dpsPlayers.state,
         dpsSkills: SETTINGS.live.columnOrder.dpsSkills.state,
@@ -2695,6 +2887,7 @@ export const settings = {
         healSkills: SETTINGS.live.columnOrder.healSkills.state,
         tankedPlayers: SETTINGS.live.columnOrder.tankedPlayers.state,
         tankedSkills: SETTINGS.live.columnOrder.tankedSkills.state,
+        deathReplay: SETTINGS.live.columnOrder.deathReplay.state,
       },
       sorting: {
         dpsPlayers: SETTINGS.live.sorting.dpsPlayers.state,

@@ -1,16 +1,22 @@
 import type { HistoryCastKind } from "$lib/bindings";
 
-export type EncounterChartSeries = {
+/** Per-entity damage hit stream: columnar (time, amount) pairs ascending by
+ * time. The raw fact every DPS curve derives from. */
+export type EntityDamageHits = {
   entityUuid: string;
-  metric: number;
-  offsetsMs: number[];
-  totals: number[];
+  timesMs: number[];
+  amounts: number[];
+};
+
+/** Immutable query index over one entity's hit stream. Prefix sums keep
+ * arbitrary-time DPS reads independent of the total hit count. */
+export type DamageHitIndex = EntityDamageHits & {
+  prefixAmounts: Float64Array;
 };
 
 export type EncounterChart = {
   durationMs: number;
-  bucketMs: number;
-  series: EncounterChartSeries[];
+  damageHits: EntityDamageHits[];
 };
 
 export type EncounterTimelineEvent = {
@@ -24,8 +30,6 @@ export type EncounterTimelineEvent = {
   remodelLevel: number | null;
 };
 
-const METRIC_DAMAGE = 0;
-
 function positiveInteger(value: number): number {
   const numeric = Number(value);
   return Number.isFinite(numeric) && numeric > 0
@@ -35,110 +39,157 @@ function positiveInteger(value: number): number {
 
 export type EncounterCurvePoint = [offsetMs: number, valuePerSecond: number];
 
-export type EncounterDamageBuckets = {
+export type EncounterDamageHitStreams = {
   durationMs: number;
-  bucketMs: number;
-  /** Per-entity damage totals by bucket index; the raw fact curves derive from. */
-  perEntityBuckets: Map<string, number[]>;
+  /** Per-entity immutable query indexes keyed by entity uuid. */
+  perEntityHits: Map<string, DamageHitIndex>;
 };
 
-/** Folds a sparse column-oriented chart DTO into dense per-entity damage buckets. */
-export function foldEncounterDamageBuckets(
+/** Indexes the chart DTO's hit streams once, dropping empty streams. */
+export function foldEncounterDamageHits(
   chart: EncounterChart,
-): EncounterDamageBuckets {
+): EncounterDamageHitStreams {
   const durationMs = positiveInteger(chart.durationMs);
-  const bucketMs = positiveInteger(chart.bucketMs);
-  const bucketCount = Math.max(1, Math.ceil(durationMs / bucketMs));
-  const perEntityTotals = new Map<string, number[]>();
-
-  for (const series of chart.series) {
-    if (series.metric !== METRIC_DAMAGE) continue;
-
-    let entityTotals = perEntityTotals.get(series.entityUuid);
-    if (!entityTotals) {
-      entityTotals = new Array<number>(bucketCount).fill(0);
-      perEntityTotals.set(series.entityUuid, entityTotals);
+  const perEntityHits = new Map<string, DamageHitIndex>();
+  for (const hits of chart.damageHits) {
+    const count = Math.min(hits.timesMs.length, hits.amounts.length);
+    if (count === 0) continue;
+    const timesMs =
+      count === hits.timesMs.length
+        ? hits.timesMs
+        : hits.timesMs.slice(0, count);
+    const amounts =
+      count === hits.amounts.length
+        ? hits.amounts
+        : hits.amounts.slice(0, count);
+    const prefixAmounts = new Float64Array(count + 1);
+    for (let index = 0; index < count; index += 1) {
+      prefixAmounts[index + 1] =
+        prefixAmounts[index]! + (Number(amounts[index]) || 0);
     }
-
-    for (let index = 0; index < series.offsetsMs.length; index += 1) {
-      const offsetMs = Number(series.offsetsMs[index]);
-      if (!Number.isFinite(offsetMs) || offsetMs < 0) continue;
-      const bucketIndex = Math.floor(offsetMs / bucketMs);
-      if (bucketIndex < 0 || bucketIndex >= bucketCount) continue;
-
-      const total = Number(series.totals[index] ?? 0);
-      if (!Number.isFinite(total)) continue;
-      entityTotals[bucketIndex] = (entityTotals[bucketIndex] ?? 0) + total;
-    }
+    perEntityHits.set(hits.entityUuid, {
+      entityUuid: hits.entityUuid,
+      timesMs,
+      amounts,
+      prefixAmounts,
+    });
   }
-
-  return { durationMs, bucketMs, perEntityBuckets: perEntityTotals };
+  return { durationMs, perEntityHits };
 }
 
-/** Instant-DPS trailing window length. Quantized by bucketMs (duration / 600). */
-const ROLLING_WINDOW_MS = 10_000;
+/** User-configurable instant-DPS trailing-window bounds, in whole seconds. */
+export const DEFAULT_INSTANT_DPS_WINDOW_SEC = 10;
+export const MIN_INSTANT_DPS_WINDOW_SEC = 1;
+export const MAX_INSTANT_DPS_WINDOW_SEC = 30;
+/** The segment usually starts on its first hit (offset 0). Treating that hit
+ * as one millisecond of elapsed time creates a meaningless million-DPS spike;
+ * this matches the app's existing first-hit active-time grace. */
+const DPS_STARTUP_GRACE_MS = 500;
+/** Hard ceiling for 4K/ultrawide layouts. The main path still targets one
+ * interval per CSS pixel, but can never hand an unbounded array to ECharts. */
+const MAX_CURVE_SAMPLE_INTERVALS = 4_096;
 
-export function toRollingDpsCurve(
-  totals: number[],
-  bucketMs: number,
-  durationMs: number,
-): EncounterCurvePoint[] {
-  const windowBuckets = Math.max(
-    1,
-    Math.min(totals.length, Math.round(ROLLING_WINDOW_MS / bucketMs)),
+export function clampInstantDpsWindowSec(value: unknown): number {
+  const seconds = typeof value === "number" ? value : Number.NaN;
+  if (!Number.isFinite(seconds)) return DEFAULT_INSTANT_DPS_WINDOW_SEC;
+  return Math.min(
+    MAX_INSTANT_DPS_WINDOW_SEC,
+    Math.max(MIN_INSTANT_DPS_WINDOW_SEC, Math.round(seconds)),
   );
-  const points: EncounterCurvePoint[] = [];
-  let sum = 0;
-  for (let index = 0; index < totals.length; index += 1) {
-    sum += totals[index] ?? 0;
-    if (index >= windowBuckets) sum -= totals[index - windowBuckets] ?? 0;
-    // Numerator is an integer number of buckets; use the same count as the
-    // divisor so bucket-width quantization cannot skew the value. During the
-    // opening ramp the window is not yet full, so dividing by the full window
-    // would dilute the first 10s into a fake slope.
-    const coveredMs = Math.min(index + 1, windowBuckets) * bucketMs;
-    points.push([
-      Math.min(durationMs, (index + 1) * bucketMs),
-      (sum * 1_000) / coveredMs,
-    ]);
-  }
-  return points;
 }
 
-export function toCumulativeDpsCurve(
-  totals: number[],
-  bucketMs: number,
-  durationMs: number,
+function upperBound(values: readonly number[], target: number): number {
+  let lo = 0;
+  let hi = values.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (values[mid]! <= target) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+function amountThrough(hits: DamageHitIndex, atMs: number): number {
+  return hits.prefixAmounts[upperBound(hits.timesMs, atMs)] ?? 0;
+}
+
+export type TeammateCurveMode = "average" | "instant";
+
+/** Evaluates the selected DPS definition from raw hits at one exact instant.
+ * Instant DPS uses the half-open trailing window (t - windowMs, t]. */
+export function dpsValueAt(
+  hits: DamageHitIndex,
+  mode: TeammateCurveMode,
+  atMs: number,
+  windowMs: number,
+): number {
+  const timeMs = Number.isFinite(atMs) ? Math.max(0, atMs) : 0;
+  const total = amountThrough(hits, timeMs);
+  if (total <= 0) return 0;
+  const elapsedMs = Math.max(timeMs, DPS_STARTUP_GRACE_MS);
+  if (mode === "average") return (total * 1_000) / elapsedMs;
+  const expired = amountThrough(hits, timeMs - windowMs);
+  const effectiveWindowMs = Math.min(elapsedMs, windowMs);
+  return ((total - expired) * 1_000) / effectiveWindowMs;
+}
+
+/** Samples exact DPS reads at CSS-pixel boundaries. The renderer uses
+ * step-end interpolation, so a future hit can never leak into earlier time. */
+export function sampleDpsCurve(
+  hits: DamageHitIndex | null | undefined,
+  mode: TeammateCurveMode,
+  startMs: number,
+  endMs: number,
+  targetIntervals: number,
+  windowMs: number,
 ): EncounterCurvePoint[] {
-  let sum = 0;
-  return totals.map((total, index) => {
-    sum += total ?? 0;
-    const elapsedMs = Math.min(durationMs, (index + 1) * bucketMs);
-    return [elapsedMs, (sum * 1_000) / elapsedMs];
+  if (!hits) return [];
+  const start = Number.isFinite(startMs) ? Math.max(0, startMs) : 0;
+  const end = Number.isFinite(endMs) ? Math.max(start, endMs) : start;
+  const minimumWindowIntervals =
+    mode === "instant" ? Math.ceil((end - start) / windowMs) : 1;
+  const intervals = Math.min(
+    MAX_CURVE_SAMPLE_INTERVALS,
+    Math.max(
+      1,
+      minimumWindowIntervals,
+      Math.ceil(Number(targetIntervals) || 1),
+    ),
+  );
+  if (end === start) return [[start, dpsValueAt(hits, mode, start, windowMs)]];
+
+  const span = end - start;
+  return Array.from({ length: intervals + 1 }, (_, index) => {
+    const atMs = index === intervals ? end : start + (span * index) / intervals;
+    return [atMs, dpsValueAt(hits, mode, atMs, windowMs)];
   });
 }
 
-export type TeammateAverageCurve = {
+export function curveMaxValue(
+  curve: EncounterCurvePoint[] | null | undefined,
+): number {
+  if (!curve) return 0;
+  let max = 0;
+  for (const [, value] of curve) max = Math.max(max, value);
+  return max;
+}
+
+export type TeammateDpsSource = {
   entityUuid: string;
-  curve: EncounterCurvePoint[];
+  mode: TeammateCurveMode;
+  hits: DamageHitIndex;
 };
 
-/** Cumulative-only curves for the selected teammates. Instant DPS is never
- * produced here: that series stays local-player-only on the chart. */
-export function teammateAverageCurves(
-  selectedUuids: readonly string[],
-  perEntityBuckets: ReadonlyMap<string, readonly number[]>,
-  bucketMs: number,
-  durationMs: number,
-): TeammateAverageCurve[] {
-  const result: TeammateAverageCurve[] = [];
-  for (const entityUuid of selectedUuids) {
-    const totals = perEntityBuckets.get(entityUuid);
-    if (!totals || !totals.some((total) => total > 0)) continue;
-    result.push({
-      entityUuid,
-      curve: toCumulativeDpsCurve([...totals], bucketMs, durationMs),
-    });
+/** Resolves selected teammate modes to immutable indexed hit sources. */
+export function teammateDpsSources(
+  modes: ReadonlyMap<string, TeammateCurveMode>,
+  perEntityHits: ReadonlyMap<string, DamageHitIndex>,
+): TeammateDpsSource[] {
+  const result: TeammateDpsSource[] = [];
+  for (const [entityUuid, mode] of modes) {
+    const hits = perEntityHits.get(entityUuid);
+    if (!hits || !hits.amounts.some((amount) => amount > 0)) continue;
+    result.push({ entityUuid, mode, hits });
   }
   return result;
 }
@@ -247,80 +298,6 @@ export function xToTime(
   return window.startMs + (xPx / width) * span;
 }
 
-/** Highest curve value inside [startMs, endMs], used to auto-scale the Y axis
- * to the visible window instead of the whole encounter. */
-export function windowMaxValue(
-  curve: EncounterCurvePoint[] | null | undefined,
-  startMs: number,
-  endMs: number,
-): number {
-  if (!curve || curve.length === 0) return 0;
-  let max = 0;
-  for (const [t, v] of curve) {
-    if (t < startMs || t > endMs) continue;
-    if (v > max) max = v;
-  }
-  return max;
-}
-
-/** Linearly interpolates a curve's value at `timeMs`; null outside its range. */
-export function interpolateCurveValue(
-  curve: EncounterCurvePoint[] | null | undefined,
-  timeMs: number,
-): number | null {
-  if (!curve || curve.length === 0) return null;
-  const first = curve[0];
-  const last = curve[curve.length - 1];
-  if (!first || !last) return null;
-  if (timeMs <= first[0]) return first[1];
-  if (timeMs >= last[0]) return last[1];
-
-  // Curves are monotonically increasing in time; binary search the bracket.
-  let lo = 0;
-  let hi = curve.length - 1;
-  while (hi - lo > 1) {
-    const mid = (lo + hi) >> 1;
-    const point = curve[mid];
-    if (point && point[0] <= timeMs) lo = mid;
-    else hi = mid;
-  }
-  const a = curve[lo];
-  const b = curve[hi];
-  if (!a || !b) return null;
-  const span = b[0] - a[0];
-  if (span <= 0) return a[1];
-  const ratio = (timeMs - a[0]) / span;
-  return a[1] + (b[1] - a[1]) * ratio;
-}
-
-/** Downsamples a curve to roughly `targetPoints` by bucket-averaging, used by
- * the minimap sparkline so it stays cheap to render regardless of fight length. */
-export function downsampleCurve(
-  curve: EncounterCurvePoint[],
-  targetPoints: number,
-): EncounterCurvePoint[] {
-  if (targetPoints <= 0 || curve.length <= targetPoints) return curve;
-
-  const bucketSize = curve.length / targetPoints;
-  const result: EncounterCurvePoint[] = [];
-  for (let i = 0; i < targetPoints; i += 1) {
-    const start = Math.floor(i * bucketSize);
-    const end = Math.max(start + 1, Math.floor((i + 1) * bucketSize));
-    let sum = 0;
-    let count = 0;
-    let lastT = curve[Math.min(start, curve.length - 1)]?.[0] ?? 0;
-    for (let j = start; j < end && j < curve.length; j += 1) {
-      const point = curve[j];
-      if (!point) continue;
-      sum += point[1];
-      lastT = point[0];
-      count += 1;
-    }
-    if (count > 0) result.push([lastT, sum / count]);
-  }
-  return result;
-}
-
 // ---------------------------------------------------------------------------
 // Lane marker rendering.
 //
@@ -388,6 +365,31 @@ export function sliceLanePointsByTime<T extends TimeStamped>(
   const first = Math.max(0, boundByTime(points, startMs, false) - 1);
   const last = Math.min(points.length, boundByTime(points, endMs, true) + 1);
   return points.slice(first, last);
+}
+
+/** Keeps only spans overlapping the visible half-open window, clamped to it.
+ * Buff lanes carry few spans, so a linear pass beats maintaining a second
+ * binary-search index. Returns [leftPct, widthPct] pairs ready for CSS. */
+export function visibleSpanRects(
+  spans: readonly { startMs: number; endMs: number }[],
+  startMs: number,
+  endMs: number,
+): { startMs: number; endMs: number; leftPct: number; widthPct: number }[] {
+  const windowMs = endMs - startMs;
+  if (windowMs <= 0) return [];
+  const result = [];
+  for (const span of spans) {
+    if (span.endMs <= startMs || span.startMs >= endMs) continue;
+    const clampedStart = Math.max(span.startMs, startMs);
+    const clampedEnd = Math.min(span.endMs, endMs);
+    result.push({
+      startMs: span.startMs,
+      endMs: span.endMs,
+      leftPct: ((clampedStart - startMs) / windowMs) * 100,
+      widthPct: ((clampedEnd - clampedStart) / windowMs) * 100,
+    });
+  }
+  return result;
 }
 
 /** Drops markers that land on a pixel column already claimed by a later one.

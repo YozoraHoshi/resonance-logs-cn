@@ -4,11 +4,13 @@
   import ChartLineIcon from "@lucide/svelte/icons/chart-line";
   import RotateCcwIcon from "@lucide/svelte/icons/rotate-ccw";
   import UsersIcon from "@lucide/svelte/icons/users";
+  import ZapIcon from "@lucide/svelte/icons/zap";
   import { t } from "$lib/i18n/index.svelte";
   import { formatTimeMs } from "./timeline-format";
   import { playerColor } from "./timeline-colors";
   import { TIMELINE_PALETTE } from "./timeline-palette";
   import TimelinePlayerPicker from "./timeline-player-picker.svelte";
+  import type { TeammateCurveMode } from "./timeline-data";
   import type { TimelineViewport } from "./timeline-viewport.svelte";
   import type { TimelinePlayerMeta } from "./timeline-types";
 
@@ -21,7 +23,7 @@
     onSelectAllTeammates: () => void;
     onClearTeammates: () => void;
     curveTeammates: TimelinePlayerMeta[];
-    selectedCurveTeammateUuids: string[];
+    curveTeammateModes: ReadonlyMap<string, TeammateCurveMode>;
     onToggleCurveTeammate: (entityUuid: string) => void;
     onSelectAllCurveTeammates: () => void;
     onClearCurveTeammates: () => void;
@@ -37,7 +39,7 @@
     onSelectAllTeammates,
     onClearTeammates,
     curveTeammates,
-    selectedCurveTeammateUuids,
+    curveTeammateModes,
     onToggleCurveTeammate,
     onSelectAllCurveTeammates,
     onClearCurveTeammates,
@@ -46,9 +48,10 @@
 
   const selectedCurveTeammates = $derived(
     curveTeammates.filter((player) =>
-      selectedCurveTeammateUuids.includes(player.entityUuid),
+      curveTeammateModes.has(player.entityUuid),
     ),
   );
+  const selectedCurveTeammateUuids = $derived([...curveTeammateModes.keys()]);
 </script>
 
 <div class="tl-header flex items-center justify-between gap-2 px-3 py-1.5">
@@ -78,16 +81,31 @@
       </span>
     </button>
     {#each selectedCurveTeammates as player (player.entityUuid)}
+      {@const mode = curveTeammateModes.get(player.entityUuid)}
       <button
         type="button"
         class="tl-chip flex cursor-pointer items-center gap-1.5 rounded px-1.5 py-0.5"
+        title={mode === "instant"
+          ? t("history.timeline.curves.modeInstant")
+          : t("history.timeline.curves.modeAverage")}
         onclick={() => onToggleCurveTeammate(player.entityUuid)}
       >
+        {#if mode === "instant"}
+          <ZapIcon
+            class="size-2.5 shrink-0"
+            style="color: {playerColor(player)}"
+            fill="currentColor"
+          />
+        {:else}
+          <span
+            class="size-1.5 shrink-0 rounded-full"
+            style="background: {playerColor(player)}"
+          ></span>
+        {/if}
         <span
-          class="size-1.5 shrink-0 rounded-full"
-          style="background: {playerColor(player)}"
-        ></span>
-        <span class="max-w-20 truncate text-[10px]" style="color: {playerColor(player)}">
+          class="max-w-20 truncate text-[10px]"
+          style="color: {playerColor(player)}"
+        >
           {player.name}
         </span>
       </button>
@@ -130,6 +148,7 @@
       clearAllLabel={t("history.timeline.curves.clearAll")}
       players={curveTeammates}
       selectedUuids={selectedCurveTeammateUuids}
+      modes={curveTeammateModes}
       onToggle={onToggleCurveTeammate}
       onSelectAll={onSelectAllCurveTeammates}
       onClear={onClearCurveTeammates}

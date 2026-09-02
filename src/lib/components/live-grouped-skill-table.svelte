@@ -54,6 +54,7 @@
   type Props = {
     groupedSkills: GroupedSkills;
     visibleColumns: readonly SkillColumn[];
+    firstColumnHeader?: string;
     sortKey: string;
     sortDesc: boolean;
     onSort: (key: string) => void;
@@ -74,6 +75,7 @@
   let {
     groupedSkills,
     visibleColumns,
+    firstColumnHeader,
     sortKey,
     sortDesc,
     onSort,
@@ -245,24 +247,30 @@
 <div class="relative flex flex-col">
   <table class="w-full border-collapse">
     {#if tableSettings.skillShowHeader && !compactMode}
-      <thead class="z-1 sticky top-0">
+      <thead class="sticky top-0 z-1">
         <tr
           class="bg-popover/60"
           style="height: {tableSettings.skillHeaderHeight}px;"
         >
           <th
-            class="px-2 py-1 text-left font-medium uppercase tracking-wider"
+            class="px-2 py-1 text-left font-medium tracking-wider uppercase"
             style="font-size: {tableSettings.skillHeaderFontSize}px; color: {tableSettings.skillHeaderTextColor};"
-            >{t("live.table.skill")}</th
+            title={firstColumnHeader ?? t("live.table.skill")}
+            ><span class="block max-w-40 truncate"
+              >{firstColumnHeader ?? t("live.table.skill")}</span
+            ></th
           >
           {#each visibleColumns as col (col.key)}
             <th
-              class="px-2 py-1 text-right font-medium uppercase tracking-wider cursor-pointer select-none hover:bg-muted/40 transition-colors"
+              class="hover:bg-muted/40 cursor-pointer px-2 py-1 text-right font-medium tracking-wider uppercase transition-colors select-none"
               style="font-size: {tableSettings.skillHeaderFontSize}px; color: {tableSettings.skillHeaderTextColor};"
               onclick={() => onSort(col.key)}
             >
-              <span class="inline-flex items-center gap-1 justify-end">
-                {col.header}
+              <span
+                class="inline-flex max-w-40 items-center justify-end gap-1"
+                title={col.header}
+              >
+                <span class="truncate">{col.header}</span>
                 {#if sortKey === col.key}
                   <span class="text-primary">{sortDesc ? "▼" : "▲"}</span>
                 {/if}
@@ -282,16 +290,16 @@
             (skill as Record<string, unknown>)[compactSecondaryKey],
           )}
           <tr
-            class="relative hover:bg-muted/60 transition-colors bg-background/40"
+            class="hover:bg-muted/60 bg-background/40 relative transition-colors"
             style="height: {tableSettings.skillRowHeight}px; font-size: {tableSettings.skillFontSize}px;"
           >
             <td
-              class="px-2 py-1 relative z-10"
+              class="relative z-10 px-2 py-1"
               style="color: {customThemeColors.tableTextColor};"
             >
-              <div class="flex items-center h-full gap-2">
+              <div class="flex h-full items-center gap-2">
                 <button
-                  class="flex items-center gap-1 h-full text-left min-w-0 flex-1"
+                  class="flex h-full min-w-0 flex-1 items-center gap-1 text-left"
                   onclick={() =>
                     skill.isGroup && skill.groupId !== undefined
                       ? toggleGroup(skill.groupId)
@@ -301,7 +309,7 @@
                   <span style="padding-left: {skill.depth * 16}px;"></span>
                   {#if skill.isGroup && skill.expandable}
                     <svg
-                      class="size-3 shrink-0 text-muted-foreground/70 transition-transform duration-150 {skill.expanded
+                      class="text-muted-foreground/70 size-3 shrink-0 transition-transform duration-150 {skill.expanded
                         ? 'rotate-90'
                         : ''}"
                       fill="none"
@@ -316,8 +324,8 @@
                       />
                     </svg>
                   {:else if skill.depth > 0}
-                    <span class="w-3 shrink-0 flex justify-center">
-                      <span class="size-1 rounded-full bg-muted-foreground/35"
+                    <span class="flex w-3 shrink-0 justify-center">
+                      <span class="bg-muted-foreground/35 size-1 rounded-full"
                       ></span>
                     </span>
                   {:else}
@@ -326,7 +334,7 @@
                   <span class="truncate">{skill.name}</span>
                 </button>
                 <span
-                  class="inline-flex items-center gap-1 tabular-nums shrink-0"
+                  class="inline-flex shrink-0 items-center gap-1 tabular-nums"
                 >
                   <span class="inline-flex items-baseline">
                     {#if shortenValues}
@@ -380,15 +388,15 @@
       <tbody>
         {#each flatRows as skill (skill.key)}
           <tr
-            class="relative hover:bg-muted/60 transition-colors bg-background/40"
+            class="hover:bg-muted/60 bg-background/40 relative transition-colors"
             style="height: {tableSettings.skillRowHeight}px; font-size: {tableSettings.skillFontSize}px;"
           >
             <td
-              class="px-2 py-1 relative z-10"
+              class="relative z-10 px-2 py-1"
               style="color: {customThemeColors.tableTextColor};"
             >
               <button
-                class="flex items-center gap-1 h-full w-full text-left"
+                class="flex h-full w-full items-center gap-1 text-left"
                 onclick={() =>
                   skill.isGroup && skill.groupId !== undefined
                     ? toggleGroup(skill.groupId)
@@ -398,7 +406,7 @@
                 <span style="padding-left: {skill.depth * 16}px;"></span>
                 {#if skill.isGroup && skill.expandable}
                   <svg
-                    class="size-3 shrink-0 text-muted-foreground/70 transition-transform duration-150 {skill.expanded
+                    class="text-muted-foreground/70 size-3 shrink-0 transition-transform duration-150 {skill.expanded
                       ? 'rotate-90'
                       : ''}"
                     fill="none"
@@ -413,8 +421,8 @@
                     />
                   </svg>
                 {:else if skill.depth > 0}
-                  <span class="w-3 shrink-0 flex justify-center">
-                    <span class="size-1 rounded-full bg-muted-foreground/35"
+                  <span class="flex w-3 shrink-0 justify-center">
+                    <span class="bg-muted-foreground/35 size-1 rounded-full"
                     ></span>
                   </span>
                 {:else}
@@ -422,7 +430,7 @@
                 {/if}
                 <span class="truncate">{skill.name}</span>
                 {#if skill.showSkillId}
-                  <span class="text-[10px] text-muted-foreground/50 shrink-0">
+                  <span class="text-muted-foreground/50 shrink-0 text-[10px]">
                     #{skill.skillId}
                   </span>
                 {/if}
@@ -430,7 +438,7 @@
             </td>
             {#each visibleColumns as col (col.key)}
               <td
-                class="px-2 py-1 text-right relative z-10"
+                class="relative z-10 px-2 py-1 text-right"
                 style="color: {customThemeColors.tableTextColor};"
               >
                 {#if col.key === "totalDmg" || col.key === "effectiveTotal"}

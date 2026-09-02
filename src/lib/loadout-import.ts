@@ -6,11 +6,14 @@ import {
   createDefaultOverlayTextStyle,
   createDefaultSkillMonitorProfile,
   deepCloneSettings,
+  MAX_BUFF_COVERAGE_ENTRIES,
   omitProfileId,
+  normalizeHistorySettings,
   type LiveMeterProfile,
   type MonsterMonitorProfile,
   type SkillMonitorProfile,
 } from "./settings-store";
+import { normalizeDpsColumnLabels } from "./column-labels";
 import { ensureShieldDetailStyle } from "./skill-monitor-normalize";
 
 export type LoadoutExport = {
@@ -27,6 +30,14 @@ export type LoadoutParseResult =
   | { success: false; issues: string[] };
 
 const finiteNumberSchema = v.pipe(v.number(), v.finite());
+const positiveI32Schema = v.pipe(
+  finiteNumberSchema,
+  v.check(
+    (value) =>
+      Number.isSafeInteger(value) && value > 0 && value <= 2_147_483_647,
+    "buff id must be a positive 32-bit integer",
+  ),
+);
 const numericKeySchema = v.pipe(v.string(), v.regex(/^\d+$/));
 const numberArraySchema = v.array(finiteNumberSchema);
 const stringArraySchema = v.array(v.string());
@@ -211,6 +222,30 @@ const inlineBuffEntrySchema = v.object({
   format: v.picklist(["active", "stacks_timer", "timer"]),
 });
 
+const buffCoverageEntrySchema = v.object({
+  id: v.string(),
+  buffId: positiveI32Schema,
+  label: v.string(),
+  showInLive: v.optional(v.boolean(), true),
+});
+
+const buffCoverageStyleSchema = v.object({
+  fontSize: finiteNumberSchema,
+  gap: finiteNumberSchema,
+  nameColor: v.string(),
+  valueColor: v.string(),
+  progressColor: v.optional(v.string(), "#34d399"),
+  progressOpacity: v.optional(finiteNumberSchema, 0.4),
+  showName: v.boolean(),
+  showRemaining: v.boolean(),
+  showCount: v.boolean(),
+  showStateDot: v.boolean(),
+  showProgress: v.optional(v.boolean(), true),
+  textShadowEnabled: v.boolean(),
+  backgroundEnabled: v.boolean(),
+  backgroundOpacity: finiteNumberSchema,
+});
+
 const customPanelGroupSchema = v.object({
   id: v.string(),
   name: v.string(),
@@ -247,6 +282,7 @@ const overlayPositionsSchema = v.object({
   panelAttrGroup: pointSchema,
   customPanelGroup: pointSchema,
   shieldDetailGroup: pointSchema,
+  buffCoverageGroup: v.optional(pointSchema, { x: 360, y: 550 }),
   iconBuffPositions: v.record(numericKeySchema, pointSchema),
   skillDurationPositions: v.record(numericKeySchema, pointSchema),
   categoryIconPositions: v.optional(categoryPointRecordSchema, {}),
@@ -259,6 +295,7 @@ const overlaySizesSchema = v.object({
   panelAttrGroupScale: finiteNumberSchema,
   customPanelGroupScale: finiteNumberSchema,
   shieldDetailGroupScale: finiteNumberSchema,
+  buffCoverageGroupScale: v.optional(finiteNumberSchema, 1),
   panelAttrGap: finiteNumberSchema,
   panelAttrFontSize: finiteNumberSchema,
   panelAttrColumnGap: finiteNumberSchema,
@@ -280,6 +317,7 @@ const overlayVisibilitySchema = v.object({
   showPanelAttrGroup: v.boolean(),
   showCustomPanelGroup: v.boolean(),
   showShieldDetailGroup: v.boolean(),
+  showBuffCoverageGroup: v.optional(v.boolean(), false),
 });
 
 const defaultSkill = omitProfileId(createDefaultSkillMonitorProfile());
@@ -373,6 +411,20 @@ const skillProfileSchema = v.object({
     v.array(panelAreaRowSchema),
     defaultClone(defaultSkill.panelAreaRowOrder ?? []),
   ),
+  buffCoverageEntries: v.optional(
+    v.pipe(
+      v.array(buffCoverageEntrySchema),
+      v.check(
+        (entries) => entries.length <= MAX_BUFF_COVERAGE_ENTRIES,
+        `buff coverage supports at most ${MAX_BUFF_COVERAGE_ENTRIES} entries`,
+      ),
+    ),
+    defaultClone(defaultSkill.buffCoverageEntries ?? []),
+  ),
+  buffCoverageStyle: v.optional(
+    buffCoverageStyleSchema,
+    defaultClone(defaultSkill.buffCoverageStyle!),
+  ),
   customPanelStyle: v.optional(
     customPanelStyleSchema,
     defaultClone(createDefaultCustomPanelGroup().style),
@@ -449,7 +501,7 @@ const monsterProfileSchema = v.object({
   ),
 });
 
-const liveGeneralSchema = v.object({
+const liveGeneralEntries = {
   showYourName: v.optional(
     v.union([v.string(), v.boolean()]),
     "Show Your Name",
@@ -476,7 +528,13 @@ const liveGeneralSchema = v.object({
   abbreviatedDecimalPlaces: v.optional(finiteNumberSchema, 1),
   eventUpdateRateMs: v.optional(finiteNumberSchema, 200),
   trainingWindowMs: v.optional(finiteNumberSchema, 183000),
-});
+  trainingLockPolicy: v.optional(
+    v.picklist(["eliteDummies", "firstMonster"]),
+    "eliteDummies",
+  ),
+};
+
+const liveGeneralSchema = v.object(liveGeneralEntries);
 
 const liveStatsSchema = v.record(v.string(), v.boolean());
 
@@ -527,9 +585,94 @@ const liveAppearanceSchema = v.object({
 
 const defaultLive = createDefaultLiveMeterProfileData();
 
+const historyGeneralSchema = v.object({
+  ...liveGeneralEntries,
+  timelineLaneH: v.optional(
+    finiteNumberSchema,
+    defaultLive.history.general.timelineLaneH,
+  ),
+  timelineCurveH: v.optional(
+    finiteNumberSchema,
+    defaultLive.history.general.timelineCurveH,
+  ),
+  instantDpsWindowSec: v.optional(
+    finiteNumberSchema,
+    defaultLive.history.general.instantDpsWindowSec,
+  ),
+});
+
+const historySettingsSchema = v.pipe(
+  v.object({
+    general: v.optional(
+      historyGeneralSchema,
+      defaultClone(defaultLive.history.general),
+    ),
+    dpsPlayers: v.optional(
+      liveStatsSchema,
+      defaultClone(defaultLive.history.dpsPlayers),
+    ),
+    dpsSkillBreakdown: v.optional(
+      liveStatsSchema,
+      defaultClone(defaultLive.history.dpsSkillBreakdown),
+    ),
+    healPlayers: v.optional(
+      liveStatsSchema,
+      defaultClone(defaultLive.history.healPlayers),
+    ),
+    healSkillBreakdown: v.optional(
+      liveStatsSchema,
+      defaultClone(defaultLive.history.healSkillBreakdown),
+    ),
+    tankedPlayers: v.optional(
+      liveStatsSchema,
+      defaultClone(defaultLive.history.tankedPlayers),
+    ),
+    tankedSkillBreakdown: v.optional(
+      liveStatsSchema,
+      defaultClone(defaultLive.history.tankedSkillBreakdown),
+    ),
+  }),
+  v.transform((value) => normalizeHistorySettings(value)),
+);
+
+const tableColumnLabelsSchema = v.object({
+  first: v.optional(v.string(), ""),
+  columns: v.optional(stringRecordSchema, {}),
+});
+
+const columnLabelGroupSchema = v.object({
+  players: v.optional(tableColumnLabelsSchema, {
+    first: "",
+    columns: {},
+  }),
+  skills: v.optional(tableColumnLabelsSchema, {
+    first: "",
+    columns: {},
+  }),
+});
+
+const dpsColumnLabelsSchema = v.pipe(
+  v.object({
+    live: v.optional(
+      columnLabelGroupSchema,
+      defaultClone(defaultLive.columnLabels.live),
+    ),
+    history: v.optional(
+      columnLabelGroupSchema,
+      defaultClone(defaultLive.columnLabels.history),
+    ),
+  }),
+  v.transform((value) => normalizeDpsColumnLabels(value)),
+);
+
 const liveProfileSchema = v.object({
   name: v.string(),
   general: v.optional(liveGeneralSchema, defaultClone(defaultLive.general)),
+  history: v.optional(historySettingsSchema, defaultClone(defaultLive.history)),
+  columnLabels: v.optional(
+    dpsColumnLabelsSchema,
+    defaultClone(defaultLive.columnLabels),
+  ),
   dpsPlayers: v.optional(liveStatsSchema, defaultClone(defaultLive.dpsPlayers)),
   dpsSkillBreakdown: v.optional(
     liveStatsSchema,
@@ -550,6 +693,10 @@ const liveProfileSchema = v.object({
   tankedSkillBreakdown: v.optional(
     liveStatsSchema,
     defaultClone(defaultLive.tankedSkillBreakdown),
+  ),
+  deathReplay: v.optional(
+    liveStatsSchema,
+    defaultClone(defaultLive.deathReplay),
   ),
   tableCustomization: v.optional(
     v.record(v.string(), v.any()),
@@ -584,6 +731,10 @@ const liveProfileSchema = v.object({
       tankedSkills: v.optional(
         liveColumnOrderEntrySchema,
         defaultClone(defaultLive.columnOrder.tankedSkills),
+      ),
+      deathReplay: v.optional(
+        liveColumnOrderEntrySchema,
+        defaultClone(defaultLive.columnOrder.deathReplay),
       ),
     }),
     defaultClone(defaultLive.columnOrder),

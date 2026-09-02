@@ -103,7 +103,8 @@
 
 <style>
   .custom-panel-group {
-    min-width: 220px;
+    min-width: 260px;
+    max-width: 360px;
   }
 
   .custom-panel-group.has-background {
@@ -124,7 +125,7 @@
   .custom-panel-list {
     display: flex;
     flex-direction: column;
-    min-width: 220px;
+    min-width: 260px;
   }
 
   .empty-tip {

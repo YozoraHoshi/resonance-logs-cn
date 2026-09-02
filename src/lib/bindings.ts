@@ -136,9 +136,9 @@ async getRecentEncountersFiltered(limit: number, offset: number, filters: Encoun
     else return { status: "error", error: e  as any };
 }
 },
-async getEncounterDetail(encounterId: number, targetPoints: number) : Promise<Result<EncounterDetailData, string>> {
+async getEncounterDetail(encounterId: number) : Promise<Result<EncounterDetailData, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_encounter_detail", { encounterId, targetPoints }) };
+    return { status: "ok", data: await TAURI_INVOKE("get_encounter_detail", { encounterId }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -528,6 +528,12 @@ isDead: boolean }
 export type BossMonsterIdsResult = { ids: number[] }
 export type BossSummaryDto = { monsterId: number; maxHp: number | null; isDefeated: boolean }
 /**
+ * Live coverage of one watched buff on the local player. `covered_ms` and
+ * `active_ms` follow the shared active-window rule; the frontend only
+ * divides and formats.
+ */
+export type BuffCoverageEntry = { baseId: number; coveredMs: number; activeMs: number; activeNow: boolean; layer: number; count: number }
+/**
  * Represents a buff update state.
  */
 export type BuffUpdateState = { baseId: number; layer: number; durationMs: number; createTimeMs: number; sourceRemodelLevel: number | null }
@@ -558,7 +564,15 @@ skillKey: number;
 /**
  * Raw damage value.
  */
-value: string }
+value: string;
+/**
+ * Element/property id from the hit packet. None when the packet omitted it.
+ */
+property?: number | null;
+/**
+ * Physical/magical mode from the hit packet. None when the packet omitted it.
+ */
+damageMode?: number | null }
 /**
  * A single active buff copied at the moment a death replay record is created.
  */
@@ -584,19 +598,54 @@ export type DeathRecord = { victimEntityUuid: string; deathTimestampMs: string;
  */
 recentDamages?: DamageSnapshot[]; victimBuffs?: DeathBuffSnapshot[]; participantBuffs?: DeathParticipantBuffSnapshot[] }
 export type Device = { name: string; description: string | null }
-export type EffectSlotConfig = { slotId: number; threshold: number | null; resetBuffId: number; resetSourceConfigId?: number | null; resetBuffTarget?: ResetBuffTarget; onBuffAdd?: CounterAction; onBuffChange?: CounterAction; onBuffRemove?: CounterAction; freezeDurationMs?: number | null; onFreezeExpire?: CounterAction; altFreeze?: AltFreezeConfig | null; thresholdModifier?: AttrModifier | null; freezeDurationModifier?: AttrModifier | null; resetSkillKeys?: number[] | null; onResetSkill?: CounterAction; dungeonStartFreezeMs?: number | null }
-export type EncounterChartPointData = { offsetMs: number; damage: string; healing: string; damageTaken: string }
+export type EffectSlotConfig = { slotId: number; threshold: number | null; resetBuffId: number; resetSourceConfigId?: number | null; resetBuffTarget?: ResetBuffTarget; onBuffAdd?: CounterAction; onBuffChange?: CounterAction; onBuffRemove?: CounterAction; freezeDurationMs?: number | null; onFreezeExpire?: CounterAction; altFreeze?: AltFreezeConfig | null; thresholdModifier?: AttrModifier | null; freezeDurationModifier?: AttrModifier | null; resetSkillKeys?: number[] | null; onResetSkill?: CounterAction; wrapAtThreshold?: boolean; resetPassiveSkillIds?: number[] | null; onPassiveSkill?: CounterAction; dungeonStartFreezeMs?: number | null }
+export type EncounterBuffGraceData = { offsetMs: number; creditedMs: number }
+export type EncounterBuffLaneData = { entityId: string; baseId: number;
 /**
- * Sparse per-entity bucket series: one row per (entity, metric), holding only
- * the buckets with a non-zero total. Recomputed from raw chunks at query time.
+ * Buff-on time intersected with the active-combat windows (the
+ * "true dps" denominator rule). Compare against `active_window_ms`.
  */
-export type EncounterChartSeriesData = { entityId: string; metric: HistoryMetric; offsetsMs: number[]; totals: string[] }
+coveredActiveMs: number; spans: EncounterBuffSpanData[];
+/**
+ * Grace credits sampled while this buff was present. Sequence ordering
+ * is resolved by the backend before exposing these compact points.
+ */
+gracePoints?: EncounterBuffGraceData[] }
+/**
+ * One contiguous wall-clock presence interval of a buff on an entity,
+ * as segment offsets clamped to the queried range.
+ */
+export type EncounterBuffSpanData = { startMs: number; endMsExclusive: number }
+export type EncounterBuffTimelineData = { activeWindowMs: number;
+/**
+ * Non-grace active intervals on the encounter offset axis.
+ */
+activeSpans?: EncounterBuffSpanData[];
+/**
+ * First-hit / post-inactivity credits for the denominator.
+ */
+gracePoints?: EncounterBuffGraceData[]; lanes: EncounterBuffLaneData[] }
+/**
+ * Per-entity damage hit stream: columnar (offset_ms, amount) pairs ordered
+ * by time. Recomputed from raw chunks at query time; never persisted.
+ */
+export type EncounterDamageHitsData = { entityId: string; offsetsMs: number[];
+/**
+ * Single-hit amounts saturate at u64::MAX (u128 headroom only matters
+ * for accumulated totals, not individual hits).
+ */
+amounts: number[] }
 export type EncounterDeathData = { offsetMs: number; sourceEntityId: string | null; skillId: string | null; replay: DeathRecord | null }
-export type EncounterDetailData = { encounterId: number; summary: EncounterSummaryDto; detailAvailable: boolean; qualityFlags: HistoryQualityFlag[]; startMs: number; endMsExclusive: number; bucketMs: number; totals: EncounterTotalsData; entities: EncounterEntityData[]; chartPoints: EncounterChartPointData[];
+export type EncounterDetailData = { encounterId: number; summary: EncounterSummaryDto; detailAvailable: boolean; qualityFlags: HistoryQualityFlag[]; startMs: number; endMsExclusive: number; totals: EncounterTotalsData; entities: EncounterEntityData[];
 /**
  * Always recomputed from chunks on load; stored snapshots leave it empty.
  */
-series?: EncounterChartSeriesData[]; markers: EncounterMarkerData[] }
+damageHits?: EncounterDamageHitsData[]; markers: EncounterMarkerData[];
+/**
+ * Always recomputed from chunks on load; `None` for encounters recorded
+ * before buff timeline persistence existed.
+ */
+buffTimeline?: EncounterBuffTimelineData | null }
 export type EncounterEntityData = { entityId: string; displayUid: number; name: string | null; classId: number | null; classSpec: number | null;
 /**
  * Resolved spec display name; `None` for monsters / unknown specs.
@@ -610,7 +659,12 @@ export type EncounterMarkerData = { offsetMs: number; sequence: number; casterEn
  * Fantasy remodel tier when recorded. Absent on older encounters and non-fantasy casts.
  */
 remodelLevel?: number | null }
-export type EncounterRangeData = { encounterId: number; qualityFlags: HistoryQualityFlag[]; startMs: number; endMsExclusive: number; bucketMs: number; totals: EncounterTotalsData; entities: EncounterEntityData[]; chartPoints: EncounterChartPointData[]; series?: EncounterChartSeriesData[]; markers: EncounterMarkerData[] }
+export type EncounterRangeData = { encounterId: number; qualityFlags: HistoryQualityFlag[]; startMs: number; endMsExclusive: number; totals: EncounterTotalsData; entities: EncounterEntityData[];
+/**
+ * Populated only on the detail path (which shares the range reducer
+ * drain); range recounts leave it empty since they render no curves.
+ */
+damageHits?: EncounterDamageHitsData[]; markers: EncounterMarkerData[] }
 export type EncounterSkillData = { skillId: string; metric: HistoryMetric; property: number | null; damageMode: number | null; stats: EncounterStatsData }
 export type EncounterSourceBreakdownData = { sourceMonsterId: number | null; stats: EncounterStatsData; skills: EncounterSkillData[] }
 export type EncounterStatsData = { total: string; effectiveTotal: string; hits: string; criticalHits: string; criticalTotal: string; luckyHits: string; luckyTotal: string; triggerHits: string; blockedHits: string; luckyBlockHits: string }
@@ -653,7 +707,11 @@ export type I18nRuntimeSnapshot = { locale: AppLocale }
 /**
  * Local player buff list (`live-buffs`), 50ms throttle.
  */
-export type LiveBuffsPayload = { revision: number; localBuffs: BuffUpdateState[] }
+export type LiveBuffsPayload = { revision: number; localBuffs: BuffUpdateState[];
+/**
+ * Coverage rows for the configured watch list, in configured order.
+ */
+coverage?: BuffCoverageEntry[] }
 /**
  * Combat / segment topic for the live meter window (`live-combat`).
  * `scene_id`/`dungeon_difficulty` live only on the nested `combat` payload;
@@ -664,7 +722,7 @@ export type LiveCombatPayload = { revision: number; activeSegmentId: number | nu
 /**
  * Represents a raw
  */
-export type LiveDataPayload = { elapsedMs: string; activeCombatTimeMs: string; fightStartTimestampMs: string; totalDmg: string; totalDmgBossOnly: string; totalHeal: string; totalEffectiveHeal: string; localPlayerUuid: string; sceneId: number | null; dungeonDifficulty: number | null; isPaused: boolean; bosses: BossHealth[]; entities: RawEntityData[] }
+export type LiveDataPayload = { elapsedMs: string; damageElapsedMs: string; activeCombatTimeMs: string; fightStartTimestampMs: string; totalDmg: string; totalDmgBossOnly: string; totalHeal: string; totalEffectiveHeal: string; localPlayerUuid: string; sceneId: number | null; dungeonDifficulty: number | null; isPaused: boolean; bosses: BossHealth[]; entities: RawEntityData[] }
 /**
  * Player death replays (`live-deaths`), 50ms throttle. Dirty only when a
  * record is appended or the segment resets, so it never rides the combat
@@ -685,7 +743,7 @@ export type LiveFantasyPayload = { revision: number; teammateFantasies: Teammate
  */
 export type LiveMonsterPayload = { revision: number; bossBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; teammateBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; bossMechanics: BossDbmEvent[]; hateLists: Partial<{ [key in string]: HateEntry[] }>; stun: StunEntry[]; hp: HpEntry[]; playerNames: Partial<{ [key in string]: string }>; monsterIds: Partial<{ [key in string]: number }> }
 export type LivePullWindow = "live" | "hud-overlay"
-export type LiveRuntimeSnapshot = { eventUpdateRateMs: number; trainingWindowMs: number }
+export type LiveRuntimeSnapshot = { eventUpdateRateMs: number; trainingWindowMs: number; trainingLockPolicy: TrainingLockPolicy }
 export type LiveScenePayload = { revision: number; sceneId: number | null; dungeonDifficulty: number | null }
 /**
  * Skill CD / panel attrs / fight resource / shields / counters
@@ -971,7 +1029,12 @@ calculatedDuration: number;
  * Cooldown accelerate rate for this skill
  */
 cdAccelerateRate: number }
-export type SkillRuntimeSnapshot = { enabled: boolean; monitoredSkillIds: number[]; monitoredBuffIds: number[]; monitorAllBuff: boolean; monitoredPanelAttrIds: number[]; buffCounterRules: CounterRule[]; seasonCultivateFactorTemplates: FactorCounterTemplate[] }
+export type SkillRuntimeSnapshot = { enabled: boolean; monitoredSkillIds: number[]; monitoredBuffIds: number[]; monitorAllBuff: boolean; monitoredPanelAttrIds: number[]; buffCounterRules: CounterRule[]; seasonCultivateFactorTemplates: FactorCounterTemplate[];
+/**
+ * Coverage watch list: these buff ids are tracked for live coverage on
+ * the local player and persisted as timeline edges for all players.
+ */
+buffTimelineIds: number[] }
 export type SlotUpdateState = { slotId: number; currentCount: number; threshold: number | null; effectiveThreshold: number | null; isCounting: boolean; resetBuffActive: boolean; freezeUntilMs: number | null; freezeDurationMs: number | null; effectiveFreezeDurationMs: number | null }
 /**
  * Stamina/resilience snapshot for a single monster target.
@@ -988,6 +1051,7 @@ export type TeammateRuntimeSnapshot = { enabled: boolean; anySourceIds: number[]
 export type TickAttrCondition = { attrId: number; requiredValue: number }
 export type TrainingDummyPhase = "idle" | "armed" | "running" | "finished"
 export type TrainingDummyState = { phase: TrainingDummyPhase }
+export type TrainingLockPolicy = "eliteDummies" | "firstMonster"
 /**
  * A single generated take (WAV) for a phrase, using a specific profile/model/params.
  */
@@ -1001,7 +1065,11 @@ paramsFingerprint: string; createdAtMs: number; durationSec: number; sampleRate:
  * True when the phrase/profile/model changed after this asset was generated.
  */
 stale: boolean }
-export type VoiceAssetSource = { kind: "cloneProfile"; profileId: string } | { kind: "fineTuned"; modelSha256: string; speakerName: string; speakerTokenId: number }
+export type VoiceAssetSource = { kind: "cloneProfile"; profileId: string } | { kind: "fineTuned"; modelSha256: string; speakerName: string; speakerTokenId: number } |
+/**
+ * A final, ready-to-play WAV shipped with the application.
+ */
+{ kind: "bundledPrompt"; key: string; locale: VoicePresetLocale; revision: number }
 export type VoiceBackendInventory = { cpu: VoiceBackendStatus; vulkan: VoiceBackendStatus; recommended: EngineBackend }
 export type VoiceBackendStatus = { backend: EngineBackend; engine: EngineState; componentVersion: string | null; updateAvailable: boolean }
 /**
@@ -1132,7 +1200,19 @@ export type VoiceTrigger =
  * A counter rule's slot freeze window will expire in
  * `seconds_before` seconds.
  */
-{ kind: "counterExpiring"; ruleId: number; slotId: number; secondsBefore: number }
+{ kind: "counterExpiring"; ruleId: number; slotId: number; secondsBefore: number } |
+/**
+ * The matchmaking queue popped and is waiting for acceptance.
+ */
+{ kind: "matchmakingPopped" } |
+/**
+ * The party leader started a ready check.
+ */
+{ kind: "readyCheckStarted" } |
+/**
+ * A team activity vote started.
+ */
+{ kind: "teamVoteStarted" }
 
 /** tauri-specta globals **/
 

@@ -69,6 +69,19 @@ pub enum LivePullWindow {
     HudOverlay,
 }
 
+/// Payload for the `live-pull-gate` lifecycle event.
+///
+/// The target window is named explicitly because JS `listen()` registers with
+/// an `Any` event target, which Tauri matches regardless of how the emit is
+/// addressed. Receivers compare `window` against their own label and ignore
+/// gates meant for the other window.
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Clone, Copy)]
+#[serde(rename_all = "camelCase")]
+pub struct LivePullGatePayload {
+    pub window: LivePullWindow,
+    pub active: bool,
+}
+
 impl LivePullWindow {
     #[must_use]
     pub const fn label(self) -> &'static str {
@@ -169,12 +182,31 @@ pub struct LiveStatusPayload {
     pub fight_resource: Option<FightResourceState>,
 }
 
+/// Live coverage of one watched buff on the local player. `covered_ms` and
+/// `active_ms` follow the shared active-window rule; the frontend only
+/// divides and formats.
+#[derive(
+    specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone, PartialEq, Eq,
+)]
+#[serde(rename_all = "camelCase")]
+pub struct BuffCoverageEntry {
+    pub base_id: i32,
+    pub covered_ms: u64,
+    pub active_ms: u64,
+    pub active_now: bool,
+    pub layer: i32,
+    pub count: u32,
+}
+
 /// Local player buff list (`live-buffs`), 50ms throttle.
 #[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct LiveBuffsPayload {
     pub revision: u64,
     pub local_buffs: Vec<BuffUpdateState>,
+    /// Coverage rows for the configured watch list, in configured order.
+    #[serde(default)]
+    pub coverage: Vec<BuffCoverageEntry>,
 }
 
 /// Monster overlay topic (`live-monster`), 50ms throttle.
@@ -221,6 +253,7 @@ pub struct BossHealth {
 #[serde(rename_all = "camelCase")]
 pub struct LiveDataPayload {
     pub elapsed_ms: String,
+    pub damage_elapsed_ms: String,
     pub active_combat_time_ms: String,
     pub fight_start_timestamp_ms: String,
     pub total_dmg: String,
@@ -239,6 +272,7 @@ impl Default for LiveDataPayload {
     fn default() -> Self {
         Self {
             elapsed_ms: zero_decimal(),
+            damage_elapsed_ms: zero_decimal(),
             active_combat_time_ms: zero_decimal(),
             fight_start_timestamp_ms: zero_decimal(),
             total_dmg: zero_decimal(),
@@ -755,6 +789,12 @@ pub struct DamageSnapshot {
     pub skill_key: i64,
     /// Raw damage value.
     pub value: String,
+    /// Element/property id from the hit packet. None when the packet omitted it.
+    #[serde(default)]
+    pub property: Option<i32>,
+    /// Physical/magical mode from the hit packet. None when the packet omitted it.
+    #[serde(default)]
+    pub damage_mode: Option<i32>,
 }
 
 /// A single active buff copied at the moment a death replay record is created.
@@ -838,6 +878,7 @@ mod tests {
     fn decimal_dto_defaults_are_zero_not_empty() {
         let live = LiveDataPayload::default();
         assert_eq!(live.elapsed_ms, "0");
+        assert_eq!(live.damage_elapsed_ms, "0");
         assert_eq!(live.total_dmg, "0");
         assert_eq!(live.total_effective_heal, "0");
 
@@ -857,6 +898,8 @@ mod tests {
             attacker_monster_type_id: None,
             skill_key: 7,
             value: u128::MAX.to_string(),
+            property: Some(3),
+            damage_mode: Some(2),
         };
         assert_eq!(dto.timestamp_ms, u128::MAX.to_string());
         assert_eq!(dto.value, u128::MAX.to_string());

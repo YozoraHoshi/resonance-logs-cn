@@ -21,11 +21,13 @@
  */
 import type { MonsterBuffSourceScope, VoicePhraseMeta } from "$lib/bindings";
 import type {
+  GameAlertKind,
   MechanicVoiceConfigMap,
   MonsterMonitorConfig,
   SkillMonitorProfile,
 } from "$lib/settings-store";
 import {
+  alertEventKey,
   buffEventKey,
   counterEventKey,
   dbmEventKey,
@@ -55,6 +57,11 @@ export type VoicePhraseGcSources = {
 const BUFF_EVENTS = ["gained", "expiring", "lost"] as const;
 const COUNTER_EVENTS = ["threshold", "expiring"] as const;
 const DBM_EVENTS = ["onCast", "expiring"] as const;
+const BUILTIN_ALERTS: readonly GameAlertKind[] = [
+  "matchReady",
+  "readyCheck",
+  "teamVote",
+];
 const MONSTER_BUFF_SCOPES: readonly MonsterBuffSourceScope[] = [
   "localPlayerSource",
   "anySource",
@@ -120,6 +127,9 @@ export function collectReferencedVoiceKeys(
 
   for (const cueId of Object.keys(sources.mechanicVoiceConfigs ?? {})) {
     keys.add(minimapCueEventKey(cueId));
+  }
+  for (const alert of BUILTIN_ALERTS) {
+    keys.add(alertEventKey(alert));
   }
 
   return keys;

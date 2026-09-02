@@ -12,6 +12,7 @@ const SCENES: &[&MinimapSceneConfig] = &[
     &super::scenes::s3_raid::CONFIG,
     &super::scenes::s3_sea_ringed_reef::CONFIG,
     &super::scenes::s3_tina_mindrealm::CONFIG,
+    &super::scenes::s4_wasteland_court::CONFIG,
 ];
 
 #[must_use]
@@ -30,6 +31,8 @@ mod tests {
     fn only_registered_scenes_have_minimap_filters() {
         assert!(scene_config(6563).is_some());
         assert!(scene_config(13023).is_some());
+        assert!(scene_config(6615).is_some());
+        assert!(scene_config(6613).is_none());
         assert!(scene_config(0).is_none());
     }
 }

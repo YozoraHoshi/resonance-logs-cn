@@ -45,6 +45,7 @@
       {
         entities,
         elapsedMs: liveData.elapsedMs,
+        damageElapsedMs: liveData.damageElapsedMs,
         activeCombatTimeMs: liveData.activeCombatTimeMs,
         totalDmg: 0,
         totalHeal: 0,

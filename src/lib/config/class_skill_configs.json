@@ -3,7 +3,7 @@
     "classKey": "wind_knight",
     "className": "青岚骑士",
     "classId": 4,
-    "defaultMonitoredBuffIds": [510072, 2205561, 31201, 2205211, 2205401, 2205134, 2205521, 31901],
+    "defaultMonitoredBuffIds": [510072, 2205561, 31201, 2205211, 2205401, 2205134, 2205421, 2205521, 31901],
     "derivations": [
       {
         "sourceSkillId": 1425,
@@ -25,6 +25,13 @@
         "triggerBuffBaseId": 2205134,
         "derivedName": "神影螺旋",
         "derivedImagePath": "/images/wind_knight/skill/weapon_cq-01_tf02_7523168108073174119.png"
+      },
+      {
+        "sourceSkillId": 1401,
+        "derivedSkillId": 1435,
+        "triggerBuffBaseId": 2205421,
+        "derivedName": "龙击炮",
+        "derivedImagePath": "/images/wind_knight/skill/weapon_cq-01_tf03_6517484585993130536.png"
       },
       {
         "sourceSkillId": 1401,

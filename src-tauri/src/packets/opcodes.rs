@@ -6,9 +6,14 @@ pub struct ParseError;
 pub const WORLD_NTF_SERVICE_ID: u64 = 1_664_308_034;
 pub const WORLD_CALL_SERVICE_ID: u64 = 103_198_054;
 pub const GRPC_TEAM_NTF_SERVICE_ID: u64 = 966_773_353;
+pub const MATCH_NTF_SERVICE_ID: u64 = 822_849_903;
 
 pub mod world_call_method {
     pub const USE_SLOT: u32 = 0x3d002;
+}
+
+pub mod match_ntf_method {
+    pub const ENTER_MATCH_RESULT: u32 = 0x4;
 }
 
 pub mod grpc_team_method {
@@ -18,6 +23,7 @@ pub mod grpc_team_method {
     pub const NOTIFY_LEAVE_TEAM: u32 = 0x4;
     pub const NOTIFY_BE_TRANSFER_LEADER: u32 = 0x0b;
     pub const NOTICE_TEAM_DISSOLVE: u32 = 0x0d;
+    pub const NOTIFY_TEAM_ACTIVITY_STATE: u32 = 0x0e;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -88,7 +94,9 @@ pub enum Pkt {
     BounceJump = 0x00000042,
     SyncClientUseSkill = 0x00000043,
     SyncAllServerStateObject = 0x00000044,
-    // 0x45-0x47 skipped
+    // 0x45 skipped
+    NotifyAllMemberReady = 0x00000046,
+    // 0x47 skipped
     NotifyTimerList = 0x00000048,
     NotifyTimerUpdate = 0x00000049,
     SyncServerSkillEnd = 0x00003005,
@@ -134,6 +142,7 @@ impl TryFrom<u32> for Pkt {
             0x00000042 => Ok(Pkt::BounceJump),
             0x00000043 => Ok(Pkt::SyncClientUseSkill),
             0x00000044 => Ok(Pkt::SyncAllServerStateObject),
+            0x00000046 => Ok(Pkt::NotifyAllMemberReady),
             0x00000048 => Ok(Pkt::NotifyTimerList),
             0x00000049 => Ok(Pkt::NotifyTimerUpdate),
             0x00003005 => Ok(Pkt::SyncServerSkillEnd),

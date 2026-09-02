@@ -133,6 +133,7 @@ pub struct EntityContext {
     current_scene_id: Option<i32>,
     current_difficulty: Option<i32>,
     dungeon_flow_state: Option<i32>,
+    progress_state: Option<i32>,
     is_paused: bool,
     /// `wall_ms - server_ms`, learned from server time packets. Buff deltas
     /// carry raw server creation timestamps that need it.
@@ -178,6 +179,7 @@ impl EntityContext {
         self.active_season_id = 0;
         self.active_season_template_ids.clear();
         self.dungeon_flow_state = None;
+        self.progress_state = None;
         self.pending_deaths.clear();
     }
 
@@ -593,6 +595,18 @@ impl EntityContext {
             ProtocolObservation::TeamDissolved => {
                 self.apply_team_state(meta, 0, None, HashSet::new(), out);
             }
+            ProtocolObservation::MatchmakingPopped => {
+                self.emit(meta, DomainEvent::MatchmakingPopped, out);
+            }
+            ProtocolObservation::ReadyCheckStarted => {
+                self.emit(meta, DomainEvent::ReadyCheckStarted, out);
+            }
+            ProtocolObservation::TeamVoteStarted { creator_uuid } => {
+                if creator_uuid.is_some_and(|creator| self.local_player == Some(creator)) {
+                    return;
+                }
+                self.emit(meta, DomainEvent::TeamVoteStarted, out);
+            }
             ProtocolObservation::AttackTargetChanged {
                 actor_uuid,
                 target_uuid,
@@ -938,6 +952,19 @@ impl EntityContext {
                 },
                 out,
             ),
+            ProtocolObservation::DungeonProgressStateChanged { value } => {
+                let previous = self.progress_state.replace(value);
+                if previous != Some(value) {
+                    self.emit(
+                        meta,
+                        DomainEvent::DungeonProgressStateChanged {
+                            previous,
+                            current: value,
+                        },
+                        out,
+                    );
+                }
+            }
             ProtocolObservation::SeasonCultivateSnapshot {
                 season_id,
                 active_template_ids,
@@ -1489,15 +1516,6 @@ impl EntityContext {
             entity.attributes.clear();
         }
         self.remove_attack_target(uuid);
-        if let Some(attackers) = self.attackers_by_target.remove(&uuid) {
-            for attacker in attackers {
-                if self.attack_targets.get(&attacker) == Some(&uuid) {
-                    self.attack_targets.remove(&attacker);
-                    let epoch = self.target_epochs.entry(attacker).or_default();
-                    *epoch = epoch.wrapping_add(1);
-                }
-            }
-        }
         self.target_epochs.remove(&uuid);
         self.pending_skills_by_caster.remove(&uuid);
         self.skill_lifecycles.remove(&uuid);
@@ -2476,6 +2494,7 @@ mod tests {
                     active_item_ids: vec![1, 2],
                 },
                 ProtocolObservation::DungeonFlowChanged { state: 2 },
+                ProtocolObservation::DungeonProgressStateChanged { value: 1 },
                 ProtocolObservation::GameTimerUpserted {
                     timer: GameTimerState {
                         key: timer_key,
@@ -2492,6 +2511,7 @@ mod tests {
                 },
             ],
         ));
+        assert_eq!(context.progress_state, Some(1));
 
         let events = context.reduce_batch(batch(2, vec![ProtocolObservation::ContainerReset]));
 
@@ -2510,6 +2530,7 @@ mod tests {
         assert_eq!(context.active_season_id, 0);
         assert!(context.active_season_template_ids.is_empty());
         assert!(context.dungeon_flow_state.is_none());
+        assert!(context.progress_state.is_none());
         assert_eq!(context.team_id, 99);
         assert_eq!(context.team_leader, Some(local));
         assert!(context.team_members.contains(&teammate));
@@ -2517,6 +2538,37 @@ mod tests {
         assert_eq!(context.current_difficulty(), Some(3));
         assert!(context.is_paused());
         assert!(context.watched_skill_ids.contains(&77));
+    }
+
+    #[test]
+    fn progress_state_emits_only_when_value_changes() {
+        let mut context = EntityContext::new();
+
+        let first = context.reduce_batch(batch(
+            1,
+            vec![ProtocolObservation::DungeonProgressStateChanged { value: 1 }],
+        ));
+        assert_eq!(context.progress_state, Some(1));
+        assert!(matches!(
+            first.as_slice(),
+            [DomainEnvelope {
+                event: DomainEvent::DungeonProgressStateChanged {
+                    previous: None,
+                    current: 1,
+                },
+                ..
+            }]
+        ));
+
+        let repeat = context.reduce_batch(batch(
+            2,
+            vec![ProtocolObservation::DungeonProgressStateChanged { value: 1 }],
+        ));
+        assert!(repeat.is_empty());
+        assert_eq!(context.progress_state, Some(1));
+
+        context.reduce_batch(batch(3, vec![ProtocolObservation::ContainerReset]));
+        assert!(context.progress_state.is_none());
     }
 
     #[test]
@@ -2842,6 +2894,38 @@ mod tests {
                 .reduce_batch(batch(4, vec![ProtocolObservation::TeamDissolved]))
                 .is_empty()
         );
+    }
+
+    #[test]
+    fn team_vote_alert_ignores_votes_started_by_local_player() {
+        let mut context = EntityContext::new();
+        let local = EntityUuid(20);
+        context.reduce_batch(batch(
+            1,
+            vec![ProtocolObservation::LocalPlayerChanged { uuid: Some(local) }],
+        ));
+
+        let own_vote = context.reduce_batch(batch(
+            2,
+            vec![ProtocolObservation::TeamVoteStarted {
+                creator_uuid: Some(local),
+            }],
+        ));
+        let other_vote = context.reduce_batch(batch(
+            3,
+            vec![ProtocolObservation::TeamVoteStarted {
+                creator_uuid: Some(EntityUuid(21)),
+            }],
+        ));
+
+        assert!(own_vote.is_empty());
+        assert!(matches!(
+            other_vote.as_slice(),
+            [DomainEnvelope {
+                event: DomainEvent::TeamVoteStarted,
+                ..
+            }]
+        ));
     }
 
     #[test]
@@ -3362,7 +3446,7 @@ mod tests {
     }
 
     #[test]
-    fn disappearing_target_clears_reverse_target_index_before_uuid_reuse() {
+    fn disappearing_target_keeps_attacker_target_mapping() {
         let mut context = EntityContext::new();
         let local = EntityUuid(70);
         let target = EntityUuid(71);
@@ -3390,6 +3474,9 @@ mod tests {
             2,
             vec![ProtocolObservation::EntityDisappeared { uuid: target }],
         ));
+        assert!(context.roles(target).is_current_target);
+        assert!(context.attackers_by_target.contains_key(&target));
+
         context.reduce_batch(batch(
             3,
             vec![ProtocolObservation::EntityAppeared {
@@ -3398,8 +3485,8 @@ mod tests {
             }],
         ));
 
-        assert!(!context.roles(target).is_current_target);
-        assert!(!context.attackers_by_target.contains_key(&target));
+        assert!(context.roles(target).is_current_target);
+        assert!(context.attackers_by_target.contains_key(&target));
     }
 
     #[test]

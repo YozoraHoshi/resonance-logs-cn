@@ -538,6 +538,63 @@ describe("incremental monitoring migration", () => {
       expect(profile.appearance.classSpecColors["Iaido"]).toBe("#fedcba");
     }
   });
+
+  it("copies the legacy history snapshot into every schema-three profile", () => {
+    const state = createDefaultMonitoringSettingsState();
+    state.schemaVersion = 3;
+    const firstProfile = { ...state.liveMeter.profiles[0]! } as Partial<
+      (typeof state.liveMeter.profiles)[0]
+    >;
+    delete firstProfile.history;
+    delete firstProfile.columnLabels;
+    const secondProfile = {
+      ...createDefaultLiveMeterProfileData(),
+      id: "live-b",
+      name: "B",
+    };
+    secondProfile.history.general.timelineLaneH = 99;
+    state.liveMeter.profiles = [
+      firstProfile,
+      secondProfile,
+    ] as typeof state.liveMeter.profiles;
+
+    const liveProfileData = defaultLiveProfileData();
+    liveProfileData.history.general.timelineLaneH = 68;
+    liveProfileData.history.general.shortenDps = false;
+    liveProfileData.history.dpsPlayers.critRate = true;
+    liveProfileData.columnLabels.history.players.first = "队员";
+
+    const migrated = migrateMonitoringStateIncrementally(
+      state,
+      liveProfileData,
+    );
+
+    expect(migrated.schemaVersion).toBe(4);
+    for (const profile of migrated.liveMeter.profiles) {
+      expect(profile.history.general.timelineLaneH).toBe(68);
+      expect(profile.history.general.shortenDps).toBe(false);
+      expect(profile.history.dpsPlayers.critRate).toBe(true);
+    }
+    expect(
+      migrated.liveMeter.profiles[0]!.columnLabels.history.players.first,
+    ).toBe("队员");
+  });
+
+  it("does not overwrite profile-specific history after schema four", () => {
+    const state = createDefaultMonitoringSettingsState();
+    state.schemaVersion = 4;
+    state.liveMeter.profiles[0]!.history.general.timelineLaneH = 76;
+    state.liveMeter.profiles[0]!.columnLabels.live.players.first = "Member";
+
+    const reconciled = reconcileMonitoringState(state);
+
+    expect(
+      reconciled.liveMeter.profiles[0]!.history.general.timelineLaneH,
+    ).toBe(76);
+    expect(
+      reconciled.liveMeter.profiles[0]!.columnLabels.live.players.first,
+    ).toBe("Member");
+  });
 });
 
 describe("live header customization backfill", () => {

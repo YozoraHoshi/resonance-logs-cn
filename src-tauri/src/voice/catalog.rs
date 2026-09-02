@@ -183,6 +183,7 @@ fn validate_catalog(catalog: &VoiceCatalog) -> VoiceResult<()> {
             super::models::VoiceAssetSource::FineTuned { model_sha256, .. } => {
                 Sha256Hex::parse(model_sha256.clone())?;
             }
+            super::models::VoiceAssetSource::BundledPrompt { .. } => {}
         }
         ModelVersion::parse(asset.model_version.clone())?;
     }

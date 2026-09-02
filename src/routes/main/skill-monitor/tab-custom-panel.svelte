@@ -18,6 +18,7 @@
   import OverlayTextStyleFields from "./overlay-text-style-fields.svelte";
   import {
     getCounterDisplayLabel,
+    resolveSeasonPanelMode,
     type CounterDisplayLabelInput,
     type CounterRulePreset,
     type SlotTemplate,
@@ -29,10 +30,6 @@
     type VoiceBindingSubject,
   } from "$lib/voice-binding-subject.svelte.js";
   import { commands } from "$lib/bindings";
-
-  /** S4+ moved the season panel's content from S3 factor-socket counters to
-   * basic-node buffs; mirrors the backend's `SEASON_NODE_BUFF_MIN_ID`. */
-  const SEASON_NODE_BUFF_MIN_ID = 4;
 
   type CounterRuleOption = CounterRulePreset & { origin: "preset" | "user" };
 
@@ -245,7 +242,9 @@
   // panel only needs the season id once), so this is a single request/reply
   // bootstrap rather than a live topic connection.
   let seasonId = $state(0);
-  const isSeasonNodeBuffMode = $derived(seasonId >= SEASON_NODE_BUFF_MIN_ID);
+  const seasonPanelMode = $derived(resolveSeasonPanelMode(seasonId));
+  const isSeasonNodeBuffMode = $derived(seasonPanelMode === "node");
+  const isLegacyFactorMode = $derived(seasonPanelMode === "factor");
 
   onMount(() => {
     void commands.getLiveStatus().then((result) => {
@@ -1139,7 +1138,7 @@
           <p class="text-muted-foreground text-xs">
             {t("skillMonitor.customPanel.factorSlots.seasonNodeNotice")}
           </p>
-        {:else}
+        {:else if isLegacyFactorMode}
           <div class="space-y-1">
             <div class="text-foreground text-sm font-medium">
               {t("skillMonitor.customPanel.factorSlots.title")}
@@ -1150,23 +1149,25 @@
           </div>
         {/if}
 
-        <label
-          class="border-border/60 bg-muted/20 text-foreground flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
-        >
-          <input
-            type="checkbox"
-            class="border-border bg-muted/30 text-primary focus:ring-primary/50 h-4 w-4 rounded"
-            checked={selectedGroup.hideZeroCounters === true}
-            onchange={(event) =>
-              setCustomPanelGroupHideZeroCounters(
-                selectedGroup.id,
-                (event.currentTarget as HTMLInputElement).checked,
-              )}
-          />
-          <span>{t("skillMonitor.customPanel.hideWhenZero")}</span>
-        </label>
+        {#if isLegacyFactorMode}
+          <label
+            class="border-border/60 bg-muted/20 text-foreground flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+          >
+            <input
+              type="checkbox"
+              class="border-border bg-muted/30 text-primary focus:ring-primary/50 h-4 w-4 rounded"
+              checked={selectedGroup.hideZeroCounters === true}
+              onchange={(event) =>
+                setCustomPanelGroupHideZeroCounters(
+                  selectedGroup.id,
+                  (event.currentTarget as HTMLInputElement).checked,
+                )}
+            />
+            <span>{t("skillMonitor.customPanel.hideWhenZero")}</span>
+          </label>
+        {/if}
 
-        {#if !isSeasonNodeBuffMode && customizedFactorSlots.length > 0}
+        {#if isLegacyFactorMode && customizedFactorSlots.length > 0}
           <div class="space-y-2">
             <div class="text-muted-foreground text-xs font-medium">
               {t("skillMonitor.customPanel.factorSlots.currentList")}
@@ -1206,60 +1207,60 @@
           </div>
         {/if}
 
-        {#if !isSeasonNodeBuffMode}
-        <div class="border-border/60 space-y-2 border-t pt-4">
-          <div class="text-muted-foreground text-xs font-medium">
-            {t("skillMonitor.customPanel.factorSlots.searchTitle")}
-          </div>
-          <input
-            class="border-border/60 bg-muted/30 text-foreground placeholder:text-muted-foreground focus:ring-primary/50 w-full rounded border px-3 py-2 text-sm focus:ring-2 focus:outline-none sm:w-80"
-            placeholder={t(
-              "skillMonitor.customPanel.factorSlots.searchPlaceholder",
-            )}
-            value={factorSlotSearch}
-            oninput={(event) =>
-              (factorSlotSearch = (event.currentTarget as HTMLInputElement)
-                .value)}
-          />
-          {#if factorSlotSearch.trim().length > 0}
-            {#if filteredSlotTemplates.length === 0}
-              <div
-                class="border-border/60 bg-muted/10 text-muted-foreground rounded-lg border border-dashed px-3 py-6 text-center text-sm"
-              >
-                {t("skillMonitor.customPanel.factorSlots.noMatch")}
-              </div>
-            {:else}
-              <div class="grid grid-cols-1 gap-2">
-                {#each filteredSlotTemplates as template (template.slotTemplateId)}
-                  <div
-                    class="border-border/60 bg-muted/20 space-y-2 rounded-lg border p-3"
-                  >
-                    <div class="text-foreground text-sm font-medium">
-                      {template.name}
-                    </div>
-                    {#if template.description}
-                      <div class="text-muted-foreground text-xs">
-                        {template.description}
+        {#if isLegacyFactorMode}
+          <div class="border-border/60 space-y-2 border-t pt-4">
+            <div class="text-muted-foreground text-xs font-medium">
+              {t("skillMonitor.customPanel.factorSlots.searchTitle")}
+            </div>
+            <input
+              class="border-border/60 bg-muted/30 text-foreground placeholder:text-muted-foreground focus:ring-primary/50 w-full rounded border px-3 py-2 text-sm focus:ring-2 focus:outline-none sm:w-80"
+              placeholder={t(
+                "skillMonitor.customPanel.factorSlots.searchPlaceholder",
+              )}
+              value={factorSlotSearch}
+              oninput={(event) =>
+                (factorSlotSearch = (event.currentTarget as HTMLInputElement)
+                  .value)}
+            />
+            {#if factorSlotSearch.trim().length > 0}
+              {#if filteredSlotTemplates.length === 0}
+                <div
+                  class="border-border/60 bg-muted/10 text-muted-foreground rounded-lg border border-dashed px-3 py-6 text-center text-sm"
+                >
+                  {t("skillMonitor.customPanel.factorSlots.noMatch")}
+                </div>
+              {:else}
+                <div class="grid grid-cols-1 gap-2">
+                  {#each filteredSlotTemplates as template (template.slotTemplateId)}
+                    <div
+                      class="border-border/60 bg-muted/20 space-y-2 rounded-lg border p-3"
+                    >
+                      <div class="text-foreground text-sm font-medium">
+                        {template.name}
                       </div>
-                    {/if}
-                    <input
-                      class="border-border/60 bg-muted/30 text-foreground focus:ring-primary/50 w-full rounded border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
-                      value={factorSlotLabels[template.slotTemplateId] ?? ""}
-                      placeholder={t(
-                        "skillMonitor.customPanel.factorSlots.customNamePlaceholder",
-                      )}
-                      oninput={(event) =>
-                        setFactorSlotLabel(
-                          template.slotTemplateId,
-                          (event.currentTarget as HTMLInputElement).value,
+                      {#if template.description}
+                        <div class="text-muted-foreground text-xs">
+                          {template.description}
+                        </div>
+                      {/if}
+                      <input
+                        class="border-border/60 bg-muted/30 text-foreground focus:ring-primary/50 w-full rounded border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                        value={factorSlotLabels[template.slotTemplateId] ?? ""}
+                        placeholder={t(
+                          "skillMonitor.customPanel.factorSlots.customNamePlaceholder",
                         )}
-                    />
-                  </div>
-                {/each}
-              </div>
+                        oninput={(event) =>
+                          setFactorSlotLabel(
+                            template.slotTemplateId,
+                            (event.currentTarget as HTMLInputElement).value,
+                          )}
+                      />
+                    </div>
+                  {/each}
+                </div>
+              {/if}
             {/if}
-          {/if}
-        </div>
+          </div>
         {/if}
       </div>
     {/if}

@@ -47,6 +47,8 @@ const _buffMap = $derived.by(() =>
   latestBuffsByBaseId(liveBuffsStore.data?.localBuffs ?? []),
 );
 
+const _buffCoverage = $derived.by(() => liveBuffsStore.data?.coverage ?? []);
+
 function countersByRuleId(counters: CounterUpdateState[]) {
   return new Map(counters.map((counter) => [counter.ruleId, counter]));
 }
@@ -90,6 +92,10 @@ export function fightResMap() {
 
 export function buffMap() {
   return _buffMap;
+}
+
+export function buffCoverage() {
+  return _buffCoverage;
 }
 
 export function counterMap() {

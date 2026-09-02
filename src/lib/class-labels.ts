@@ -1,5 +1,9 @@
 import { getLocale } from "$lib/i18n/index.svelte";
 
+const CLASS_LABELS_EN: Record<string, string> = {
+  "Flame Berserker": "Twin Striker",
+};
+
 const CLASS_LABELS_ZH: Record<string, string> = {
   "Heavy Guardian": "巨刃守护者",
   "Shield Knight": "神盾骑士",
@@ -13,15 +17,20 @@ const CLASS_LABELS_ZH: Record<string, string> = {
 };
 
 const CLASS_LABELS_JA: Record<string, string> = {
-  "Heavy Guardian": "ヘビーガーディアン",
-  "Shield Knight": "シールドナイト",
+  "Heavy Guardian": "ヘヴィガーディアン",
+  "Shield Knight": "シールドファイター",
   Stormblade: "ストームブレイド",
-  "Wind Knight": "ウインドナイト",
-  Marksman: "マークスマン",
+  "Wind Knight": "ゲイルランサー",
+  Marksman: "ディバインアーチャー",
   "Frost Mage": "フロストメイジ",
-  "Flame Berserker": "フレイムバーサーカー",
+  "Flame Berserker": "ツインストライカー",
   "Verdant Oracle": "ヴァーダントオラクル",
   "Beat Performer": "ビートパフォーマー",
+};
+
+const SPEC_LABELS_EN: Record<string, string> = {
+  Voidflame: "Formless",
+  Blazecrimson: "Crimson",
 };
 
 const SPEC_LABELS_ZH: Record<string, string> = {
@@ -48,30 +57,31 @@ const SPEC_LABELS_ZH: Record<string, string> = {
 };
 
 const SPEC_LABELS_JA: Record<string, string> = {
-  Earthfort: "アースフォート",
-  Block: "ブロック",
-  Iaido: "居合",
-  "Iaido Slash": "居合",
-  Moonstrike: "月撃",
-  Vanguard: "ヴァンガード",
-  Skyward: "スカイワード",
-  Wildpack: "ワイルドパック",
-  Falconry: "ファルコナリー",
-  Icicle: "アイシクル",
-  Frostbeam: "フロストビーム",
-  Voidflame: "ヴォイドフレイム",
-  Blazecrimson: "ブレイズクリムゾン",
-  Smite: "スマイト",
-  Lifebind: "ライフバインド",
-  Recovery: "リカバリー",
-  Shield: "シールド",
-  "Light Shield": "ライトシールド",
-  Concerto: "コンチェルト",
-  Dissonance: "ディソナンス",
+  Earthfort: "剛身型",
+  Block: "剛守型",
+  Iaido: "雷刃型",
+  "Iaido Slash": "雷刃型",
+  Moonstrike: "月影型",
+  Vanguard: "烈風型",
+  Skyward: "乱風型",
+  Wildpack: "狼弓型",
+  Falconry: "鷹弓型",
+  Icicle: "氷牙型",
+  Frostbeam: "霜天型",
+  Voidflame: "双炎型",
+  Blazecrimson: "炎舞型",
+  Smite: "威咲型",
+  Lifebind: "森癒型",
+  Recovery: "光砕型",
+  Shield: "光盾型",
+  "Light Shield": "光盾型",
+  Concerto: "響奏型",
+  Dissonance: "狂音型",
 };
 
 function getClassLabelMap() {
   const locale = getLocale();
+  if (locale === "en-US") return CLASS_LABELS_EN;
   if (locale === "zh-CN") return CLASS_LABELS_ZH;
   if (locale === "ja-JP") return CLASS_LABELS_JA;
   return null;
@@ -79,6 +89,7 @@ function getClassLabelMap() {
 
 function getSpecLabelMap() {
   const locale = getLocale();
+  if (locale === "en-US") return SPEC_LABELS_EN;
   if (locale === "zh-CN") return SPEC_LABELS_ZH;
   if (locale === "ja-JP") return SPEC_LABELS_JA;
   return null;

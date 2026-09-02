@@ -157,6 +157,12 @@ pub enum VoiceAssetSource {
         #[specta(rename = "speakerTokenId")]
         speaker_token_id: i32,
     },
+    /// A final, ready-to-play WAV shipped with the application.
+    BundledPrompt {
+        key: String,
+        locale: super::presets::VoicePresetLocale,
+        revision: u32,
+    },
 }
 
 impl Default for VoiceAssetSource {
@@ -295,6 +301,12 @@ pub enum VoiceTrigger {
         #[serde(rename = "secondsBefore")]
         seconds_before: u32,
     },
+    /// The matchmaking queue popped and is waiting for acceptance.
+    MatchmakingPopped,
+    /// The party leader started a ready check.
+    ReadyCheckStarted,
+    /// A team activity vote started.
+    TeamVoteStarted,
 }
 
 /// A user-defined rule mapping a trigger to a phrase to play.

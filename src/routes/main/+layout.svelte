@@ -8,10 +8,12 @@
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { goto } from "$app/navigation";
   import { liveSceneStore } from "$lib/stores/live-topics.svelte";
+  import { readHudDomainRules } from "$lib/hud-domain-rules.svelte";
   import {
-    isDailyScene,
-    isSupportedMinimapScene,
-  } from "$lib/config/daily-scene-blacklist";
+    domainRequiresSupportedScene,
+    resolveSceneVisibility,
+  } from "$lib/hud-scene-visibility";
+  import type { HudDomain } from "$lib/hud-domain";
   import { SETTINGS } from "$lib/settings-store";
   import { applyCustomFonts } from "$lib/font-loader";
   import { applyLiveClickthrough } from "$lib/utils.svelte";
@@ -27,7 +29,6 @@
   } from "$lib/runtime-monitor-sync";
   import { onMount, untrack } from "svelte";
   import { initBuffIconDir } from "$lib/buff-icon-dir.svelte";
-  import { activeProfileOrDefault } from "$lib/skill-monitor-profile.svelte.js";
   import {
     ensureVoiceListeners,
     refreshVoiceStatus,
@@ -93,57 +94,42 @@
     }
   });
 
-  $effect(() => {
-    const profile = activeProfileOrDefault();
-    const enabled = profile.enabled;
-    const autoHideInDailyScenes = profile.autoHideInDailyScenes ?? false;
-    const shouldShow =
-      enabled && !(autoHideInDailyScenes && isDailyScene(currentSceneId));
+  // The three HUD domains share one physical overlay window, so their
+  // visibility is resolved by one shared rule instead of three hand-rolled
+  // effects. `enabled` (flipped by the toggle buttons and the settings
+  // switches alike) is the only intent input; everything else is derived.
+  const gameVisible = $derived(
+    resolveSceneVisibility({
+      ...readHudDomainRules("game"),
+      sceneId: currentSceneId,
+      requiresSupportedScene: domainRequiresSupportedScene("game"),
+    }),
+  );
+  const monsterVisible = $derived(
+    resolveSceneVisibility({
+      ...readHudDomainRules("monster"),
+      sceneId: currentSceneId,
+      requiresSupportedScene: domainRequiresSupportedScene("monster"),
+    }),
+  );
+  const minimapVisible = $derived(
+    resolveSceneVisibility({
+      ...readHudDomainRules("minimap"),
+      sceneId: currentSceneId,
+      requiresSupportedScene: domainRequiresSupportedScene("minimap"),
+    }),
+  );
 
-    void (async () => {
-      // Read via untrack() so this effect only reacts to setting/scene changes,
-      // not to visibility changes it (or the toggle buttons) makes itself -
-      // otherwise a manual toggle would immediately be "corrected" back.
-      if (untrack(() => isOverlayWindowVisible("game")) === shouldShow)
-        return;
-      await setOverlayWindowVisible("game", shouldShow);
-    })();
-  });
+  function syncHudDomain(domain: HudDomain, shouldShow: boolean) {
+    // untrack() the current visibility so this only reacts to the resolved
+    // value, never to the window state it writes itself.
+    if (untrack(() => isOverlayWindowVisible(domain)) === shouldShow) return;
+    void setOverlayWindowVisible(domain, shouldShow);
+  }
 
-  $effect(() => {
-    const enabled = SETTINGS.monsterMonitor.state.enabled;
-    const autoHideInDailyScenes =
-      SETTINGS.monsterMonitor.state.autoHideInDailyScenes ?? false;
-    const shouldShow =
-      enabled && !(autoHideInDailyScenes && isDailyScene(currentSceneId));
-
-    void (async () => {
-      if (
-        untrack(() => isOverlayWindowVisible("monster")) === shouldShow
-      )
-        return;
-      await setOverlayWindowVisible("monster", shouldShow);
-    })();
-  });
-
-  $effect(() => {
-    const autoHideInDailyScenes =
-      SETTINGS.minimap.state.autoHideInDailyScenes ?? false;
-    const shouldControl = autoHideInDailyScenes && currentSceneId !== null;
-    const shouldShow =
-      shouldControl &&
-      !isDailyScene(currentSceneId) &&
-      isSupportedMinimapScene(currentSceneId);
-
-    void (async () => {
-      if (!shouldControl) return;
-      if (
-        untrack(() => isOverlayWindowVisible("minimap")) === shouldShow
-      )
-        return;
-      await setOverlayWindowVisible("minimap", shouldShow);
-    })();
-  });
+  $effect(() => syncHudDomain("game", gameVisible));
+  $effect(() => syncHudDomain("monster", monsterVisible));
+  $effect(() => syncHudDomain("minimap", minimapVisible));
 
   $effect(() => {
     applyCustomFonts({

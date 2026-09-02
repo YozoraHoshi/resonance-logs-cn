@@ -11,7 +11,8 @@ export type OverlayScaleKey =
   | "textBuffPanelScale"
   | "panelAttrGroupScale"
   | "customPanelGroupScale"
-  | "shieldDetailGroupScale";
+  | "shieldDetailGroupScale"
+  | "buffCoverageGroupScale";
 
 export type SkillDisplay = {
   isActive: boolean;

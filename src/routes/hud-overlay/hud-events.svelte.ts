@@ -4,6 +4,7 @@ import { untrack } from "svelte";
 import { getAvailableBuffDefinitions } from "$lib/config/buff-name-table";
 import {
   HUD_EDIT_REQUEST_EVENT,
+  HUD_OVERLAY_LABEL,
   HUD_READY_EVENT,
   HUD_STATE_SYNC_EVENT,
   type HudStateSyncEvent,
@@ -135,7 +136,10 @@ export function initHudOverlay(): () => void {
       });
     },
   );
-  const unlistenPullGate = listenLivePullGate(hudOverlaySession);
+  const unlistenPullGate = listenLivePullGate(
+    HUD_OVERLAY_LABEL,
+    hudOverlaySession,
+  );
   void Promise.all([
     unlistenStateSync,
     unlistenPullGate,

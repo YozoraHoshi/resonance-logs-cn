@@ -13,8 +13,8 @@
 use crate::live::damage_id;
 use crate::live::entity_id::{canonical_player_uuid, entity_type_bits};
 use crate::live::monster_registry::{self, MonsterType};
-use crate::live::protocol::MARKER_SKILL_ID_BASE;
 use crate::live::protocol::attrs as attr_type;
+use crate::live::protocol::{COUNTER_PASSIVE_SKILL_IDS, MARKER_SKILL_ID_BASE};
 use crate::live::runtime::events::{
     AttributeValue, BatchId, BossMechanicObservation, CaptureEnvelope, EntityIdentityPatch,
     EntityKind, EntityUuid, FieldPatch, GameTimerKey, GameTimerState, HateEntry, HitChannel,
@@ -23,8 +23,8 @@ use crate::live::runtime::events::{
     ProtocolObservation, ShieldDetail, SkillCooldownState, SkillPhase,
 };
 use crate::packets::opcodes::{
-    GRPC_TEAM_NTF_SERVICE_ID, Pkt, WORLD_CALL_SERVICE_ID, WORLD_NTF_SERVICE_ID, grpc_team_method,
-    world_call_method,
+    GRPC_TEAM_NTF_SERVICE_ID, MATCH_NTF_SERVICE_ID, Pkt, WORLD_CALL_SERVICE_ID,
+    WORLD_NTF_SERVICE_ID, grpc_team_method, match_ntf_method, world_call_method,
 };
 use crate::packets::packet_process::{
     SYNTHETIC_DECODE_ISSUE_OPCODE, SYNTHETIC_REASSEMBLY_RESET_OPCODE, SYNTHETIC_STREAM_GAP_OPCODE,
@@ -71,6 +71,9 @@ enum TeamWireEvent {
         member_uuid: i64,
     },
     Dissolved,
+    TeamVoteStarted {
+        creator_uuid: Option<i64>,
+    },
 }
 
 #[derive(Default)]
@@ -125,6 +128,12 @@ impl ProtocolDecoder {
             && envelope.direction == PacketDirection::ServerToClient
         {
             return decode_team(envelope);
+        }
+
+        if service_id == Some(MATCH_NTF_SERVICE_ID)
+            && envelope.direction == PacketDirection::ServerToClient
+        {
+            return decode_match(envelope);
         }
 
         Vec::new()
@@ -218,6 +227,10 @@ impl ProtocolDecoder {
                         .collect()
                 }
             ),
+            Pkt::NotifyAllMemberReady => {
+                log::info!("ready-check notification detected");
+                vec![ProtocolObservation::ReadyCheckStarted]
+            }
             Pkt::NotifyTimerList => decoded!(
                 blueprotobuf::NotifyTimerList,
                 |message: blueprotobuf::NotifyTimerList| {
@@ -328,7 +341,7 @@ impl ProtocolDecoder {
             decode_temp_attributes(uuid, temp_attrs, origin, observations);
         }
         if let Some(passives) = entity.passive_skill_infos.as_ref() {
-            Self::decode_passive_starts(uuid, passives, observations);
+            Self::decode_passive_starts(uuid, passives, origin, observations);
         }
         if let Some(snapshot) = entity.buff_infos.as_ref() {
             self.decode_buff_snapshot(uuid, snapshot, envelope, observations);
@@ -406,7 +419,7 @@ impl ProtocolDecoder {
             decode_temp_attributes(uuid, temp_attrs, ObservationOrigin::Delta, observations);
         }
         if let Some(passives) = delta.passive_skill_infos.as_ref() {
-            Self::decode_passive_starts(uuid, passives, observations);
+            Self::decode_passive_starts(uuid, passives, ObservationOrigin::Delta, observations);
         }
         if let Some(ended) = delta.passive_skill_end_infos.as_ref() {
             Self::decode_passive_ends(uuid, ended, observations);
@@ -653,6 +666,7 @@ impl ProtocolDecoder {
     fn decode_passive_starts(
         fallback_entity: EntityUuid,
         sequence: &blueprotobuf::SeqPassiveSkillInfo,
+        origin: ObservationOrigin,
         observations: &mut Vec<ProtocolObservation>,
     ) {
         let entity_uuid = sequence
@@ -664,7 +678,9 @@ impl ProtocolDecoder {
                 continue;
             };
             let marker_range = (MARKER_SKILL_ID_BASE + 1)..=(MARKER_SKILL_ID_BASE + 6);
-            if !marker_range.contains(&skill_id) {
+            let is_counter_delta =
+                origin == ObservationOrigin::Delta && COUNTER_PASSIVE_SKILL_IDS.contains(&skill_id);
+            if !marker_range.contains(&skill_id) && !is_counter_delta {
                 continue;
             }
             observations.push(ProtocolObservation::PassiveSkillObserved(
@@ -779,6 +795,22 @@ impl ProtocolDecoder {
                                 .and_then(|value| u64::try_from(value).ok()),
                             create_time: change.create_time,
                             effect_ids: effect_ids.clone(),
+                        },
+                    });
+                }
+            }
+
+            if effect.r#type == Some(blueprotobuf::EBuffEventType::BuffEventCustomize as i32) {
+                let customize_ids = decode_customize_values(&effect.logic_effect);
+                if !customize_ids.is_empty() {
+                    observations.push(ProtocolObservation::BuffChanged {
+                        target_uuid,
+                        change: ObservedBuffChange::Delta {
+                            instance_id,
+                            layer: None,
+                            duration_ms: None,
+                            create_time: None,
+                            effect_ids: Some(Arc::from(customize_ids.into_boxed_slice())),
                         },
                     });
                 }
@@ -989,6 +1021,26 @@ fn decode_world_call(envelope: &CaptureEnvelope) -> Vec<ProtocolObservation> {
     }]
 }
 
+fn decode_match(envelope: &CaptureEnvelope) -> Vec<ProtocolObservation> {
+    if envelope.key.method_id != Some(match_ntf_method::ENTER_MATCH_RESULT) {
+        return Vec::new();
+    }
+    let Ok(message) = decode_message::<blueprotobuf::EnterMatchResultNtf>(&envelope.payload) else {
+        return Vec::new();
+    };
+    let is_waiting_for_ready = message
+        .v_request
+        .and_then(|request| request.match_info)
+        .and_then(|info| info.match_status)
+        == Some(blueprotobuf::EMatchStatus::WaitReady as i32);
+    if !is_waiting_for_ready {
+        return Vec::new();
+    }
+
+    log::info!("matchmaking ready notification detected");
+    vec![ProtocolObservation::MatchmakingPopped]
+}
+
 fn decode_team(envelope: &CaptureEnvelope) -> Vec<ProtocolObservation> {
     let Some(method_id) = envelope.key.method_id else {
         return Vec::new();
@@ -1016,6 +1068,12 @@ fn decode_team(envelope: &CaptureEnvelope) -> Vec<ProtocolObservation> {
             member_uuid: EntityUuid(member_uuid),
         }],
         TeamWireEvent::Dissolved => vec![ProtocolObservation::TeamDissolved],
+        TeamWireEvent::TeamVoteStarted { creator_uuid } => {
+            log::info!("team activity vote notification detected");
+            vec![ProtocolObservation::TeamVoteStarted {
+                creator_uuid: creator_uuid.map(EntityUuid),
+            }]
+        }
     }
 }
 
@@ -1132,6 +1190,26 @@ fn decode_team_event(method_id: u32, payload: &[u8]) -> Option<TeamWireEvent> {
             }
         }
         grpc_team_method::NOTICE_TEAM_DISSOLVE => Some(TeamWireEvent::Dissolved),
+        grpc_team_method::NOTIFY_TEAM_ACTIVITY_STATE => {
+            match decode_message::<blueprotobuf::NotifyTeamActivityState>(payload) {
+                Ok(message) => message.v_request.and_then(|request| {
+                    let state = request.state?;
+                    if state.state != Some(blueprotobuf::ETeamActivityState::Voting as i32) {
+                        return None;
+                    }
+                    let creator_uuid = state
+                        .assign_scene_params
+                        .and_then(|params| params.creator_char_id)
+                        .filter(|char_id| *char_id != 0)
+                        .map(canonical_player_uuid);
+                    Some(TeamWireEvent::TeamVoteStarted { creator_uuid })
+                }),
+                Err(category) => {
+                    log::warn!("failed to decode NotifyTeamActivityState: {category:?}");
+                    None
+                }
+            }
+        }
         grpc_team_method::NOTIFY_BE_TRANSFER_LEADER => {
             log::debug!(
                 "GrpcTeamNtf NotifyBeTransferLeader received; state decode not implemented"
@@ -1751,6 +1829,37 @@ fn decode_play_effect_ids(logic_effects: &[blueprotobuf::BuffEffectLogicInfo]) -
         .collect()
 }
 
+/// Slot/lock values from `BuffEventCustomize` (`logicIdx` 1-4).
+///
+/// Skips `BuffEffectStopAll` (init/refresh/settle wipe, not "already matched").
+/// Each remaining payload is a PlayEffect `effect_id` or a 1-/2-byte integer;
+/// parsers that treat the 2-byte blob as `BuffUuid` misread these.
+fn decode_customize_values(logic_effects: &[blueprotobuf::BuffEffectLogicInfo]) -> Vec<i32> {
+    logic_effects
+        .iter()
+        .filter(|logic| {
+            logic
+                .effect_type
+                .unwrap_or(blueprotobuf::EBuffEffectLogicPbType::PlayEffect as i32)
+                != blueprotobuf::EBuffEffectLogicPbType::BuffEffectStopAll as i32
+        })
+        .filter_map(|logic| logic.raw_data.as_deref().and_then(decode_customize_value))
+        .collect()
+}
+
+fn decode_customize_value(raw: &[u8]) -> Option<i32> {
+    if let Ok(effect) = decode_message::<blueprotobuf::BuffEffectLogicPlayEffect>(raw)
+        && let Some(effect_id) = effect.effect_id.filter(|id| *id != 0)
+    {
+        return Some(effect_id);
+    }
+    match raw {
+        [byte] => Some(i32::from(*byte)),
+        [low, high] => Some(i32::from(i16::from_le_bytes([*low, *high]))),
+        _ => None,
+    }
+}
+
 fn update_buff_times(
     buff: &mut ObservedBuff,
     source_create_time: Option<i64>,
@@ -1832,6 +1941,18 @@ fn decode_scene_events(
         .collect()
 }
 
+const PROGRESS_STATE_VAR: &str = "ProgressState";
+
+fn progress_state_from_dungeon_var(var: &blueprotobuf::DungeonVar) -> Option<i32> {
+    var.dungeon_var_data.iter().find_map(|entry| {
+        if entry.name.as_deref() == Some(PROGRESS_STATE_VAR) {
+            entry.value
+        } else {
+            None
+        }
+    })
+}
+
 fn decode_dungeon_snapshot(message: blueprotobuf::SyncDungeonData) -> Vec<ProtocolObservation> {
     let mut observations = Vec::new();
     let Some(data) = message.v_data else {
@@ -1849,6 +1970,13 @@ fn decode_dungeon_snapshot(message: blueprotobuf::SyncDungeonData) -> Vec<Protoc
             }
         }));
     }
+    if let Some(value) = data
+        .dungeon_var
+        .as_ref()
+        .and_then(progress_state_from_dungeon_var)
+    {
+        observations.push(ProtocolObservation::DungeonProgressStateChanged { value });
+    }
     observations
 }
 
@@ -1860,7 +1988,7 @@ fn decode_dungeon_delta(message: blueprotobuf::SyncDungeonDirtyData) -> Vec<Prot
         Ok(decoded) => decoded,
         Err(_) => return Vec::new(),
     };
-    let mut observations = Vec::with_capacity(decoded.targets.len() + 1);
+    let mut observations = Vec::with_capacity(decoded.targets.len() + 2);
     if let Some(state) = decoded.flow_state {
         observations.push(ProtocolObservation::DungeonFlowChanged { state });
     }
@@ -1871,6 +1999,9 @@ fn decode_dungeon_delta(message: blueprotobuf::SyncDungeonDirtyData) -> Vec<Prot
             complete: target.complete != 0,
         }
     }));
+    if let Some(value) = decoded.progress_state {
+        observations.push(ProtocolObservation::DungeonProgressStateChanged { value });
+    }
     observations
 }
 
@@ -1940,6 +2071,28 @@ mod tests {
             key: crate::live::runtime::events::PacketKey {
                 opcode: 0,
                 service_id: Some(u32::try_from(WORLD_CALL_SERVICE_ID).unwrap()),
+                method_id: Some(method_id),
+            },
+            payload: message.encode_to_vec().into(),
+        }
+    }
+
+    fn service_notify<M: Message>(
+        sequence: u64,
+        service_id: u64,
+        method_id: u32,
+        message: &M,
+    ) -> CaptureEnvelope {
+        CaptureEnvelope {
+            capture_sequence: sequence,
+            stream_id: 7,
+            stream_epoch: 2,
+            captured_wall_ms: 50_000,
+            captured_mono_ns: sequence * 1_000_000,
+            direction: PacketDirection::ServerToClient,
+            key: crate::live::runtime::events::PacketKey {
+                opcode: method_id,
+                service_id: Some(u32::try_from(service_id).expect("test service id fits u32")),
                 method_id: Some(method_id),
             },
             payload: message.encode_to_vec().into(),
@@ -2251,6 +2404,86 @@ mod tests {
     }
 
     #[test]
+    fn matchmaking_alert_only_fires_while_waiting_for_ready() {
+        let message = |status| blueprotobuf::EnterMatchResultNtf {
+            v_request: Some(blueprotobuf::EnterMatchResultNtfRequest {
+                match_info: Some(blueprotobuf::MatchInfo {
+                    match_status: Some(status as i32),
+                }),
+            }),
+        };
+        let mut decoder = ProtocolDecoder::new();
+
+        let waiting = decoder.decode(service_notify(
+            1,
+            MATCH_NTF_SERVICE_ID,
+            match_ntf_method::ENTER_MATCH_RESULT,
+            &message(blueprotobuf::EMatchStatus::WaitReady),
+        ));
+        let matching = decoder.decode(service_notify(
+            2,
+            MATCH_NTF_SERVICE_ID,
+            match_ntf_method::ENTER_MATCH_RESULT,
+            &message(blueprotobuf::EMatchStatus::Matching),
+        ));
+
+        assert_eq!(
+            waiting.observations,
+            vec![ProtocolObservation::MatchmakingPopped]
+        );
+        assert!(matching.observations.is_empty());
+    }
+
+    #[test]
+    fn team_vote_alert_only_fires_for_voting_state() {
+        let message = |state| blueprotobuf::NotifyTeamActivityState {
+            v_request: Some(blueprotobuf::NotifyTeamActivityStateRequest {
+                state: Some(blueprotobuf::TeamActivity {
+                    state: Some(state as i32),
+                    assign_scene_params: Some(blueprotobuf::AssignSceneParams {
+                        creator_char_id: Some(42),
+                    }),
+                }),
+            }),
+        };
+        let mut decoder = ProtocolDecoder::new();
+
+        let voting = decoder.decode(service_notify(
+            1,
+            GRPC_TEAM_NTF_SERVICE_ID,
+            grpc_team_method::NOTIFY_TEAM_ACTIVITY_STATE,
+            &message(blueprotobuf::ETeamActivityState::Voting),
+        ));
+        let doing = decoder.decode(service_notify(
+            2,
+            GRPC_TEAM_NTF_SERVICE_ID,
+            grpc_team_method::NOTIFY_TEAM_ACTIVITY_STATE,
+            &message(blueprotobuf::ETeamActivityState::Doing),
+        ));
+
+        assert_eq!(
+            voting.observations,
+            vec![ProtocolObservation::TeamVoteStarted {
+                creator_uuid: Some(EntityUuid(canonical(42))),
+            }]
+        );
+        assert!(doing.observations.is_empty());
+    }
+
+    #[test]
+    fn ready_check_opcode_fires_without_decoding_payload() {
+        let message = blueprotobuf::NoticeTeamDissolveRequest {};
+        let mut decoder = ProtocolDecoder::new();
+
+        let batch = decoder.decode(notify(1, Pkt::NotifyAllMemberReady, &message));
+
+        assert_eq!(
+            batch.observations,
+            vec![ProtocolObservation::ReadyCheckStarted]
+        );
+    }
+
+    #[test]
     fn hit_fields_are_preserved_and_missing_owner_is_rejected() {
         let damage = blueprotobuf::SyncDamageInfo {
             damage_source: Some(2),
@@ -2518,6 +2751,143 @@ mod tests {
         ));
     }
 
+    fn play_effect_logic(effect_id: i32) -> blueprotobuf::BuffEffectLogicInfo {
+        blueprotobuf::BuffEffectLogicInfo {
+            effect_type: Some(blueprotobuf::EBuffEffectLogicPbType::PlayEffect as i32),
+            raw_data: Some(
+                blueprotobuf::BuffEffectLogicPlayEffect {
+                    effect_id: Some(effect_id),
+                }
+                .encode_to_vec(),
+            ),
+            ..Default::default()
+        }
+    }
+
+    fn customize_sync(
+        host_uuid: i64,
+        instance_id: i32,
+        logic_effect: Vec<blueprotobuf::BuffEffectLogicInfo>,
+    ) -> blueprotobuf::BuffEffectSync {
+        blueprotobuf::BuffEffectSync {
+            uuid: Some(host_uuid),
+            buff_effects: vec![blueprotobuf::BuffEffect {
+                r#type: Some(blueprotobuf::EBuffEventType::BuffEventCustomize as i32),
+                buff_uuid: Some(instance_id),
+                host_uuid: Some(host_uuid),
+                logic_effect,
+                ..Default::default()
+            }],
+        }
+    }
+
+    fn decode_customize_delta(
+        sync: &blueprotobuf::BuffEffectSync,
+    ) -> (EntityUuid, i64, Option<Arc<[i32]>>) {
+        let envelope = notify(
+            1,
+            Pkt::SyncNearDeltaInfo,
+            &blueprotobuf::SyncNearDeltaInfo::default(),
+        );
+        let mut decoder = ProtocolDecoder::new();
+        let mut observations = Vec::new();
+        decoder.decode_buff_effect_sync(EntityUuid(10), sync, &envelope, &mut observations);
+        match observations.as_slice() {
+            [
+                ProtocolObservation::BuffChanged {
+                    target_uuid,
+                    change:
+                        ObservedBuffChange::Delta {
+                            instance_id,
+                            effect_ids,
+                            layer: None,
+                            duration_ms: None,
+                            create_time: None,
+                        },
+                },
+            ] => (*target_uuid, *instance_id, effect_ids.clone()),
+            other => panic!("customize delta expected, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn buff_event_customize_decodes_pair_mark_play_effects() {
+        let cases: [(&str, [i32; 4]); 2] = [
+            ("black-white-black lock 2", [1, 5, 3, 8]),
+            ("white-black-white lock 2", [4, 2, 6, 8]),
+        ];
+        for (name, values) in cases {
+            let sync = customize_sync(
+                30,
+                77,
+                values.iter().copied().map(play_effect_logic).collect(),
+            );
+            let (target, instance_id, effect_ids) = decode_customize_delta(&sync);
+            assert_eq!(target, EntityUuid(30), "{name}");
+            assert_eq!(instance_id, 77, "{name}");
+            assert_eq!(effect_ids.as_deref(), Some(values.as_slice()), "{name}");
+        }
+    }
+
+    #[test]
+    fn buff_event_customize_decodes_raw_little_endian_values() {
+        let sync = customize_sync(
+            30,
+            77,
+            [1_i16, 5, 3, 8]
+                .into_iter()
+                .map(|value| blueprotobuf::BuffEffectLogicInfo {
+                    effect_type: Some(blueprotobuf::EBuffEffectLogicPbType::PlayEffect as i32),
+                    raw_data: Some(value.to_le_bytes().to_vec()),
+                    ..Default::default()
+                })
+                .collect(),
+        );
+        let (_, _, effect_ids) = decode_customize_delta(&sync);
+        assert_eq!(effect_ids.as_deref(), Some([1, 5, 3, 8].as_slice()));
+    }
+
+    #[test]
+    fn buff_event_customize_stop_all_only_does_not_emit_delta() {
+        let sync = customize_sync(
+            30,
+            77,
+            vec![blueprotobuf::BuffEffectLogicInfo {
+                effect_type: Some(blueprotobuf::EBuffEffectLogicPbType::BuffEffectStopAll as i32),
+                raw_data: None,
+                ..Default::default()
+            }],
+        );
+        let envelope = notify(
+            1,
+            Pkt::SyncNearDeltaInfo,
+            &blueprotobuf::SyncNearDeltaInfo::default(),
+        );
+        let mut decoder = ProtocolDecoder::new();
+        let mut observations = Vec::new();
+        decoder.decode_buff_effect_sync(EntityUuid(10), &sync, &envelope, &mut observations);
+        assert!(observations.is_empty());
+    }
+
+    #[test]
+    fn buff_event_customize_skips_stop_all_and_keeps_slot_values() {
+        let mut logic_effect = vec![blueprotobuf::BuffEffectLogicInfo {
+            effect_type: Some(blueprotobuf::EBuffEffectLogicPbType::BuffEffectStopAll as i32),
+            raw_data: None,
+            ..Default::default()
+        }];
+        logic_effect.extend([1_i16, 5, 6, 9].into_iter().map(|value| {
+            blueprotobuf::BuffEffectLogicInfo {
+                effect_type: Some(blueprotobuf::EBuffEffectLogicPbType::PlayEffect as i32),
+                raw_data: Some(value.to_le_bytes().to_vec()),
+                ..Default::default()
+            }
+        }));
+        let sync = customize_sync(30, 77, logic_effect);
+        let (_, _, effect_ids) = decode_customize_delta(&sync);
+        assert_eq!(effect_ids.as_deref(), Some([1, 5, 6, 9].as_slice()));
+    }
+
     #[test]
     fn container_snapshot_announces_the_local_player_entity() {
         let container = blueprotobuf::SyncContainerData {
@@ -2549,6 +2919,93 @@ mod tests {
             observation,
             ProtocolObservation::EntityDisappeared { .. }
         )));
+    }
+
+    #[test]
+    fn counter_passive_start_is_decoded_only_from_delta() {
+        let delta = blueprotobuf::SyncNearDeltaInfo {
+            delta_infos: vec![blueprotobuf::AoiSyncDelta {
+                uuid: Some(30),
+                passive_skill_infos: Some(blueprotobuf::SeqPassiveSkillInfo {
+                    passive_infos: vec![
+                        blueprotobuf::PassiveSkillInfo {
+                            uuid: Some(900),
+                            skill_id: Some(1434),
+                            ..Default::default()
+                        },
+                        blueprotobuf::PassiveSkillInfo {
+                            uuid: Some(901),
+                            skill_id: Some(1107),
+                            ..Default::default()
+                        },
+                    ],
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }],
+        };
+        let snapshot = blueprotobuf::SyncNearEntities {
+            appear: vec![blueprotobuf::Entity {
+                uuid: Some(30),
+                passive_skill_infos: Some(blueprotobuf::SeqPassiveSkillInfo {
+                    passive_infos: vec![
+                        blueprotobuf::PassiveSkillInfo {
+                            uuid: Some(902),
+                            skill_id: Some(1434),
+                            ..Default::default()
+                        },
+                        blueprotobuf::PassiveSkillInfo {
+                            uuid: Some(903),
+                            skill_id: Some(1101),
+                            ..Default::default()
+                        },
+                    ],
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        let mut decoder = ProtocolDecoder::new();
+
+        let delta_batch = decoder.decode(notify(1, Pkt::SyncNearDeltaInfo, &delta));
+        let snapshot_batch = decoder.decode(notify(2, Pkt::SyncNearEntities, &snapshot));
+
+        assert!(
+            delta_batch
+                .observations
+                .contains(&ProtocolObservation::PassiveSkillObserved(
+                    PassiveSkillObservation {
+                        entity_uuid: EntityUuid(30),
+                        passive_instance_id: 900,
+                        skill_id: 1434,
+                        target_position: None,
+                        ended: false,
+                    }
+                ))
+        );
+        assert!(!delta_batch.observations.iter().any(|observation| matches!(
+            observation,
+            ProtocolObservation::PassiveSkillObserved(passive) if passive.skill_id == 1107
+        )));
+        assert!(
+            !snapshot_batch
+                .observations
+                .iter()
+                .any(|observation| matches!(
+                    observation,
+                    ProtocolObservation::PassiveSkillObserved(passive) if passive.skill_id == 1434
+                ))
+        );
+        assert!(
+            snapshot_batch
+                .observations
+                .iter()
+                .any(|observation| matches!(
+                    observation,
+                    ProtocolObservation::PassiveSkillObserved(passive) if passive.skill_id == 1101
+                ))
+        );
     }
 
     #[test]
@@ -2894,5 +3351,49 @@ mod tests {
         let monster = identity_patch_for_monster_id(EntityKind::Monster, BOSS_TEMPLATE);
         assert_eq!(monster.monster_id, FieldPatch::Set(BOSS_TEMPLATE));
         assert_eq!(monster.is_boss, FieldPatch::Set(true));
+    }
+
+    #[test]
+    fn dungeon_snapshot_emits_progress_state_when_present() {
+        let message = blueprotobuf::SyncDungeonData {
+            v_data: Some(blueprotobuf::DungeonSyncData {
+                dungeon_var: Some(blueprotobuf::DungeonVar {
+                    dungeon_var_data: vec![
+                        blueprotobuf::DungeonVarData {
+                            name: Some("eatball".into()),
+                            value: Some(22),
+                        },
+                        blueprotobuf::DungeonVarData {
+                            name: Some("ProgressState".into()),
+                            value: Some(1),
+                        },
+                    ],
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let observations = decode_dungeon_snapshot(message);
+        assert_eq!(
+            observations,
+            vec![ProtocolObservation::DungeonProgressStateChanged { value: 1 }]
+        );
+    }
+
+    #[test]
+    fn dungeon_snapshot_skips_progress_state_without_value() {
+        let message = blueprotobuf::SyncDungeonData {
+            v_data: Some(blueprotobuf::DungeonSyncData {
+                dungeon_var: Some(blueprotobuf::DungeonVar {
+                    dungeon_var_data: vec![blueprotobuf::DungeonVarData {
+                        name: Some("eatball".into()),
+                        value: Some(22),
+                    }],
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        assert!(decode_dungeon_snapshot(message).is_empty());
     }
 }

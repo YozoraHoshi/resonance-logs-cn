@@ -10,6 +10,7 @@ pub mod model_manager;
 pub mod models;
 pub mod player;
 pub mod presets;
+pub mod prompts;
 pub mod types;
 
 use std::collections::HashMap;
@@ -46,6 +47,46 @@ const PREVIEW_PRIORITY: u8 = 255;
 const FINE_TUNED_TEMPERATURE: f32 = 0.5;
 const FINE_TUNED_TOP_K: i32 = 20;
 static NEXT_ID: AtomicU64 = AtomicU64::new(1);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum CueAudioRef {
+    CatalogAsset {
+        asset_id: String,
+    },
+    BundledPrompt {
+        key: String,
+        locale: presets::VoicePresetLocale,
+    },
+}
+
+impl CueAudioRef {
+    fn from_asset(asset: &VoiceAssetMeta) -> Self {
+        match &asset.source {
+            VoiceAssetSource::BundledPrompt { key, locale, .. } => Self::BundledPrompt {
+                key: key.clone(),
+                locale: *locale,
+            },
+            VoiceAssetSource::CloneProfile { .. } | VoiceAssetSource::FineTuned { .. } => {
+                Self::CatalogAsset {
+                    asset_id: asset.id.clone(),
+                }
+            }
+        }
+    }
+}
+
+fn catalog_audio_ref(catalog: &models::VoiceCatalog, phrase_id: &str) -> Option<CueAudioRef> {
+    let phrase = catalog
+        .phrases
+        .iter()
+        .find(|phrase| phrase.id == phrase_id)?;
+    let active_id = phrase.active_asset_id.as_deref()?;
+    let asset = catalog
+        .assets
+        .iter()
+        .find(|asset| asset.id == active_id && asset.phrase_id == phrase_id)?;
+    Some(CueAudioRef::from_asset(asset))
+}
 
 fn now_ms() -> i64 {
     SystemTime::now()
@@ -327,8 +368,10 @@ impl VoiceService {
         // single asset per phrase (e.g. from an older build), so leftover
         // unconfirmed takes don't linger forever with no way to clean them
         // up from the UI.
-        let removed_assets = reconcile_single_asset_per_phrase(&mut catalog_data);
-        if !removed_assets.is_empty() {
+        let mut removed_assets = reconcile_single_asset_per_phrase(&mut catalog_data);
+        let prompt_sync = prompts::seed_catalog(&mut catalog_data, now_ms());
+        removed_assets.extend(prompt_sync.removed_user_assets);
+        if prompt_sync.changed || !removed_assets.is_empty() {
             catalog::save_catalog(&voice_root, &catalog_data)?;
             remove_asset_files_best_effort(&voice_root, &removed_assets);
         }
@@ -383,32 +426,47 @@ impl VoiceService {
         Ok(())
     }
 
-    /// Resolves `intent.phrase_id` to a generated WAV and enqueues playback.
+    fn cue_audio_ref(&self, phrase_id: &str) -> Option<CueAudioRef> {
+        let catalog = self.inner.catalog.lock();
+        catalog_audio_ref(&catalog, phrase_id)
+    }
+
+    fn audio_ref_wav_path(&self, phrase_id: &str, audio_ref: CueAudioRef) -> Option<PathBuf> {
+        match audio_ref {
+            CueAudioRef::CatalogAsset { asset_id } => {
+                let path = catalog::asset_wav_path(&self.inner.voice_root, phrase_id, &asset_id);
+                path.is_file().then_some(path)
+            }
+            CueAudioRef::BundledPrompt { key, locale } => {
+                match prompts::resolve_prompt_path(&self.inner.app_handle, &key, locale) {
+                    Ok(path) => Some(path),
+                    Err(error) => {
+                        warn!(
+                            target: "app::voice",
+                            "failed to resolve bundled prompt {key}: {error}"
+                        );
+                        None
+                    }
+                }
+            }
+        }
+    }
+
+    fn cue_wav_path(&self, phrase_id: &str) -> Option<PathBuf> {
+        self.audio_ref_wav_path(phrase_id, self.cue_audio_ref(phrase_id)?)
+    }
+
+    /// Resolves `intent.phrase_id` to a generated or bundled WAV and enqueues playback.
     /// Never drops the cue silently: if the phrase is missing, has no
-    /// active asset yet (not generated), or the asset file is gone from
+    /// playable asset, or the asset file is gone from
     /// disk, a short built-in fallback tone plays instead so a
     /// misconfigured or pending rule is still noticeable.
     pub fn enqueue_cue(&self, intent: VoiceCueIntent) {
-        // Only the (small, Copy-ish) active asset id needs to come out from
-        // under the lock; the `path.is_file()` stat happens afterwards so
-        // the catalog mutex is never held across filesystem IO.
-        let active_asset_id = self
-            .inner
-            .catalog
-            .lock()
-            .phrases
-            .iter()
-            .find(|phrase| phrase.id == intent.phrase_id)
-            .and_then(|phrase| phrase.active_asset_id.clone());
-        let wav_path = active_asset_id.and_then(|asset_id| {
-            let path =
-                catalog::asset_wav_path(&self.inner.voice_root, &intent.phrase_id, &asset_id);
-            path.is_file().then_some(path)
-        });
+        let wav_path = self.cue_wav_path(&intent.phrase_id);
         if wav_path.is_none() {
             warn!(
                 target: "app::voice",
-                "rule {} phrase {} has no generated audio; playing fallback tone",
+                "rule {} phrase {} has no playable audio; playing fallback tone",
                 intent.rule_id, intent.phrase_id
             );
         }
@@ -458,49 +516,34 @@ impl VoiceService {
     }
 
     pub fn test_trigger(&self, phrase_id: &PhraseId) -> VoiceResult<()> {
-        if !self
-            .inner
-            .catalog
-            .lock()
-            .phrases
-            .iter()
-            .any(|phrase| phrase.id == phrase_id.as_str() && phrase.active_asset_id.is_some())
-        {
+        let Some(wav_path) = self.cue_wav_path(phrase_id.as_str()) else {
             return Err(VoiceError::not_found(
                 "active phrase asset",
                 phrase_id.to_string(),
             ));
-        }
-        self.enqueue_cue(VoiceCueIntent {
+        };
+        self.inner.player.enqueue(QueuedCue {
             rule_id: PREVIEW_RULE_ID.to_string(),
-            phrase_id: phrase_id.as_str().to_string(),
             priority: TEST_TRIGGER_PRIORITY,
-            triggered_at_ms: now_ms(),
+            wav_path: Some(wav_path),
         });
         Ok(())
     }
 
     pub fn preview_asset(&self, phrase_id: &PhraseId, asset_id: &AssetId) -> VoiceResult<()> {
         let catalog = self.inner.catalog.lock();
-        if !catalog
+        let Some(asset) = catalog
             .assets
             .iter()
-            .any(|asset| asset.id == asset_id.as_str() && asset.phrase_id == phrase_id.as_str())
-        {
+            .find(|asset| asset.id == asset_id.as_str() && asset.phrase_id == phrase_id.as_str())
+        else {
             return Err(VoiceError::not_found("voice asset", asset_id.to_string()));
-        }
-        let wav_path = catalog::asset_wav_path(
-            &self.inner.voice_root,
-            phrase_id.as_str(),
-            asset_id.as_str(),
-        );
+        };
+        let audio_ref = CueAudioRef::from_asset(asset);
         drop(catalog);
-        if !wav_path.is_file() {
-            return Err(VoiceError::not_found(
-                "asset WAV",
-                wav_path.display().to_string(),
-            ));
-        }
+        let Some(wav_path) = self.audio_ref_wav_path(phrase_id.as_str(), audio_ref) else {
+            return Err(VoiceError::not_found("asset WAV", asset_id.to_string()));
+        };
         self.inner.player.enqueue(QueuedCue {
             rule_id: PREVIEW_RULE_ID.to_string(),
             priority: PREVIEW_PRIORITY,
@@ -955,8 +998,9 @@ impl VoiceService {
             .try_begin(VoiceOperationState::UpdatingCatalog)?;
         validate_label("name", &name, 120)?;
         validate_label("text", &text, 1000)?;
+        let id = new_id("phrase");
         let phrase = VoicePhraseMeta {
-            id: new_id("phrase"),
+            id: id.clone(),
             name,
             text,
             language,
@@ -964,7 +1008,14 @@ impl VoiceService {
             updated_at_ms: now_ms(),
         };
         let mut updated_catalog = self.inner.catalog.lock().clone();
-        updated_catalog.phrases.push(phrase.clone());
+        updated_catalog.phrases.push(phrase);
+        prompts::sync_phrase(&mut updated_catalog, &id);
+        let phrase = updated_catalog
+            .phrases
+            .iter()
+            .find(|phrase| phrase.id == id)
+            .cloned()
+            .expect("newly-created phrase remains in catalog");
         self.commit_catalog(updated_catalog)?;
         Ok(phrase)
     }
@@ -995,7 +1046,6 @@ impl VoiceService {
         phrase.text = text;
         phrase.language = language;
         phrase.updated_at_ms = now_ms();
-        let updated = phrase.clone();
         if content_changed {
             for asset in updated_catalog
                 .assets
@@ -1005,7 +1055,15 @@ impl VoiceService {
                 asset.stale = true;
             }
         }
+        let prompt_sync = prompts::sync_phrase(&mut updated_catalog, id.as_str());
+        let updated = updated_catalog
+            .phrases
+            .iter()
+            .find(|phrase| phrase.id == id.as_str())
+            .cloned()
+            .expect("updated phrase remains in catalog");
         self.commit_catalog(updated_catalog)?;
+        remove_asset_files_best_effort(&self.inner.voice_root, &prompt_sync.removed_user_assets);
         Ok(updated)
     }
 
@@ -1209,6 +1267,11 @@ impl VoiceService {
                 speaker_token_id,
                 ..
             } => format!("fine-tuned:{model_sha256}:{speaker_token_id}"),
+            VoiceAssetSource::BundledPrompt {
+                key,
+                locale,
+                revision,
+            } => format!("bundled-prompt:{key}:{locale:?}:{revision}"),
         };
         let (temperature, top_k) = generation_sampling_params(&asset_source);
         let mut sidecar_items = Vec::with_capacity(request.items.len());
@@ -1305,7 +1368,7 @@ impl VoiceService {
         }
         let resolved_profile_id = match &asset_source {
             VoiceAssetSource::CloneProfile { profile_id } => Some(profile_id.clone()),
-            VoiceAssetSource::FineTuned { .. } => None,
+            VoiceAssetSource::FineTuned { .. } | VoiceAssetSource::BundledPrompt { .. } => None,
         };
         // A phrase keeps at most one asset: the freshly generated take
         // becomes active immediately and replaces whatever used to be
@@ -1972,6 +2035,51 @@ mod tests {
             created_at_ms,
             ..VoiceAssetMeta::default()
         }
+    }
+
+    #[test]
+    fn catalog_audio_ref_distinguishes_bundled_and_generated_assets() {
+        let catalog = models::VoiceCatalog {
+            phrases: vec![
+                phrase_stub("builtin-phrase", Some("builtin-asset")),
+                phrase_stub("generated-phrase", Some("generated-asset")),
+            ],
+            assets: vec![
+                VoiceAssetMeta {
+                    id: "builtin-asset".into(),
+                    phrase_id: "builtin-phrase".into(),
+                    source: VoiceAssetSource::BundledPrompt {
+                        key: "voice:alert:matchReady".into(),
+                        locale: presets::VoicePresetLocale::ZhCn,
+                        revision: 1,
+                    },
+                    ..VoiceAssetMeta::default()
+                },
+                VoiceAssetMeta {
+                    id: "generated-asset".into(),
+                    phrase_id: "generated-phrase".into(),
+                    source: VoiceAssetSource::CloneProfile {
+                        profile_id: "profile-1".into(),
+                    },
+                    ..VoiceAssetMeta::default()
+                },
+            ],
+            ..Default::default()
+        };
+
+        assert_eq!(
+            catalog_audio_ref(&catalog, "builtin-phrase"),
+            Some(CueAudioRef::BundledPrompt {
+                key: "voice:alert:matchReady".into(),
+                locale: presets::VoicePresetLocale::ZhCn,
+            })
+        );
+        assert_eq!(
+            catalog_audio_ref(&catalog, "generated-phrase"),
+            Some(CueAudioRef::CatalogAsset {
+                asset_id: "generated-asset".into(),
+            })
+        );
     }
 
     #[test]

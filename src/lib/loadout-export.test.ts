@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   SETTINGS,
+  MAX_BUFF_COVERAGE_ENTRIES,
   createDefaultMonitoringSettingsState,
   createDefaultSkillMonitorProfile,
   type Loadout,
   type SkillMonitorProfile,
 } from "$lib/settings-store";
 import { exportLoadout } from "$lib/loadouts.svelte.js";
+import { applyActiveLiveProfileToMirror } from "$lib/live-meter-profile.svelte.js";
 import { parseLoadoutExport } from "$lib/loadout-import";
 import { normalizeSkillProfile } from "$lib/skill-monitor-normalize";
 
@@ -66,6 +68,8 @@ function resetWithLegacyLoadout(): { loadoutId: string } {
   const state = createDefaultMonitoringSettingsState();
   const monsterProfile = state.monsterMonitor.profiles[0]!;
   const liveProfile = state.liveMeter.profiles[0]!;
+  liveProfile.history.general.timelineCurveH = 360;
+  liveProfile.columnLabels.history.players.first = "队伍";
   const skillProfile = legacyShapedSkillProfile();
   skillProfile.id = state.skillMonitor.profiles[0]!.id;
   state.skillMonitor.profiles = [skillProfile];
@@ -84,6 +88,7 @@ function resetWithLegacyLoadout(): { loadoutId: string } {
     firstRunPromptDismissed: true,
   };
   Object.assign(SETTINGS.monitoring.state, state);
+  applyActiveLiveProfileToMirror();
   return { loadoutId: loadout.id };
 }
 
@@ -110,6 +115,10 @@ describe("exportLoadout normalization", () => {
     expect(
       parsed.output.skillProfile.customPanelGroups?.[0]?.style,
     ).toMatchObject({ textShadowEnabled: true });
+    expect(parsed.output.liveProfile.history.general.timelineCurveH).toBe(360);
+    expect(parsed.output.liveProfile.columnLabels.history.players.first).toBe(
+      "队伍",
+    );
   });
 
   it("re-imports byte-for-byte the same as parsing directly", () => {
@@ -143,5 +152,26 @@ describe("normalizeSkillProfile", () => {
     expect(normalized.shieldDetailStyle).toBeUndefined();
     expect("customPanelStyle" in normalized).toBe(false);
     expect("shieldDetailStyle" in normalized).toBe(false);
+  });
+
+  it("keeps the first 32 unique positive coverage ids", () => {
+    const profile = createDefaultSkillMonitorProfile("Coverage");
+    profile.buffCoverageEntries = [
+      { id: "invalid", buffId: 0, label: "", showInLive: true },
+      ...Array.from({ length: 40 }, (_, index) => ({
+        id: `entry_${index}`,
+        buffId: index + 1,
+        label: "",
+        showInLive: true,
+      })),
+      { id: "duplicate", buffId: 1, label: "", showInLive: true },
+    ];
+    const normalized = normalizeSkillProfile(profile);
+    expect(normalized.buffCoverageEntries).toHaveLength(
+      MAX_BUFF_COVERAGE_ENTRIES,
+    );
+    expect(
+      normalized.buffCoverageEntries?.map((entry) => entry.buffId),
+    ).toEqual(Array.from({ length: 32 }, (_, index) => index + 1));
   });
 });

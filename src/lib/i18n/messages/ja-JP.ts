@@ -10,7 +10,7 @@ export const jaJPMessages = {
   "loadout.defaults.copyName": "{name} のコピー",
   "loadout.page.title": "ロードアウト管理",
   "loadout.page.description":
-    "ロードアウトはスキル監視プロファイルとモンスター監視プロファイルを組み合わせたものです。切り替えるだけでリアルタイム監視・モンスター監視・音声読み上げの設定をまとめて変更できます",
+    "ロードアウトはスキル監視・モンスター監視・DPS 設定プロファイルをまとめたものです。切り替えるだけでリアルタイム監視・履歴表示・音声読み上げの設定を一括変更できます",
   "loadout.page.loadoutsTitle": "ロードアウト",
   "loadout.page.new": "新規ロードアウト",
   "loadout.page.namePrompt": "ロードアウト名を入力",
@@ -22,10 +22,10 @@ export const jaJPMessages = {
   "loadout.page.deleteConfirm": "このロードアウトを削除しますか？",
   "loadout.page.skillProfileLabel": "スキル監視プロファイル",
   "loadout.page.monsterProfileLabel": "モンスター監視プロファイル",
-  "loadout.page.liveProfileLabel": "リアルタイム計測プロファイル",
+  "loadout.page.liveProfileLabel": "DPS 設定プロファイル",
   "loadout.page.presetsTitle": "プリセット",
   "loadout.page.presetsDescription":
-    "スキル・モンスター・リアルタイム計測設定を含む構成済みロードアウトを適用します",
+    "スキル・モンスター・DPS 設定を含む構成済みロードアウトを適用します",
   "loadout.page.presetApplied": "「{name}」ロードアウトを作成しました",
   "loadout.page.importButton": "インポート",
   "loadout.page.exportButton": "エクスポート",
@@ -122,9 +122,9 @@ export const jaJPMessages = {
   "settings.tabs.debug": "デバッグ",
   "settings.tabs.language": "言語",
   "settings.scope.live":
-    "リアルタイム計測の設定は現在のリアルタイム計測プロファイルに保存され、構成のエクスポート時に一緒に出力されます。",
+    "リアルタイム統計の設定は現在の DPS 設定プロファイルに保存され、ロードアウトのエクスポートに含まれます。",
   "settings.scope.history":
-    "履歴統計は端末ごとの設定であり、エクスポートには含まれません。",
+    "履歴統計の設定は現在の DPS 設定プロファイルに保存され、ロードアウトのエクスポートに含まれます。",
   "appSettings.title": "アプリ設定",
   "appSettings.description":
     "アプリ全体の設定：パケットキャプチャ・グローバルショートカット・言語・診断。これらは構成のエクスポートに含まれません。",
@@ -136,6 +136,10 @@ export const jaJPMessages = {
   "appSettings.language.title": "言語",
   "appSettings.language.description":
     "インターフェースの表示言語を切り替えます。",
+  "appSettings.behavior.title": "アプリの動作",
+  "appSettings.behavior.exitOnClose": "閉じるボタンでアプリを終了する",
+  "appSettings.behavior.exitOnCloseDescription":
+    "有効にすると、メインウィンドウの閉じるボタンをクリックした際に、システムトレイへ隠さずアプリ全体を終了します。この設定は次回起動後に反映されます。",
   "appSettings.appearance.scope":
     "以下の外観設定は端末ごとのグローバル設定です。構成のエクスポートには含まれません。",
   "appSettings.appearance.colorScopeMain":
@@ -477,6 +481,8 @@ export const jaJPMessages = {
   "history.timeline.curves.selectAll": "すべて選択",
   "history.timeline.curves.clearAll": "クリア",
   "history.timeline.curves.closeSelector": "曲線選択を閉じる",
+  "history.timeline.curves.modeAverage": "平均",
+  "history.timeline.curves.modeInstant": "瞬間",
   "history.timeline.chartAriaLabel":
     "戦闘タイムライン：ボススキル、プレイヤーの重要スキルと幻想の発動、およびDPS曲線",
   "history.timeline.selection.label": "選択中 {start} - {end}（{duration}）",
@@ -490,6 +496,21 @@ export const jaJPMessages = {
     "ドラッグでレーン高さを変更、ダブルクリックでリセット",
   "history.timeline.resize.curve":
     "ドラッグで曲線の高さを変更、ダブルクリックでリセット",
+  "history.timeline.buff.title": "Buffカバー率",
+  "history.timeline.buff.toggle": "Buffカバー率タイムラインを開閉",
+  "history.timeline.buff.playerPicker": "プレイヤーを選択",
+  "history.timeline.buff.empty":
+    "プレイヤーが未選択、または監視中のbuffがありません",
+  "history.timeline.buff.spanTooltip":
+    "{player} · {name}：{start} - {end}（{duration}）",
+  "history.timeline.buff.pillTooltip": "{count} 回発動",
+  "history.buffCoverage.title": "Buffカバー率サマリー",
+  "history.buffCoverage.caption": "アクティブ戦闘時間（{seconds}秒）に基づく",
+  "history.buffCoverage.rangeCaption": "選択範囲のアクティブ戦闘時間に基づく",
+  "history.buffCoverage.player": "プレイヤー",
+  "history.buffCoverage.count": "×{value}",
+  "history.buffCoverage.unavailable":
+    "この戦闘はbuffカバー率機能の実装前に記録されたため、データがありません",
   "tanked.monster.unknownSource": "不明なソース",
   "live.tanked.monsters.title": "ダメージソース",
   "history.detail.table.player": "プレイヤー",
@@ -603,14 +624,32 @@ export const jaJPMessages = {
   "settings.history.timeline.curveH": "タイムラインの曲線高さ",
   "settings.history.timeline.curveHDescription":
     "履歴タイムラインの DPS 曲線エリアの高さ。レーン高さとは独立しています。",
+  "settings.history.timeline.instantWindow": "瞬間 DPS の集計時間",
+  "settings.history.timeline.instantWindowDescription":
+    "履歴の瞬間 DPS 曲線に含める直近のダメージ集計秒数を設定します。",
   "settings.common.columns.dpsPlayers": "DPS（プレイヤー）列",
   "settings.common.columns.dpsSkills": "DPS（スキル詳細）列",
   "settings.common.columns.healPlayers": "回復（プレイヤー）列",
   "settings.common.columns.healSkills": "回復（スキル詳細）列",
   "settings.common.columns.tankedPlayers": "被ダメージ（プレイヤー）列",
   "settings.common.columns.tankedSkills": "被ダメージ（スキル詳細）列",
+  "settings.common.columns.deathReplay": "死亡リプレイ列",
+  "settings.common.columns.deathReplaySharedHint":
+    "リアルタイムと履歴の死亡リプレイで同じ列設定を使います。",
   "settings.common.columns.orderHint":
     "矢印で並べ替え、スイッチで表示/非表示を切り替えます。",
+  "settings.common.columns.first.player": "プレイヤー先頭列",
+  "settings.common.columns.first.skill": "スキル先頭列",
+  "settings.common.columns.customNameHint":
+    "任意：カスタム見出しを入力します。空欄の場合は現在の言語の既定名を使用します。",
+  "settings.common.columns.customNameAriaLabel": "「{column}」列のカスタム名",
+  "settings.common.columns.resetName": "既定の列名に戻す",
+  "columns.description.deathReplay.time": "死亡直前の被弾タイミングを表示",
+  "columns.description.deathReplay.skill": "被弾を与えたスキルを表示",
+  "columns.description.deathReplay.source": "被弾のソースを表示",
+  "columns.description.deathReplay.damage": "被弾ダメージを表示",
+  "columns.description.deathReplay.share":
+    "リプレイ窓内の被ダメージに占める割合を表示",
   "settings.history.fantasyCastIcons": "幻想アイコンを表示",
   "settings.history.fantasyCastIconsDescription":
     "履歴のプレイヤー名の横に、戦闘全体で最近使用した幻想2種のアイコンを表示します。タイムラインの範囲選択では変わりません。",
@@ -623,6 +662,11 @@ export const jaJPMessages = {
   "settings.live.trainingWindow": "訓練時間",
   "settings.live.trainingWindowDescription":
     "自分がダミーに命中した時点から計測し、この時間で終了します。デフォルトは 3:03（183 秒）。進行中のラウンドには反映されません。",
+  "settings.live.trainingLockPolicy": "訓練ロック",
+  "settings.live.trainingLockPolicyDescription":
+    "エリートダミーは訓練用 115 / 122 のみ。最初のモンスター命中は、自分または召喚物が次にダメージを与えたモンスターをロックします。",
+  "settings.live.trainingLockPolicy.eliteDummies": "エリートダミー",
+  "settings.live.trainingLockPolicy.firstMonster": "最初のモンスター命中",
   "settings.network.packetCapture": "パケットキャプチャ",
   "settings.network.method": "キャプチャ方式",
   "settings.network.methodDescription":
@@ -650,7 +694,7 @@ export const jaJPMessages = {
   "settings.shortcuts.togglePauseEncounter": "エンカウント一時停止の切替",
   "settings.shortcuts.toggleBossHp": "ボス HP 表示の切替",
   "settings.shortcuts.toggleOverlayEdit": "オーバーレイ編集モードの切替",
-  "settings.shortcuts.toggleOverlayWindow": "オーバーレイウィンドウの切替",
+  "settings.shortcuts.toggleOverlayWindow": "ライブモニターの切替",
   "settings.debug.title": "デバッグ",
   "settings.debug.logFiles": "ログファイル",
   "settings.debug.logFilesDescription": "アプリのログフォルダを開く",
@@ -1014,6 +1058,8 @@ export const jaJPMessages = {
   "components.deathReplay.relativeSeconds.zero": "0秒",
   "components.deathReplay.relativeSeconds.value": "{seconds}秒",
   "components.deathReplay.monsterSkillFallback": "{monsterName} · #{skillKey}",
+  "components.deathReplay.buff.toggle":
+    "死亡瞬間の Buff スナップショット（{count}）",
   "components.deathReplay.buff.victim": "自身 Buff スナップショット",
   "components.deathReplay.buff.none": "Buff なし",
   "components.deathReplay.buff.id": "Buff ID: {id}",
@@ -1030,7 +1076,7 @@ export const jaJPMessages = {
   "skillMonitor.layout.title": "ライブモニター",
   "skillMonitor.layout.description":
     "スキル CD、戦闘リソースなどをカスタマイズ",
-  "skillMonitor.layout.toggleOverlayWindow": "オーバーレイウィンドウの切替",
+  "skillMonitor.layout.toggleOverlayWindow": "ライブモニターの切替",
   "skillMonitor.layout.editOverlayLayout": "オーバーレイレイアウトを編集",
   "skillMonitor.main.enabled.label": "ライブモニターを有効化",
   "skillMonitor.main.enabled.description":
@@ -1043,6 +1089,31 @@ export const jaJPMessages = {
   "skillMonitor.tabs.panelAttr": "キャラクターパネル",
   "skillMonitor.tabs.customPanel": "カスタムモニター",
   "skillMonitor.tabs.shieldDetail": "HP/シールドエリア",
+  "skillMonitor.tabs.buffCoverage": "バフ稼働率",
+  "skillMonitor.buffCoverage.title": "バフ稼働率モニター",
+  "skillMonitor.buffCoverage.description":
+    "監視リストのバフはアクティブ戦闘時間を分母として稼働率を集計します。リアルタイム表示は自分のみ。リスト内のバフは全パーティメンバー分が履歴に記録されます。",
+  "skillMonitor.buffCoverage.list.title": "監視リスト",
+  "skillMonitor.buffCoverage.list.description":
+    "稼働率を計測するバフを検索して追加します。「リアルタイム表示」をオフにすると履歴のみ記録されます(味方にしか付かないバフ向け)。",
+  "skillMonitor.buffCoverage.list.empty": "稼働率バフはまだ追加されていません",
+  "skillMonitor.buffCoverage.list.count": "{count}/{max}",
+  "skillMonitor.buffCoverage.list.limit": "監視できる Buff は最大 {max} 個です",
+  "skillMonitor.buffCoverage.status.added": "追加済み",
+  "skillMonitor.buffCoverage.searchPlaceholder": "バフ名またはIDを検索…",
+  "skillMonitor.buffCoverage.entry.showInLive": "リアルタイム表示",
+  "skillMonitor.buffCoverage.entry.remove": "削除",
+  "skillMonitor.buffCoverage.style.title": "表示スタイル",
+  "skillMonitor.buffCoverage.style.description":
+    "稼働率行:状態ドット + 名前 + 残り時間 + 稼働率% + 発動回数。下にカウントダウンバーを表示します。",
+  "skillMonitor.buffCoverage.style.showName": "名前を表示",
+  "skillMonitor.buffCoverage.style.showRemaining": "残り時間を表示",
+  "skillMonitor.buffCoverage.style.showCount": "発動回数を表示",
+  "skillMonitor.buffCoverage.style.showStateDot": "状態ドットを表示",
+  "skillMonitor.buffCoverage.style.showProgress": "カウントダウンバーを表示",
+  "skillMonitor.buffCoverage.style.nameColor": "名前の色",
+  "skillMonitor.buffCoverage.style.valueColor": "数値の色",
+  "skillMonitor.buffCoverage.style.progressColor": "プログレス色",
   "skillMonitor.tabs.overlay": "ウィンドウを有効化",
   "skillMonitor.common.clear": "クリア",
   "skillMonitor.common.remove": "削除",
@@ -1323,12 +1394,13 @@ export const jaJPMessages = {
   "skillMonitor.panelAttr.textStyle": "テキストスタイル",
   "skillMonitor.overlay.customPanel": "カスタムモニターエリア: {state}",
   "skillMonitor.overlay.shieldDetail": "HP/シールドエリア: {state}",
+  "skillMonitor.overlay.buffCoverage": "バフ稼働率エリア: {state}",
   "skillMonitor.overlay.help":
     "ボタンをクリックして表示を切替。プロファイルごとに保存",
   "monsterMonitor.title": "モンスターモニター",
   "monsterMonitor.description":
     "現在のターゲットモンスターの Buff と関連データをモニター",
-  "monsterMonitor.actions.toggleOverlay": "モンスターオーバーレイの切替",
+  "monsterMonitor.actions.toggleOverlay": "モンスターモニターの切替",
   "monsterMonitor.actions.editLayout": "モンスターレイアウトを編集",
   "monsterMonitor.defaults.profileName": "プロファイル {index}",
   "monsterMonitor.defaults.defaultProfileName": "デフォルトプロファイル",
@@ -1343,15 +1415,15 @@ export const jaJPMessages = {
     "このモンスター監視プロファイルを削除しますか？参照しているロードアウトは先頭のプロファイルにフォールバックします。",
   "live.defaults.defaultProfileName": "デフォルトプロファイル",
   "live.defaults.profileName": "プロファイル {index}",
-  "live.profile.title": "リアルタイム計測プロファイル",
+  "live.profile.title": "DPS 設定プロファイル",
   "live.profile.pickerDescription":
-    "現在のロードアウトが参照するリアルタイム計測プロファイル。ここで切り替え・管理できます。構成の組み合わせは「構成」ページへ。",
+    "現在のロードアウトが参照する DPS 設定プロファイルです。リアルタイムと履歴の統計設定を含み、ここで切り替え・管理できます。",
   "live.profile.new": "新規プロファイル",
   "live.profile.rename": "名前変更",
   "live.profile.delete": "削除",
   "live.profile.renamePrompt": "新しいプロファイル名を入力",
   "live.profile.deleteConfirm":
-    "このリアルタイム計測プロファイルを削除しますか？参照しているロードアウトは先頭のプロファイルにフォールバックします。",
+    "この DPS 設定プロファイルを削除しますか？参照しているロードアウトは先頭のプロファイルにフォールバックします。",
   "monsterMonitor.enabled": "モンスターモニターを有効化",
   "monsterMonitor.autoHideInDailyScenes.label": "日常シーンで自動的に非表示",
   "monsterMonitor.autoHideInDailyScenes.description":
@@ -1553,6 +1625,10 @@ export const jaJPMessages = {
   "gameOverlay.group.skillCd": "スキル CD エリア",
   "gameOverlay.group.textBuff": "テキスト Buff エリア",
   "gameOverlay.group.shieldDetail": "HP/シールドエリア",
+  "gameOverlay.group.buffCoverage": "バフ稼働率エリア",
+  "gameOverlay.coverage.count": "{value}回",
+  "gameOverlay.coverage.empty":
+    "スキルモニターページで稼働率バフを追加してください",
   "gameOverlay.groupedBuff.empty":
     "先にスキルモニターページで Buff グループを作成してください",
   "gameOverlay.timer.infinite": "∞",
@@ -1617,27 +1693,27 @@ export const jaJPMessages = {
   "game.moduleName.5500302": "高性能ガード",
   "game.moduleName.5500303": "卓越ガード",
   "game.moduleName.5500304": "卓越ガード・優先",
-  "game.moduleAttr.1110": "筋力増強",
-  "game.moduleAttr.1111": "敏捷増強",
-  "game.moduleAttr.1112": "知性増強",
-  "game.moduleAttr.1113": "特攻ダメージ",
-  "game.moduleAttr.1114": "エリート打撃",
-  "game.moduleAttr.1205": "特攻回復増強",
-  "game.moduleAttr.1206": "専精回復増強",
-  "game.moduleAttr.1407": "詠唱集中",
-  "game.moduleAttr.1408": "攻撃速度集中",
-  "game.moduleAttr.1409": "会心集中",
-  "game.moduleAttr.1410": "幸運集中",
+  "game.moduleAttr.1110": "筋力強化",
+  "game.moduleAttr.1111": "敏捷強化",
+  "game.moduleAttr.1112": "知力強化",
+  "game.moduleAttr.1113": "特攻ダメージ強化",
+  "game.moduleAttr.1114": "精鋭打撃",
+  "game.moduleAttr.1205": "特攻回復強化",
+  "game.moduleAttr.1206": "マスタリー回復強化",
+  "game.moduleAttr.1407": "集中・詠唱",
+  "game.moduleAttr.1408": "集中・攻撃速度",
+  "game.moduleAttr.1409": "集中・会心",
+  "game.moduleAttr.1410": "集中・幸運",
   "game.moduleAttr.1307": "魔法耐性",
   "game.moduleAttr.1308": "物理耐性",
-  "game.moduleAttr.2104": "極・ダメージ蓄積",
-  "game.moduleAttr.2105": "極・俊敏な足取り",
-  "game.moduleAttr.2204": "極・生命集中",
+  "game.moduleAttr.2104": "極・ダメージ増強",
+  "game.moduleAttr.2105": "極・適応力",
+  "game.moduleAttr.2204": "極・HP凝縮",
   "game.moduleAttr.2205": "極・応急処置",
-  "game.moduleAttr.2404": "極・生命変動",
-  "game.moduleAttr.2405": "極・生命吸収",
-  "game.moduleAttr.2406": "極・チーム幸運/会心",
-  "game.moduleAttr.2304": "極・最後の守護",
+  "game.moduleAttr.2404": "極・HP変動",
+  "game.moduleAttr.2405": "極・HP吸収",
+  "game.moduleAttr.2406": "極・幸運会心",
+  "game.moduleAttr.2304": "極・絶境守護",
   "game.damage.unknown": "不明（{id}）",
   "game.damageProperty.generic": "汎用",
   "game.damageProperty.fire": "火",
@@ -1658,7 +1734,7 @@ export const jaJPMessages = {
   "minimap.title": "ダンジョンギミック",
   "minimap.description":
     "ダンジョンギミックを独立したオーバーレイでリアルタイム表示します。",
-  "minimap.actions.toggleOverlay": "ダンジョンギミック窓の表示切替",
+  "minimap.actions.toggleOverlay": "ダンジョンギミックの切替",
   "minimap.actions.editLayout": "レイアウト編集",
   "minimap.hint": "",
   "minimap.edit.title": "ミニマップレイアウト編集",
@@ -1672,6 +1748,9 @@ export const jaJPMessages = {
   "minimap.settings.display.title": "表示オプション",
   "minimap.settings.display.description":
     "戦闘中のミニマップ情報量を調整し、不要なノイズを減らします。",
+  "minimap.settings.enabled.label": "ダンジョンギミックを有効化",
+  "minimap.settings.enabled.description":
+    "オフにするとダンジョンギミックのオーバーレイを表示しません。ページ上部の切替ボタンと同じ設定を操作します。",
   "minimap.settings.autoHideInDailyScenes.label": "日常シーンで自動的に非表示",
   "minimap.settings.autoHideInDailyScenes.description":
     "日常シーンのブラックリストに入るとミニマップオーバーレイを自動的に非表示にし、離れると以前の表示状態を復元します。",
@@ -1841,6 +1920,27 @@ export const jaJPMessages = {
   "minimap.s3TinaMindrealm.pizzaGroup": "ピザ危険域",
   "minimap.s3TinaMindrealm.pizzaSlow": "ピザ・遅い波",
   "minimap.s3TinaMindrealm.pizzaFast": "ピザ・速い波",
+  "minimap.s4WastelandCourt.pair.group": "虚痕ペア",
+  "minimap.s4WastelandCourt.pair.mark": "{pattern} → 目標{target}",
+  "minimap.s4WastelandCourt.pair.swap": "{left} ↔ {right}",
+  "minimap.s4WastelandCourt.pair.matched": "同色済み",
+  "minimap.s4WastelandCourt.pair.white": "白",
+  "minimap.s4WastelandCourt.pair.black": "黒",
+  "minimap.s4WastelandCourt.pair.settle": "虚痕判定",
+  "minimap.s4WastelandCourt.orb.group": "変換球",
+  "minimap.s4WastelandCourt.orb.active": "交換中",
+  "minimap.s4WastelandCourt.wheel.group": "輪",
+  "minimap.s4WastelandCourt.wheel.blue": "宿命の輪・集合",
+  "minimap.s4WastelandCourt.wheel.red": "悲惨の輪・単独",
+  "minimap.s4WastelandCourt.wheel.doom": "絶望の輪",
+  "minimap.s4WastelandCourt.shadow.group": "ヘルガの影",
+  "minimap.s4WastelandCourt.shadow.phase": "ヘルガの影",
+  "minimap.s4WastelandCourt.shadow.energyTarget": "エネルギー球追尾",
+  "minimap.s4WastelandCourt.chain.group": "近距離・遠距離連鎖",
+  "minimap.s4WastelandCourt.chain.overview": "近距離 ×{near} / 遠距離 ×{far}",
+  "minimap.s4WastelandCourt.chain.step": "第 {order} 波：{type}",
+  "minimap.s4WastelandCourt.chain.near": "近距離",
+  "minimap.s4WastelandCourt.chain.far": "遠距離",
 
   "routes.tools.voice": "音声読み上げ",
 
@@ -1997,6 +2097,7 @@ export const jaJPMessages = {
   "voice.binding.event.threshold": "目標達成時に読み上げ",
   "voice.binding.event.onCast": "発生時に読み上げ",
   "voice.binding.source.auto": "自動生成",
+  "voice.binding.source.preset": "プリセット",
   "voice.binding.source.custom": "カスタムテキスト",
   "voice.binding.source.phrase": "フレーズ集から参照",
   "voice.binding.priority": "優先度",
@@ -2017,8 +2118,29 @@ export const jaJPMessages = {
     "再生に失敗しました。音声モデルがインストールされているか確認してください",
 
   "voice.tabs.bindings": "読み上げ総覧",
+  "voice.tabs.alerts": "マッチ通知",
+  "voice.alerts.title": "マッチ・準備確認通知",
+  "voice.alerts.description":
+    "マッチ成立、準備確認、またはダンジョン投票の開始時に、既存の音声機能で一度だけ通知します。",
+  "voice.alerts.voiceDisabled":
+    "音声読み上げは現在無効です。先に「読み上げ設定」で有効にしてください。",
+  "voice.alerts.generationHint":
+    "既定ではアプリの言語に合わせたプリセット音声を再生します。独自の文言に変更した場合は、「フレーズと生成」で音声を生成できます。",
+  "voice.alerts.event": "通知を受信したとき",
+  "voice.alerts.matchReady.title": "マッチ成立",
+  "voice.alerts.matchReady.description":
+    "マッチングが成立して承認待ちになったときに通知します。",
+  "voice.alerts.readyCheck.title": "準備確認",
+  "voice.alerts.readyCheck.description":
+    "パーティーリーダーがダンジョンまたはレイドの準備確認を開始したときに通知します。",
+  "voice.alerts.teamVote.title": "ダンジョン投票",
+  "voice.alerts.teamVote.description":
+    "ほかのメンバーがダンジョン入場投票を開始したときに通知します。自分が開始した投票は通知しません。",
+  "voice.alerts.autoText.matchReady": "マッチしました",
+  "voice.alerts.autoText.readyCheck": "準備確認",
+  "voice.alerts.autoText.teamVote": "ダンジョン投票",
   "voice.bindings.description":
-    "バフ監視・カスタムカウンター・ボス機構で設定された全ての音声バインディングを一覧表示します（読み取り専用）",
+    "バフ監視・カスタムカウンター・ボス機構・マッチ通知で設定された全ての音声バインディングを一覧表示します（読み取り専用）",
   "voice.bindings.empty":
     "音声バインディングがまだ設定されていません。バフ監視／カウンター／ボス機構ページでインラインに設定してください",
   "voice.bindings.column.subject": "対象",
@@ -2034,6 +2156,7 @@ export const jaJPMessages = {
   "voice.bindings.navigate.dbm": "ボス機構へ",
   "voice.bindings.navigate.monsterBuff": "モンスター監視へ",
   "voice.bindings.navigate.minimap": "ダンジョンギミックへ",
+  "voice.bindings.navigate.alerts": "マッチ通知へ",
   "voice.bindings.generateMissing": "不足分の音声を一括生成",
   "voice.bindings.generateMissing.generating": "生成中…",
   "voice.bindings.generateMissing.needProfile":

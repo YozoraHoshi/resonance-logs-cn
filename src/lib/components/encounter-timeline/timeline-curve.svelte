@@ -1,6 +1,6 @@
 <script lang="ts">
   // Dumb ECharts renderer: draws the local player's instant/average DPS
-  // curves plus any selected teammate cumulative series. It owns no
+  // curves plus each selected teammate's chosen DPS series. It owns no
   // interaction state at all (no tooltip, no dataZoom, no brush, no
   // toolbox) - the gesture layer above it handles every pointer/wheel
   // event, and the Y axis rescales to whatever window [startMs, endMs) the
@@ -12,25 +12,22 @@
   import { GridComponent } from "echarts/components";
   import { CanvasRenderer } from "echarts/renderers";
   import { GUTTER, RIGHT_PADDING } from "./timeline-layout";
-  import { windowMaxValue } from "./timeline-data";
+  import { curveMaxValue } from "./timeline-data";
   import { formatValue, formatTimeMs } from "./timeline-format";
   import { TIMELINE_PALETTE } from "./timeline-palette";
   import { SETTINGS } from "$lib/settings-store";
   import type { EncounterCurvePoint } from "./timeline-data";
-  import type { TimelineTeammateAverageCurve } from "./timeline-types";
+  import type { TimelineTeammateCurve } from "./timeline-types";
 
   echarts.use([LineChart, GridComponent, CanvasRenderer]);
 
-  /** Draw a symbol every Nth bucket on the cumulative curve. The chart DTO is
-   * always ~600 buckets wide, so this works out to roughly one marker per 4%
-   * of the encounter - enough to read the line as a sampled series without
-   * turning it into a string of beads. */
+  /** Draw a symbol every Nth pixel-bounded point on the cumulative curve. */
   const SYMBOL_STRIDE = 24;
 
   type Props = {
     mineInstantCurve: EncounterCurvePoint[] | null;
     mineAverageCurve: EncounterCurvePoint[] | null;
-    teammateAverageCurves?: TimelineTeammateAverageCurve[];
+    teammateCurves?: TimelineTeammateCurve[];
     showAverageCurve: boolean;
     startMs: number;
     endMs: number;
@@ -40,7 +37,7 @@
   let {
     mineInstantCurve,
     mineAverageCurve,
-    teammateAverageCurves = [],
+    teammateCurves = [],
     showAverageCurve,
     startMs,
     endMs,
@@ -55,16 +52,13 @@
   );
 
   const yMax = $derived.by(() => {
-    const instantMax = windowMaxValue(mineInstantCurve, startMs, endMs);
+    const instantMax = curveMaxValue(mineInstantCurve);
     const averageMax = showAverageCurve
-      ? windowMaxValue(mineAverageCurve, startMs, endMs)
+      ? curveMaxValue(mineAverageCurve)
       : 0;
     let teammateMax = 0;
-    for (const row of teammateAverageCurves) {
-      teammateMax = Math.max(
-        teammateMax,
-        windowMaxValue(row.curve, startMs, endMs),
-      );
+    for (const row of teammateCurves) {
+      teammateMax = Math.max(teammateMax, curveMaxValue(row.curve));
     }
     const max = Math.max(instantMax, averageMax, teammateMax);
     // Headroom so the peak doesn't touch the top axis line; fall back to
@@ -81,18 +75,22 @@
     const valueDecimals = abbreviatedDecimalPlaces;
     const series: Record<string, unknown>[] = [];
 
-    // Teammate cumulatives sit under the local series so a comparison overlay
+    // Teammate curves sit under the local series so a comparison overlay
     // cannot bury the local player's burst peaks.
-    for (const row of teammateAverageCurves) {
+    for (const row of teammateCurves) {
       series.push({
         type: "line",
         data: row.curve,
         showSymbol: false,
         smooth: false,
+        // Samples are one CSS pixel apart. Step-end prevents a hit sampled at
+        // the next boundary from leaking backward into earlier time.
+        step: "end",
         silent: true,
         lineStyle: {
           width: 1.2,
           color: row.color,
+          type: row.mode === "instant" ? "dashed" : "solid",
         },
         z: 1,
       });
@@ -109,12 +107,13 @@
         showSymbol: true,
         symbol: "circle",
         // Only every Nth sample gets a visible symbol; the rest render at
-        // size 0. ECharts has no "every Nth" option, and drawing all ~600
-        // would bury the line under its own markers.
+        // size 0. ECharts has no "every Nth" option, and drawing every
+        // sampled point would bury the line under its own markers.
         symbolSize: (_value: unknown, params: { dataIndex: number }) =>
           params.dataIndex % SYMBOL_STRIDE === 0 ? 4 : 0,
         itemStyle: { color: TIMELINE_PALETTE.average },
         smooth: false,
+        step: "end",
         silent: true,
         lineStyle: {
           width: 2,
@@ -129,6 +128,7 @@
         data: mineInstantCurve,
         showSymbol: false,
         smooth: false,
+        step: "end",
         silent: true,
         lineStyle: {
           width: 1.2,

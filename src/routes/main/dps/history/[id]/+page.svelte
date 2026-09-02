@@ -20,9 +20,16 @@
     resolveMonsterSkillName,
     resolveSceneName,
   } from "$lib/config/game-names";
+  import BuffCoverageTable from "$lib/components/history/buff-coverage-table.svelte";
+  import type { TimelineBuffLane } from "$lib/components/encounter-timeline/timeline-types";
+  import { resolveBuffDisplayName } from "$lib/config/buff-name-table";
+  import { getGlobalBuffAliases } from "$lib/settings-store";
   import {
     buildHistoryPlayerRows,
-    historyChartSeries,
+    historyBuffCoverageByKey,
+    historyBuffTimeline,
+    historyBuffTimelineRange,
+    historyDamageHits,
     historyDeathEntries,
     historyEntityToRaw,
     type HistoryEntity,
@@ -49,8 +56,6 @@
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { SvelteMap, SvelteURLSearchParams } from "svelte/reactivity";
   import { toast } from "svelte-sonner";
-
-  const TARGET_CHART_POINTS = 600;
 
   type HistoryTab = "damage" | "tanked" | "healing" | "death";
   type HistorySkillType = "dps" | "heal" | "tanked" | "death";
@@ -352,12 +357,11 @@
   // ---- Timeline chart ------------------------------------------------------
   const chart = $derived.by<EncounterChart | null>(() => {
     if (!detail?.detailAvailable) return null;
-    const series = historyChartSeries(detail.series);
-    if (series.length === 0) return null;
+    const damageHits = historyDamageHits(detail.damageHits);
+    if (damageHits.length === 0) return null;
     return {
       durationMs: Math.max(1, detail.endMsExclusive - detail.startMs),
-      bucketMs: Math.max(1, detail.bucketMs),
-      series,
+      damageHits,
     };
   });
 
@@ -411,6 +415,48 @@
     return [...seen].map(([entityUuid, name]) => ({ entityUuid, name }));
   });
 
+  // ---- Buff coverage timeline ----------------------------------------------
+  const buffAliases = $derived(getGlobalBuffAliases());
+
+  function coverageBuffName(baseId: number): string {
+    return resolveBuffDisplayName(baseId, buffAliases);
+  }
+
+  /** Full-fight view; null = recorded before buff persistence existed. */
+  const buffTimelineView = $derived(historyBuffTimeline(detail?.buffTimeline));
+
+  /** Range view clipped from the encounter-global active windows. */
+  const rangeBuffTimelineView = $derived(
+    selectedRange
+      ? historyBuffTimelineRange(
+          buffTimelineView,
+          selectedRange[0],
+          selectedRange[1],
+        )
+      : null,
+  );
+
+  const buffRangeCoverage = $derived.by(() => {
+    if (!selectedRange) return null;
+    return (
+      historyBuffCoverageByKey(rangeBuffTimelineView) ??
+      new Map<string, number>()
+    );
+  });
+
+  const buffLanes = $derived.by<TimelineBuffLane[] | null>(() => {
+    if (!buffTimelineView) return null;
+    return buffTimelineView.lanes.map((lane) => ({
+      key: lane.key,
+      entityUuid: lane.entityUuid,
+      baseId: lane.baseId,
+      buffName: coverageBuffName(lane.baseId),
+      coveragePct: lane.coveragePct,
+      triggerCount: lane.triggerCount,
+      spans: lane.spans,
+    }));
+  });
+
   // ---- Data loading --------------------------------------------------------
   $effect(() => {
     const requestedId = encounterId;
@@ -425,7 +471,7 @@
     }
     detailState = { kind: "loading" };
     void commands
-      .getEncounterDetail(requestedId, TARGET_CHART_POINTS)
+      .getEncounterDetail(requestedId)
       .then((result) => {
         if (generation !== detailRequestGeneration) return;
         detailState =
@@ -820,6 +866,8 @@
             selectionPending={rangePending}
             bind:selectedRange
             resolveEvent={resolveTimelineEvent}
+            {buffLanes}
+            {buffRangeCoverage}
           />
         </section>
       {/if}
@@ -896,6 +944,21 @@
                 activeTab === "damage" ? overviewTargetUuid : null,
               )}
           />
+        {/if}
+
+        {#if buffTimelineView && buffTimelineView.lanes.length > 0}
+          <section class="mt-5">
+            <BuffCoverageTable
+              view={buffTimelineView}
+              rangeView={rangeBuffTimelineView}
+              players={timelinePlayers}
+              resolveBuffName={coverageBuffName}
+            />
+          </section>
+        {:else if chart && !buffTimelineView}
+          <p class="text-muted-foreground mt-5 text-[11px]">
+            {t("history.buffCoverage.unavailable")}
+          </p>
         {/if}
       {:else if entityUuid && selectedPlayer && selectedEntity && skillType === "death"}
         <!-- Death replay: per-player list or detail -->

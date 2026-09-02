@@ -11,6 +11,7 @@
    */
   import PlayIcon from "virtual:icons/lucide/play";
   import { t, type MessageKey } from "$lib/i18n/index.svelte";
+  import { type VoiceLanguage } from "$lib/bindings";
   import {
     resolveVoicePriority,
     VOICE_PRIORITY_TIERS,
@@ -44,10 +45,11 @@
     key: string,
     binding: VoicePhraseBinding,
     autoText: string,
+    language?: VoiceLanguage,
   ) {
     previewingKey = key;
     try {
-      await previewPhraseBinding(key, binding, autoText);
+      await previewPhraseBinding(key, binding, autoText, language);
     } finally {
       previewingKey = null;
     }
@@ -81,6 +83,8 @@
         ? config.secondsBefore
         : 5}
     {@const autoText = event.autoText(seconds)}
+    {@const autoSourceLabelKey =
+      event.autoSourceLabelKey ?? "voice.binding.source.auto"}
     <div class="border-border/50 bg-muted/10 space-y-2 rounded border p-2.5">
       <div class="flex flex-wrap items-center gap-2">
         <label class="flex items-center gap-1.5 text-xs font-medium">
@@ -107,7 +111,7 @@
                   .value as VoicePhraseBinding["source"],
               )}
           >
-            <option value="auto">{t("voice.binding.source.auto")}</option>
+            <option value="auto">{t(autoSourceLabelKey)}</option>
             <option value="custom">{t("voice.binding.source.custom")}</option>
             <option value="phrase">{t("voice.binding.source.phrase")}</option>
           </select>
@@ -160,7 +164,8 @@
             type="button"
             class="border-border/60 hover:bg-muted/40 ml-auto flex items-center gap-1 rounded border px-2 py-1 text-xs disabled:opacity-50"
             disabled={previewingKey === event.key}
-            onclick={() => tryPlay(event.key, binding, autoText)}
+            onclick={() =>
+              tryPlay(event.key, binding, autoText, event.language)}
           >
             <PlayIcon class="h-3 w-3" />
             {t("voice.binding.tryPlay")}

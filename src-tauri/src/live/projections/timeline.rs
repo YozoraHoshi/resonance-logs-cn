@@ -155,15 +155,21 @@ mod tests {
         let boss = entities.entity_ref(EntityUuid(9)).expect("boss entity");
         let mut projection = TimelineProjection::default();
 
-        assert!(projection
-            .classify(&boss_marker(1, 1, boss), &entities)
-            .is_some());
-        assert!(projection
-            .classify(&boss_marker(1, 2, boss), &entities)
-            .is_none());
-        assert!(projection
-            .classify(&boss_marker(2, 3, boss), &entities)
-            .is_some());
+        assert!(
+            projection
+                .classify(&boss_marker(1, 1, boss), &entities)
+                .is_some()
+        );
+        assert!(
+            projection
+                .classify(&boss_marker(1, 2, boss), &entities)
+                .is_none()
+        );
+        assert!(
+            projection
+                .classify(&boss_marker(2, 3, boss), &entities)
+                .is_some()
+        );
         let classified = projection
             .classify(&boss_marker(3, 4, boss), &entities)
             .expect("boss marker");

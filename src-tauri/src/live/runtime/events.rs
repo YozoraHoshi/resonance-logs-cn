@@ -528,6 +528,11 @@ pub enum ProtocolObservation {
         member_uuid: EntityUuid,
     },
     TeamDissolved,
+    MatchmakingPopped,
+    ReadyCheckStarted,
+    TeamVoteStarted {
+        creator_uuid: Option<EntityUuid>,
+    },
     /// Resonance fantasy marker buff observed on a summon. Summoner / monster_id
     /// / remodel_level are resolved from entity identity by [`EntityContext`].
     FantasyMarkerObserved {
@@ -581,6 +586,9 @@ pub enum ProtocolObservation {
         target_id: i32,
         count: i32,
         complete: bool,
+    },
+    DungeonProgressStateChanged {
+        value: i32,
     },
     SeasonCultivateSnapshot {
         season_id: i32,
@@ -761,6 +769,9 @@ pub enum DomainEvent {
         leader: Option<EntityRef>,
         members: Vec<EntityRef>,
     },
+    MatchmakingPopped,
+    ReadyCheckStarted,
+    TeamVoteStarted,
     AttackTargetChanged {
         actor: EntityRef,
         previous: Option<EntityRef>,
@@ -835,6 +846,10 @@ pub enum DomainEvent {
         target_id: i32,
         count: i32,
         complete: bool,
+    },
+    DungeonProgressStateChanged {
+        previous: Option<i32>,
+        current: i32,
     },
     SeasonCultivateChanged {
         season_id: i32,

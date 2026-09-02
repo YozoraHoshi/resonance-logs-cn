@@ -16,6 +16,7 @@
   import FantasyCastIcons from "$lib/components/fantasy-cast-icons.svelte";
   import type { FantasyCastDisplay } from "$lib/fantasy-icons";
   import type { HistoryPlayerRow } from "$lib/history-derived";
+  import { resolveColumnLabel } from "$lib/column-labels";
   import { t } from "$lib/i18n/index.svelte";
   import getDisplayName from "$lib/name-display";
   import {
@@ -61,17 +62,32 @@
         return settings.state.history.tanked.players[col.key] ?? defaultValue;
       });
     }
-    return historyDpsPlayerColumns.filter((col) => {
-      const defaultValue =
-        DEFAULT_HISTORY_STATS[col.key as keyof typeof DEFAULT_HISTORY_STATS] ??
-        true;
-      const setting =
-        settings.state.history.dps.players[
-          col.key as keyof typeof settings.state.history.dps.players
-        ];
-      return setting ?? defaultValue;
-    });
+    const labels = SETTINGS.live.columnLabels.state.history.players.columns;
+    return historyDpsPlayerColumns
+      .filter((col) => {
+        const defaultValue =
+          DEFAULT_HISTORY_STATS[
+            col.key as keyof typeof DEFAULT_HISTORY_STATS
+          ] ?? true;
+        const setting =
+          settings.state.history.dps.players[
+            col.key as keyof typeof settings.state.history.dps.players
+          ];
+        return setting ?? defaultValue;
+      })
+      .map((col) => ({
+        ...col,
+        header: resolveColumnLabel(labels[col.key], col.header),
+      }));
   });
+  const playerColumnHeader = $derived(
+    metric === "dps"
+      ? resolveColumnLabel(
+          SETTINGS.live.columnLabels.state.history.players.first,
+          t("history.detail.table.player"),
+        )
+      : t("history.detail.table.player"),
+  );
 
   const abbreviatedDecimalPlaces = $derived(
     SETTINGS.history.general.state.abbreviatedDecimalPlaces ?? 1,
@@ -220,12 +236,16 @@
       <tr class="bg-popover/60">
         <th
           class="text-muted-foreground px-3 py-3 text-left text-xs font-medium tracking-wider uppercase"
-          >{nameHeader ?? t("history.detail.table.player")}</th
+          title={nameHeader ?? playerColumnHeader}
+          ><span class="block max-w-48 truncate"
+            >{nameHeader ?? playerColumnHeader}</span
+          ></th
         >
         {#each visibleColumns as col (col.key)}
           <th
             class="text-muted-foreground px-3 py-3 text-right text-xs font-medium tracking-wider uppercase"
-            >{col.header}</th
+            title={col.header}
+            ><span class="block max-w-48 truncate">{col.header}</span></th
           >
         {/each}
       </tr>

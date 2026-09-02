@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type {
+  EncounterBuffTimelineData,
   EncounterEntityData,
   EncounterSkillData,
   EncounterStatsData,
@@ -7,7 +8,11 @@ import type {
 } from "$lib/bindings";
 import {
   aggregateMetricStats,
-  historyChartSeries,
+  historyBuffCoverageByKey,
+  historyBuffLaneKey,
+  historyBuffTimeline,
+  historyBuffTimelineRange,
+  historyDamageHits,
   historyDeathEntries,
   historyEntityToRaw,
   historySkillRecord,
@@ -213,22 +218,166 @@ describe("historyDeathEntries", () => {
   });
 });
 
-describe("historyChartSeries", () => {
-  it("maps metric names to chart indices and parses totals", () => {
-    const mapped = historyChartSeries([
-      { entityId: "1", metric: "damage", offsetsMs: [0], totals: ["100"] },
-      { entityId: "1", metric: "damage_taken", offsetsMs: [0], totals: ["5"] },
+describe("historyDamageHits", () => {
+  it("passes the columnar hit stream through per entity", () => {
+    const mapped = historyDamageHits([
+      { entityId: "1", offsetsMs: [100, 900], amounts: [100, 50] },
+      { entityId: "2", offsetsMs: [0], amounts: [25] },
     ]);
     expect(mapped[0]).toEqual({
       entityUuid: "1",
-      metric: 0,
-      offsetsMs: [0],
-      totals: [100],
+      timesMs: [100, 900],
+      amounts: [100, 50],
     });
-    expect(mapped[1]?.metric).toBe(2);
+    expect(mapped[1]).toEqual({
+      entityUuid: "2",
+      timesMs: [0],
+      amounts: [25],
+    });
   });
 
-  it("returns an empty array for missing series", () => {
-    expect(historyChartSeries(undefined)).toEqual([]);
+  it("returns an empty array for missing hits", () => {
+    expect(historyDamageHits(undefined)).toEqual([]);
+  });
+});
+
+describe("historyBuffLaneKey", () => {
+  it("joins entity and buff id with a colon", () => {
+    expect(historyBuffLaneKey("player-1", 42)).toBe("player-1:42");
+  });
+});
+
+describe("historyBuffTimeline", () => {
+  it("returns null for encounters recorded before buff persistence existed", () => {
+    expect(historyBuffTimeline(null)).toBeNull();
+    expect(historyBuffTimeline(undefined)).toBeNull();
+  });
+
+  it("derives coverage percent from covered/active time and counts spans as triggers", () => {
+    const data: EncounterBuffTimelineData = {
+      activeWindowMs: 10_000,
+      activeSpans: [{ startMs: 0, endMsExclusive: 10_000 }],
+      gracePoints: [],
+      lanes: [
+        {
+          entityId: "player-1",
+          baseId: 42,
+          coveredActiveMs: 2_500,
+          spans: [
+            { startMs: 0, endMsExclusive: 1_000 },
+            { startMs: 5_000, endMsExclusive: 6_500 },
+          ],
+          gracePoints: [],
+        },
+      ],
+    };
+
+    const view = historyBuffTimeline(data);
+    expect(view?.activeWindowMs).toBe(10_000);
+    expect(view?.lanes).toHaveLength(1);
+    const lane = view?.lanes[0];
+    expect(lane?.key).toBe("player-1:42");
+    expect(lane?.coveredActiveMs).toBe(2_500);
+    expect(lane?.coveragePct).toBeCloseTo(25, 5);
+    expect(lane?.triggerCount).toBe(2);
+    expect(lane?.spans).toEqual([
+      { startMs: 0, endMs: 1_000 },
+      { startMs: 5_000, endMs: 6_500 },
+    ]);
+  });
+
+  it("clamps coverage percent to 100 and avoids division by zero", () => {
+    const overCovered: EncounterBuffTimelineData = {
+      activeWindowMs: 1_000,
+      activeSpans: [{ startMs: 0, endMsExclusive: 1_000 }],
+      gracePoints: [],
+      lanes: [
+        {
+          entityId: "player-1",
+          baseId: 1,
+          coveredActiveMs: 1_500,
+          spans: [{ startMs: 0, endMsExclusive: 1_500 }],
+          gracePoints: [],
+        },
+      ],
+    };
+    expect(historyBuffTimeline(overCovered)?.lanes[0]?.coveragePct).toBe(100);
+
+    const zeroWindow: EncounterBuffTimelineData = {
+      activeWindowMs: 0,
+      activeSpans: [],
+      gracePoints: [],
+      lanes: [
+        {
+          entityId: "player-1",
+          baseId: 1,
+          coveredActiveMs: 0,
+          spans: [],
+          gracePoints: [],
+        },
+      ],
+    };
+    expect(historyBuffTimeline(zeroWindow)?.lanes[0]?.coveragePct).toBe(0);
+  });
+});
+
+describe("historyBuffCoverageByKey", () => {
+  it("maps each lane's key to its coverage percent", () => {
+    const view = historyBuffTimeline({
+      activeWindowMs: 100,
+      activeSpans: [{ startMs: 0, endMsExclusive: 100 }],
+      gracePoints: [],
+      lanes: [
+        {
+          entityId: "a",
+          baseId: 1,
+          coveredActiveMs: 50,
+          spans: [],
+          gracePoints: [],
+        },
+        {
+          entityId: "b",
+          baseId: 2,
+          coveredActiveMs: 25,
+          spans: [],
+          gracePoints: [],
+        },
+      ],
+    });
+
+    const map = historyBuffCoverageByKey(view);
+    expect(map?.get("a:1")).toBe(50);
+    expect(map?.get("b:2")).toBe(25);
+  });
+
+  it("returns null when the view is null", () => {
+    expect(historyBuffCoverageByKey(null)).toBeNull();
+  });
+});
+
+describe("historyBuffTimelineRange", () => {
+  it("clips global windows without granting a new range-first-hit grace", () => {
+    const view = historyBuffTimeline({
+      activeWindowMs: 1_500,
+      activeSpans: [{ startMs: 1_000, endMsExclusive: 2_000 }],
+      gracePoints: [{ offsetMs: 5_000, creditedMs: 500 }],
+      lanes: [
+        {
+          entityId: "a",
+          baseId: 1,
+          coveredActiveMs: 1_500,
+          spans: [{ startMs: 1_200, endMsExclusive: 6_000 }],
+          gracePoints: [{ offsetMs: 5_000, creditedMs: 500 }],
+        },
+      ],
+    });
+
+    const range = historyBuffTimelineRange(view, 1_500, 5_500);
+    expect(range?.activeWindowMs).toBe(1_000);
+    expect(range?.lanes[0]?.coveredActiveMs).toBe(1_000);
+    expect(range?.lanes[0]?.coveragePct).toBe(100);
+
+    const noHitRange = historyBuffTimelineRange(view, 2_000, 4_000);
+    expect(noHitRange?.activeWindowMs).toBe(0);
   });
 });

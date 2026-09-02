@@ -4,10 +4,11 @@
   // preview and the persisted selection highlight. Everything here is
   // `pointer-events: none` - the gesture layer underneath owns all input.
   import {
+    clampInstantDpsWindowSec,
     collapseHoverLanePoints,
-    interpolateCurveValue,
+    dpsValueAt,
     resolveHoverDisplayTimeMs,
-    type EncounterCurvePoint,
+    type DamageHitIndex,
     type EncounterTimelineEvent,
   } from "./timeline-data";
   import { formatTimeMs, formatValue } from "./timeline-format";
@@ -17,7 +18,7 @@
     Lane,
     TimelineEventDisplay,
     TimelineHoverPoint,
-    TimelineTeammateAverageCurve,
+    TimelineTeammateCurve,
   } from "./timeline-types";
 
   type Props = {
@@ -29,9 +30,8 @@
     hoverPoint: TimelineHoverPoint | null;
     brushPreviewMs: [number, number] | null;
     selectedRange: [number, number] | null;
-    mineInstantCurve: EncounterCurvePoint[] | null;
-    mineAverageCurve: EncounterCurvePoint[] | null;
-    teammateAverageCurves?: TimelineTeammateAverageCurve[];
+    mineHits: DamageHitIndex | null;
+    teammateCurves?: TimelineTeammateCurve[];
     showAverageCurve: boolean;
     resolveEvent: (event: EncounterTimelineEvent) => TimelineEventDisplay;
   };
@@ -45,14 +45,18 @@
     hoverPoint,
     brushPreviewMs,
     selectedRange,
-    mineInstantCurve,
-    mineAverageCurve,
-    teammateAverageCurves = [],
+    mineHits,
+    teammateCurves = [],
     showAverageCurve,
     resolveEvent,
   }: Props = $props();
 
   const spanMs = $derived(Math.max(1, endMs - startMs));
+  const instantWindowMs = $derived(
+    clampInstantDpsWindowSec(
+      SETTINGS.history.general.state.instantDpsWindowSec,
+    ) * 1_000,
+  );
 
   /** Same abbreviation the curve's Y axis uses, so the tooltip and the axis
    * never disagree about a value's unit. Called from the markup, so the
@@ -99,18 +103,26 @@
 
   const hoverCurveInfo = $derived.by(() => {
     if (!hoverPoint || hoverLaneIndex !== null) return null;
-    const instant = interpolateCurveValue(mineInstantCurve, hoverPoint.timeMs);
-    const average = showAverageCurve
-      ? interpolateCurveValue(mineAverageCurve, hoverPoint.timeMs)
+    const instant = mineHits
+      ? dpsValueAt(mineHits, "instant", hoverPoint.timeMs, instantWindowMs)
       : null;
-    const teammates = teammateAverageCurves.flatMap((row) => {
-      const value = interpolateCurveValue(row.curve, hoverPoint.timeMs);
-      if (value === null) return [];
+    const average =
+      showAverageCurve && mineHits
+        ? dpsValueAt(mineHits, "average", hoverPoint.timeMs, instantWindowMs)
+        : null;
+    const teammates = teammateCurves.flatMap((row) => {
+      const value = dpsValueAt(
+        row.hits,
+        row.mode,
+        hoverPoint.timeMs,
+        instantWindowMs,
+      );
       return [
         {
           entityUuid: row.entityUuid,
           name: row.name,
           color: row.color,
+          mode: row.mode,
           value,
         },
       ];
@@ -127,7 +139,10 @@
   );
 
   const displayTimeMs = $derived(
-    resolveHoverDisplayTimeMs(hoverPoint?.timeMs ?? 0, hoverLaneEvents[0]?.timeMs),
+    resolveHoverDisplayTimeMs(
+      hoverPoint?.timeMs ?? 0,
+      hoverLaneEvents[0]?.timeMs,
+    ),
   );
 
   const showHeaderTime = $derived(hoverLaneEvents.length <= 1);
@@ -188,7 +203,9 @@
             {/if}
             <span class="tl-tooltip-name">{display.name}</span>
             {#if showPerEventTime}
-              <span class="tl-tooltip-event-time">{formatTimeMs(point.timeMs, true)}</span>
+              <span class="tl-tooltip-event-time"
+                >{formatTimeMs(point.timeMs, true)}</span
+              >
             {/if}
           </div>
         {/each}
@@ -209,11 +226,14 @@
         {/if}
         {#each hoverCurveInfo.teammates as teammate (teammate.entityUuid)}
           <div class="tl-tooltip-row">
-            <span
-              class="tl-tooltip-dot"
-              style="background: {teammate.color}"
+            <span class="tl-tooltip-dot" style="background: {teammate.color}"
             ></span>
             <span class="tl-tooltip-name">{teammate.name}</span>
+            <span class="tl-tooltip-mode">
+              {teammate.mode === "instant"
+                ? t("history.timeline.curves.modeInstant")
+                : t("history.timeline.curves.modeAverage")}
+            </span>
             <b>{formatCurveValue(teammate.value)}</b>
           </div>
         {/each}
@@ -286,6 +306,11 @@
     color: var(--tl-fg-muted);
     font-size: 10px;
     font-variant-numeric: tabular-nums;
+  }
+
+  .tl-tooltip-mode {
+    color: var(--tl-fg-muted);
+    font-size: 10px;
   }
 
   .tl-tooltip-icon {

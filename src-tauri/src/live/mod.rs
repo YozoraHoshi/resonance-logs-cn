@@ -1,3 +1,4 @@
+pub mod active_window;
 pub mod bootstrap_snapshot;
 pub mod counter;
 pub mod damage_id;

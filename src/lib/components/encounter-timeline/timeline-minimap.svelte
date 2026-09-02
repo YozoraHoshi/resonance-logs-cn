@@ -1,10 +1,9 @@
 <script lang="ts">
   // SVG navigation strip: replaces the old 12px ECharts dataZoom slider. Shows
-  // a downsampled DPS sparkline for context, the current viewport window as a
+  // a fixed-size DPS overview for context, the current viewport window as a
   // draggable/resizable rectangle, and the active selection (if any). This is
   // the primary way to orient yourself once zoomed in - panning/zooming the
   // main plot alone gives no sense of where you are in the fight.
-  import { downsampleCurve } from "./timeline-data";
   import { TIMELINE_PALETTE } from "./timeline-palette";
   import type { TimelineViewport } from "./timeline-viewport.svelte";
   import type { EncounterCurvePoint } from "./timeline-data";
@@ -22,7 +21,9 @@
   const VIEWBOX_W = 1000;
   const VIEWBOX_H = 100;
 
-  const sparkline = $derived(downsampleCurve(curve ?? [], 160));
+  // The parent samples this overview directly from the raw-hit index, so point
+  // density in burst phases cannot bias a second downsampling pass.
+  const sparkline = $derived(curve ?? []);
   const maxValue = $derived(
     sparkline.reduce((max, [, v]) => Math.max(max, v), 0),
   );

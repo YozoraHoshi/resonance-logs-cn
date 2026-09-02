@@ -32,13 +32,14 @@
   import { tooltip } from "$lib/utils.svelte";
   import { laneColor, playerColor } from "./timeline-colors";
   import {
-    foldEncounterDamageBuckets,
-    teammateAverageCurves,
-    toCumulativeDpsCurve,
-    toRollingDpsCurve,
+    clampInstantDpsWindowSec,
+    foldEncounterDamageHits,
+    sampleDpsCurve,
+    teammateDpsSources,
     zoomTierFor,
     type EncounterChart,
     type EncounterTimelineEvent,
+    type TeammateCurveMode,
   } from "./timeline-data";
   import { formatTimeMs } from "./timeline-format";
   import {
@@ -51,6 +52,7 @@
   } from "./timeline-layout";
   import { timelineGestures } from "./timeline-gestures";
   import { TIMELINE_PALETTE, timelinePaletteCssVars } from "./timeline-palette";
+  import TimelineBuffLanes from "./timeline-buff-lanes.svelte";
   import TimelineCurve from "./timeline-curve.svelte";
   import TimelineHeader from "./timeline-header.svelte";
   import TimelineLanes from "./timeline-lanes.svelte";
@@ -60,11 +62,12 @@
   import type {
     Lane,
     LanePoint,
+    TimelineBuffLane,
     TimelineBossMeta as TimelineBossMetaSource,
     TimelineEventDisplay as TimelineEventDisplaySource,
     TimelineHoverPoint,
     TimelinePlayerMeta as TimelinePlayerMetaSource,
-    TimelineTeammateAverageCurve,
+    TimelineTeammateCurve,
   } from "./timeline-types";
   import { TimelineViewport } from "./timeline-viewport.svelte";
 
@@ -96,6 +99,10 @@
     selectedRange?: [number, number] | null;
     /** Resolve the display strings/icon for one marker event. */
     resolveEvent: (event: EncounterTimelineEvent) => TimelineEventDisplay;
+    /** Buff coverage lanes; null hides the section (old encounters). */
+    buffLanes?: TimelineBuffLane[] | null;
+    /** Range-recount coverage percent by lane key while a range is active. */
+    buffRangeCoverage?: Map<string, number> | null;
   };
 
   let {
@@ -107,33 +114,22 @@
     selectionPending = false,
     selectedRange = $bindable(null),
     resolveEvent,
+    buffLanes = null,
+    buffRangeCoverage = null,
   }: Props = $props();
 
-  // ---- Damage buckets / DPS curves -----------------------------------------
-  // The DTO is sparse and column-oriented. Fold it once into per-entity
-  // damage buckets; curves are built on demand from those buckets so the
-  // cost stays independent of party size.
-  const damageBuckets = $derived(foldEncounterDamageBuckets(chart));
-  const chartDurationMs = $derived(damageBuckets.durationMs);
-  const chartBucketMs = $derived(damageBuckets.bucketMs);
-  const perEntityBuckets = $derived(damageBuckets.perEntityBuckets);
+  // ---- Damage hits / DPS curves --------------------------------------------
+  // The DTO carries per-entity damage hit streams (columnar, ascending by
+  // time). Index them once; curves are built on demand from those streams so
+  // the cost stays independent of party size.
+  const damageHits = $derived(foldEncounterDamageHits(chart));
+  const chartDurationMs = $derived(damageHits.durationMs);
+  const perEntityHits = $derived(damageHits.perEntityHits);
 
   const localPlayer = $derived(players.find((p) => p.isLocalPlayer) ?? null);
 
-  const mineBuckets = $derived.by(() =>
-    localPlayer ? (perEntityBuckets.get(localPlayer.entityUuid) ?? null) : null,
-  );
-
-  const mineInstantCurve = $derived.by(() =>
-    mineBuckets
-      ? toRollingDpsCurve(mineBuckets, chartBucketMs, chartDurationMs)
-      : null,
-  );
-
-  const mineAverageCurve = $derived.by(() =>
-    mineBuckets
-      ? toCumulativeDpsCurve(mineBuckets, chartBucketMs, chartDurationMs)
-      : null,
+  const mineHits = $derived.by(() =>
+    localPlayer ? (perEntityHits.get(localPlayer.entityUuid) ?? null) : null,
   );
 
   function clampEventOffsetMs(ev: EncounterTimelineEvent): number {
@@ -188,7 +184,9 @@
       if (localPlayer && p.entityUuid === localPlayer.entityUuid) return false;
       return (
         (playerEventsByCaster.get(p.entityUuid)?.length ?? 0) > 0 ||
-        (perEntityBuckets.get(p.entityUuid)?.some((total) => total > 0) ??
+        (perEntityHits
+          .get(p.entityUuid)
+          ?.amounts.some((amount) => amount > 0) ??
           false)
       );
     });
@@ -236,59 +234,47 @@
   let curveTeammates = $derived(
     teammates.filter(
       (p) =>
-        perEntityBuckets.get(p.entityUuid)?.some((total) => total > 0) ?? false,
+        perEntityHits.get(p.entityUuid)?.amounts.some((amount) => amount > 0) ??
+        false,
     ),
   );
 
   // Independent of lane selection: default is none, so opening a support
-  // lane never also overlays that player's cumulative DPS.
-  let manualCurveTeammateSelection = $state<string[]>([]);
+  // lane never also overlays that player's DPS. Each selected teammate owns
+  // exactly one mode: average or instant.
+  const manualCurveTeammateModes = new SvelteMap<string, TeammateCurveMode>();
 
-  let selectedCurveTeammateUuids = $derived(
-    manualCurveTeammateSelection.filter((uuid) =>
-      curveTeammates.some((p) => p.entityUuid === uuid),
-    ),
-  );
-
-  let selectedCurveAverageCurves = $derived.by<
-    TimelineTeammateAverageCurve[]
-  >(() => {
-    const byUuid = new Map(
-      curveTeammates.map((player) => [player.entityUuid, player]),
+  let selectedCurveTeammateModes = $derived.by(() => {
+    const availableUuids = new Set(
+      curveTeammates.map((player) => player.entityUuid),
     );
-    return teammateAverageCurves(
-      selectedCurveTeammateUuids,
-      perEntityBuckets,
-      chartBucketMs,
-      chartDurationMs,
-    ).flatMap((row) => {
-      const player = byUuid.get(row.entityUuid);
-      if (!player) return [];
-      return [
-        {
-          entityUuid: row.entityUuid,
-          name: player.name,
-          color: playerColor(player),
-          curve: row.curve,
-        },
-      ];
-    });
+    return new Map(
+      [...manualCurveTeammateModes].filter(([uuid]) =>
+        availableUuids.has(uuid),
+      ),
+    );
   });
 
   function toggleCurveTeammate(entityUuid: string) {
-    manualCurveTeammateSelection = selectedCurveTeammateUuids.includes(
-      entityUuid,
-    )
-      ? selectedCurveTeammateUuids.filter((uuid) => uuid !== entityUuid)
-      : [...selectedCurveTeammateUuids, entityUuid];
+    const current = manualCurveTeammateModes.get(entityUuid);
+    if (current === "average") {
+      manualCurveTeammateModes.set(entityUuid, "instant");
+    } else if (current === "instant") {
+      manualCurveTeammateModes.delete(entityUuid);
+    } else {
+      manualCurveTeammateModes.set(entityUuid, "average");
+    }
   }
 
   function selectAllCurveTeammates() {
-    manualCurveTeammateSelection = curveTeammates.map((p) => p.entityUuid);
+    manualCurveTeammateModes.clear();
+    for (const player of curveTeammates) {
+      manualCurveTeammateModes.set(player.entityUuid, "average");
+    }
   }
 
   function clearCurveTeammates() {
-    manualCurveTeammateSelection = [];
+    manualCurveTeammateModes.clear();
   }
 
   function toPoints(list: EncounterTimelineEvent[]): LanePoint[] {
@@ -316,7 +302,9 @@
         key: "mine",
         type: "mine",
         player: localPlayer,
-        points: toPoints(playerEventsByCaster.get(localPlayer.entityUuid) ?? []),
+        points: toPoints(
+          playerEventsByCaster.get(localPlayer.entityUuid) ?? [],
+        ),
       });
     }
     for (const player of selectedTeammates) {
@@ -353,6 +341,11 @@
   );
   const persistedCurveH = $derived(
     SETTINGS.history.general.state.timelineCurveH ?? DEFAULT_CURVE_H,
+  );
+  const instantWindowMs = $derived(
+    clampInstantDpsWindowSec(
+      SETTINGS.history.general.state.instantDpsWindowSec,
+    ) * 1_000,
   );
   const baseLaneH = $derived(draftLaneH ?? persistedLaneH);
   const baseCurveH = $derived(draftCurveH ?? persistedCurveH);
@@ -429,6 +422,76 @@
   let brushPreviewMs = $state<[number, number] | null>(null);
   let plotWidthPx = $state(0);
 
+  // Curves are viewport products, not encounter-sized caches. Each sample is
+  // an exact read from the immutable hit index and there is at most one
+  // interval per CSS pixel (with a hard ceiling in sampleDpsCurve).
+  const mineInstantCurve = $derived.by(() =>
+    mineHits
+      ? sampleDpsCurve(
+          mineHits,
+          "instant",
+          viewport.startMs,
+          viewport.endMs,
+          plotWidthPx,
+          instantWindowMs,
+        )
+      : null,
+  );
+  const mineAverageCurve = $derived.by(() =>
+    mineHits
+      ? sampleDpsCurve(
+          mineHits,
+          "average",
+          viewport.startMs,
+          viewport.endMs,
+          plotWidthPx,
+          instantWindowMs,
+        )
+      : null,
+  );
+  const mineOverviewCurve = $derived.by(() =>
+    mineHits
+      ? sampleDpsCurve(
+          mineHits,
+          "instant",
+          0,
+          chartDurationMs,
+          160,
+          instantWindowMs,
+        )
+      : null,
+  );
+
+  let selectedTeammateCurves = $derived.by<TimelineTeammateCurve[]>(() => {
+    const byUuid = new Map(
+      curveTeammates.map((player) => [player.entityUuid, player]),
+    );
+    return teammateDpsSources(
+      selectedCurveTeammateModes,
+      perEntityHits,
+    ).flatMap((row) => {
+      const player = byUuid.get(row.entityUuid);
+      if (!player) return [];
+      return [
+        {
+          entityUuid: row.entityUuid,
+          name: player.name,
+          color: playerColor(player),
+          mode: row.mode,
+          hits: row.hits,
+          curve: sampleDpsCurve(
+            row.hits,
+            row.mode,
+            viewport.startMs,
+            viewport.endMs,
+            plotWidthPx,
+            instantWindowMs,
+          ),
+        },
+      ];
+    });
+  });
+
   // Created once: the options object's accessors close over the component's
   // reactive bindings directly, so the attachment's pointer/wheel listeners
   // are wired up exactly once per mount instead of on every re-render.
@@ -487,7 +550,7 @@
     onSelectAllTeammates={selectAllTeammates}
     onClearTeammates={clearTeammates}
     {curveTeammates}
-    {selectedCurveTeammateUuids}
+    curveTeammateModes={selectedCurveTeammateModes}
     onToggleCurveTeammate={toggleCurveTeammate}
     onSelectAllCurveTeammates={selectAllCurveTeammates}
     onClearCurveTeammates={clearCurveTeammates}
@@ -511,8 +574,7 @@
       {#each lanes as lane, i (lane.key)}
         <div
           class="absolute right-0 left-0"
-          style="top: {layout.laneTop +
-            (i + 1) * layout.laneH}px; height: 1px;
+          style="top: {layout.laneTop + (i + 1) * layout.laneH}px; height: 1px;
                  background: var(--tl-row-line)"
         ></div>
       {/each}
@@ -528,7 +590,7 @@
       <TimelineCurve
         {mineInstantCurve}
         {mineAverageCurve}
-        teammateAverageCurves={selectedCurveAverageCurves}
+        teammateCurves={selectedTeammateCurves}
         {showAverageCurve}
         startMs={viewport.startMs}
         endMs={viewport.endMs}
@@ -575,9 +637,8 @@
         {hoverPoint}
         {brushPreviewMs}
         selectedRange={selectionEnabled ? selectedRange : null}
-        {mineInstantCurve}
-        {mineAverageCurve}
-        teammateAverageCurves={selectedCurveAverageCurves}
+        {mineHits}
+        teammateCurves={selectedTeammateCurves}
         {showAverageCurve}
         {resolveEvent}
       />
@@ -596,7 +657,8 @@
         {@const laneName = lane.type === "boss" ? lane.name : lane.player.name}
         <div
           class="pointer-events-auto absolute right-2 left-2.5 flex items-center gap-1.5 overflow-hidden"
-          style="top: {layout.laneTop + i * layout.laneH}px; height: {layout.laneH}px"
+          style="top: {layout.laneTop +
+            i * layout.laneH}px; height: {layout.laneH}px"
           {@attach tooltip(() => laneName)}
         >
           {#if lane.type === "boss"}
@@ -604,10 +666,7 @@
               class="size-3.5 shrink-0"
               style="color: {TIMELINE_PALETTE.boss}"
             />
-            <span
-              class="truncate text-[11px]"
-              style="color: {laneColor(lane)}"
-            >
+            <span class="truncate text-[11px]" style="color: {laneColor(lane)}">
               {lane.name}
             </span>
           {:else if lane.type === "mine"}
@@ -615,7 +674,10 @@
               class="size-1.5 shrink-0 rounded-full"
               style="background: {TIMELINE_PALETTE.mine}; box-shadow: 0 0 6px {TIMELINE_PALETTE.mine}"
             ></span>
-            <span class="truncate text-[11px] font-medium" style="color: #dbeafe">
+            <span
+              class="truncate text-[11px] font-medium"
+              style="color: #dbeafe"
+            >
               {lane.player.name}
             </span>
           {:else}
@@ -663,6 +725,19 @@
     </div>
   </div>
 
+  <!-- Buff coverage lanes: same fight-offset axis as the plot above. -->
+  {#if buffLanes && buffLanes.length > 0}
+    <TimelineBuffLanes
+      lanes={buffLanes}
+      {players}
+      startMs={viewport.startMs}
+      endMs={viewport.endMs}
+      gutter={layout.gutter}
+      rangeCoverage={buffRangeCoverage}
+      rangePending={selectionPending}
+    />
+  {/if}
+
   <!-- Minimap: full-encounter overview + draggable/resizable viewport. -->
   <div
     class="px-3 py-2"
@@ -675,7 +750,7 @@
          the minimap blue, matching the series it now actually draws. -->
     <TimelineMinimap
       {viewport}
-      curve={mineInstantCurve ?? mineAverageCurve}
+      curve={mineOverviewCurve}
       selectedRange={selectionEnabled ? selectedRange : null}
     />
   </div>
@@ -687,7 +762,10 @@
       style="border-top: 1px solid var(--tl-row-line); background: rgba(96,165,250,0.05)"
     >
       <div class="flex min-w-0 items-center gap-1.5">
-        <Clock3Icon class="size-3.5 shrink-0" style="color: {TIMELINE_PALETTE.mine}" />
+        <Clock3Icon
+          class="size-3.5 shrink-0"
+          style="color: {TIMELINE_PALETTE.mine}"
+        />
         <span class="truncate text-[11px] tabular-nums" style="color: #bfdbfe">
           {t("history.timeline.selection.label", {
             start: formatTimeMs(selectedRange[0], true),

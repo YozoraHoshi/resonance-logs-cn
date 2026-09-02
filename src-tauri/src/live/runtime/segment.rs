@@ -1,10 +1,11 @@
 //! Encounter segment policy and packet-level combat routing.
 
 use super::events::{
-    DomainEnvelope, DomainEvent, DomainHit, EntityRef, EventMeta, HitKind, MonoTimeMs, SegmentId,
-    SegmentReason, TimerKey, TimerScope,
+    DomainEnvelope, DomainEvent, DomainHit, EntityKind, EntityRef, EventMeta, HitKind, MonoTimeMs,
+    SegmentId, SegmentReason, TimerKey, TimerScope,
 };
 use super::scheduler::{DeadlineScheduler, DueTimer, TimerTask};
+use serde::{Deserialize, Serialize};
 
 pub const AUTOMATIC_BOUNDARY_DELAY_MS: u64 = 3_000;
 pub const TRAINING_WINDOW_MS: u64 = 183_000;
@@ -12,6 +13,14 @@ pub const TRAINING_WINDOW_MS: u64 = 183_000;
 /// a single segment (and its history event chunks) growing for hours.
 pub const MAX_SEGMENT_DURATION_MS: u64 = 20 * 60 * 1_000;
 pub const TRAINING_DUMMY_MONSTER_IDS: [i32; 2] = [115, 122];
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum TrainingLockPolicy {
+    #[default]
+    EliteDummies,
+    FirstMonster,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CombatGate {
@@ -115,6 +124,7 @@ pub struct SegmentController {
     next_segment_id: u64,
     opener_buffer: Vec<DomainEnvelope>,
     training_window_ms: u64,
+    training_lock_policy: TrainingLockPolicy,
 }
 
 impl Default for SegmentController {
@@ -124,6 +134,7 @@ impl Default for SegmentController {
             next_segment_id: 0,
             opener_buffer: Vec::new(),
             training_window_ms: TRAINING_WINDOW_MS,
+            training_lock_policy: TrainingLockPolicy::EliteDummies,
         }
     }
 }
@@ -136,6 +147,10 @@ impl SegmentController {
 
     pub fn set_training_window_ms(&mut self, window_ms: u64) {
         self.training_window_ms = window_ms;
+    }
+
+    pub fn set_training_lock_policy(&mut self, policy: TrainingLockPolicy) {
+        self.training_lock_policy = policy;
     }
 
     #[must_use]
@@ -197,7 +212,8 @@ impl SegmentController {
                     if eligible_hit.is_none() && is_eligible_player_damage(hit) {
                         eligible_hit = Some((hit, envelope.event_index));
                     }
-                    if training_hit.is_none() && is_training_opener(hit) {
+                    if training_hit.is_none() && is_training_opener(hit, self.training_lock_policy)
+                    {
                         training_hit = Some((hit, envelope.event_index));
                     }
                 }
@@ -576,9 +592,7 @@ impl SegmentController {
     ) {
         let segment = self.next_segment(meta);
         let deadline = meta.mono_ms().saturating_add(self.training_window_ms);
-        let monster_id = hit
-            .target_monster_id
-            .expect("training opener has monster id");
+        let monster_id = hit.target_monster_id.unwrap_or(0);
         self.state = SegmentState::Recording {
             segment,
             mode: RecordingMode::Training {
@@ -685,12 +699,16 @@ fn is_eligible_player_damage(hit: &DomainHit) -> bool {
     hit.kind == HitKind::Damage && hit.source_is_player && hit.amount > 0
 }
 
-fn is_training_opener(hit: &DomainHit) -> bool {
-    is_eligible_player_damage(hit)
-        && hit.source_is_local_player
-        && hit
+fn is_training_opener(hit: &DomainHit, policy: TrainingLockPolicy) -> bool {
+    if !is_eligible_player_damage(hit) || !hit.source_is_local_player {
+        return false;
+    }
+    match policy {
+        TrainingLockPolicy::EliteDummies => hit
             .target_monster_id
-            .is_some_and(|id| TRAINING_DUMMY_MONSTER_IDS.contains(&id))
+            .is_some_and(|id| TRAINING_DUMMY_MONSTER_IDS.contains(&id)),
+        TrainingLockPolicy::FirstMonster => hit.target_kind == EntityKind::Monster,
+    }
 }
 
 fn started_event(segment: ActiveSegment, reason: SegmentReason) -> DomainEvent {
@@ -735,6 +753,24 @@ mod tests {
         monster_id: Option<i32>,
         local: bool,
     ) -> DomainEnvelope {
+        hit_event_kind(
+            batch,
+            mono_ms,
+            target,
+            monster_id,
+            local,
+            EntityKind::Monster,
+        )
+    }
+
+    fn hit_event_kind(
+        batch: u64,
+        mono_ms: u64,
+        target: EntityRef,
+        monster_id: Option<i32>,
+        local: bool,
+        target_kind: EntityKind,
+    ) -> DomainEnvelope {
         let meta = meta(batch, mono_ms);
         DomainEnvelope {
             sequence: batch,
@@ -753,7 +789,7 @@ mod tests {
                 resolved_owner: None,
                 target,
                 source_kind: Some(EntityKind::Character),
-                target_kind: EntityKind::Monster,
+                target_kind,
                 source_monster_id: None,
                 target_monster_id: monster_id,
                 target_is_boss: false,
@@ -1151,5 +1187,167 @@ mod tests {
             scheduler.next_deadline(),
             Some(MonoTimeMs(2_000 + TRAINING_WINDOW_MS))
         );
+    }
+
+    #[test]
+    fn first_monster_policy_locks_the_next_local_monster_hit() {
+        let mut controller = SegmentController::new();
+        controller.set_training_lock_policy(TrainingLockPolicy::FirstMonster);
+        let mut scheduler = DeadlineScheduler::new();
+        controller.arm_training(&mut scheduler);
+        let monster = target(30);
+        let packet = [hit_event(1, 2_000, monster, Some(9_001), true)];
+        let decision = controller.preflight_batch(&packet, false, &mut scheduler);
+
+        assert_eq!(decision.segment_id, Some(SegmentId(1)));
+        assert_eq!(decision.combat_gate, CombatGate::Only(monster));
+        assert!(matches!(
+            controller.state(),
+            SegmentState::Recording {
+                mode: RecordingMode::Training {
+                    target,
+                    monster_id: 9_001,
+                    ..
+                },
+                ..
+            } if *target == monster
+        ));
+    }
+
+    #[test]
+    fn first_monster_policy_treats_local_summon_hits_as_openers() {
+        let mut controller = SegmentController::new();
+        controller.set_training_lock_policy(TrainingLockPolicy::FirstMonster);
+        let mut scheduler = DeadlineScheduler::new();
+        controller.arm_training(&mut scheduler);
+        let monster = target(31);
+        let mut summon_hit = hit_event(1, 2_000, monster, Some(9_002), true);
+        if let DomainEvent::HitResolved(hit) = &mut summon_hit.event {
+            hit.source_kind = Some(EntityKind::Monster);
+            hit.source_monster_id = Some(50);
+        }
+        let decision = controller.preflight_batch(&[summon_hit], false, &mut scheduler);
+
+        assert_eq!(decision.combat_gate, CombatGate::Only(monster));
+        assert!(matches!(
+            controller.state(),
+            SegmentState::Recording {
+                mode: RecordingMode::Training { .. },
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn first_monster_policy_ignores_dummy_and_character_targets() {
+        let mut controller = SegmentController::new();
+        controller.set_training_lock_policy(TrainingLockPolicy::FirstMonster);
+        let mut scheduler = DeadlineScheduler::new();
+        controller.arm_training(&mut scheduler);
+
+        let dummy_packet = [hit_event_kind(
+            1,
+            2_000,
+            target(22),
+            Some(115),
+            true,
+            EntityKind::Dummy,
+        )];
+        let dummy_decision = controller.preflight_batch(&dummy_packet, false, &mut scheduler);
+        assert_eq!(dummy_decision.combat_gate, CombatGate::AllowAll);
+        assert!(matches!(
+            controller.state(),
+            SegmentState::Recording {
+                mode: RecordingMode::Standard {
+                    training_armed: true,
+                    ..
+                },
+                ..
+            }
+        ));
+
+        controller.stop_training(meta(2, 2_100), &mut scheduler);
+        controller.arm_training(&mut scheduler);
+        let character_packet = [hit_event_kind(
+            3,
+            2_200,
+            target(11),
+            None,
+            true,
+            EntityKind::Character,
+        )];
+        let character_decision =
+            controller.preflight_batch(&character_packet, false, &mut scheduler);
+        assert_eq!(character_decision.combat_gate, CombatGate::AllowAll);
+        assert!(matches!(
+            controller.state(),
+            SegmentState::Recording {
+                mode: RecordingMode::Standard {
+                    training_armed: true,
+                    ..
+                },
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn elite_dummies_policy_still_requires_known_dummy_ids() {
+        let mut controller = SegmentController::new();
+        let mut scheduler = DeadlineScheduler::new();
+        controller.arm_training(&mut scheduler);
+        let monster = target(30);
+        let packet = [hit_event(1, 2_000, monster, Some(9_001), true)];
+        let decision = controller.preflight_batch(&packet, false, &mut scheduler);
+
+        assert_eq!(decision.combat_gate, CombatGate::AllowAll);
+        assert!(matches!(
+            controller.state(),
+            SegmentState::Recording {
+                mode: RecordingMode::Standard {
+                    training_armed: true,
+                    ..
+                },
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn elite_dummies_policy_ignores_entity_kind() {
+        let mut controller = SegmentController::new();
+        let mut scheduler = DeadlineScheduler::new();
+        controller.arm_training(&mut scheduler);
+        let dummy = target(22);
+        let packet = [hit_event_kind(
+            1,
+            2_000,
+            dummy,
+            Some(115),
+            true,
+            EntityKind::Dummy,
+        )];
+        let decision = controller.preflight_batch(&packet, false, &mut scheduler);
+
+        assert_eq!(decision.combat_gate, CombatGate::Only(dummy));
+    }
+
+    #[test]
+    fn first_monster_policy_rejects_hits_before_the_local_opener() {
+        let mut controller = SegmentController::new();
+        controller.set_training_lock_policy(TrainingLockPolicy::FirstMonster);
+        let mut scheduler = DeadlineScheduler::new();
+        controller.arm_training(&mut scheduler);
+        let monster = target(30);
+        let mut teammate_hit = hit_event(1, 2_000, monster, Some(9_001), false);
+        teammate_hit.event_index = 0;
+        let mut local_opener = hit_event(1, 2_000, monster, Some(9_001), true);
+        local_opener.event_index = 1;
+
+        let decision =
+            controller.preflight_batch(&[teammate_hit, local_opener], false, &mut scheduler);
+
+        assert_eq!(decision.accept_hits_from_event_index, Some(1));
+        assert_eq!(decision.combat_gate, CombatGate::Only(monster));
     }
 }

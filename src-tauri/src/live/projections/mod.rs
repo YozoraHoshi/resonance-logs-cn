@@ -1,3 +1,4 @@
+pub mod buff_timeline;
 pub mod combat;
 pub mod death;
 pub mod entity_monitor;

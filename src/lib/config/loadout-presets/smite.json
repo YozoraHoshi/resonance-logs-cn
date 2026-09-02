@@ -707,9 +707,9 @@
     "textBuffPanelStyle": {
       "backgroundEnabled": false,
       "backgroundOpacity": 0.76,
-      "columnGap": 8,
+      "columnGap": 12,
       "displayMode": "modern",
-      "fontSize": 12,
+      "fontSize": 14,
       "gap": 6,
       "nameColor": "#fde68a",
       "progressColor": "#67e8f9",

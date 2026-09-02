@@ -2,9 +2,9 @@
 
 use crate::live::counter::engine::CounterSnapshot;
 use crate::live::ipc::models::{
-    DeathRecord, LiveBuffsPayload, LiveCombatPayload, LiveDataPayload, LiveDeathsPayload,
-    LiveDisplayClock, LiveFantasyPayload, LiveMonsterPayload, LiveScenePayload, LiveStatusPayload,
-    TeammateFantasyState, TrainingDummyPhase, TrainingDummyState,
+    BuffCoverageEntry, DeathRecord, LiveBuffsPayload, LiveCombatPayload, LiveDataPayload,
+    LiveDeathsPayload, LiveDisplayClock, LiveFantasyPayload, LiveMonsterPayload, LiveScenePayload,
+    LiveStatusPayload, TeammateFantasyState, TrainingDummyPhase, TrainingDummyState,
 };
 use crate::live::projections::entity_monitor::EntityMonitorSnapshot;
 use crate::live::runtime::events::SegmentId;
@@ -38,6 +38,7 @@ pub struct PresentationProjection {
     displayed_clock: Option<LiveDisplayClock>,
     displayed_deaths: Option<Vec<DeathRecord>>,
     displayed_fantasies: Option<Vec<TeammateFantasyState>>,
+    displayed_coverage: Option<Vec<BuffCoverageEntry>>,
 }
 
 impl PresentationProjection {
@@ -47,6 +48,7 @@ impl PresentationProjection {
         self.displayed_clock = None;
         self.displayed_deaths = None;
         self.displayed_fantasies = None;
+        self.displayed_coverage = None;
     }
 
     /// Freezes only the combat (meter) payload. Counters are not segment
@@ -63,12 +65,21 @@ impl PresentationProjection {
         }
     }
 
+    /// Holds coverage metrics from the just-ended segment and forces every
+    /// row inactive so the HUD cannot keep showing an in-flight buff.
+    pub fn freeze_coverage(&mut self, segment_id: SegmentId, coverage: Vec<BuffCoverageEntry>) {
+        if self.displayed_segment_id == Some(segment_id) {
+            self.displayed_coverage = Some(deactivate_coverage(coverage));
+        }
+    }
+
     pub fn clear_display(&mut self) {
         self.displayed_segment_id = None;
         self.displayed_combat = None;
         self.displayed_clock = None;
         self.displayed_deaths = None;
         self.displayed_fantasies = None;
+        self.displayed_coverage = None;
     }
 
     /// Snapshots death/fantasy display before a runtime wipe. Only fills empty
@@ -129,9 +140,16 @@ impl PresentationProjection {
         self.status_payload(monitored, counters)
     }
 
-    pub fn take_buffs_payload(&mut self, monitored: &EntityMonitorSnapshot) -> LiveBuffsPayload {
+    pub fn take_buffs_payload(
+        &mut self,
+        monitored: &EntityMonitorSnapshot,
+        coverage: Vec<BuffCoverageEntry>,
+        active: bool,
+    ) -> LiveBuffsPayload {
         self.buffs_revision = self.buffs_revision.saturating_add(1);
-        self.buffs_payload(monitored)
+        let mut payload = self.buffs_payload(monitored);
+        payload.coverage = self.coverage_rows(coverage, active);
+        payload
     }
 
     pub fn take_monster_payload(
@@ -247,10 +265,19 @@ impl PresentationProjection {
         }
     }
 
+    fn coverage_rows(&self, live: Vec<BuffCoverageEntry>, active: bool) -> Vec<BuffCoverageEntry> {
+        if active {
+            live
+        } else {
+            deactivate_coverage(self.displayed_coverage.clone().unwrap_or(live))
+        }
+    }
+
     fn buffs_payload(&self, monitored: &EntityMonitorSnapshot) -> LiveBuffsPayload {
         LiveBuffsPayload {
             revision: self.buffs_revision,
             local_buffs: monitored.local_buffs.clone(),
+            coverage: Vec::new(),
         }
     }
 
@@ -309,6 +336,14 @@ impl PresentationProjection {
             dungeon_difficulty,
         }
     }
+}
+
+fn deactivate_coverage(mut coverage: Vec<BuffCoverageEntry>) -> Vec<BuffCoverageEntry> {
+    for entry in &mut coverage {
+        entry.active_now = false;
+        entry.layer = 0;
+    }
+    coverage
 }
 
 fn training_phase(state: &SegmentState) -> TrainingDummyPhase {
@@ -661,5 +696,110 @@ mod tests {
         assert!(deaths.deaths.is_empty());
         let fantasy = presentation.peek_fantasy_payload(false, &EntityMonitorSnapshot::default());
         assert!(fantasy.teammate_fantasies.is_empty());
+    }
+
+    fn coverage_entry(active_now: bool) -> BuffCoverageEntry {
+        BuffCoverageEntry {
+            base_id: 2_201,
+            covered_ms: 1_500,
+            active_ms: 2_000,
+            active_now,
+            layer: 2,
+            count: 3,
+        }
+    }
+
+    fn collapsed_live_coverage() -> BuffCoverageEntry {
+        BuffCoverageEntry {
+            base_id: 2_201,
+            covered_ms: 0,
+            active_ms: 0,
+            active_now: true,
+            layer: 9,
+            count: 99,
+        }
+    }
+
+    #[test]
+    fn freeze_coverage_keeps_metrics_and_forces_inactive() {
+        let mut presentation = PresentationProjection::default();
+        presentation.segment_started(SegmentId(1));
+        presentation.freeze_coverage(SegmentId(1), vec![coverage_entry(true)]);
+
+        let payload = presentation.take_buffs_payload(
+            &EntityMonitorSnapshot::default(),
+            vec![collapsed_live_coverage()],
+            false,
+        );
+        assert_eq!(payload.coverage.len(), 1);
+        assert_eq!(payload.coverage[0].covered_ms, 1_500);
+        assert_eq!(payload.coverage[0].active_ms, 2_000);
+        assert_eq!(payload.coverage[0].count, 3);
+        assert!(!payload.coverage[0].active_now);
+        assert_eq!(payload.coverage[0].layer, 0);
+    }
+
+    #[test]
+    fn inactive_fallback_still_deactivates_live_coverage() {
+        let mut presentation = PresentationProjection::default();
+        let payload = presentation.take_buffs_payload(
+            &EntityMonitorSnapshot::default(),
+            vec![coverage_entry(true)],
+            false,
+        );
+        assert!(!payload.coverage[0].active_now);
+        assert_eq!(payload.coverage[0].layer, 0);
+        assert_eq!(payload.coverage[0].covered_ms, 1_500);
+    }
+
+    #[test]
+    fn active_coverage_shadows_the_frozen_one() {
+        let mut presentation = PresentationProjection::default();
+        presentation.segment_started(SegmentId(1));
+        presentation.freeze_coverage(SegmentId(1), vec![coverage_entry(true)]);
+
+        let live = BuffCoverageEntry {
+            covered_ms: 100,
+            ..coverage_entry(true)
+        };
+        let payload = presentation.take_buffs_payload(
+            &EntityMonitorSnapshot::default(),
+            vec![live.clone()],
+            true,
+        );
+        assert_eq!(payload.coverage[0].covered_ms, 100);
+        assert!(payload.coverage[0].active_now);
+        assert_eq!(payload.coverage[0].layer, 2);
+    }
+
+    #[test]
+    fn clear_display_and_segment_started_drop_frozen_coverage() {
+        let mut presentation = PresentationProjection::default();
+        presentation.segment_started(SegmentId(1));
+        presentation.freeze_coverage(SegmentId(1), vec![coverage_entry(true)]);
+        presentation.clear_display();
+
+        let payload =
+            presentation.take_buffs_payload(&EntityMonitorSnapshot::default(), Vec::new(), false);
+        assert!(payload.coverage.is_empty());
+
+        presentation.segment_started(SegmentId(1));
+        presentation.freeze_coverage(SegmentId(1), vec![coverage_entry(true)]);
+        presentation.segment_started(SegmentId(2));
+
+        let payload =
+            presentation.take_buffs_payload(&EntityMonitorSnapshot::default(), Vec::new(), false);
+        assert!(payload.coverage.is_empty());
+    }
+
+    #[test]
+    fn freeze_coverage_ignores_a_mismatched_segment() {
+        let mut presentation = PresentationProjection::default();
+        presentation.segment_started(SegmentId(1));
+        presentation.freeze_coverage(SegmentId(2), vec![coverage_entry(true)]);
+
+        let payload =
+            presentation.take_buffs_payload(&EntityMonitorSnapshot::default(), Vec::new(), false);
+        assert!(payload.coverage.is_empty());
     }
 }

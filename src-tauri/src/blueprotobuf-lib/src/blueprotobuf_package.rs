@@ -1504,13 +1504,7 @@ pub struct CharSerialize {
     pub season_cultivate_line_data: ::core::option::Option<SeasonCultivateLineData>,
 }
 #[derive(
-    specta::Type,
-    Clone,
-    PartialEq,
-    Eq,
-    ::prost::Message,
-    serde::Serialize,
-    serde::Deserialize,
+    specta::Type, Clone, PartialEq, Eq, ::prost::Message, serde::Serialize, serde::Deserialize,
 )]
 #[serde(rename_all = "camelCase")]
 pub struct SeasonCultivateLineData {
@@ -1518,13 +1512,7 @@ pub struct SeasonCultivateLineData {
     pub season_cultivate_line_map: ::std::collections::HashMap<i32, CultivateLineData>,
 }
 #[derive(
-    specta::Type,
-    Clone,
-    PartialEq,
-    Eq,
-    ::prost::Message,
-    serde::Serialize,
-    serde::Deserialize,
+    specta::Type, Clone, PartialEq, Eq, ::prost::Message, serde::Serialize, serde::Deserialize,
 )]
 #[serde(rename_all = "camelCase")]
 pub struct CultivateLineData {
@@ -1532,13 +1520,7 @@ pub struct CultivateLineData {
     pub cultivate_line_map: ::std::collections::HashMap<i32, CultivateLineSubTypeData>,
 }
 #[derive(
-    specta::Type,
-    Clone,
-    PartialEq,
-    Eq,
-    ::prost::Message,
-    serde::Serialize,
-    serde::Deserialize,
+    specta::Type, Clone, PartialEq, Eq, ::prost::Message, serde::Serialize, serde::Deserialize,
 )]
 #[serde(rename_all = "camelCase")]
 pub struct CultivateLineSubTypeData {
@@ -1548,13 +1530,7 @@ pub struct CultivateLineSubTypeData {
     pub cultivate_line_area_list: ::prost::alloc::vec::Vec<i32>,
 }
 #[derive(
-    specta::Type,
-    Clone,
-    PartialEq,
-    Eq,
-    ::prost::Message,
-    serde::Serialize,
-    serde::Deserialize,
+    specta::Type, Clone, PartialEq, Eq, ::prost::Message, serde::Serialize, serde::Deserialize,
 )]
 #[serde(rename_all = "camelCase")]
 pub struct CultivateAreaData {
@@ -12462,6 +12438,114 @@ impl EDetachMagneticType {
         match value {
             "EOperate" => Some(Self::EOperate),
             "EFall" => Some(Self::EFall),
+            _ => None,
+        }
+    }
+}
+
+#[derive(specta::Type, Clone, PartialEq, ::prost::Message)]
+pub struct EnterMatchResultNtf {
+    #[prost(message, optional, tag = "1")]
+    pub v_request: ::core::option::Option<EnterMatchResultNtfRequest>,
+}
+#[derive(specta::Type, Clone, PartialEq, ::prost::Message)]
+pub struct EnterMatchResultNtfRequest {
+    #[prost(message, optional, tag = "2")]
+    pub match_info: ::core::option::Option<MatchInfo>,
+}
+#[derive(specta::Type, Clone, PartialEq, ::prost::Message)]
+pub struct MatchInfo {
+    #[prost(enumeration = "EMatchStatus", optional, tag = "2")]
+    pub match_status: ::core::option::Option<i32>,
+}
+#[derive(
+    specta::Type, Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration,
+)]
+#[repr(i32)]
+pub enum EMatchStatus {
+    Null = 0,
+    Matching = 1,
+    WaitReady = 2,
+    AllReady = 3,
+    Success = 4,
+}
+impl EMatchStatus {
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::Null => "EMatchStatusNull",
+            Self::Matching => "EMatchStatusMatching",
+            Self::WaitReady => "EMatchStatusWaitReady",
+            Self::AllReady => "EMatchStatusAllReady",
+            Self::Success => "EMatchStatusSuccess",
+        }
+    }
+
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "EMatchStatusNull" => Some(Self::Null),
+            "EMatchStatusMatching" => Some(Self::Matching),
+            "EMatchStatusWaitReady" => Some(Self::WaitReady),
+            "EMatchStatusAllReady" => Some(Self::AllReady),
+            "EMatchStatusSuccess" => Some(Self::Success),
+            _ => None,
+        }
+    }
+}
+
+#[derive(specta::Type, Clone, PartialEq, ::prost::Message)]
+pub struct NotifyTeamActivityState {
+    #[prost(message, optional, tag = "1")]
+    pub v_request: ::core::option::Option<NotifyTeamActivityStateRequest>,
+}
+#[derive(specta::Type, Clone, PartialEq, ::prost::Message)]
+pub struct NotifyTeamActivityStateRequest {
+    #[prost(message, optional, tag = "1")]
+    pub state: ::core::option::Option<TeamActivity>,
+}
+#[derive(specta::Type, Clone, PartialEq, ::prost::Message)]
+pub struct TeamActivity {
+    #[prost(enumeration = "ETeamActivityState", optional, tag = "2")]
+    pub state: ::core::option::Option<i32>,
+    #[prost(message, optional, tag = "8")]
+    pub assign_scene_params: ::core::option::Option<AssignSceneParams>,
+}
+#[derive(specta::Type, Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct AssignSceneParams {
+    #[prost(int64, optional, tag = "2")]
+    pub creator_char_id: ::core::option::Option<i64>,
+}
+#[derive(
+    specta::Type, Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration,
+)]
+#[repr(i32)]
+pub enum ETeamActivityState {
+    No = 0,
+    Start = 1,
+    Checking = 2,
+    Voting = 3,
+    Doing = 4,
+    End = 5,
+}
+impl ETeamActivityState {
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::No => "ETeamActivity_No",
+            Self::Start => "ETeamActivity_Start",
+            Self::Checking => "ETeamActivity_Checking",
+            Self::Voting => "ETeamActivity_Voting",
+            Self::Doing => "ETeamActivity_Doing",
+            Self::End => "ETeamActivity_End",
+        }
+    }
+
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "ETeamActivity_No" => Some(Self::No),
+            "ETeamActivity_Start" => Some(Self::Start),
+            "ETeamActivity_Checking" => Some(Self::Checking),
+            "ETeamActivity_Voting" => Some(Self::Voting),
+            "ETeamActivity_Doing" => Some(Self::Doing),
+            "ETeamActivity_End" => Some(Self::End),
             _ => None,
         }
     }

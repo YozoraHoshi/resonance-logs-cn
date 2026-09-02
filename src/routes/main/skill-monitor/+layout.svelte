@@ -6,15 +6,17 @@
   import PenSquareIcon from "virtual:icons/lucide/pen-square";
   import ProfileSwitcher from "./profile-switcher.svelte";
   import { t } from "$lib/i18n/index.svelte";
+  import { toggleHudEditing } from "$lib/overlay-window-visibility.svelte";
   import {
-    isOverlayWindowVisible,
-    toggleHudEditing,
-    toggleOverlayWindow,
-  } from "$lib/overlay-window-visibility.svelte";
+    isHudDomainEnabled,
+    toggleHudDomainEnabled,
+  } from "$lib/hud-domain-rules.svelte";
 
   let { children } = $props();
 
-  const overlayVisible = $derived(isOverlayWindowVisible("game"));
+  // Tracks the persisted intent, not the physical window: a scene-driven
+  // auto-hide must not make the button read as "off" while the monitor is on.
+  const overlayEnabled = $derived(isHudDomainEnabled("game"));
 
   async function toggleOverlayEditMode() {
     try {
@@ -40,13 +42,13 @@
     <div class="flex items-center gap-2">
       <button
         type="button"
-        aria-pressed={overlayVisible}
-        class="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm shadow-sm transition-colors {overlayVisible
+        aria-pressed={overlayEnabled}
+        class="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm shadow-sm transition-colors {overlayEnabled
           ? 'border border-border/60 bg-muted/30 text-foreground hover:bg-muted/50'
           : 'bg-primary text-primary-foreground hover:bg-primary/90'}"
-        onclick={() => toggleOverlayWindow("game")}
+        onclick={() => toggleHudDomainEnabled("game")}
       >
-        {#if overlayVisible}
+        {#if overlayEnabled}
           <PauseIcon class="w-4 h-4" />
         {:else}
           <PlayIcon class="w-4 h-4" />

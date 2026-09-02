@@ -3,15 +3,17 @@ import {
   type CounterRule,
   type MonitorRuntimeSnapshot,
 } from "$lib/bindings";
+import {
+  buildBuffTimelineIds,
+  buildConfiguredBuffPlan,
+  buildPublishedBuffIds,
+} from "$lib/buff-monitor-plan";
 import { expandBuffSelection } from "$lib/config/buff-name-table";
 import { activeProfile as getActiveProfile } from "$lib/skill-monitor-profile.svelte.js";
 import { SETTINGS } from "$lib/settings-store";
 import {
   getCounterRules,
-  getDefaultMonitoredBuffIds,
-  getSeasonCultivateFactorConfiguredEffectBuffIds,
   getSeasonCultivateFactorTemplates,
-  getSeasonNodeBuffIds,
   resolveUserCounterRulesToPresets,
 } from "$lib/skill-mappings";
 import {
@@ -30,33 +32,6 @@ function normalizeCounterRules(rules: CounterRule[]): CounterRule[] {
     deduped.set(rule.ruleId, rule);
   }
   return Array.from(deduped.values()).sort((a, b) => a.ruleId - b.ruleId);
-}
-
-function getCounterConfigBuffIds(rule: {
-  sources: CounterRule["sources"];
-  effectSlots: CounterRule["effectSlots"];
-}): number[] {
-  const result = rule.effectSlots.map((slot) => slot.resetBuffId);
-  for (const slot of rule.effectSlots) {
-    if (slot.altFreeze) {
-      result.push(slot.altFreeze.conditionBuffId);
-    }
-  }
-  for (const source of rule.sources) {
-    if ("buffDurationTick" in source) {
-      result.push(source.buffDurationTick.buffId);
-    }
-    if ("buffAdded" in source) {
-      result.push(source.buffAdded.buffId);
-    }
-    if ("buffLayerSpent" in source) {
-      result.push(source.buffLayerSpent.buffId);
-    }
-    if ("movementDistance" in source) {
-      result.push(source.movementDistance.buffId);
-    }
-  }
-  return result;
 }
 
 function stripUiOnlyCounterRuleFields(rule: {
@@ -78,31 +53,18 @@ function stripUiOnlyCounterRuleFields(rule: {
 
 function buildSkillRuntimeSnapshot(): MonitorRuntimeSnapshot["skill"] {
   const profile = getActiveProfile();
-  const skillMonitorEnabled = profile?.enabled ?? false;
-  const selectedClass = profile?.selectedClass ?? "wind_knight";
+  const buffPlan = buildConfiguredBuffPlan(profile);
+  const skillMonitorEnabled = buffPlan.enabled;
   const monitoredSkillIds = profile?.monitoredSkillIds ?? [];
   const monitoredSkillDurationIds = profile?.monitoredSkillDurationIds ?? [];
   const mergedSkillIds = uniqueSortedNumbers([
     ...monitoredSkillIds,
     ...monitoredSkillDurationIds,
   ]);
-  const monitoredBuffIds = expandBuffSelection(
-    profile?.monitoredBuffIds ?? [],
-    profile?.monitoredBuffCategories,
-  );
   const monitoredPanelAttrs = profile?.monitoredPanelAttrs ?? [];
-  const customPanelEntries = profile?.customPanelGroups?.length
-    ? profile.customPanelGroups
-        .filter((group) => (group.kind ?? "manual") === "manual")
-        .flatMap((group) => group.entries ?? [])
-    : (profile?.inlineBuffEntries ?? []);
+  const customPanelEntries = buffPlan.manualEntries;
   const hasSeasonCultivateFactorGroup =
-    skillMonitorEnabled &&
-    Boolean(
-      profile?.customPanelGroups?.some(
-        (group) => group.kind === "seasonCultivateFactor",
-      ),
-    );
+    skillMonitorEnabled && buffPlan.hasFactorPanel;
   const inlineCounterRuleIds = skillMonitorEnabled
     ? customPanelEntries
         .filter((entry) => entry.sourceType === "counter")
@@ -111,20 +73,7 @@ function buildSkillRuntimeSnapshot(): MonitorRuntimeSnapshot["skill"] {
   const voiceCounterRuleIds = SETTINGS.voice.state.enabled
     ? getEnabledCounterVoiceRuleIds(profile)
     : [];
-  const buffDisplayMode = profile?.buffDisplayMode ?? "individual";
-  const buffGroups = profile?.buffGroups ?? [];
-  const individualAllGroup = profile?.individualMonitorAllGroup ?? null;
-  const monitorAllBuff =
-    (buffDisplayMode === "grouped" &&
-      buffGroups.some((group) => group.monitorAll)) ||
-    (buffDisplayMode === "individual" && !!individualAllGroup);
-  const groupBuffIds =
-    buffDisplayMode === "grouped"
-      ? buffGroups.flatMap((group) => (group.monitorAll ? [] : group.buffIds))
-      : [];
-  const inlineBuffIds = customPanelEntries
-    .filter((entry) => entry.sourceType === "buff")
-    .map((entry) => entry.sourceId);
+  const monitorAllBuff = buffPlan.monitorAll;
   const activeCounterRuleIds = uniqueSortedNumbers([
     ...inlineCounterRuleIds,
     ...voiceCounterRuleIds,
@@ -160,33 +109,8 @@ function buildSkillRuntimeSnapshot(): MonitorRuntimeSnapshot["skill"] {
   const seasonCultivateFactorTemplates = hasSeasonCultivateFactorGroup
     ? getSeasonCultivateFactorTemplates()
     : [];
-  const counterBuffIds = enabledCounterRules.flatMap((rule) =>
-    getCounterConfigBuffIds(rule),
-  );
-  const factorBuffIds = seasonCultivateFactorTemplates.flatMap((template) =>
-    getCounterConfigBuffIds({
-      sources: template.sources ?? [],
-      effectSlots: template.effectSlots ?? [],
-    }),
-  );
-  const factorEffectBuffIds = hasSeasonCultivateFactorGroup
-    ? getSeasonCultivateFactorConfiguredEffectBuffIds()
-    : [];
-
-  const seasonNodeBuffIds = hasSeasonCultivateFactorGroup
-    ? getSeasonNodeBuffIds()
-    : [];
-  const defaultLinkedBuffIds = getDefaultMonitoredBuffIds(selectedClass);
-  const mergedBuffIds = uniqueSortedNumbers([
-    ...(skillMonitorEnabled ? monitoredBuffIds : []),
-    ...(skillMonitorEnabled ? groupBuffIds : []),
-    ...(skillMonitorEnabled ? inlineBuffIds : []),
-    ...counterBuffIds,
-    ...factorBuffIds,
-    ...factorEffectBuffIds,
-    ...seasonNodeBuffIds,
-    ...(skillMonitorEnabled ? defaultLinkedBuffIds : []),
-  ]);
+  const buffTimelineIds = buildBuffTimelineIds(buffPlan);
+  const mergedBuffIds = buildPublishedBuffIds(buffPlan);
   const monitoredPanelAttrIds = uniqueSortedNumbers(
     monitoredPanelAttrs
       .filter((item) => item.enabled)
@@ -203,6 +127,7 @@ function buildSkillRuntimeSnapshot(): MonitorRuntimeSnapshot["skill"] {
       monitoredPanelAttrIds: [],
       buffCounterRules: [],
       seasonCultivateFactorTemplates: [],
+      buffTimelineIds: [],
     };
   }
 
@@ -214,6 +139,7 @@ function buildSkillRuntimeSnapshot(): MonitorRuntimeSnapshot["skill"] {
     monitoredPanelAttrIds: skillMonitorEnabled ? monitoredPanelAttrIds : [],
     buffCounterRules: enabledCounterRules,
     seasonCultivateFactorTemplates,
+    buffTimelineIds,
   };
 }
 
@@ -295,6 +221,7 @@ export function buildMonitorRuntimeSnapshot(): MonitorRuntimeSnapshot {
     live: {
       eventUpdateRateMs: SETTINGS.live.general.state.eventUpdateRateMs,
       trainingWindowMs: SETTINGS.live.general.state.trainingWindowMs,
+      trainingLockPolicy: SETTINGS.live.general.state.trainingLockPolicy,
     },
     skill: buildSkillRuntimeSnapshot(),
     monster: buildMonsterRuntimeSnapshot(),

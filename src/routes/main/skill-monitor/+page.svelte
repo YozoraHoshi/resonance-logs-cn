@@ -4,6 +4,7 @@
   import TabBuffMonitor from "./tab-buff-monitor.svelte";
   import TabPanelAttr from "./tab-panel-attr.svelte";
   import TabCustomPanel from "./tab-custom-panel.svelte";
+  import TabBuffCoverage from "./tab-buff-coverage.svelte";
   import TabShieldDetailStyle from "./tab-shield-detail-style.svelte";
   import TabOverlay from "./tab-overlay.svelte";
   import {
@@ -29,9 +30,12 @@
     ensureBuffAlerts,
     ensureBuffVoiceConfigs,
     ensureCounterVoiceConfigs,
+    MAX_BUFF_COVERAGE_ENTRIES,
     SETTINGS,
     type BuffAlertMap,
     type BuffAlertRule,
+    type BuffCoverageEntry,
+    type BuffCoverageStyle,
     type BuffDisplayMode,
     type BuffGroup,
     type CustomPanelGroup,
@@ -68,6 +72,8 @@
   } from "$lib/skill-monitor-profile.svelte.js";
   import {
     ensureBuffGroup,
+    ensureBuffCoverageEntries,
+    ensureBuffCoverageStyle,
     ensureBuffGroups,
     ensureFactorSlotLabels,
     ensureIndividualMonitorAllGroup,
@@ -85,10 +91,7 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import { toast } from "svelte-sonner";
   import { commands } from "$lib/bindings";
-  import {
-    ensureBuffIconOverrides,
-    resolveBuffIconSrc,
-  } from "$lib/buff-icons";
+  import { ensureBuffIconOverrides, resolveBuffIconSrc } from "$lib/buff-icons";
   import { buffIconDirUrlPrefix } from "$lib/buff-icon-dir.svelte";
 
   type CounterRuleOption = CounterRulePreset & { origin: "preset" | "user" };
@@ -113,8 +116,11 @@
     | "panel-attr"
     | "custom-panel"
     | "shield-detail"
+    | "buff-coverage"
     | "overlay"
   >("skill-cd");
+  let coverageBuffSearch = $state("");
+  let coverageBuffSearchResults = $state<BuffNameInfo[]>([]);
   let attrSectionExpanded = $state(false);
   let buffAliasSectionExpanded = $state(false);
   let buffAlertSectionExpanded = $state(false);
@@ -184,6 +190,15 @@
   );
   const showShieldDetailGroup = $derived(
     activeProfile.overlayVisibility?.showShieldDetailGroup ?? false,
+  );
+  const showBuffCoverageGroup = $derived(
+    activeProfile.overlayVisibility?.showBuffCoverageGroup ?? false,
+  );
+  const buffCoverageEntries = $derived.by(() =>
+    ensureBuffCoverageEntries(activeProfile),
+  );
+  const buffCoverageStyle = $derived.by(() =>
+    ensureBuffCoverageStyle(activeProfile),
   );
   const textBuffPanelStyle = $derived.by(() =>
     ensureTextBuffPanelStyle(activeProfile),
@@ -714,6 +729,13 @@
   });
 
   $effect(() => {
+    coverageBuffSearchResults = searchBuffsByName(
+      coverageBuffSearch,
+      buffAliases,
+    );
+  });
+
+  $effect(() => {
     buffAliasSearchResults = searchBuffsByName(buffAliasSearch, buffAliases);
   });
 
@@ -742,7 +764,8 @@
       | "showResourceGroup"
       | "showPanelAttrGroup"
       | "showCustomPanelGroup"
-      | "showShieldDetailGroup",
+      | "showShieldDetailGroup"
+      | "showBuffCoverageGroup",
     checked: boolean,
   ) {
     updateActiveProfile((profile) => ({
@@ -759,6 +782,8 @@
           profile.overlayVisibility?.showCustomPanelGroup ?? true,
         showShieldDetailGroup:
           profile.overlayVisibility?.showShieldDetailGroup ?? false,
+        showBuffCoverageGroup:
+          profile.overlayVisibility?.showBuffCoverageGroup ?? false,
         [key]: checked,
       },
     }));
@@ -771,7 +796,8 @@
       | "showResourceGroup"
       | "showPanelAttrGroup"
       | "showCustomPanelGroup"
-      | "showShieldDetailGroup",
+      | "showShieldDetailGroup"
+      | "showBuffCoverageGroup",
   ) {
     const current =
       key === "showSkillCdGroup"
@@ -784,7 +810,9 @@
               ? showPanelAttrGroup
               : key === "showShieldDetailGroup"
                 ? showShieldDetailGroup
-                : showCustomPanelGroup;
+                : key === "showBuffCoverageGroup"
+                  ? showBuffCoverageGroup
+                  : showCustomPanelGroup;
     setOverlaySectionVisibility(key, !current);
   }
 
@@ -1259,6 +1287,127 @@
       ...style,
       backgroundOpacity: Math.max(0, Math.min(1, value)),
     }));
+  }
+
+  function updateBuffCoverageEntries(
+    updater: (entries: BuffCoverageEntry[]) => BuffCoverageEntry[],
+  ) {
+    updateActiveProfile((profile) => ({
+      ...profile,
+      buffCoverageEntries: updater(ensureBuffCoverageEntries(profile)),
+    }));
+  }
+
+  function addBuffCoverageEntry(buffId: number) {
+    updateBuffCoverageEntries((entries) => {
+      if (entries.some((entry) => entry.buffId === buffId)) return entries;
+      if (entries.length >= MAX_BUFF_COVERAGE_ENTRIES) return entries;
+      return [
+        ...entries,
+        {
+          id: `coverage_${Date.now()}_${buffId}`,
+          buffId,
+          label: "",
+          showInLive: true,
+        },
+      ];
+    });
+  }
+
+  function removeBuffCoverageEntry(entryId: string) {
+    updateBuffCoverageEntries((entries) =>
+      entries.filter((entry) => entry.id !== entryId),
+    );
+  }
+
+  function setBuffCoverageEntryShowInLive(entryId: string, value: boolean) {
+    updateBuffCoverageEntries((entries) =>
+      entries.map((entry) =>
+        entry.id === entryId ? { ...entry, showInLive: value } : entry,
+      ),
+    );
+  }
+
+  function moveBuffCoverageEntry(entryId: string, direction: -1 | 1) {
+    updateBuffCoverageEntries((entries) => {
+      const index = entries.findIndex((entry) => entry.id === entryId);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= entries.length) return entries;
+      const next = [...entries];
+      const moved = next.splice(index, 1)[0]!;
+      next.splice(target, 0, moved);
+      return next;
+    });
+  }
+
+  function updateBuffCoverageStyle(
+    updater: (style: BuffCoverageStyle) => BuffCoverageStyle,
+  ) {
+    updateActiveProfile((profile) => ({
+      ...profile,
+      buffCoverageStyle: updater(ensureBuffCoverageStyle(profile)),
+    }));
+  }
+
+  function setBuffCoverageStyleFlag(
+    key:
+      | "showName"
+      | "showRemaining"
+      | "showCount"
+      | "showStateDot"
+      | "showProgress",
+    value: boolean,
+  ) {
+    updateBuffCoverageStyle((style) => ({ ...style, [key]: value }));
+  }
+
+  function setBuffCoverageFontSize(value: number) {
+    const nextValue = Math.max(10, Math.min(28, Math.round(value)));
+    updateBuffCoverageStyle((style) => ({ ...style, fontSize: nextValue }));
+  }
+
+  function setBuffCoverageGap(value: number) {
+    const nextValue = Math.max(0, Math.min(24, Math.round(value)));
+    updateBuffCoverageStyle((style) => ({ ...style, gap: nextValue }));
+  }
+
+  function setBuffCoverageColor(
+    key: "nameColor" | "valueColor" | "progressColor",
+    value: string,
+  ) {
+    updateBuffCoverageStyle((style) => ({ ...style, [key]: value }));
+  }
+
+  function setBuffCoverageProgressOpacity(value: number) {
+    updateBuffCoverageStyle((style) => ({
+      ...style,
+      progressOpacity: Math.max(0, Math.min(1, value)),
+    }));
+  }
+
+  function setBuffCoverageTextShadowEnabled(value: boolean) {
+    updateBuffCoverageStyle((style) => ({
+      ...style,
+      textShadowEnabled: value,
+    }));
+  }
+
+  function setBuffCoverageBackgroundEnabled(value: boolean) {
+    updateBuffCoverageStyle((style) => ({
+      ...style,
+      backgroundEnabled: value,
+    }));
+  }
+
+  function setBuffCoverageBackgroundOpacity(value: number) {
+    updateBuffCoverageStyle((style) => ({
+      ...style,
+      backgroundOpacity: Math.max(0, Math.min(1, value)),
+    }));
+  }
+
+  function setCoverageBuffSearch(value: string) {
+    coverageBuffSearch = value;
   }
 
   function addCustomPanelEntry(
@@ -1781,6 +1930,16 @@
       <button
         type="button"
         class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors {activeTab ===
+        'buff-coverage'
+          ? 'bg-primary text-primary-foreground border-primary'
+          : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
+        onclick={() => (activeTab = "buff-coverage")}
+      >
+        {t("skillMonitor.tabs.buffCoverage")}
+      </button>
+      <button
+        type="button"
+        class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors {activeTab ===
         'overlay'
           ? 'bg-primary text-primary-foreground border-primary'
           : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
@@ -1979,6 +2138,29 @@
       {setShieldDetailBackgroundEnabled}
       {setShieldDetailBackgroundOpacity}
     />
+  {:else if activeTab === "buff-coverage"}
+    <TabBuffCoverage
+      {buffCoverageEntries}
+      {buffCoverageStyle}
+      {coverageBuffSearch}
+      {coverageBuffSearchResults}
+      {availableBuffMap}
+      {getBuffIconPreviewSrc}
+      {setCoverageBuffSearch}
+      {getBuffDisplayName}
+      {addBuffCoverageEntry}
+      {removeBuffCoverageEntry}
+      {setBuffCoverageEntryShowInLive}
+      {moveBuffCoverageEntry}
+      {setBuffCoverageStyleFlag}
+      {setBuffCoverageFontSize}
+      {setBuffCoverageGap}
+      {setBuffCoverageColor}
+      {setBuffCoverageProgressOpacity}
+      {setBuffCoverageTextShadowEnabled}
+      {setBuffCoverageBackgroundEnabled}
+      {setBuffCoverageBackgroundOpacity}
+    />
   {:else}
     <TabOverlay
       {showSkillCdGroup}
@@ -1987,6 +2169,7 @@
       {showPanelAttrGroup}
       {showCustomPanelGroup}
       {showShieldDetailGroup}
+      {showBuffCoverageGroup}
       {toggleOverlaySectionVisibility}
     />
   {/if}

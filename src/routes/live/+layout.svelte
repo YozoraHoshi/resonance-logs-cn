@@ -48,7 +48,7 @@
 
   onMount(() => {
     const stopDisplayClock = initLiveDisplayClock();
-    const unlistenPullGate = listenLivePullGate(liveWindowSession);
+    const unlistenPullGate = listenLivePullGate("live", liveWindowSession);
     liveWindowSession.start();
 
     listen<boolean>("live-clickthrough-changed", (event) => {

@@ -8,6 +8,7 @@
     showPanelAttrGroup: boolean;
     showCustomPanelGroup: boolean;
     showShieldDetailGroup: boolean;
+    showBuffCoverageGroup: boolean;
     toggleOverlaySectionVisibility: (
       key:
         | "showSkillCdGroup"
@@ -15,7 +16,8 @@
         | "showResourceGroup"
         | "showPanelAttrGroup"
         | "showCustomPanelGroup"
-        | "showShieldDetailGroup",
+        | "showShieldDetailGroup"
+        | "showBuffCoverageGroup",
     ) => void;
   }
 
@@ -26,6 +28,7 @@
     showPanelAttrGroup,
     showCustomPanelGroup,
     showShieldDetailGroup,
+    showBuffCoverageGroup,
     toggleOverlaySectionVisibility,
   }: Props = $props();
 
@@ -96,6 +99,15 @@
         onclick={() => toggleOverlaySectionVisibility("showShieldDetailGroup")}
       >
         {t("skillMonitor.overlay.shieldDetail", { state: visibilityState(showShieldDetailGroup) })}
+      </button>
+      <button
+        type="button"
+        class="px-3 py-2 rounded-lg text-sm font-medium border transition-colors {showBuffCoverageGroup
+          ? 'bg-primary text-primary-foreground border-primary'
+          : 'bg-muted/30 text-foreground border-border/60 hover:bg-muted/50'}"
+        onclick={() => toggleOverlaySectionVisibility("showBuffCoverageGroup")}
+      >
+        {t("skillMonitor.overlay.buffCoverage", { state: visibilityState(showBuffCoverageGroup) })}
       </button>
     </div>
     <p class="text-xs text-muted-foreground">

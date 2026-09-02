@@ -63,6 +63,12 @@ describe("built-in loadout presets", () => {
     expect(radiantShield.data.liveProfile.appearance.themeColors.primary).toBe(
       "oklch(0.75 0.09 150)",
     );
+    expect(radiantShield.data.liveProfile.history.general.timelineLaneH).toBe(
+      44,
+    );
+    expect(radiantShield.data.liveProfile.columnLabels.live.players.first).toBe(
+      "",
+    );
 
     const smite = presets.find((preset) => preset.id === "smite")!;
     expect(smite.data.skillProfile.selectedClass).toBe("verdant_oracle");

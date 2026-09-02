@@ -16,22 +16,41 @@ import {
   createDefaultLiveMeterProfileData,
   deepCloneSettings,
   mergeLiveHeaderCustomization,
+  normalizeDeathReplayColumnOrder,
   generateProfileId,
   type LiveMeterProfile,
   type LiveMeterProfileData,
 } from "./settings-store";
+import { normalizeDpsColumnLabels } from "./column-labels";
 import { untrack } from "svelte";
 
 type LiveStore<T> = { readonly state: T };
 
 type LiveStoreMap = {
   general: LiveStore<LiveMeterProfileData["general"]>;
+  history: {
+    general: LiveStore<LiveMeterProfileData["history"]["general"]>;
+    dpsPlayers: LiveStore<LiveMeterProfileData["history"]["dpsPlayers"]>;
+    dpsSkillBreakdown: LiveStore<
+      LiveMeterProfileData["history"]["dpsSkillBreakdown"]
+    >;
+    healPlayers: LiveStore<LiveMeterProfileData["history"]["healPlayers"]>;
+    healSkillBreakdown: LiveStore<
+      LiveMeterProfileData["history"]["healSkillBreakdown"]
+    >;
+    tankedPlayers: LiveStore<LiveMeterProfileData["history"]["tankedPlayers"]>;
+    tankedSkillBreakdown: LiveStore<
+      LiveMeterProfileData["history"]["tankedSkillBreakdown"]
+    >;
+  };
+  columnLabels: LiveStore<LiveMeterProfileData["columnLabels"]>;
   dpsPlayers: LiveStore<LiveMeterProfileData["dpsPlayers"]>;
   dpsSkillBreakdown: LiveStore<LiveMeterProfileData["dpsSkillBreakdown"]>;
   healPlayers: LiveStore<LiveMeterProfileData["healPlayers"]>;
   healSkillBreakdown: LiveStore<LiveMeterProfileData["healSkillBreakdown"]>;
   tankedPlayers: LiveStore<LiveMeterProfileData["tankedPlayers"]>;
   tankedSkillBreakdown: LiveStore<LiveMeterProfileData["tankedSkillBreakdown"]>;
+  deathReplay: LiveStore<LiveMeterProfileData["deathReplay"]>;
   tableCustomization: LiveStore<LiveMeterProfileData["tableCustomization"]>;
   headerCustomization: LiveStore<LiveMeterProfileData["headerCustomization"]>;
   columnOrder: {
@@ -45,6 +64,7 @@ type LiveStoreMap = {
     tankedSkills: LiveStore<
       LiveMeterProfileData["columnOrder"]["tankedSkills"]
     >;
+    deathReplay: LiveStore<LiveMeterProfileData["columnOrder"]["deathReplay"]>;
   };
   sorting: {
     dpsPlayers: LiveStore<LiveMeterProfileData["sorting"]["dpsPlayers"]>;
@@ -78,12 +98,23 @@ function liveStores(): LiveStoreMap {
   const live = SETTINGS.live;
   return {
     general: live.general,
+    history: {
+      general: SETTINGS.history.general,
+      dpsPlayers: SETTINGS.history.dps.players,
+      dpsSkillBreakdown: SETTINGS.history.dps.skillBreakdown,
+      healPlayers: SETTINGS.history.heal.players,
+      healSkillBreakdown: SETTINGS.history.heal.skillBreakdown,
+      tankedPlayers: SETTINGS.history.tanked.players,
+      tankedSkillBreakdown: SETTINGS.history.tanked.skillBreakdown,
+    },
+    columnLabels: live.columnLabels,
     dpsPlayers: live.dps.players,
     dpsSkillBreakdown: live.dps.skillBreakdown,
     healPlayers: live.heal.players,
     healSkillBreakdown: live.heal.skillBreakdown,
     tankedPlayers: live.tanked.players,
     tankedSkillBreakdown: live.tanked.skills,
+    deathReplay: live.deathReplay,
     tableCustomization: live.tableCustomization,
     headerCustomization: live.headerCustomization,
     columnOrder: live.columnOrder,
@@ -129,12 +160,23 @@ export function extractLiveProfileData(): LiveMeterProfileData {
   const stores = liveStores();
   return deepCloneSettings({
     general: { ...stores.general.state },
+    history: {
+      general: { ...stores.history.general.state },
+      dpsPlayers: { ...stores.history.dpsPlayers.state },
+      dpsSkillBreakdown: { ...stores.history.dpsSkillBreakdown.state },
+      healPlayers: { ...stores.history.healPlayers.state },
+      healSkillBreakdown: { ...stores.history.healSkillBreakdown.state },
+      tankedPlayers: { ...stores.history.tankedPlayers.state },
+      tankedSkillBreakdown: { ...stores.history.tankedSkillBreakdown.state },
+    },
+    columnLabels: normalizeDpsColumnLabels(stores.columnLabels.state),
     dpsPlayers: { ...stores.dpsPlayers.state },
     dpsSkillBreakdown: { ...stores.dpsSkillBreakdown.state },
     healPlayers: { ...stores.healPlayers.state },
     healSkillBreakdown: { ...stores.healSkillBreakdown.state },
     tankedPlayers: { ...stores.tankedPlayers.state },
     tankedSkillBreakdown: { ...stores.tankedSkillBreakdown.state },
+    deathReplay: { ...stores.deathReplay.state },
     tableCustomization: { ...stores.tableCustomization.state },
     headerCustomization: { ...stores.headerCustomization.state },
     columnOrder: {
@@ -146,6 +188,7 @@ export function extractLiveProfileData(): LiveMeterProfileData {
         order: [...stores.columnOrder.tankedPlayers.state.order],
       },
       tankedSkills: { order: [...stores.columnOrder.tankedSkills.state.order] },
+      deathReplay: { order: [...stores.columnOrder.deathReplay.state.order] },
     },
     sorting: {
       dpsPlayers: { ...stores.sorting.dpsPlayers.state },
@@ -169,12 +212,36 @@ function applyProfileData(data: LiveMeterProfileData): void {
   const cloned = deepCloneSettings(data);
   const stores = liveStores();
   Object.assign(stores.general.state, cloned.general);
+  Object.assign(stores.history.general.state, cloned.history.general);
+  Object.assign(stores.history.dpsPlayers.state, cloned.history.dpsPlayers);
+  Object.assign(
+    stores.history.dpsSkillBreakdown.state,
+    cloned.history.dpsSkillBreakdown,
+  );
+  Object.assign(stores.history.healPlayers.state, cloned.history.healPlayers);
+  Object.assign(
+    stores.history.healSkillBreakdown.state,
+    cloned.history.healSkillBreakdown,
+  );
+  Object.assign(
+    stores.history.tankedPlayers.state,
+    cloned.history.tankedPlayers,
+  );
+  Object.assign(
+    stores.history.tankedSkillBreakdown.state,
+    cloned.history.tankedSkillBreakdown,
+  );
+  Object.assign(
+    stores.columnLabels.state,
+    normalizeDpsColumnLabels(cloned.columnLabels),
+  );
   Object.assign(stores.dpsPlayers.state, cloned.dpsPlayers);
   Object.assign(stores.dpsSkillBreakdown.state, cloned.dpsSkillBreakdown);
   Object.assign(stores.healPlayers.state, cloned.healPlayers);
   Object.assign(stores.healSkillBreakdown.state, cloned.healSkillBreakdown);
   Object.assign(stores.tankedPlayers.state, cloned.tankedPlayers);
   Object.assign(stores.tankedSkillBreakdown.state, cloned.tankedSkillBreakdown);
+  Object.assign(stores.deathReplay.state, cloned.deathReplay);
   Object.assign(stores.tableCustomization.state, cloned.tableCustomization);
   Object.assign(
     stores.headerCustomization.state,
@@ -191,6 +258,9 @@ function applyProfileData(data: LiveMeterProfileData): void {
     cloned.columnOrder.tankedPlayers.order;
   stores.columnOrder.tankedSkills.state.order =
     cloned.columnOrder.tankedSkills.order;
+  stores.columnOrder.deathReplay.state.order = normalizeDeathReplayColumnOrder(
+    cloned.columnOrder.deathReplay?.order,
+  );
   Object.assign(stores.sorting.dpsPlayers.state, cloned.sorting.dpsPlayers);
   Object.assign(stores.sorting.dpsSkills.state, cloned.sorting.dpsSkills);
   Object.assign(stores.sorting.healPlayers.state, cloned.sorting.healPlayers);

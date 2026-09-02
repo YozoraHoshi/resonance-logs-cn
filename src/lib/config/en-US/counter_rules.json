@@ -46,5 +46,17 @@
   {
     "ruleId": 12,
     "name": "N20-Tina ATK Down Cooldown"
+  },
+  {
+    "ruleId": 13,
+    "name": "Vanguard S4 - Auto Dragon Cannon"
+  },
+  {
+    "ruleId": 14,
+    "name": "Vanguard S4 - Extra Phantom Spiral"
+  },
+  {
+    "ruleId": 15,
+    "name": "Ray S4 - Frost Infusion 4-Piece"
   }
 ]

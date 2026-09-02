@@ -183,6 +183,34 @@ pub struct HistoryDeath {
     pub replay: Option<DeathReplaySnapshot>,
 }
 
+/// Presence edge kind for a whitelisted buff on a player entity.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum HistoryBuffEdge {
+    /// Buff was already present when the segment started (clamped to 0).
+    Baseline,
+    Applied,
+    Refreshed,
+    LayerChanged,
+    Removed,
+}
+
+/// Merged presence edge of one whitelisted buff base id on one entity.
+/// Multiple concurrent instances of the same base id are collapsed by the
+/// live projection; only the outer presence transitions are persisted.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryBuff {
+    pub entity_id: i64,
+    pub base_id: i32,
+    pub edge: HistoryBuffEdge,
+    pub layer: i32,
+    /// Expected expiry as a segment offset; `None` for permanent buffs.
+    /// Used to close an interval when the explicit remove edge was lost.
+    #[serde(default)]
+    pub expires_offset_ms: Option<u64>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "snake_case")]
 pub enum HistoryEvent {
@@ -190,13 +218,14 @@ pub enum HistoryEvent {
     SkillCast(HistorySkillCast),
     EntityContext(HistoryEntityContext),
     Death(HistoryDeath),
+    Buff(HistoryBuff),
 }
 
 impl HistoryEvent {
     pub const fn stream_kind(&self) -> HistoryStream {
         match self {
             Self::Hit(_) | Self::Death(_) => HistoryStream::Combat,
-            Self::SkillCast(_) => HistoryStream::Timeline,
+            Self::SkillCast(_) | Self::Buff(_) => HistoryStream::Timeline,
             Self::EntityContext(_) => HistoryStream::Context,
         }
     }
@@ -208,6 +237,7 @@ impl HistoryEvent {
             // the estimate so the encoded document stays near the 1 MiB goal.
             Self::Hit(_) => 384,
             Self::SkillCast(_) => 72,
+            Self::Buff(_) => 96,
             Self::Death(death) => estimated_death_size(death),
             Self::EntityContext(context) => 96 + context.name.as_ref().map_or(0, String::len),
         }
@@ -600,6 +630,8 @@ mod tests {
                 attacker_monster_type_id: Some(9_001),
                 skill_key: 17_140_101,
                 value: u128::MAX,
+                property: Some(3),
+                damage_mode: Some(2),
             }],
             victim_buffs: vec![DeathReplayBuff {
                 base_id: 77,
@@ -1002,10 +1034,12 @@ mod tests {
     fn time_threshold_seals_before_two_second_span() {
         let mut chunker = HistoryChunker::new(1).expect("create chunker");
         assert!(chunker.push(hit(0, 0, 1)).expect("first hit").is_none());
-        assert!(chunker
-            .push(hit(1, MAX_CHUNK_SPAN_MS - 1, 1))
-            .expect("hit inside span")
-            .is_none());
+        assert!(
+            chunker
+                .push(hit(1, MAX_CHUNK_SPAN_MS - 1, 1))
+                .expect("hit inside span")
+                .is_none()
+        );
         let sealed = chunker
             .push(hit(2, MAX_CHUNK_SPAN_MS, 1))
             .expect("hit at span boundary")
@@ -1043,6 +1077,32 @@ mod tests {
         assert_eq!(chunk.first_sequence, 7);
         assert_eq!(chunk.last_sequence, 7);
         assert_eq!(chunk.event_count, 1);
+    }
+
+    #[test]
+    fn buff_event_round_trips_through_timeline_chunk() {
+        let record = HistoryBuff {
+            entity_id: 42,
+            base_id: 220_112,
+            edge: HistoryBuffEdge::Applied,
+            layer: 3,
+            expires_offset_ms: Some(12_500),
+        };
+        let envelope = HistoryEnvelope {
+            sequence: 5,
+            offset_ms: 1_234,
+            event: HistoryEvent::Buff(record),
+        };
+        assert_eq!(envelope.event.stream_kind(), HistoryStream::Timeline);
+
+        let chunk = encode_history_chunk(1, HistoryStream::Timeline, 0, vec![envelope])
+            .expect("encode buff chunk");
+        let document =
+            decode_history_chunk(&chunk.data, chunk.stream_kind).expect("decode buff chunk");
+        let HistoryEvent::Buff(decoded) = &document.events[0] else {
+            panic!("expected buff event");
+        };
+        assert_eq!(*decoded, record);
     }
 
     #[test]

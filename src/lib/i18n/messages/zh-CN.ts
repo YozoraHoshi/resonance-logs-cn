@@ -10,7 +10,7 @@ export const zhCNMessages = {
   "loadout.defaults.copyName": "{name} 副本",
   "loadout.page.title": "监控方案管理",
   "loadout.page.description":
-    "总方案（Loadout）组合了一套技能监控子方案与一套怪物监控子方案，切换总方案即可一键切换整套实时监控、怪物监控与语音播报设置",
+    "总方案（Loadout）组合技能监控、怪物监控与 DPS 设置子方案，切换总方案即可一键切换整套实时监控、历史展示与语音播报设置",
   "loadout.page.loadoutsTitle": "总方案",
   "loadout.page.new": "新建总方案",
   "loadout.page.namePrompt": "请输入总方案名称",
@@ -22,10 +22,10 @@ export const zhCNMessages = {
   "loadout.page.deleteConfirm": "确定要删除该总方案吗？",
   "loadout.page.skillProfileLabel": "技能监控子方案",
   "loadout.page.monsterProfileLabel": "怪物监控子方案",
-  "loadout.page.liveProfileLabel": "实时计量子方案",
+  "loadout.page.liveProfileLabel": "DPS 设置子方案",
   "loadout.page.presetsTitle": "预置方案",
   "loadout.page.presetsDescription":
-    "选择一套已配置的完整方案，快速应用技能、怪物与实时计量设置",
+    "选择一套已配置的完整方案，快速应用技能、怪物与 DPS 设置",
   "loadout.page.presetApplied": "已创建「{name}」方案",
   "loadout.page.importButton": "导入方案",
   "loadout.page.exportButton": "导出方案",
@@ -119,8 +119,9 @@ export const zhCNMessages = {
   "settings.tabs.debug": "调试",
   "settings.tabs.language": "语言",
   "settings.scope.live":
-    "实时计量设置随当前实时计量方案保存，可随总方案导出分享。",
-  "settings.scope.history": "历史统计设置为本机配置，不随方案导出。",
+    "实时统计设置随当前 DPS 设置方案保存，可随总方案导出分享。",
+  "settings.scope.history":
+    "历史统计设置随当前 DPS 设置方案保存，可随总方案导出分享。",
   "appSettings.title": "应用设置",
   "appSettings.description":
     "应用级配置：网络抓包、全局快捷键、语言与诊断。这些设置不随方案导出。",
@@ -131,6 +132,10 @@ export const zhCNMessages = {
   "appSettings.tabs.diagnostics": "诊断",
   "appSettings.language.title": "语言",
   "appSettings.language.description": "切换界面显示语言。",
+  "appSettings.behavior.title": "应用行为",
+  "appSettings.behavior.exitOnClose": "点击关闭按钮时退出程序",
+  "appSettings.behavior.exitOnCloseDescription":
+    "启用后，点击主窗口的关闭按钮将直接退出整个程序，而不是隐藏到系统托盘。此设置将在下次启动后生效。",
   "appSettings.appearance.scope":
     "以下外观设置为本机全局配置，不随方案导出分享。",
   "appSettings.appearance.colorScopeMain":
@@ -442,6 +447,8 @@ export const zhCNMessages = {
   "history.timeline.curves.selectAll": "全选",
   "history.timeline.curves.clearAll": "清空",
   "history.timeline.curves.closeSelector": "关闭曲线选择",
+  "history.timeline.curves.modeAverage": "平均",
+  "history.timeline.curves.modeInstant": "瞬时",
   "history.timeline.chartAriaLabel":
     "战斗时间线：Boss 技能、玩家关键技能与幻想施放标记，以及秒伤曲线",
   "history.timeline.selection.label": "已选 {start} - {end}（{duration}）",
@@ -453,6 +460,20 @@ export const zhCNMessages = {
     "拖拽选区 · Shift+拖拽平移 · 滚轮缩放 · 双击重置 · 拖底边调高度",
   "history.timeline.resize.lane": "拖拽调整泳道行高，双击恢复默认",
   "history.timeline.resize.curve": "拖拽调整曲线高度，双击恢复默认",
+  "history.timeline.buff.title": "Buff 覆盖",
+  "history.timeline.buff.toggle": "展开或折叠 Buff 覆盖时间轴",
+  "history.timeline.buff.playerPicker": "选择玩家",
+  "history.timeline.buff.empty": "未选择玩家，或所选玩家没有监听中的 buff",
+  "history.timeline.buff.spanTooltip":
+    "{player} · {name}：{start} - {end}（{duration}）",
+  "history.timeline.buff.pillTooltip": "触发 {count} 次",
+  "history.buffCoverage.title": "Buff 覆盖率汇总",
+  "history.buffCoverage.caption": "按活跃战斗时长（{seconds}s）计算",
+  "history.buffCoverage.rangeCaption": "按选区活跃战斗时长计算",
+  "history.buffCoverage.player": "玩家",
+  "history.buffCoverage.count": "×{value}",
+  "history.buffCoverage.unavailable":
+    "该战斗录制于 buff 覆盖率功能之前，暂无数据",
   "tanked.monster.unknownSource": "未知来源",
   "live.tanked.monsters.title": "伤害来源",
   "history.detail.table.player": "玩家",
@@ -554,6 +575,9 @@ export const zhCNMessages = {
   "settings.history.timeline.curveH": "时间轴曲线高度",
   "settings.history.timeline.curveHDescription":
     "历史详情 DPS 曲线区域的高度，与泳道行高相互独立。",
+  "settings.history.timeline.instantWindow": "瞬时 DPS 统计窗口",
+  "settings.history.timeline.instantWindowDescription":
+    "设置历史详情瞬时 DPS 曲线统计最近多少秒内的伤害。",
   "settings.history.fantasyCastIcons": "显示幻想图标",
   "settings.history.fantasyCastIconsDescription":
     "在历史玩家名称旁显示整场最近释放的 2 种幻想图标，不随时间轴框选变化。",
@@ -563,8 +587,22 @@ export const zhCNMessages = {
   "settings.common.columns.healSkills": "治疗（技能明细）列",
   "settings.common.columns.tankedPlayers": "承伤（玩家）列",
   "settings.common.columns.tankedSkills": "承伤（技能明细）列",
+  "settings.common.columns.deathReplay": "死亡回放列",
+  "settings.common.columns.deathReplaySharedHint":
+    "实时与历史死亡回放共用此列配置。",
   "settings.common.columns.orderHint":
     "使用箭头调整顺序；用开关控制显示/隐藏。",
+  "settings.common.columns.first.player": "玩家首列",
+  "settings.common.columns.first.skill": "技能首列",
+  "settings.common.columns.customNameHint":
+    "可选：输入自定义表头，留空使用当前语言的默认名称。",
+  "settings.common.columns.customNameAriaLabel": "自定义“{column}”列名",
+  "settings.common.columns.resetName": "恢复默认列名",
+  "columns.description.deathReplay.time": "显示受击相对死亡的时间",
+  "columns.description.deathReplay.skill": "显示造成该次受击的技能",
+  "columns.description.deathReplay.source": "显示该次受击的来源",
+  "columns.description.deathReplay.damage": "显示该次受击的伤害",
+  "columns.description.deathReplay.share": "显示该次受击占窗口内总伤害的比例",
   "settings.live.fantasyCastIcons": "显示幻想图标",
   "settings.live.fantasyCastIconsDescription":
     "在玩家名称旁显示最近释放的幻想图标。",
@@ -574,6 +612,11 @@ export const zhCNMessages = {
   "settings.live.trainingWindow": "打桩时长",
   "settings.live.trainingWindowDescription":
     "从本人命中木桩起计时，到点结束本轮。默认 3:03（183 秒）。进行中的一轮不会改时长。",
+  "settings.live.trainingLockPolicy": "打桩锁定",
+  "settings.live.trainingLockPolicyDescription":
+    "精英木桩只认训练场 115 / 122；首次命中怪物会锁定本人（含召唤物）打中的下一只怪物。",
+  "settings.live.trainingLockPolicy.eliteDummies": "精英木桩",
+  "settings.live.trainingLockPolicy.firstMonster": "首次命中怪物",
   "settings.network.packetCapture": "抓包",
   "settings.network.method": "捕获方式",
   "settings.network.methodDescription":
@@ -599,7 +642,7 @@ export const zhCNMessages = {
   "settings.shortcuts.togglePauseEncounter": "切换暂停战斗",
   "settings.shortcuts.toggleBossHp": "切换 Boss 血量显示",
   "settings.shortcuts.toggleOverlayEdit": "切换遮罩编辑模式",
-  "settings.shortcuts.toggleOverlayWindow": "切换遮罩窗口",
+  "settings.shortcuts.toggleOverlayWindow": "开关实时监控",
   "settings.debug.title": "调试",
   "settings.debug.logFiles": "日志文件",
   "settings.debug.logFilesDescription": "打开应用日志所在文件夹",
@@ -936,6 +979,7 @@ export const zhCNMessages = {
   "components.deathReplay.relativeSeconds.zero": "0 秒",
   "components.deathReplay.relativeSeconds.value": "{seconds} 秒",
   "components.deathReplay.monsterSkillFallback": "{monsterName} · #{skillKey}",
+  "components.deathReplay.buff.toggle": "死亡瞬间 Buff 快照（{count}）",
   "components.deathReplay.buff.victim": "自身 Buff 快照",
   "components.deathReplay.buff.none": "无 Buff",
   "components.deathReplay.buff.id": "Buff ID：{id}",
@@ -950,7 +994,7 @@ export const zhCNMessages = {
   "components.buffSearchResultGrid.fallbackIcon": "Buff",
   "skillMonitor.layout.title": "实时监控",
   "skillMonitor.layout.description": "自定义监控技能CD, 战斗资源等",
-  "skillMonitor.layout.toggleOverlayWindow": "切换遮罩窗口",
+  "skillMonitor.layout.toggleOverlayWindow": "开关实时监控",
   "skillMonitor.layout.editOverlayLayout": "编辑遮罩布局",
   "skillMonitor.main.enabled.label": "启用实时监控",
   "skillMonitor.main.enabled.description": "开启后将实时推送监控数据到悬浮窗口",
@@ -962,6 +1006,31 @@ export const zhCNMessages = {
   "skillMonitor.tabs.panelAttr": "角色面板",
   "skillMonitor.tabs.customPanel": "自定义监控",
   "skillMonitor.tabs.shieldDetail": "血量护盾区",
+  "skillMonitor.tabs.buffCoverage": "Buff覆盖率",
+  "skillMonitor.buffCoverage.title": "Buff 覆盖率监控",
+  "skillMonitor.buffCoverage.description":
+    "监听列表中的 Buff 会以活跃战斗时长为分母统计覆盖率。实时悬浮窗仅展示自己身上的覆盖率;列表中所有 Buff 在全队成员身上的覆盖情况都会记录到历史战斗中。",
+  "skillMonitor.buffCoverage.list.title": "监听列表",
+  "skillMonitor.buffCoverage.list.description":
+    "搜索并添加需要统计覆盖率的 Buff。关闭“实时显示”的条目只记录历史(适合仅出现在队友身上的 Buff)。",
+  "skillMonitor.buffCoverage.list.empty": "尚未添加任何覆盖率监听 Buff",
+  "skillMonitor.buffCoverage.list.count": "{count}/{max}",
+  "skillMonitor.buffCoverage.list.limit": "最多可监听 {max} 个 Buff",
+  "skillMonitor.buffCoverage.status.added": "已添加",
+  "skillMonitor.buffCoverage.searchPlaceholder": "搜索 Buff 名称或 ID…",
+  "skillMonitor.buffCoverage.entry.showInLive": "实时显示",
+  "skillMonitor.buffCoverage.entry.remove": "移除",
+  "skillMonitor.buffCoverage.style.title": "显示样式",
+  "skillMonitor.buffCoverage.style.description":
+    "覆盖率行:状态点 + 名称 + 剩余时长 + 覆盖率% + 触发次数，下方为倒计时细条。",
+  "skillMonitor.buffCoverage.style.showName": "显示名称",
+  "skillMonitor.buffCoverage.style.showRemaining": "显示剩余时长",
+  "skillMonitor.buffCoverage.style.showCount": "显示触发次数",
+  "skillMonitor.buffCoverage.style.showStateDot": "显示状态点",
+  "skillMonitor.buffCoverage.style.showProgress": "显示倒计时条",
+  "skillMonitor.buffCoverage.style.nameColor": "名称颜色",
+  "skillMonitor.buffCoverage.style.valueColor": "数值颜色",
+  "skillMonitor.buffCoverage.style.progressColor": "进度条颜色",
   "skillMonitor.tabs.overlay": "启用窗口",
   "skillMonitor.common.clear": "清空",
   "skillMonitor.common.remove": "移除",
@@ -1222,10 +1291,11 @@ export const zhCNMessages = {
   "skillMonitor.panelAttr.textStyle": "文字样式",
   "skillMonitor.overlay.customPanel": "自定义监控区：{state}",
   "skillMonitor.overlay.shieldDetail": "血量护盾区：{state}",
+  "skillMonitor.overlay.buffCoverage": "Buff覆盖率区：{state}",
   "skillMonitor.overlay.help": "点击按钮切换显示状态（按方案保存）",
   "monsterMonitor.title": "怪物监控",
   "monsterMonitor.description": "监控 Boss buff 等数据",
-  "monsterMonitor.actions.toggleOverlay": "切换怪物遮罩",
+  "monsterMonitor.actions.toggleOverlay": "开关怪物监控",
   "monsterMonitor.actions.editLayout": "编辑怪物布局",
   "monsterMonitor.defaults.profileName": "方案 {index}",
   "monsterMonitor.defaults.defaultProfileName": "默认方案",
@@ -1240,15 +1310,15 @@ export const zhCNMessages = {
     "确定要删除该怪物监控方案吗？引用它的总方案将回退到第一个方案。",
   "live.defaults.defaultProfileName": "默认方案",
   "live.defaults.profileName": "方案 {index}",
-  "live.profile.title": "实时计量方案",
+  "live.profile.title": "DPS 设置方案",
   "live.profile.pickerDescription":
-    "当前总方案引用的实时计量子方案，可在此切换或管理；更多方案组合请前往「监控方案」页",
+    "当前总方案引用的 DPS 设置子方案，包含实时与历史统计设置；可在此切换或管理",
   "live.profile.new": "新建方案",
   "live.profile.rename": "重命名",
   "live.profile.delete": "删除方案",
   "live.profile.renamePrompt": "请输入新的方案名称",
   "live.profile.deleteConfirm":
-    "确定要删除该实时计量方案吗？引用它的总方案将回退到第一个方案。",
+    "确定要删除该 DPS 设置方案吗？引用它的总方案将回退到第一个方案。",
   "monsterMonitor.enabled": "启用怪物监控",
   "monsterMonitor.autoHideInDailyScenes.label": "日常场景自动隐藏",
   "monsterMonitor.autoHideInDailyScenes.description":
@@ -1440,6 +1510,9 @@ export const zhCNMessages = {
   "gameOverlay.group.skillCd": "技能CD区",
   "gameOverlay.group.textBuff": "无图标Buff区",
   "gameOverlay.group.shieldDetail": "血量护盾区",
+  "gameOverlay.group.buffCoverage": "Buff覆盖率区",
+  "gameOverlay.coverage.count": "{value}次",
+  "gameOverlay.coverage.empty": "请先在技能监控页添加覆盖率监听 Buff",
   "gameOverlay.groupedBuff.empty": "请先在技能监控页创建 Buff 分组",
   "gameOverlay.timer.infinite": "∞",
   "gameOverlay.timer.empty": "--",
@@ -1543,7 +1616,7 @@ export const zhCNMessages = {
   "game.buffCategory.alchemy": "炼金",
   "minimap.title": "副本机制",
   "minimap.description": "在独立悬浮窗中实时显示副本机制。",
-  "minimap.actions.toggleOverlay": "开关副本机制窗口",
+  "minimap.actions.toggleOverlay": "开关副本机制",
   "minimap.actions.editLayout": "编辑布局",
   "minimap.hint": "",
   "minimap.edit.title": "小地图布局编辑",
@@ -1557,6 +1630,9 @@ export const zhCNMessages = {
   "minimap.settings.display.title": "显示选项",
   "minimap.settings.display.description":
     "控制小地图在战斗中的信息密度，减少不必要的干扰。",
+  "minimap.settings.enabled.label": "启用副本机制",
+  "minimap.settings.enabled.description":
+    "关闭后不再显示副本机制遮罩。与页面顶部的开关按钮控制同一个设置。",
   "minimap.settings.autoHideInDailyScenes.label": "日常场景自动隐藏",
   "minimap.settings.autoHideInDailyScenes.description":
     "进入日常场景黑名单时自动隐藏小地图遮罩，离开后恢复之前的显示状态。",
@@ -1723,6 +1799,27 @@ export const zhCNMessages = {
   "minimap.s3TinaMindrealm.pizzaGroup": "披萨危险区",
   "minimap.s3TinaMindrealm.pizzaSlow": "披萨·慢波",
   "minimap.s3TinaMindrealm.pizzaFast": "披萨·快波",
+  "minimap.s4WastelandCourt.pair.group": "虚痕对对碰",
+  "minimap.s4WastelandCourt.pair.mark": "{pattern} → 目标{target}",
+  "minimap.s4WastelandCourt.pair.swap": "{left} ↔ {right}",
+  "minimap.s4WastelandCourt.pair.matched": "已同色",
+  "minimap.s4WastelandCourt.pair.white": "白",
+  "minimap.s4WastelandCourt.pair.black": "黑",
+  "minimap.s4WastelandCourt.pair.settle": "虚痕结算",
+  "minimap.s4WastelandCourt.orb.group": "转换球",
+  "minimap.s4WastelandCourt.orb.active": "交换中",
+  "minimap.s4WastelandCourt.wheel.group": "轮盘",
+  "minimap.s4WastelandCourt.wheel.blue": "宿命之轮·集合",
+  "minimap.s4WastelandCourt.wheel.red": "悲惨之轮·独处",
+  "minimap.s4WastelandCourt.wheel.doom": "绝望之轮",
+  "minimap.s4WastelandCourt.shadow.group": "赫鲁加之影",
+  "minimap.s4WastelandCourt.shadow.phase": "赫鲁加之影",
+  "minimap.s4WastelandCourt.shadow.energyTarget": "能量球追踪",
+  "minimap.s4WastelandCourt.chain.group": "连环近远圈",
+  "minimap.s4WastelandCourt.chain.overview": "近圈 ×{near} / 远圈 ×{far}",
+  "minimap.s4WastelandCourt.chain.step": "第 {order} 炸：{type}",
+  "minimap.s4WastelandCourt.chain.near": "近圈",
+  "minimap.s4WastelandCourt.chain.far": "远圈",
 
   "routes.tools.voice": "语音播报",
 
@@ -1869,6 +1966,7 @@ export const zhCNMessages = {
   "voice.binding.event.threshold": "达到目标时播报",
   "voice.binding.event.onCast": "触发时播报",
   "voice.binding.source.auto": "自动生成",
+  "voice.binding.source.preset": "预置",
   "voice.binding.source.custom": "自定义文本",
   "voice.binding.source.phrase": "短语库引用",
   "voice.binding.priority": "优先级",
@@ -1888,8 +1986,27 @@ export const zhCNMessages = {
   "voice.binding.playFailed": "播放失败，请检查语音模型是否已安装",
 
   "voice.tabs.bindings": "播报总览",
+  "voice.tabs.alerts": "匹配提醒",
+  "voice.alerts.title": "匹配与准备确认提醒",
+  "voice.alerts.description":
+    "在匹配成功、队长发起准备确认或进本投票时，通过现有语音管道播放一次提示。",
+  "voice.alerts.voiceDisabled":
+    "语音播报当前未启用。请先在“播报设置”中启用语音播报。",
+  "voice.alerts.generationHint":
+    "默认使用跟随应用语言的预置语音。改为自定义语句后，可前往“短语与生成”生成自己的语音。",
+  "voice.alerts.event": "收到通知时",
+  "voice.alerts.matchReady.title": "匹配成功待确认",
+  "voice.alerts.matchReady.description": "匹配队列找到队伍并等待确认时提醒。",
+  "voice.alerts.readyCheck.title": "队长准备确认",
+  "voice.alerts.readyCheck.description": "队长发起副本或团队准备确认时提醒。",
+  "voice.alerts.teamVote.title": "进本投票",
+  "voice.alerts.teamVote.description":
+    "其他队员发起进入副本投票时提醒；自己发起时不会提醒。",
+  "voice.alerts.autoText.matchReady": "匹配成功",
+  "voice.alerts.autoText.readyCheck": "准备确认",
+  "voice.alerts.autoText.teamVote": "进本投票",
   "voice.bindings.description":
-    "汇总 Buff 监控、自定义计数器与 Boss 机制中配置的所有语音绑定，为只读视图",
+    "汇总 Buff 监控、自定义计数器、Boss 机制与匹配提醒中配置的所有语音绑定，为只读视图",
   "voice.bindings.empty":
     "尚未配置任何语音绑定，请前往 Buff 监控 / 计数器 / Boss 机制页面内联配置",
   "voice.bindings.column.subject": "对象",
@@ -1905,6 +2022,7 @@ export const zhCNMessages = {
   "voice.bindings.navigate.dbm": "前往 Boss 机制",
   "voice.bindings.navigate.monsterBuff": "前往怪物监控",
   "voice.bindings.navigate.minimap": "前往副本机制",
+  "voice.bindings.navigate.alerts": "前往匹配提醒",
   "voice.bindings.generateMissing": "一键生成缺失语音",
   "voice.bindings.generateMissing.generating": "正在生成…",
   "voice.bindings.generateMissing.needProfile":
