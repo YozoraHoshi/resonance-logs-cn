@@ -10,6 +10,7 @@ export const DEFAULT_MONSTER_OVERLAY_POSITIONS: MonsterOverlayPositions = {
   fantasyPanel: { x: 420, y: 300 },
   bossDbmPanel: { x: 800, y: 40 },
   stunPanel: { x: 40, y: 460 },
+  hpPanel: { x: 40, y: 560 },
 };
 
 export const DEFAULT_MONSTER_OVERLAY_SIZES: MonsterOverlaySizes = {
@@ -19,6 +20,7 @@ export const DEFAULT_MONSTER_OVERLAY_SIZES: MonsterOverlaySizes = {
   fantasyPanelScale: 1,
   bossDbmPanelScale: 1,
   stunPanelScale: 1,
+  hpPanelScale: 1,
 };
 
 export const DEFAULT_MONSTER_OVERLAY_VISIBILITY = {
@@ -28,6 +30,7 @@ export const DEFAULT_MONSTER_OVERLAY_VISIBILITY = {
   showFantasyPanel: false,
   showBossDbmPanel: false,
   showStunPanel: false,
+  showHpPanel: false,
 };
 
 export const MIN_MONSTER_PANEL_SCALE = 0.5;

@@ -696,6 +696,10 @@ export type HateEntry = { entityUuid: string; hateVal: number }
 export type HistoryCastKind = "boss_skill" | "fantasy" | "key_skill"
 export type HistoryMetric = "damage" | "healing" | "damage_taken"
 export type HistoryQualityFlag = "incompleteSegment" | "missingEntityContext" | "saturatedAmount"
+/**
+ * Health snapshot for the current monster target.
+ */
+export type HpEntry = { bossEntityUuid: string; monsterId: number; current: number; max: number }
 export type HudFrame = { active: boolean; epoch: number; status: LiveStatusPayload | null; buffs: LiveBuffsPayload | null; monster: LiveMonsterPayload | null; fantasy: LiveFantasyPayload | null; snapshot: MinimapSnapshotUpdate | null; skillCasts: MinimapSkillCast[]; skillCastCursor: number; castsReset: boolean }
 export type HudFrameRequest = { epoch: number | null; statusRevision: number | null; buffsRevision: number | null; monsterRevision: number | null; fantasyRevision: number | null; snapshotRevision: number | null; skillCastCursor: number | null; gameInterest: boolean; monsterInterest: boolean; minimapInterest: boolean }
 export type HudLayoutMigration = { translateMinimap: boolean; minimapOffsetX: number; minimapOffsetY: number }
@@ -737,7 +741,7 @@ export type LiveFantasyPayload = { revision: number; teammateFantasies: Teammate
 /**
  * Monster overlay topic (`live-monster`), 50ms throttle.
  */
-export type LiveMonsterPayload = { revision: number; bossBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; teammateBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; bossMechanics: BossDbmEvent[]; hateLists: Partial<{ [key in string]: HateEntry[] }>; stun: StunEntry[]; playerNames: Partial<{ [key in string]: string }>; monsterIds: Partial<{ [key in string]: number }> }
+export type LiveMonsterPayload = { revision: number; bossBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; teammateBuffs: Partial<{ [key in string]: BuffUpdateState[] }>; bossMechanics: BossDbmEvent[]; hateLists: Partial<{ [key in string]: HateEntry[] }>; stun: StunEntry[]; hp: HpEntry[]; playerNames: Partial<{ [key in string]: string }>; monsterIds: Partial<{ [key in string]: number }> }
 export type LivePullWindow = "live" | "hud-overlay"
 export type LiveRuntimeSnapshot = { eventUpdateRateMs: number; trainingWindowMs: number; trainingLockPolicy: TrainingLockPolicy }
 export type LiveScenePayload = { revision: number; sceneId: number | null; dungeonDifficulty: number | null }

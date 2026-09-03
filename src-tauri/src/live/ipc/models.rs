@@ -219,6 +219,7 @@ pub struct LiveMonsterPayload {
     pub boss_mechanics: Vec<BossDbmEvent>,
     pub hate_lists: HashMap<String, Vec<HateEntry>>,
     pub stun: Vec<StunEntry>,
+    pub hp: Vec<HpEntry>,
     pub player_names: HashMap<String, String>,
     pub monster_ids: HashMap<String, i32>,
 }
@@ -696,6 +697,16 @@ pub struct MinimapUpdatePayload {
 #[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct StunEntry {
+    pub boss_entity_uuid: String,
+    pub monster_id: i32,
+    pub current: i64,
+    pub max: i64,
+}
+
+/// Health snapshot for the current monster target.
+#[derive(specta::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HpEntry {
     pub boss_entity_uuid: String,
     pub monster_id: i32,
     pub current: i64,

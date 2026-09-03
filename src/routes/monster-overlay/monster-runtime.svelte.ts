@@ -3,6 +3,7 @@ import type {
   BossDbmEvent,
   BuffUpdateState,
   HateEntry,
+  HpEntry,
   StunEntry,
   TeammateFantasyState,
 } from "$lib/api";
@@ -17,6 +18,7 @@ import type {
   MonsterDragState,
   MonsterFantasyRow,
   MonsterHateSection,
+  MonsterHpSection,
   MonsterStunSection,
   MonsterTeammateBuffColumn,
   MonsterTeammateBuffRow,
@@ -86,6 +88,15 @@ const _bossStunMap = $derived.by(
       ]),
     ),
 );
+const _bossHpMap = $derived.by(
+  () =>
+    new Map<EntityId, HpEntry>(
+      (liveMonsterStore.data?.hp ?? []).map((entry) => [
+        entry.bossEntityUuid,
+        entry,
+      ]),
+    ),
+);
 const _bossDbmMap = $derived.by(() => {
   const result = new Map<number, BossDbmEvent>();
   for (const event of liveMonsterStore.data?.bossMechanics ?? []) {
@@ -107,6 +118,7 @@ export const monsterRuntime = $state({
   teammateRows: [] as MonsterTeammateBuffRow[],
   hateSections: [] as MonsterHateSection[],
   stunSections: [] as MonsterStunSection[],
+  hpSections: [] as MonsterHpSection[],
   fantasyRows: [] as MonsterFantasyRow[],
   dbmRows: [] as TextBuffDisplay[],
   isEditing: false,
@@ -139,6 +151,10 @@ export function monsterStunEntries() {
   return _bossStunMap;
 }
 
+export function monsterHpEntries() {
+  return _bossHpMap;
+}
+
 export function monsterFantasyEntries(): TeammateFantasyState[] {
   return liveFantasyStore.data?.teammateFantasies ?? [];
 }
@@ -157,6 +173,10 @@ export function monsterHateSections() {
 
 export function monsterStunSections() {
   return monsterRuntime.stunSections;
+}
+
+export function monsterHpSections() {
+  return monsterRuntime.hpSections;
 }
 
 export function monsterFantasyRows() {

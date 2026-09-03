@@ -87,6 +87,14 @@ export function getStunPanelScale() {
   return getMonsterOverlaySizes().stunPanelScale;
 }
 
+export function getHpPanelPosition() {
+  return getMonsterOverlayPositions().hpPanel;
+}
+
+export function getHpPanelScale() {
+  return getMonsterOverlaySizes().hpPanelScale;
+}
+
 export function getFantasyPanelPosition() {
   return getMonsterOverlayPositions().fantasyPanel;
 }
@@ -124,6 +132,13 @@ export function hatePanelStyle() {
 export function stunPanelStyle() {
   return normalizeCustomPanelStyle(
     SETTINGS.monsterMonitor.state.stunPanelStyle ??
+      SETTINGS.monsterMonitor.state.panelStyle,
+  );
+}
+
+export function hpPanelStyle() {
+  return normalizeCustomPanelStyle(
+    SETTINGS.monsterMonitor.state.hpPanelStyle ??
       SETTINGS.monsterMonitor.state.panelStyle,
   );
 }
@@ -210,6 +225,24 @@ export function setStunPanelScale(value: number) {
     overlaySizes: {
       ...getMonsterOverlaySizes(),
       stunPanelScale: clampPanelScale(value),
+    },
+  }));
+}
+
+export function setHpPanelPosition(nextPos: { x: number; y: number }) {
+  patchMonsterMonitor(() => ({
+    overlayPositions: {
+      ...getMonsterOverlayPositions(),
+      hpPanel: nextPos,
+    },
+  }));
+}
+
+export function setHpPanelScale(value: number) {
+  patchMonsterMonitor(() => ({
+    overlaySizes: {
+      ...getMonsterOverlaySizes(),
+      hpPanelScale: clampPanelScale(value),
     },
   }));
 }
@@ -379,6 +412,8 @@ function commitDragPreview() {
     setHatePanelPosition(nextPos);
   } else if (drag.target.kind === "stunPanel") {
     setStunPanelPosition(nextPos);
+  } else if (drag.target.kind === "hpPanel") {
+    setHpPanelPosition(nextPos);
   } else if (drag.target.kind === "dbmPanel") {
     setDbmPanelPosition(nextPos);
   } else {
@@ -398,6 +433,8 @@ function commitResizePreview() {
     setHatePanelScale(nextValue);
   } else if (resize.target.kind === "stunPanel") {
     setStunPanelScale(nextValue);
+  } else if (resize.target.kind === "hpPanel") {
+    setHpPanelScale(nextValue);
   } else if (resize.target.kind === "dbmPanel") {
     setDbmPanelScale(nextValue);
   } else {

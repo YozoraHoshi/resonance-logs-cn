@@ -15,7 +15,12 @@ import {
   getGlobalBuffAliases,
   type TeammateBuffColumnKey,
 } from "$lib/settings-store";
-import type { HateEntry, StunEntry, TeammateFantasyState } from "$lib/api";
+import type {
+  HateEntry,
+  HpEntry,
+  StunEntry,
+  TeammateFantasyState,
+} from "$lib/api";
 import {
   buildBuffTextRow,
   formatTimerText,
@@ -36,6 +41,7 @@ import {
   monsterBossMechanics,
   monsterFantasyEntries,
   monsterHateLists,
+  monsterHpEntries,
   monsterIds,
   monsterPlayerNames,
   monsterRuntime,
@@ -50,6 +56,7 @@ import type {
   MonsterBossBuffSection,
   MonsterFantasyRow,
   MonsterHateSection,
+  MonsterHpSection,
   MonsterStunSection,
   MonsterTeammateBuffCell,
   MonsterTeammateBuffColumn,
@@ -694,6 +701,35 @@ function buildStunPlaceholderRows(): TextBuffDisplay[] {
   ];
 }
 
+function buildHpRows(entry: HpEntry): TextBuffDisplay[] {
+  if (entry.max <= 0) return [];
+  const ratio = Math.min(1, Math.max(0, entry.current / entry.max));
+  return [
+    {
+      key: `hp_${entry.bossEntityUuid}`,
+      label: t("monsterOverlay.hpLabel"),
+      metaText: `${Math.round(ratio * 100)}%`,
+      valueText: `${entry.current} / ${entry.max}`,
+      progressPercent: Math.round(ratio * 100),
+      showProgress: true,
+    },
+  ];
+}
+
+function buildHpPlaceholderRows(): TextBuffDisplay[] {
+  return [
+    {
+      key: "hp_preview",
+      label: t("monsterOverlay.hpLabel"),
+      metaText: "80%",
+      valueText: "80000 / 100000",
+      progressPercent: 80,
+      showProgress: true,
+      isPlaceholder: true,
+    },
+  ];
+}
+
 function createDeadlineTracker(now: number) {
   let nextDeadlineMs: number | null = null;
   return {
@@ -1026,6 +1062,36 @@ function buildStunDisplay(): MonsterStunSection[] {
   return nextStunSections;
 }
 
+function buildHpDisplay(): MonsterHpSection[] {
+  const sections: MonsterHpSection[] = [];
+  if (SETTINGS.monsterMonitor.state.hpListEnabled) {
+    for (const [bossUid, entry] of Array.from(
+      monsterHpEntries().entries(),
+    ).sort()) {
+      const rows = buildHpRows(entry);
+      if (rows.length > 0)
+        sections.push({
+          bossEntityUuid: bossUid,
+          title: resolveMonsterSectionTitle(bossUid),
+          rows,
+        });
+    }
+  }
+  if (
+    SETTINGS.monsterMonitor.state.hpListEnabled &&
+    sections.length === 0 &&
+    isMonsterLayoutScaffold()
+  ) {
+    sections.push({
+      bossEntityUuid: "0",
+      title: t("monsterOverlay.placeholder.target", { uid: 0 }),
+      rows: buildHpPlaceholderRows(),
+      isPlaceholder: true,
+    });
+  }
+  return sections;
+}
+
 function buildFantasyDisplay(now: number): {
   rows: MonsterFantasyRow[];
   nextDeadlineMs: number | null;
@@ -1096,6 +1162,8 @@ const hateDisplayProjection = $derived.by(() => buildHateDisplay());
 
 const stunDisplayProjection = $derived.by(() => buildStunDisplay());
 
+const hpDisplayProjection = $derived.by(() => buildHpDisplay());
+
 const fantasyDisplayProjection = $derived.by(() => {
   void hudProjectionRevision(MONSTER_FANTASY_DEADLINE_SOURCE);
   return buildFantasyDisplay(Date.now());
@@ -1113,6 +1181,7 @@ function assignRuntime<
     | "teammateRows"
     | "hateSections"
     | "stunSections"
+    | "hpSections"
     | "fantasyRows"
     | "dbmRows",
 >(key: K, value: (typeof monsterRuntime)[K]) {
@@ -1131,6 +1200,7 @@ export function updateMonsterDisplay() {
   assignRuntime("bossSections", bossDisplayProjection.sections);
   assignRuntime("hateSections", hateDisplayProjection);
   assignRuntime("stunSections", stunDisplayProjection);
+  assignRuntime("hpSections", hpDisplayProjection);
   assignRuntime("fantasyRows", fantasyDisplayProjection.rows);
   assignRuntime("dbmRows", dbmDisplayProjection.rows);
 }
